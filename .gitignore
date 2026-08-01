@@ -40,5 +40,8 @@ Thumbs.db
 *.swp
 *.swo
 
+# Task runner cache
+.task/
+
 # Log files
 *.log
