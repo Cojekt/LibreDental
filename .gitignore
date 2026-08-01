@@ -1,0 +1,44 @@
+# Compiled Binaries & Outputs
+bin/
+*.exe
+*.exe.manifest
+*.dll
+*.so
+*.dylib
+*.app
+libredental
+
+# SQLite Local Database Files
+*.db
+*.db-wal
+*.db-shm
+libredental.db
+
+# Frontend Dependencies & Build Output
+frontend/node_modules/
+frontend/dist/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Auto-generated Wails Bindings
+frontend/bindings/
+
+# OS & Environment
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Log files
+*.log
