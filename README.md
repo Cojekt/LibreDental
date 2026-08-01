@@ -51,14 +51,34 @@ Running LibreDental™ fully on the dentist's computer or local practice network
 
 ## 🚀 Getting Started
 
-*(Development setup instructions will be published as Wails v3 bindings and frontend components stabilize.)*
+LibreDental™ is a standard **[Wails v3](https://v3.wails.io)** application (Go 1.22+ & Svelte 5 / Vite).
 
-### Prerequisites (Planned)
+### Prerequisites
 
-* [Go](https://go.dev/) 1.22+
-* Node.js 20+ & npm / pnpm
+* **Go 1.22+**, **Node.js 20+**, and a **C Compiler / WebKit** (Linux: `build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev` | macOS: `xcode-select --install` | Windows: MinGW/MSVC).
+* **CLI Tools**:
 
----
+  ```bash
+  go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+  go install github.com/go-task/task/v3/cmd/task@latest
+  ```
+
+### Quick Start
+
+```bash
+# Clone repository & install dependencies
+git clone https://github.com/LibreDental/libredental.git && cd libredental
+go mod download
+cd frontend && npm install && cd ..
+
+# Run live-reload development mode
+task dev # (or: wails3 dev)
+
+# Production build & packaging
+task build       # Build desktop binary to ./bin/libredental
+task package     # Create OS installer packages (.deb, .rpm, AppImage, etc.)
+task run:server  # Run headless HTTP server mode
+```
 
 ## 🤝 Contributing
 
