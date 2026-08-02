@@ -79,5 +79,9 @@ func (r *AuditRepository) Query(ctx context.Context, patientID string, limit int
 		entries = append(entries, &e)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return entries, nil
 }

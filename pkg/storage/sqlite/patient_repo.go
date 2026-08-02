@@ -35,20 +35,23 @@ func (r *PatientRepository) Create(ctx context.Context, p *domain.Patient) error
 	if p.Version == 0 {
 		p.Version = 1
 	}
+	if p.Status == "" {
+		p.Status = domain.StatusActive
+	}
 
 	query := `
 	INSERT INTO patients (
 		id, first_name, last_name, middle_name, preferred_name,
 		date_of_birth, gender, email, phone_primary, phone_secondary,
 		address_line1, address_line2, city, state, zip_code,
-		medical_alerts, allergies, notes, created_at, updated_at, version
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		medical_alerts, allergies, notes, created_at, updated_at, version, status
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.db.ExecContext(ctx, query,
 		p.ID, p.FirstName, p.LastName, p.MiddleName, p.PreferredName,
 		p.DateOfBirth.Format(time.RFC3339), p.Gender, p.Email, p.PhonePrimary, p.PhoneSecondary,
 		p.AddressLine1, p.AddressLine2, p.City, p.State, p.ZipCode,
-		string(alertsJSON), string(allergiesJSON), p.Notes, p.CreatedAt, p.UpdatedAt, p.Version,
+		string(alertsJSON), string(allergiesJSON), p.Notes, p.CreatedAt, p.UpdatedAt, p.Version, p.Status,
 	)
 
 	if err != nil {
@@ -62,7 +65,7 @@ func (r *PatientRepository) GetByID(ctx context.Context, id string) (*domain.Pat
 	SELECT id, first_name, last_name, middle_name, preferred_name,
 	       date_of_birth, gender, email, phone_primary, phone_secondary,
 	       address_line1, address_line2, city, state, zip_code,
-	       medical_alerts, allergies, notes, created_at, updated_at, version
+	       medical_alerts, allergies, notes, created_at, updated_at, version, status
 	FROM patients WHERE id = ?`
 
 	row := r.db.QueryRowContext(ctx, query, id)
@@ -79,14 +82,14 @@ func (r *PatientRepository) Update(ctx context.Context, p *domain.Patient) error
 		first_name = ?, last_name = ?, middle_name = ?, preferred_name = ?,
 		date_of_birth = ?, gender = ?, email = ?, phone_primary = ?, phone_secondary = ?,
 		address_line1 = ?, address_line2 = ?, city = ?, state = ?, zip_code = ?,
-		medical_alerts = ?, allergies = ?, notes = ?, updated_at = ?, version = version + 1
+		medical_alerts = ?, allergies = ?, notes = ?, updated_at = ?, version = version + 1, status = ?
 	WHERE id = ? AND version = ?`
 
 	res, err := r.db.ExecContext(ctx, query,
 		p.FirstName, p.LastName, p.MiddleName, p.PreferredName,
 		p.DateOfBirth.Format(time.RFC3339), p.Gender, p.Email, p.PhonePrimary, p.PhoneSecondary,
 		p.AddressLine1, p.AddressLine2, p.City, p.State, p.ZipCode,
-		string(alertsJSON), string(allergiesJSON), p.Notes, now,
+		string(alertsJSON), string(allergiesJSON), p.Notes, now, p.Status,
 		p.ID, p.Version,
 	)
 
@@ -132,6 +135,13 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 		args = append(args, q, q, q, q)
 	}
 
+	status := filter.Status
+	if status == "" {
+		status = string(domain.StatusActive)
+	}
+	conditions = append(conditions, "status = ?")
+	args = append(args, status)
+
 	whereClause := ""
 	if len(conditions) > 0 {
 		whereClause = "WHERE " + strings.Join(conditions, " AND ")
@@ -152,7 +162,7 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 	SELECT id, first_name, last_name, middle_name, preferred_name,
 	       date_of_birth, gender, email, phone_primary, phone_secondary,
 	       address_line1, address_line2, city, state, zip_code,
-	       medical_alerts, allergies, notes, created_at, updated_at, version
+	       medical_alerts, allergies, notes, created_at, updated_at, version, status
 	FROM patients %s ORDER BY last_name, first_name LIMIT ? OFFSET ?`, whereClause)
 
 	args = append(args, limit, filter.Offset)
@@ -172,6 +182,10 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 		patients = append(patients, p)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
 	return patients, total, nil
 }
 
@@ -182,13 +196,13 @@ type scannable interface {
 func scanPatient(scanner scannable) (*domain.Patient, error) {
 	var p domain.Patient
 	var dobStr, alertsJSON, allergiesJSON string
-	var genderStr string
+	var genderStr, statusStr string
 
 	err := scanner.Scan(
 		&p.ID, &p.FirstName, &p.LastName, &p.MiddleName, &p.PreferredName,
 		&dobStr, &genderStr, &p.Email, &p.PhonePrimary, &p.PhoneSecondary,
 		&p.AddressLine1, &p.AddressLine2, &p.City, &p.State, &p.ZipCode,
-		&alertsJSON, &allergiesJSON, &p.Notes, &p.CreatedAt, &p.UpdatedAt, &p.Version,
+		&alertsJSON, &allergiesJSON, &p.Notes, &p.CreatedAt, &p.UpdatedAt, &p.Version, &statusStr,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -198,6 +212,7 @@ func scanPatient(scanner scannable) (*domain.Patient, error) {
 	}
 
 	p.Gender = domain.Gender(genderStr)
+	p.Status = domain.Status(statusStr)
 	p.DateOfBirth, _ = time.Parse(time.RFC3339, dobStr)
 	json.Unmarshal([]byte(alertsJSON), &p.MedicalAlerts)
 	json.Unmarshal([]byte(allergiesJSON), &p.Allergies)

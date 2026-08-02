@@ -14,6 +14,14 @@ const (
 	GenderUndisclosed Gender = "undisclosed"
 )
 
+// Status represents the patient's record status.
+type Status string
+
+const (
+	StatusActive   Status = "active"
+	StatusArchived Status = "archived"
+)
+
 // Patient represents a dental patient demographic record.
 type Patient struct {
 	ID             string    `json:"id"`
@@ -37,11 +45,13 @@ type Patient struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	Version        int64     `json:"version"`
+	Status         Status    `json:"status"`
 }
 
 // PatientFilter specifies search/filter parameters for patients.
 type PatientFilter struct {
 	Query  string `json:"query,omitempty"`
+	Status string `json:"status,omitempty"`
 	Limit  int    `json:"limit,omitempty"`
 	Offset int    `json:"offset,omitempty"`
 }

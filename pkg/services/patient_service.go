@@ -16,8 +16,8 @@ func NewPatientService(repo storage.PatientRepository) *PatientService {
 	return &PatientService{repo: repo}
 }
 
-func (s *PatientService) ListPatients(query string) ([]*domain.Patient, error) {
-	patients, _, err := s.repo.List(context.Background(), domain.PatientFilter{Query: query})
+func (s *PatientService) ListPatients(query string, status string) ([]*domain.Patient, error) {
+	patients, _, err := s.repo.List(context.Background(), domain.PatientFilter{Query: query, Status: status})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list patients: %w", err)
 	}
@@ -49,4 +49,14 @@ func (s *PatientService) UpdatePatient(p *domain.Patient) (*domain.Patient, erro
 		return nil, fmt.Errorf("failed to update patient: %w", err)
 	}
 	return p, nil
+}
+
+func (s *PatientService) ArchivePatient(id string) error {
+	p, err := s.GetPatient(id)
+	if err != nil {
+		return err
+	}
+	p.Status = domain.StatusArchived
+	_, err = s.UpdatePatient(p)
+	return err
 }

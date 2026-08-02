@@ -59,7 +59,8 @@ func (db *DB) migrate() error {
 		notes TEXT DEFAULT '',
 		created_at DATETIME NOT NULL,
 		updated_at DATETIME NOT NULL,
-		version INTEGER NOT NULL DEFAULT 1
+		version INTEGER NOT NULL DEFAULT 1,
+		status TEXT NOT NULL DEFAULT 'active'
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(last_name, first_name);
