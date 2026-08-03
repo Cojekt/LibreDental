@@ -22,8 +22,8 @@
   <div class="flex items-center gap-4 rounded-xl border border-slate-700 bg-slate-800 p-5">
     <div class="text-[28px] text-emerald-400">🛡️</div>
     <div>
-      <div class="text-[13px] text-slate-400">HIPAA Security</div>
-      <div class="mt-0.5 text-xl font-bold text-emerald-400">Encrypted Local WAL</div>
+      <div class="text-[13px] text-slate-400">HIPAA Data Protection</div>
+      <div class="mt-0.5 text-xl font-bold text-emerald-400">Compliant & Secure</div>
     </div>
   </div>
 </div>

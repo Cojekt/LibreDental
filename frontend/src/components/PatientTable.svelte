@@ -24,7 +24,7 @@
 
 <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-800">
   {#if loading}
-    <div class="p-12 text-center text-slate-400">Loading local patient database...</div>
+    <div class="p-12 text-center text-slate-400">Loading patient records...</div>
   {:else if patients.length === 0}
     <div class="p-12 text-center text-slate-400">
       <p class="mb-2 text-lg font-semibold text-slate-50">No patients found</p>
@@ -50,7 +50,6 @@
           <tr>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               <div class="font-semibold text-slate-50">{p.first_name} {p.last_name}</div>
-              <div class="mt-0.5 text-[11px] text-slate-500">{p.id}</div>
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               {#if p.national_id}

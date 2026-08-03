@@ -22,51 +22,46 @@
       label: "Dental Charting",
       icon: `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5.25 3 9.25 7 13 4-3.75 7-7.75 7-13 0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>`,
       enabled: false,
-      badge: "Upcoming",
     },
     {
       id: "billing",
       label: "Billing & Claims",
       icon: `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
       enabled: false,
-      badge: "Upcoming",
     },
   ];
 </script>
 
-<nav class="flex items-center space-x-1 border-b border-slate-700/80 bg-slate-900/90 px-6 pt-2 select-none">
-  {#each tabs as tab}
-    {#if tab.enabled}
-      <button
-        type="button"
-        onclick={() => ontabchange(tab.id)}
-        class={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all duration-150 rounded-t-lg outline-none ${
-          activeTab === tab.id
-            ? "text-sky-400 bg-slate-800/90 border-t-2 border-sky-400 shadow-sm"
-            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
-        }`}
-      >
-        <span class={`transition-colors ${activeTab === tab.id ? "text-sky-400" : "text-slate-400 group-hover:text-slate-300"}`}>
-          {@html tab.icon}
-        </span>
-        <span>{tab.label}</span>
-        {#if activeTab === tab.id}
-          <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400"></div>
-        {/if}
-      </button>
-    {:else}
-      <div
-        class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed opacity-60"
-        title="Feature under active development"
-      >
-        <span>{@html tab.icon}</span>
-        <span>{tab.label}</span>
-        {#if tab.badge}
-          <span class="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] uppercase font-bold tracking-wider text-slate-400 border border-slate-700">
-            {tab.badge}
+<nav class="w-full border-t border-slate-800/80 select-none">
+  <div class="flex w-full items-center space-x-1 px-6 sm:px-8 pt-1.5">
+    {#each tabs as tab}
+      {#if tab.enabled}
+        <button
+          type="button"
+          onclick={() => ontabchange(tab.id)}
+          class={`group relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all duration-150 rounded-t-lg outline-none ${
+            activeTab === tab.id
+              ? "text-sky-400 bg-slate-950/60 shadow-sm"
+              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+          }`}
+        >
+          <span class={`transition-colors ${activeTab === tab.id ? "text-sky-400" : "text-slate-400 group-hover:text-slate-300"}`}>
+            {@html tab.icon}
           </span>
-        {/if}
-      </div>
-    {/if}
-  {/each}
+          <span>{tab.label}</span>
+          {#if activeTab === tab.id}
+            <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400"></div>
+          {/if}
+        </button>
+      {:else}
+        <div
+          class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed opacity-50 hover:opacity-75 transition-opacity"
+          title="Coming soon"
+        >
+          <span>{@html tab.icon}</span>
+          <span>{tab.label}</span>
+        </div>
+      {/if}
+    {/each}
+  </div>
 </nav>

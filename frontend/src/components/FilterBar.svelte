@@ -13,7 +13,7 @@
 <div class="mb-4 flex items-center gap-3">
   <div class="relative w-full max-w-[480px] flex-1">
     <svg
-      class="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500"
+      class="absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 pointer-events-none z-10"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -25,19 +25,40 @@
     <input
       type="text"
       placeholder="Search patients by name, email, or phone..."
-      class="box-border w-full rounded-lg border border-slate-700 bg-slate-800 py-2.5 pl-10 pr-3 text-sm text-white focus:border-blue-500 focus:outline-none"
+      class="box-border w-full rounded-lg border border-slate-700 bg-slate-800/90 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none shadow-sm transition-all"
+      style="padding-left: 2.75rem; padding-right: 0.75rem;"
       bind:value={searchQuery}
       oninput={onloadpatients}
     />
   </div>
-  <div>
-    <select
-      bind:value={statusFilter}
-      onchange={onloadpatients}
-      class="cursor-pointer rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+  <div class="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 shadow-sm select-none">
+    <button
+      type="button"
+      onclick={() => {
+        statusFilter = "active";
+        onloadpatients();
+      }}
+      class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+        statusFilter === "active"
+          ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm"
+          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+      }`}
     >
-      <option value="active">Active Patients</option>
-      <option value="archived">Archived Patients</option>
-    </select>
+      Active Patients
+    </button>
+    <button
+      type="button"
+      onclick={() => {
+        statusFilter = "archived";
+        onloadpatients();
+      }}
+      class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+        statusFilter === "archived"
+          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm"
+          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+      }`}
+    >
+      Archived
+    </button>
   </div>
 </div>

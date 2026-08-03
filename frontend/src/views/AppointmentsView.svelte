@@ -191,18 +191,6 @@
           Agenda View
         </button>
       </div>
-
-      <button
-        type="button"
-        onclick={onnewappointment}
-        class="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md hover:from-sky-400 hover:to-blue-500"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        New Appointment
-      </button>
     </div>
   </div>
 

@@ -15,9 +15,9 @@
   }>();
 </script>
 
-<header class="flex flex-col border-b border-slate-700/80 bg-slate-800/90 shadow-md">
+<header class="w-full border-b border-slate-800 bg-slate-900 shadow-sm">
   <!-- Top brand bar -->
-  <div class="flex h-16 items-center justify-between px-6">
+  <div class="flex h-16 w-full items-center justify-between px-6 sm:px-8">
     <div class="flex items-center gap-3">
       <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-cyan-500/20">
         <svg
@@ -38,12 +38,9 @@
         <h1 class="m-0 text-xl font-bold tracking-tight text-slate-50">
           LibreDental<span class="align-super text-[11px] text-slate-400">™</span>
         </h1>
-        <span class="ml-2.5 rounded-xl border border-sky-400/30 bg-cyan-500/15 px-2.5 py-0.5 text-[11px] font-medium text-sky-400">
-          Local-First Engine
-        </span>
         {#if countryMeta}
-          <span class="ml-2 rounded-xl border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-medium text-emerald-400 flex items-center gap-1">
-            📍 {countryMeta.code} ({countryMeta.default_tooth_system.toUpperCase()})
+          <span class="ml-2.5 rounded-xl border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-[11px] font-medium text-slate-300 flex items-center gap-1">
+            📍 {countryMeta.name || countryMeta.code}
           </span>
         {/if}
       </div>

@@ -65,26 +65,16 @@ body {
    over the photo so foreground text stays legible. On desktop the gradient is
    weighted to the left, where the content sits. */
 .bg {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background:
-        linear-gradient(90deg, rgba(6, 7, 15, 0.94) 0%, rgba(6, 7, 15, 0.78) 32%,
-            rgba(6, 7, 15, 0.42) 64%, rgba(6, 7, 15, 0.30) 100%),
-        linear-gradient(0deg, rgba(6, 7, 15, 0.70) 0%, rgba(6, 7, 15, 0.10) 45%),
-        url("/bg-desktop.jpg") center / cover no-repeat;
+    display: none;
 }
 
 body {
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
-    flex-direction: column;             /* content area + footer pinned to the bottom */
-    /* Respect mobile safe areas (notch / home indicator). No bottom padding:
-       the footer sits flush at the bottom edge. */
-    /* Wider outer margins on the golden scale (φ² top/right, φ³ left). */
-    padding: max(var(--s-4), env(safe-area-inset-top)) max(var(--s-4), env(safe-area-inset-right))
-             0 max(var(--s-5), env(safe-area-inset-left));
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
 }
 
 .container {

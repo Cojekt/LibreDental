@@ -390,7 +390,7 @@
     onnewappointment={openAddApptModal}
   />
 
-  <main class="p-6 max-w-[1320px] mx-auto w-full box-border flex-1">
+  <main class="w-full p-6 sm:p-8 box-border flex-1">
     {#if activeTab === "patients"}
       <PatientsView
         {patients}
