@@ -58,7 +58,7 @@
         </div>
 
         {#if selectedCountry}
-          {@const meta = supportedCountries.find((c) => c.code === selectedCountry)}
+          {@const meta = supportedCountries.find((c: CountryConfig) => c.code === selectedCountry)}
           {#if meta}
             <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-xs text-slate-400 space-y-2">
               <div class="font-medium text-slate-200 mb-1">Automatic Regional Configuration:</div>

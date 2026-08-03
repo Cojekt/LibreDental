@@ -1,20 +1,34 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { PatientService, ConfigService } from "../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
-  import type { Patient, PracticeConfig, CountryConfig } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import {
+    PatientService,
+    ConfigService,
+    AppointmentService,
+  } from "../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  import type {
+    Patient,
+    PracticeConfig,
+    CountryConfig,
+    Appointment,
+  } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import { Gender, Status, AppointmentStatus } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import { FALLBACK_COUNTRIES } from "./lib/country.js";
 
   import Header from "./components/Header.svelte";
-  import StatsGrid from "./components/StatsGrid.svelte";
-  import FilterBar from "./components/FilterBar.svelte";
-  import PatientTable from "./components/PatientTable.svelte";
-  import PatientModal from "./components/PatientModal.svelte";
   import OnboardingModal from "./components/OnboardingModal.svelte";
+  import PatientModal from "./components/PatientModal.svelte";
+  import AppointmentModal from "./components/AppointmentModal.svelte";
+  import PatientsView from "./views/PatientsView.svelte";
+  import AppointmentsView from "./views/AppointmentsView.svelte";
 
+  // App Navigation
+  let activeTab = $state("patients");
+
+  // Patients state
   let patients = $state<Patient[]>([]);
   let searchQuery = $state("");
   let statusFilter = $state("active");
-  let loading = $state(false);
+  let loadingPatients = $state(false);
 
   // Configuration & Onboarding
   let practiceConfig = $state<PracticeConfig | null>(null);
@@ -22,12 +36,12 @@
   let supportedCountries = $state<CountryConfig[]>(FALLBACK_COUNTRIES);
   let showOnboarding = $state(false);
 
-  // Modal states
+  // Patient Modal states
   let showPatientModal = $state(false);
-  let isEditing = $state(false);
+  let isEditingPatient = $state(false);
   let editingPatientId = $state("");
 
-  // Form fields
+  // Patient form fields
   let firstName = $state("");
   let lastName = $state("");
   let email = $state("");
@@ -37,6 +51,30 @@
   let stateProvince = $state("");
   let postalCode = $state("");
   let medicalAlerts = $state("");
+
+  // Appointments state
+  let appointments = $state<Appointment[]>([]);
+  let loadingAppointments = $state(false);
+  let selectedDate = $state(new Date().toISOString().split("T")[0]);
+  let selectedProvider = $state("all");
+  let viewMode = $state<"grid" | "agenda">("grid");
+
+  // Appointment Modal states
+  let showApptModal = $state(false);
+  let isEditingAppt = $state(false);
+  let editingApptId = $state("");
+
+  // Appointment form fields
+  let apptPatientId = $state("");
+  let apptProviderId = $state("prov_dr_smith");
+  let apptOperatoryId = $state("op_chair_1");
+  let apptStartDateStr = $state(new Date().toISOString().split("T")[0]);
+  let apptStartTimeStr = $state("09:00");
+  let apptEndTimeStr = $state("10:00");
+  let apptStatus = $state("scheduled");
+  let apptReason = $state("");
+  let apptColor = $state("#3b82f6");
+  let apptNotes = $state("");
 
   async function checkConfig() {
     try {
@@ -83,25 +121,44 @@
       await loadCountryMeta(countryCode);
       showOnboarding = false;
       await loadPatients();
+      await loadAppointments();
     } catch (err) {
       console.error("Failed to save onboarding practice config:", err);
     }
   }
 
   async function loadPatients() {
-    loading = true;
+    loadingPatients = true;
     try {
       const res = await PatientService.ListPatients(searchQuery, statusFilter);
-      patients = res || [];
+      patients = (res?.filter(Boolean) as Patient[]) || [];
     } catch (err) {
       console.error("Failed to load patients:", err);
     } finally {
-      loading = false;
+      loadingPatients = false;
     }
   }
 
-  function openAddModal() {
-    isEditing = false;
+  async function loadAppointments() {
+    loadingAppointments = true;
+    try {
+      const start = `${selectedDate}T00:00:00Z`;
+      const end = `${selectedDate}T23:59:59Z`;
+      const res = await AppointmentService.ListAppointments({
+        start_date: start,
+        end_date: end,
+      });
+      appointments = (res?.filter(Boolean) as Appointment[]) || [];
+    } catch (err) {
+      console.error("Failed to load appointments:", err);
+    } finally {
+      loadingAppointments = false;
+    }
+  }
+
+  // Patient Actions
+  function openAddPatientModal() {
+    isEditingPatient = false;
     editingPatientId = "";
     firstName = "";
     lastName = "";
@@ -115,8 +172,8 @@
     showPatientModal = true;
   }
 
-  function openEditModal(p: Patient) {
-    isEditing = true;
+  function openEditPatientModal(p: Patient) {
+    isEditingPatient = true;
     editingPatientId = p.id;
     firstName = p.first_name;
     lastName = p.last_name;
@@ -137,7 +194,7 @@
     if (!firstName || !lastName) return;
 
     try {
-      if (isEditing) {
+      if (isEditingPatient) {
         const p = await PatientService.GetPatient(editingPatientId);
         if (p) {
           p.first_name = firstName;
@@ -149,7 +206,7 @@
           p.national_id_type = countryMeta?.national_id_type || "national_id";
           p.state_province = stateProvince;
           p.postal_code = postalCode;
-          p.country_code = countryMeta?.code || "US";
+          p.country_code = countryMeta?.code || ("US" as any);
           p.medical_alerts = medicalAlerts
             ? medicalAlerts.split(",").map((s) => s.trim())
             : [];
@@ -169,7 +226,7 @@
           national_id_type: countryMeta?.national_id_type || "national_id",
           state_province: stateProvince,
           postal_code: postalCode,
-          country_code: countryMeta?.code || "US",
+          country_code: countryMeta?.code || ("US" as any),
           medical_alerts: medicalAlerts
             ? medicalAlerts.split(",").map((s) => s.trim())
             : [],
@@ -177,13 +234,6 @@
           version: 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          middle_name: undefined,
-          preferred_name: undefined,
-          phone_secondary: undefined,
-          address_line1: undefined,
-          address_line2: undefined,
-          city: undefined,
-          notes: undefined,
         };
         await PatientService.CreatePatient(newPatient);
       }
@@ -209,33 +259,164 @@
     }
   }
 
+  // Appointment Actions
+  function openAddApptModal() {
+    isEditingAppt = false;
+    editingApptId = "";
+    apptPatientId = patients.length > 0 ? patients[0].id : "";
+    apptProviderId = "prov_dr_smith";
+    apptOperatoryId = "op_chair_1";
+    apptStartDateStr = selectedDate;
+    apptStartTimeStr = "09:00";
+    apptEndTimeStr = "10:00";
+    apptStatus = "scheduled";
+    apptReason = "Routine Dental Examination & Cleaning";
+    apptColor = "#3b82f6";
+    apptNotes = "";
+    showApptModal = true;
+  }
+
+  function openEditApptModal(appt: Appointment) {
+    isEditingAppt = true;
+    editingApptId = appt.id;
+    apptPatientId = appt.patient_id;
+    apptProviderId = appt.provider_id;
+    apptOperatoryId = appt.operatory_id;
+    if (appt.start_time) {
+      const d = new Date(appt.start_time);
+      apptStartDateStr = d.toISOString().split("T")[0];
+      apptStartTimeStr = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    }
+    if (appt.end_time) {
+      const d = new Date(appt.end_time);
+      apptEndTimeStr = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    }
+    apptStatus = appt.status || "scheduled";
+    apptReason = appt.reason || "";
+    apptColor = appt.color || "#3b82f6";
+    apptNotes = appt.notes || "";
+    showApptModal = true;
+  }
+
+  async function handleSaveAppt(e: Event) {
+    e.preventDefault();
+    if (!apptPatientId) return;
+
+    try {
+      const startTimeISO = new Date(`${apptStartDateStr}T${apptStartTimeStr}:00`).toISOString();
+      const endTimeISO = new Date(`${apptStartDateStr}T${apptEndTimeStr}:00`).toISOString();
+
+      if (isEditingAppt) {
+        const existing = await AppointmentService.GetAppointment(editingApptId);
+        if (existing) {
+          existing.patient_id = apptPatientId;
+          existing.provider_id = apptProviderId;
+          existing.operatory_id = apptOperatoryId;
+          existing.start_time = startTimeISO;
+          existing.end_time = endTimeISO;
+          existing.status = apptStatus as AppointmentStatus;
+          existing.reason = apptReason;
+          existing.color = apptColor;
+          existing.notes = apptNotes;
+          await AppointmentService.UpdateAppointment(existing);
+        }
+      } else {
+        const newAppt: Appointment = {
+          id: "appt_" + Date.now(),
+          patient_id: apptPatientId,
+          provider_id: apptProviderId,
+          operatory_id: apptOperatoryId,
+          start_time: startTimeISO,
+          end_time: endTimeISO,
+          status: apptStatus as AppointmentStatus,
+          reason: apptReason,
+          color: apptColor,
+          notes: apptNotes,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          version: 1,
+        };
+        await AppointmentService.CreateAppointment(newAppt);
+      }
+      showApptModal = false;
+      await loadAppointments();
+    } catch (err) {
+      console.error("Failed to save appointment:", err);
+    }
+  }
+
+  async function handleUpdateApptStatus(id: string, status: string) {
+    try {
+      await AppointmentService.UpdateAppointmentStatus(id, status);
+      await loadAppointments();
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  }
+
+  async function handleDeleteAppt(id?: string) {
+    const apptId = id || editingApptId;
+    if (!apptId) return;
+    if (confirm("Are you sure you want to delete this appointment?")) {
+      try {
+        await AppointmentService.DeleteAppointment(apptId);
+        showApptModal = false;
+        await loadAppointments();
+      } catch (err) {
+        console.error("Failed to delete appointment:", err);
+      }
+    }
+  }
+
+  // Reactivity: Reload appointments when selected date changes
+  $effect(() => {
+    if (selectedDate) {
+      loadAppointments();
+    }
+  });
+
   onMount(async () => {
     await checkConfig();
     await loadPatients();
+    await loadAppointments();
   });
 </script>
 
-<div class="min-h-screen flex flex-col">
-  <Header {countryMeta} onnewpatient={openAddModal} />
+<div class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+  <Header
+    bind:activeTab
+    {countryMeta}
+    onnewpatient={openAddPatientModal}
+    onnewappointment={openAddApptModal}
+  />
 
-  <main class="p-6 max-w-[1200px] mx-auto w-full box-border">
-    <StatsGrid patientCount={patients.length} />
-
-    <FilterBar
-      bind:searchQuery
-      bind:statusFilter
-      onloadpatients={loadPatients}
-    />
-
-    <PatientTable
-      {patients}
-      {loading}
-      {statusFilter}
-      {countryMeta}
-      onaddpatient={openAddModal}
-      oneditpatient={openEditModal}
-      onarchivepatient={handleArchivePatient}
-    />
+  <main class="p-6 max-w-[1320px] mx-auto w-full box-border flex-1">
+    {#if activeTab === "patients"}
+      <PatientsView
+        {patients}
+        loading={loadingPatients}
+        bind:searchQuery
+        bind:statusFilter
+        {countryMeta}
+        onloadpatients={loadPatients}
+        onaddpatient={openAddPatientModal}
+        oneditpatient={openEditPatientModal}
+        onarchivepatient={handleArchivePatient}
+      />
+    {:else if activeTab === "appointments"}
+      <AppointmentsView
+        {appointments}
+        {patients}
+        loading={loadingAppointments}
+        bind:selectedDate
+        bind:selectedProvider
+        bind:viewMode
+        onnewappointment={openAddApptModal}
+        oneditappointment={openEditApptModal}
+        onupdatestatus={handleUpdateApptStatus}
+        ondeleteappointment={handleDeleteAppt}
+      />
+    {/if}
   </main>
 </div>
 
@@ -247,7 +428,7 @@
 
 <PatientModal
   bind:showPatientModal
-  {isEditing}
+  isEditing={isEditingPatient}
   bind:firstName
   bind:lastName
   bind:email
@@ -259,4 +440,22 @@
   bind:medicalAlerts
   {countryMeta}
   onsave={handleSavePatient}
+/>
+
+<AppointmentModal
+  bind:showModal={showApptModal}
+  isEditing={isEditingAppt}
+  {patients}
+  bind:selectedPatientId={apptPatientId}
+  bind:providerId={apptProviderId}
+  bind:operatoryId={apptOperatoryId}
+  bind:startDateStr={apptStartDateStr}
+  bind:startTimeStr={apptStartTimeStr}
+  bind:endTimeStr={apptEndTimeStr}
+  bind:status={apptStatus}
+  bind:reason={apptReason}
+  bind:color={apptColor}
+  bind:notes={apptNotes}
+  onsave={handleSaveAppt}
+  ondelete={() => handleDeleteAppt(editingApptId)}
 />

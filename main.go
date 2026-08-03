@@ -33,6 +33,9 @@ func main() {
 	patientRepo := sqlite.NewPatientRepository(db)
 	patientService := services.NewPatientService(patientRepo)
 
+	appointmentRepo := sqlite.NewAppointmentRepository(db)
+	appointmentService := services.NewAppointmentService(appointmentRepo)
+
 	configRepo := sqlite.NewConfigRepository(db)
 	configService := services.NewConfigService(configRepo)
 
@@ -41,6 +44,7 @@ func main() {
 		Description: "Open-Source Dental Practice Management System",
 		Services: []application.Service{
 			application.NewService(patientService),
+			application.NewService(appointmentService),
 			application.NewService(configService),
 		},
 		Assets: application.AssetOptions{
