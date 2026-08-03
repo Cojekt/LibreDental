@@ -1,10 +1,16 @@
 <script lang="ts">
-  let { activeTab = $bindable("patients"), ontabchange } = $props<{
+  let { activeTab = $bindable("clinic"), ontabchange } = $props<{
     activeTab?: string;
     ontabchange: (tab: string) => void;
   }>();
 
   const tabs = [
+    {
+      id: "clinic",
+      label: "My Clinic",
+      icon: `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 18h6v-4H9v4z"/><path d="M9 10h2v2H9v-2z"/><path d="M13 10h2v2h-2v-2z"/></svg>`,
+      enabled: true,
+    },
     {
       id: "patients",
       label: "Patients",

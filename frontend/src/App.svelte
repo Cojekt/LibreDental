@@ -10,19 +10,30 @@
     PracticeConfig,
     CountryConfig,
     Appointment,
+    Provider,
+    Operatory,
   } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
-  import { Gender, Status, AppointmentStatus } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import {
+    Gender,
+    Status,
+    AppointmentStatus,
+  } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import { FALLBACK_COUNTRIES } from "./lib/country.js";
 
   import Header from "./components/Header.svelte";
   import OnboardingModal from "./components/OnboardingModal.svelte";
   import PatientModal from "./components/PatientModal.svelte";
   import AppointmentModal from "./components/AppointmentModal.svelte";
+  import ClinicView from "./views/ClinicView.svelte";
   import PatientsView from "./views/PatientsView.svelte";
   import AppointmentsView from "./views/AppointmentsView.svelte";
 
-  // App Navigation
-  let activeTab = $state("patients");
+  // App Navigation (Default to "clinic" landing tab on far left)
+  let activeTab = $state("clinic");
+
+  // Clinic providers and operatories state
+  let providers = $state<Provider[]>([]);
+  let operatories = $state<Operatory[]>([]);
 
   // Patients state
   let patients = $state<Patient[]>([]);
@@ -108,7 +119,10 @@
         return;
       }
     } catch (e) {
-      console.warn("Could not fetch country meta from backend, using fallback:", e);
+      console.warn(
+        "Could not fetch country meta from backend, using fallback:",
+        e,
+      );
     }
     const found = supportedCountries.find((c) => c.code === countryCode);
     countryMeta = found || supportedCountries[0];
@@ -125,6 +139,23 @@
     } catch (err) {
       console.error("Failed to save onboarding practice config:", err);
     }
+  }
+
+  async function loadClinicData() {
+    try {
+      const provList = await ConfigService.ListProviders();
+      providers = (provList?.filter(Boolean) as Provider[]) || [];
+
+      const opList = await ConfigService.ListOperatories();
+      operatories = (opList?.filter(Boolean) as Operatory[]) || [];
+    } catch (err) {
+      console.error("Failed to load clinic providers/operatories:", err);
+    }
+  }
+
+  async function refreshClinic() {
+    await checkConfig();
+    await loadClinicData();
   }
 
   async function loadPatients() {
@@ -147,7 +178,7 @@
       const res = await AppointmentService.ListAppointments({
         start_date: start,
         end_date: end,
-      });
+      } as any);
       appointments = (res?.filter(Boolean) as Appointment[]) || [];
     } catch (err) {
       console.error("Failed to load appointments:", err);
@@ -217,21 +248,28 @@
           id: "pat_" + Date.now(),
           first_name: firstName,
           last_name: lastName,
-          email: email,
-          phone_primary: phone,
+          middle_name: "",
+          preferred_name: "",
           date_of_birth: new Date(dob).toISOString(),
           gender: Gender.GenderUndisclosed,
-          status: Status.StatusActive,
-          national_id: nationalId,
-          national_id_type: countryMeta?.national_id_type || "national_id",
+          email: email,
+          phone_primary: phone,
+          phone_secondary: "",
+          address_line1: "",
+          address_line2: "",
+          city: "",
           state_province: stateProvince,
           postal_code: postalCode,
           country_code: countryMeta?.code || ("US" as any),
+          national_id_type: countryMeta?.national_id_type || "national_id",
+          national_id: nationalId,
           medical_alerts: medicalAlerts
             ? medicalAlerts.split(",").map((s) => s.trim())
             : [],
           allergies: [],
+          notes: "",
           version: 1,
+          status: Status.StatusActive,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -264,8 +302,8 @@
     isEditingAppt = false;
     editingApptId = "";
     apptPatientId = patients.length > 0 ? patients[0].id : "";
-    apptProviderId = "prov_dr_smith";
-    apptOperatoryId = "op_chair_1";
+    apptProviderId = providers.length > 0 ? providers[0].id : "";
+    apptOperatoryId = operatories.length > 0 ? operatories[0].id : "";
     apptStartDateStr = selectedDate;
     apptStartTimeStr = "09:00";
     apptEndTimeStr = "10:00";
@@ -303,8 +341,12 @@
     if (!apptPatientId) return;
 
     try {
-      const startTimeISO = new Date(`${apptStartDateStr}T${apptStartTimeStr}:00`).toISOString();
-      const endTimeISO = new Date(`${apptStartDateStr}T${apptEndTimeStr}:00`).toISOString();
+      const startTimeISO = new Date(
+        `${apptStartDateStr}T${apptStartTimeStr}:00`,
+      ).toISOString();
+      const endTimeISO = new Date(
+        `${apptStartDateStr}T${apptEndTimeStr}:00`,
+      ).toISOString();
 
       if (isEditingAppt) {
         const existing = await AppointmentService.GetAppointment(editingApptId);
@@ -377,6 +419,7 @@
 
   onMount(async () => {
     await checkConfig();
+    await loadClinicData();
     await loadPatients();
     await loadAppointments();
   });
@@ -391,7 +434,16 @@
   />
 
   <main class="w-full p-6 sm:p-8 box-border flex-1">
-    {#if activeTab === "patients"}
+    {#if activeTab === "clinic"}
+      <ClinicView
+        bind:practiceConfig
+        {countryMeta}
+        {supportedCountries}
+        bind:providers
+        bind:operatories
+        onrefresh={refreshClinic}
+      />
+    {:else if activeTab === "patients"}
       <PatientsView
         {patients}
         loading={loadingPatients}
@@ -407,6 +459,8 @@
       <AppointmentsView
         {appointments}
         {patients}
+        {providers}
+        {operatories}
         loading={loadingAppointments}
         bind:selectedDate
         bind:selectedProvider
@@ -446,6 +500,8 @@
   bind:showModal={showApptModal}
   isEditing={isEditingAppt}
   {patients}
+  configuredProviders={providers}
+  configuredOperatories={operatories}
   bind:selectedPatientId={apptPatientId}
   bind:providerId={apptProviderId}
   bind:operatoryId={apptOperatoryId}

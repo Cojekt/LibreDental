@@ -4,6 +4,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     /**
      * Typecheck JS in `.svelte` and `.js` files by default.
@@ -16,5 +17,5 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "bindings"],
+  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "bindings/**/*.ts", "bindings/**/*.js"]
 }

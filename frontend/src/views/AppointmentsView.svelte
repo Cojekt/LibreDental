@@ -1,10 +1,12 @@
 <script lang="ts">
-  import type { Patient, Appointment } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import type { Patient, Appointment, Provider, Operatory } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import AppointmentStats from "../components/AppointmentStats.svelte";
 
   let {
     appointments = [],
     patients = [],
+    providers = [],
+    operatories = [],
     loading = false,
     selectedDate = $bindable(new Date().toISOString().split("T")[0]),
     selectedProvider = $bindable("all"),
@@ -16,6 +18,8 @@
   } = $props<{
     appointments: Appointment[];
     patients: Patient[];
+    providers?: Provider[];
+    operatories?: Operatory[];
     loading: boolean;
     selectedDate: string;
     selectedProvider: string;
@@ -26,17 +30,17 @@
     ondeleteappointment: (id: string) => void;
   }>();
 
-  const providerMap: Record<string, string> = {
-    prov_dr_smith: "Dr. Sarah Smith",
-    prov_dr_jones: "Dr. Marcus Jones",
-    prov_hygienist_1: "Elena Rostova, RDH",
-  };
+  function getProviderName(id: string): string {
+    const p = providers.find((prov: Provider) => prov.id === id);
+    if (p) return p.name;
+    return id || "Unassigned";
+  }
 
-  const operatoryMap: Record<string, string> = {
-    op_chair_1: "Operatory 1",
-    op_chair_2: "Operatory 2",
-    op_hygiene_1: "Hygiene Bay A",
-  };
+  function getOperatoryName(id: string): string {
+    const op = operatories.find((o: Operatory) => o.id === id);
+    if (op) return op.name;
+    return id || "Unassigned";
+  }
 
   const statusBadges: Record<string, { label: string; bg: string; text: string; border: string }> = {
     scheduled: { label: "Scheduled", bg: "bg-blue-500/15", text: "text-blue-400", border: "border-blue-500/30" },
@@ -164,9 +168,9 @@
           class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
         >
           <option value="all">All Providers</option>
-          <option value="prov_dr_smith">Dr. Sarah Smith</option>
-          <option value="prov_dr_jones">Dr. Marcus Jones</option>
-          <option value="prov_hygienist_1">Elena RDH</option>
+          {#each providers as p}
+            <option value={p.id}>{p.name} ({p.role})</option>
+          {/each}
         </select>
       </div>
 
@@ -263,8 +267,8 @@
                     {/if}
 
                     <div class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-700/50">
-                      <span>👤 {providerMap[appt.provider_id] || appt.provider_id}</span>
-                      <span>📍 {operatoryMap[appt.operatory_id] || appt.operatory_id}</span>
+                      <span>👤 {getProviderName(appt.provider_id)}</span>
+                      <span>📍 {getOperatoryName(appt.operatory_id)}</span>
                     </div>
 
                     <!-- Quick Status Change Actions -->
@@ -349,10 +353,10 @@
                   {appt.reason || "—"}
                 </td>
                 <td class="px-4 py-3 text-slate-400 text-xs">
-                  {providerMap[appt.provider_id] || appt.provider_id}
+                  {getProviderName(appt.provider_id)}
                 </td>
                 <td class="px-4 py-3 text-slate-400 text-xs">
-                  {operatoryMap[appt.operatory_id] || appt.operatory_id}
+                  {getOperatoryName(appt.operatory_id)}
                 </td>
                 <td class="px-4 py-3">
                   <select

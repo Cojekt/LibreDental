@@ -3,7 +3,7 @@
   import NavigationTabs from "./NavigationTabs.svelte";
 
   let {
-    activeTab = $bindable("patients"),
+    activeTab = $bindable("clinic"),
     countryMeta,
     onnewpatient,
     onnewappointment,

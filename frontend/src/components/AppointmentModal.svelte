@@ -1,13 +1,15 @@
 <script lang="ts">
-  import type { Patient, Appointment } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import type { Patient, Appointment, Provider, Operatory } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
 
   let {
     showModal = $bindable(false),
     isEditing = false,
     patients = [],
+    configuredProviders = [],
+    configuredOperatories = [],
     selectedPatientId = $bindable(""),
-    providerId = $bindable("prov_dr_smith"),
-    operatoryId = $bindable("op_chair_1"),
+    providerId = $bindable(""),
+    operatoryId = $bindable(""),
     startDateStr = $bindable(new Date().toISOString().split("T")[0]),
     startTimeStr = $bindable("09:00"),
     endTimeStr = $bindable("10:00"),
@@ -21,6 +23,8 @@
     showModal: boolean;
     isEditing: boolean;
     patients: Patient[];
+    configuredProviders?: Provider[];
+    configuredOperatories?: Operatory[];
     selectedPatientId: string;
     providerId: string;
     operatoryId: string;
@@ -34,18 +38,6 @@
     onsave: (e: Event) => void;
     ondelete?: () => void;
   }>();
-
-  const providers = [
-    { id: "prov_dr_smith", name: "Dr. Sarah Smith, DDS" },
-    { id: "prov_dr_jones", name: "Dr. Marcus Jones, DMD" },
-    { id: "prov_hygienist_1", name: "Elena Rostova, RDH" },
-  ];
-
-  const operatories = [
-    { id: "op_chair_1", name: "Operatory 1 (General)" },
-    { id: "op_chair_2", name: "Operatory 2 (Surgical)" },
-    { id: "op_hygiene_1", name: "Hygiene Bay A" },
-  ];
 
   const statuses = [
     { id: "scheduled", label: "Scheduled", class: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
@@ -135,9 +127,13 @@
               bind:value={providerId}
               class="w-full rounded-xl border border-slate-700 bg-slate-800/90 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
             >
-              {#each providers as prov}
-                <option value={prov.id}>{prov.name}</option>
-              {/each}
+              {#if configuredProviders.length === 0}
+                <option value="">No Providers Configured</option>
+              {:else}
+                {#each configuredProviders as prov}
+                  <option value={prov.id}>{prov.name} ({prov.role})</option>
+                {/each}
+              {/if}
             </select>
           </div>
 
@@ -148,9 +144,13 @@
               bind:value={operatoryId}
               class="w-full rounded-xl border border-slate-700 bg-slate-800/90 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
             >
-              {#each operatories as op}
-                <option value={op.id}>{op.name}</option>
-              {/each}
+              {#if configuredOperatories.length === 0}
+                <option value="">No Operatories Configured</option>
+              {:else}
+                {#each configuredOperatories as op}
+                  <option value={op.id}>{op.name} ({op.type})</option>
+                {/each}
+              {/if}
             </select>
           </div>
         </div>

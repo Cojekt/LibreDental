@@ -4,15 +4,93 @@ import (
 	"time"
 )
 
-// PracticeConfig represents the system-wide regional configuration for a LibreDental practice instance.
+// BusinessHourDay represents daily practice operating hours.
+type BusinessHourDay struct {
+	Day       string `json:"day"`        // e.g. "Monday", "Tuesday"
+	OpenTime  string `json:"open_time"`  // e.g. "08:00"
+	CloseTime string `json:"close_time"` // e.g. "17:00"
+	IsClosed  bool   `json:"is_closed"`
+}
+
+// DefaultBusinessHours returns a standard weekly schedule.
+func DefaultBusinessHours() []BusinessHourDay {
+	days := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
+	schedule := make([]BusinessHourDay, 7)
+	for i, day := range days {
+		isWeekend := (day == "Saturday" || day == "Sunday")
+		schedule[i] = BusinessHourDay{
+			Day:       day,
+			OpenTime:  "08:00",
+			CloseTime: "17:00",
+			IsClosed:  isWeekend,
+		}
+	}
+	return schedule
+}
+
+type ProviderRole string
+
+const (
+	RoleDentist   ProviderRole = "dentist"
+	RoleHygienist ProviderRole = "hygienist"
+	RoleAssistant ProviderRole = "assistant"
+	RoleStaff     ProviderRole = "staff"
+)
+
+type Provider struct {
+	ID            string       `json:"id"`
+	Name          string       `json:"name"`
+	Role          ProviderRole `json:"role"`
+	Specialty     string       `json:"specialty"`
+	LicenseNumber string       `json:"license_number"`
+	Email         string       `json:"email"`
+	Phone         string       `json:"phone"`
+	Color         string       `json:"color"`
+	IsActive      bool         `json:"is_active"`
+	CreatedAt     time.Time    `json:"created_at"`
+	UpdatedAt     time.Time    `json:"updated_at"`
+}
+
+type OperatoryType string
+
+const (
+	OperatoryTypeGeneral OperatoryType = "general"
+	OperatoryTypeHygiene OperatoryType = "hygiene"
+	OperatoryTypeSurgery OperatoryType = "surgery"
+)
+
+type Operatory struct {
+	ID        string        `json:"id"`
+	Name      string        `json:"name"`
+	RoomCode  string        `json:"room_code"`
+	Type      OperatoryType `json:"type"`
+	IsActive  bool          `json:"is_active"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
+// PracticeConfig represents system-wide clinic profile and regional configuration.
 type PracticeConfig struct {
-	ID          int64       `json:"id"`
-	CountryCode CountryCode `json:"country_code"`
-	Currency    string      `json:"currency"`
-	ToothSystem ToothSystem `json:"tooth_system"`
-	DateFormat  string      `json:"date_format"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID            int64             `json:"id"`
+	ClinicName    string            `json:"clinic_name"`
+	Tagline       string            `json:"tagline"`
+	TaxID         string            `json:"tax_id"`
+	LicenseNumber string            `json:"license_number"`
+	Phone         string            `json:"phone"`
+	Email         string            `json:"email"`
+	Website       string            `json:"website"`
+	AddressLine1  string            `json:"address_line1"`
+	AddressLine2  string            `json:"address_line2"`
+	City          string            `json:"city"`
+	StateProvince string            `json:"state_province"`
+	PostalCode    string            `json:"postal_code"`
+	CountryCode   CountryCode       `json:"country_code"`
+	Currency      string            `json:"currency"`
+	ToothSystem   ToothSystem       `json:"tooth_system"`
+	DateFormat    string            `json:"date_format"`
+	BusinessHours []BusinessHourDay `json:"business_hours"`
+	CreatedAt     time.Time         `json:"created_at"`
+	UpdatedAt     time.Time         `json:"updated_at"`
 }
 
 // NewPracticeConfig creates a new PracticeConfig populated with regional defaults from the specified country code.
@@ -21,12 +99,15 @@ func NewPracticeConfig(code CountryCode) *PracticeConfig {
 	now := time.Now().UTC()
 
 	return &PracticeConfig{
-		ID:          1,
-		CountryCode: meta.Code,
-		Currency:    meta.DefaultCurrency,
-		ToothSystem: meta.DefaultToothSystem,
-		DateFormat:  meta.DateFormat,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:            1,
+		ClinicName:    "My Dental Clinic",
+		CountryCode:   meta.Code,
+		Currency:      meta.DefaultCurrency,
+		ToothSystem:   meta.DefaultToothSystem,
+		DateFormat:    meta.DateFormat,
+		BusinessHours: DefaultBusinessHours(),
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 }
+
