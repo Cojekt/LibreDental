@@ -1,5 +1,15 @@
 -- +goose Up
 -- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS practice_config (
+	id INTEGER PRIMARY KEY CHECK (id = 1),
+	country_code TEXT NOT NULL,
+	currency TEXT NOT NULL,
+	tooth_system TEXT NOT NULL DEFAULT 'universal',
+	date_format TEXT NOT NULL DEFAULT 'YYYY-MM-DD',
+	created_at DATETIME NOT NULL,
+	updated_at DATETIME NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS patients (
 	id TEXT PRIMARY KEY,
 	first_name TEXT NOT NULL,
@@ -14,8 +24,11 @@ CREATE TABLE IF NOT EXISTS patients (
 	address_line1 TEXT DEFAULT '',
 	address_line2 TEXT DEFAULT '',
 	city TEXT DEFAULT '',
-	state TEXT DEFAULT '',
-	zip_code TEXT DEFAULT '',
+	state_province TEXT DEFAULT '',
+	postal_code TEXT DEFAULT '',
+	country_code TEXT DEFAULT '',
+	national_id_type TEXT DEFAULT '',
+	national_id TEXT DEFAULT '',
 	medical_alerts TEXT DEFAULT '[]',
 	allergies TEXT DEFAULT '[]',
 	notes TEXT DEFAULT '',
@@ -70,4 +83,5 @@ CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
 DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS patients;
+DROP TABLE IF EXISTS practice_config;
 -- +goose StatementEnd

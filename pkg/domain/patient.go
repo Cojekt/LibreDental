@@ -34,18 +34,21 @@ type Patient struct {
 	Email          string    `json:"email,omitempty"`
 	PhonePrimary   string    `json:"phone_primary,omitempty"`
 	PhoneSecondary string    `json:"phone_secondary,omitempty"`
-	AddressLine1   string    `json:"address_line1,omitempty"`
-	AddressLine2   string    `json:"address_line2,omitempty"`
-	City           string    `json:"city,omitempty"`
-	State          string    `json:"state,omitempty"`
-	ZipCode        string    `json:"zip_code,omitempty"`
-	MedicalAlerts  []string  `json:"medical_alerts,omitempty"`
-	Allergies      []string  `json:"allergies,omitempty"`
-	Notes          string    `json:"notes,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	Version        int64     `json:"version"`
-	Status         Status    `json:"status"`
+	AddressLine1   string      `json:"address_line1,omitempty"`
+	AddressLine2   string      `json:"address_line2,omitempty"`
+	City           string      `json:"city,omitempty"`
+	StateProvince  string      `json:"state_province,omitempty"`
+	PostalCode     string      `json:"postal_code,omitempty"`
+	CountryCode    CountryCode `json:"country_code,omitempty"`
+	NationalIDType string      `json:"national_id_type,omitempty"`
+	NationalID     string      `json:"national_id,omitempty"`
+	MedicalAlerts  []string    `json:"medical_alerts,omitempty"`
+	Allergies      []string    `json:"allergies,omitempty"`
+	Notes          string      `json:"notes,omitempty"`
+	CreatedAt      time.Time   `json:"created_at"`
+	UpdatedAt      time.Time   `json:"updated_at"`
+	Version        int64       `json:"version"`
+	Status         Status      `json:"status"`
 }
 
 // PatientFilter specifies search/filter parameters for patients.

@@ -1,18 +1,28 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { PatientService } from "../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
-  import type { Patient } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import { PatientService, ConfigService } from "../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  import type { Patient, PracticeConfig, CountryConfig } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import { FALLBACK_COUNTRIES } from "./lib/country.js";
 
   import Header from "./components/Header.svelte";
   import StatsGrid from "./components/StatsGrid.svelte";
   import FilterBar from "./components/FilterBar.svelte";
   import PatientTable from "./components/PatientTable.svelte";
   import PatientModal from "./components/PatientModal.svelte";
+  import OnboardingModal from "./components/OnboardingModal.svelte";
 
   let patients = $state<Patient[]>([]);
   let searchQuery = $state("");
   let statusFilter = $state("active");
   let loading = $state(false);
+
+  // Configuration & Onboarding
+  let practiceConfig = $state<PracticeConfig | null>(null);
+  let countryMeta = $state<CountryConfig | null>(null);
+  let supportedCountries = $state<CountryConfig[]>(FALLBACK_COUNTRIES);
+  let showOnboarding = $state(false);
+
+  // Modal states
   let showPatientModal = $state(false);
   let isEditing = $state(false);
   let editingPatientId = $state("");
@@ -23,7 +33,60 @@
   let email = $state("");
   let phone = $state("");
   let dob = $state("1990-01-01");
+  let nationalId = $state("");
+  let stateProvince = $state("");
+  let postalCode = $state("");
   let medicalAlerts = $state("");
+
+  async function checkConfig() {
+    try {
+      const countries = await ConfigService.GetSupportedCountries();
+      if (countries && countries.length > 0) {
+        supportedCountries = countries;
+      }
+    } catch (e) {
+      console.warn("Using fallback countries:", e);
+    }
+
+    try {
+      const cfg = await ConfigService.GetConfig();
+      if (!cfg || !cfg.country_code) {
+        showOnboarding = true;
+      } else {
+        practiceConfig = cfg;
+        await loadCountryMeta(cfg.country_code);
+      }
+    } catch (err) {
+      console.error("Failed to check practice config:", err);
+      showOnboarding = true;
+    }
+  }
+
+  async function loadCountryMeta(countryCode: string) {
+    try {
+      const meta = await ConfigService.GetCountryConfig(countryCode);
+      if (meta) {
+        countryMeta = meta;
+        return;
+      }
+    } catch (e) {
+      console.warn("Could not fetch country meta from backend, using fallback:", e);
+    }
+    const found = supportedCountries.find((c) => c.code === countryCode);
+    countryMeta = found || supportedCountries[0];
+  }
+
+  async function handleOnboardingComplete(countryCode: string) {
+    try {
+      const cfg = await ConfigService.SetConfig(countryCode);
+      practiceConfig = cfg;
+      await loadCountryMeta(countryCode);
+      showOnboarding = false;
+      await loadPatients();
+    } catch (err) {
+      console.error("Failed to save onboarding practice config:", err);
+    }
+  }
 
   async function loadPatients() {
     loading = true;
@@ -45,6 +108,9 @@
     email = "";
     phone = "";
     dob = "1990-01-01";
+    nationalId = "";
+    stateProvince = "";
+    postalCode = "";
     medicalAlerts = "";
     showPatientModal = true;
   }
@@ -59,6 +125,9 @@
     dob = p.date_of_birth
       ? new Date(p.date_of_birth).toISOString().split("T")[0]
       : "1990-01-01";
+    nationalId = p.national_id || "";
+    stateProvince = p.state_province || "";
+    postalCode = p.postal_code || "";
     medicalAlerts = p.medical_alerts ? p.medical_alerts.join(", ") : "";
     showPatientModal = true;
   }
@@ -76,6 +145,11 @@
           p.email = email;
           p.phone_primary = phone;
           p.date_of_birth = new Date(dob).toISOString();
+          p.national_id = nationalId;
+          p.national_id_type = countryMeta?.national_id_type || "national_id";
+          p.state_province = stateProvince;
+          p.postal_code = postalCode;
+          p.country_code = countryMeta?.code || "US";
           p.medical_alerts = medicalAlerts
             ? medicalAlerts.split(",").map((s) => s.trim())
             : [];
@@ -89,8 +163,13 @@
           email: email,
           phone_primary: phone,
           date_of_birth: new Date(dob).toISOString(),
-          gender: "undisclosed",
-          status: "active",
+          gender: Gender.GenderUndisclosed,
+          status: Status.StatusActive,
+          national_id: nationalId,
+          national_id_type: countryMeta?.national_id_type || "national_id",
+          state_province: stateProvince,
+          postal_code: postalCode,
+          country_code: countryMeta?.code || "US",
           medical_alerts: medicalAlerts
             ? medicalAlerts.split(",").map((s) => s.trim())
             : [],
@@ -104,8 +183,6 @@
           address_line1: undefined,
           address_line2: undefined,
           city: undefined,
-          state: undefined,
-          zip_code: undefined,
           notes: undefined,
         };
         await PatientService.CreatePatient(newPatient);
@@ -132,13 +209,14 @@
     }
   }
 
-  onMount(() => {
-    loadPatients();
+  onMount(async () => {
+    await checkConfig();
+    await loadPatients();
   });
 </script>
 
 <div class="min-h-screen flex flex-col">
-  <Header onnewpatient={openAddModal} />
+  <Header {countryMeta} onnewpatient={openAddModal} />
 
   <main class="p-6 max-w-[1200px] mx-auto w-full box-border">
     <StatsGrid patientCount={patients.length} />
@@ -153,12 +231,19 @@
       {patients}
       {loading}
       {statusFilter}
+      {countryMeta}
       onaddpatient={openAddModal}
       oneditpatient={openEditModal}
       onarchivepatient={handleArchivePatient}
     />
   </main>
 </div>
+
+<OnboardingModal
+  bind:showOnboarding
+  {supportedCountries}
+  oncomplete={handleOnboardingComplete}
+/>
 
 <PatientModal
   bind:showPatientModal
@@ -168,8 +253,10 @@
   bind:email
   bind:phone
   bind:dob
+  bind:nationalId
+  bind:stateProvince
+  bind:postalCode
   bind:medicalAlerts
+  {countryMeta}
   onsave={handleSavePatient}
 />
-
-

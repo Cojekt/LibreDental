@@ -26,15 +26,20 @@ func TestPatientRepository_CRUD(t *testing.T) {
 
 	// 1. Create Patient
 	patient := &domain.Patient{
-		ID:            "pat_123",
-		FirstName:     "John",
-		LastName:      "Doe",
-		DateOfBirth:   time.Date(1985, 5, 20, 0, 0, 0, 0, time.UTC),
-		Gender:        domain.GenderMale,
-		Email:         "john.doe@example.com",
-		PhonePrimary:  "555-0199",
-		MedicalAlerts: []string{"Penicillin Allergy", "High Blood Pressure"},
-		Allergies:     []string{"Latex"},
+		ID:             "pat_123",
+		FirstName:      "John",
+		LastName:       "Doe",
+		DateOfBirth:    time.Date(1985, 5, 20, 0, 0, 0, 0, time.UTC),
+		Gender:         domain.GenderMale,
+		Email:          "john.doe@example.com",
+		PhonePrimary:   "555-0199",
+		StateProvince:  "CA",
+		PostalCode:     "90210",
+		CountryCode:    domain.CountryUS,
+		NationalIDType: "ssn",
+		NationalID:     "123-45-6789",
+		MedicalAlerts:  []string{"Penicillin Allergy", "High Blood Pressure"},
+		Allergies:      []string{"Latex"},
 	}
 
 	err = repo.Create(ctx, patient)
@@ -49,6 +54,9 @@ func TestPatientRepository_CRUD(t *testing.T) {
 	}
 	if fetched.FirstName != "John" || fetched.LastName != "Doe" {
 		t.Errorf("Unexpected patient name: %s %s", fetched.FirstName, fetched.LastName)
+	}
+	if fetched.NationalID != "123-45-6789" || fetched.CountryCode != domain.CountryUS {
+		t.Errorf("Unexpected national ID / country: %s / %s", fetched.NationalID, fetched.CountryCode)
 	}
 	if len(fetched.MedicalAlerts) != 2 {
 		t.Errorf("Expected 2 medical alerts, got %d", len(fetched.MedicalAlerts))

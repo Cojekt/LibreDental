@@ -33,11 +33,15 @@ func main() {
 	patientRepo := sqlite.NewPatientRepository(db)
 	patientService := services.NewPatientService(patientRepo)
 
+	configRepo := sqlite.NewConfigRepository(db)
+	configService := services.NewConfigService(configRepo)
+
 	app := application.New(application.Options{
 		Name:        "LibreDental™",
 		Description: "Open-Source Dental Practice Management System",
 		Services: []application.Service{
 			application.NewService(patientService),
+			application.NewService(configService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

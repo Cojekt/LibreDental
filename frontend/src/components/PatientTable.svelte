@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type { Patient } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import type { Patient, CountryConfig } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
 
   let {
     patients,
     loading,
     statusFilter,
+    countryMeta,
     onaddpatient,
     oneditpatient,
     onarchivepatient,
@@ -12,10 +13,13 @@
     patients: Patient[];
     loading: boolean;
     statusFilter: string;
+    countryMeta?: CountryConfig | null;
     onaddpatient: () => void;
     oneditpatient: (p: Patient) => void;
     onarchivepatient: (p: Patient) => void;
   }>();
+
+  const idHeader = $derived(countryMeta ? countryMeta.national_id_name : "National ID");
 </script>
 
 <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-800">
@@ -34,6 +38,7 @@
       <thead>
         <tr>
           <th class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Patient Name</th>
+          <th class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400">{idHeader}</th>
           <th class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Contact Info</th>
           <th class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Date of Birth</th>
           <th class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Medical Alerts</th>
@@ -46,6 +51,13 @@
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               <div class="font-semibold text-slate-50">{p.first_name} {p.last_name}</div>
               <div class="mt-0.5 text-[11px] text-slate-500">{p.id}</div>
+            </td>
+            <td class="border-b border-slate-700 px-5 py-4 text-sm">
+              {#if p.national_id}
+                <span class="font-mono text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">{p.national_id}</span>
+              {:else}
+                <span class="text-slate-500 text-xs italic">Unassigned</span>
+              {/if}
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               <div>{p.phone_primary || "No phone"}</div>
