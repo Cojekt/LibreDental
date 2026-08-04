@@ -2,8 +2,9 @@
   import { onMount } from "svelte";
   import {
     PatientService,
-    ConfigService,
+    PracticeConfigService,
     AppointmentService,
+    SystemSettingsService,
   } from "../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
   import type {
     Patient,
@@ -12,24 +13,86 @@
     Appointment,
     Provider,
     Operatory,
-  } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  } from "../bindings/github.com/LibreDental/libredental/pkg/domain/index.js";
   import {
     Gender,
     Status,
     AppointmentStatus,
-  } from "../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  } from "../bindings/github.com/LibreDental/libredental/pkg/domain/index.js";
   import { FALLBACK_COUNTRIES } from "./lib/country.js";
 
   import Header from "./components/Header.svelte";
   import OnboardingModal from "./components/OnboardingModal.svelte";
   import PatientModal from "./components/PatientModal.svelte";
   import AppointmentModal from "./components/AppointmentModal.svelte";
+  import SettingsModal from "./components/SettingsModal.svelte";
   import ClinicView from "./views/ClinicView.svelte";
   import PatientsView from "./views/PatientsView.svelte";
   import AppointmentsView from "./views/AppointmentsView.svelte";
 
   // App Navigation (Default to "clinic" landing tab on far left)
   let activeTab = $state("clinic");
+
+  // Settings & Theme
+  type ThemeMode = "dark" | "light" | "system";
+  let showSettingsModal = $state(false);
+  let theme = $state<ThemeMode>("system");
+
+  async function getSystemOSTheme(): Promise<"dark" | "light"> {
+    try {
+      const isDark = await SystemSettingsService.IsSystemDarkMode();
+      if (typeof isDark === "boolean") {
+        return isDark ? "dark" : "light";
+      }
+    } catch (e) {
+      console.warn("Could not query OS dark mode from backend:", e);
+    }
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+    ) {
+      return "dark";
+    }
+    return "dark";
+  }
+
+  async function applyTheme(newTheme: ThemeMode) {
+    theme = newTheme;
+    localStorage.setItem("theme", newTheme);
+
+    const effective = newTheme === "system" ? await getSystemOSTheme() : newTheme;
+    if (effective === "light") {
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+    }
+
+    try {
+      await SystemSettingsService.SetTheme(newTheme);
+    } catch (e) {
+      console.warn("Failed to persist theme in SQLite:", e);
+    }
+  }
+
+  async function loadTheme() {
+    try {
+      const dbTheme = await SystemSettingsService.GetTheme();
+      if (
+        dbTheme === "light" ||
+        dbTheme === "dark" ||
+        dbTheme === "system"
+      ) {
+        await applyTheme(dbTheme as ThemeMode);
+        return;
+      }
+    } catch (e) {
+      console.warn("Could not load theme from DB, fallback to localStorage:", e);
+    }
+    const savedTheme =
+      (localStorage.getItem("theme") as ThemeMode) || "system";
+    await applyTheme(savedTheme);
+  }
 
   // Clinic providers and operatories state
   let providers = $state<Provider[]>([]);
@@ -89,7 +152,7 @@
 
   async function checkConfig() {
     try {
-      const countries = await ConfigService.GetSupportedCountries();
+      const countries = await PracticeConfigService.GetSupportedCountries();
       if (countries && countries.length > 0) {
         supportedCountries = countries;
       }
@@ -98,7 +161,7 @@
     }
 
     try {
-      const cfg = await ConfigService.GetConfig();
+      const cfg = await PracticeConfigService.GetConfig();
       if (!cfg || !cfg.country_code) {
         showOnboarding = true;
       } else {
@@ -113,7 +176,7 @@
 
   async function loadCountryMeta(countryCode: string) {
     try {
-      const meta = await ConfigService.GetCountryConfig(countryCode);
+      const meta = await PracticeConfigService.GetCountryConfig(countryCode);
       if (meta) {
         countryMeta = meta;
         return;
@@ -130,7 +193,7 @@
 
   async function handleOnboardingComplete(countryCode: string) {
     try {
-      const cfg = await ConfigService.SetConfig(countryCode);
+      const cfg = await PracticeConfigService.SetConfig(countryCode);
       practiceConfig = cfg;
       await loadCountryMeta(countryCode);
       showOnboarding = false;
@@ -143,10 +206,10 @@
 
   async function loadClinicData() {
     try {
-      const provList = await ConfigService.ListProviders();
+      const provList = await PracticeConfigService.ListProviders();
       providers = (provList?.filter(Boolean) as Provider[]) || [];
 
-      const opList = await ConfigService.ListOperatories();
+      const opList = await PracticeConfigService.ListOperatories();
       operatories = (opList?.filter(Boolean) as Operatory[]) || [];
     } catch (err) {
       console.error("Failed to load clinic providers/operatories:", err);
@@ -418,6 +481,17 @@
   });
 
   onMount(async () => {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      window
+        .matchMedia("(prefers-color-scheme: light)")
+        .addEventListener("change", () => {
+          if (theme === "system") {
+            applyTheme("system");
+          }
+        });
+    }
+
+    await loadTheme();
     await checkConfig();
     await loadClinicData();
     await loadPatients();
@@ -425,12 +499,13 @@
   });
 </script>
 
-<div class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+<div class="min-h-screen flex flex-col bg-slate-950 text-slate-100 dark-app-wrapper">
   <Header
     bind:activeTab
     {countryMeta}
     onnewpatient={openAddPatientModal}
     onnewappointment={openAddApptModal}
+    onopensettings={() => (showSettingsModal = true)}
   />
 
   <main class="w-full p-6 sm:p-8 box-border flex-1">
@@ -473,6 +548,12 @@
     {/if}
   </main>
 </div>
+
+<SettingsModal
+  bind:showModal={showSettingsModal}
+  bind:theme
+  onchangetheme={applyTheme}
+/>
 
 <OnboardingModal
   bind:showOnboarding

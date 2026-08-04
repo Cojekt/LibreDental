@@ -36,8 +36,11 @@ func main() {
 	appointmentRepo := sqlite.NewAppointmentRepository(db)
 	appointmentService := services.NewAppointmentService(appointmentRepo)
 
-	configRepo := sqlite.NewConfigRepository(db)
-	configService := services.NewConfigService(configRepo)
+	practiceConfigRepo := sqlite.NewPracticeConfigRepository(db)
+	practiceConfigService := services.NewPracticeConfigService(practiceConfigRepo)
+
+	systemSettingsRepo := sqlite.NewSystemSettingsRepository(db)
+	systemSettingsService := services.NewSystemSettingsService(systemSettingsRepo, appDir)
 
 	app := application.New(application.Options{
 		Name:        "LibreDental™",
@@ -45,7 +48,8 @@ func main() {
 		Services: []application.Service{
 			application.NewService(patientService),
 			application.NewService(appointmentService),
-			application.NewService(configService),
+			application.NewService(practiceConfigService),
+			application.NewService(systemSettingsService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

@@ -10,7 +10,7 @@ import (
 	"github.com/LibreDental/libredental/pkg/storage/sqlite"
 )
 
-func TestConfigRepository_SaveAndGet(t *testing.T) {
+func TestPracticeConfigRepository_SaveAndGet(t *testing.T) {
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test_config.db")
 
@@ -20,7 +20,7 @@ func TestConfigRepository_SaveAndGet(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := sqlite.NewConfigRepository(db)
+	repo := sqlite.NewPracticeConfigRepository(db)
 	ctx := context.Background()
 
 	// 1. Initial Get should return ErrNotFound before setup
@@ -72,7 +72,7 @@ func TestConfigRepository_SaveAndGet(t *testing.T) {
 	}
 }
 
-func TestConfigRepository_ProvidersAndOperatories(t *testing.T) {
+func TestPracticeConfigRepository_ProvidersAndOperatories(t *testing.T) {
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test_providers.db")
 
@@ -82,7 +82,7 @@ func TestConfigRepository_ProvidersAndOperatories(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := sqlite.NewConfigRepository(db)
+	repo := sqlite.NewPracticeConfigRepository(db)
 	ctx := context.Background()
 
 	// Provider testing

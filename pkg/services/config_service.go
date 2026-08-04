@@ -10,16 +10,16 @@ import (
 	"github.com/LibreDental/libredental/pkg/storage"
 )
 
-type ConfigService struct {
-	repo storage.ConfigRepository
+type PracticeConfigService struct {
+	repo storage.PracticeConfigRepository
 }
 
-func NewConfigService(repo storage.ConfigRepository) *ConfigService {
-	return &ConfigService{repo: repo}
+func NewPracticeConfigService(repo storage.PracticeConfigRepository) *PracticeConfigService {
+	return &PracticeConfigService{repo: repo}
 }
 
 // GetConfig fetches the current practice configuration, or returns nil if unconfigured.
-func (s *ConfigService) GetConfig() (*domain.PracticeConfig, error) {
+func (s *PracticeConfigService) GetConfig() (*domain.PracticeConfig, error) {
 	cfg, err := s.repo.Get(context.Background())
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
@@ -31,7 +31,7 @@ func (s *ConfigService) GetConfig() (*domain.PracticeConfig, error) {
 }
 
 // SetConfig initializes or updates the practice country and derives all regional defaults.
-func (s *ConfigService) SetConfig(countryCode string) (*domain.PracticeConfig, error) {
+func (s *PracticeConfigService) SetConfig(countryCode string) (*domain.PracticeConfig, error) {
 	code := domain.CountryCode(countryCode)
 	cfg := domain.NewPracticeConfig(code)
 
@@ -43,12 +43,12 @@ func (s *ConfigService) SetConfig(countryCode string) (*domain.PracticeConfig, e
 }
 
 // GetSupportedCountries returns the list of all supported country configurations.
-func (s *ConfigService) GetSupportedCountries() ([]domain.CountryConfig, error) {
+func (s *PracticeConfigService) GetSupportedCountries() ([]domain.CountryConfig, error) {
 	return domain.GetSupportedCountries(), nil
 }
 
 // GetCountryConfig returns country metadata for a specific country code.
-func (s *ConfigService) GetCountryConfig(countryCode string) (*domain.CountryConfig, error) {
+func (s *PracticeConfigService) GetCountryConfig(countryCode string) (*domain.CountryConfig, error) {
 	cfg, ok := domain.GetCountryConfig(domain.CountryCode(countryCode))
 	if !ok {
 		return nil, fmt.Errorf("unsupported country code: %s", countryCode)
@@ -57,7 +57,7 @@ func (s *ConfigService) GetCountryConfig(countryCode string) (*domain.CountryCon
 }
 
 // UpdatePracticeConfig updates practice details and regional configuration.
-func (s *ConfigService) UpdatePracticeConfig(cfg domain.PracticeConfig) (*domain.PracticeConfig, error) {
+func (s *PracticeConfigService) UpdatePracticeConfig(cfg domain.PracticeConfig) (*domain.PracticeConfig, error) {
 	err := s.repo.Save(context.Background(), &cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update practice config: %w", err)
@@ -66,12 +66,12 @@ func (s *ConfigService) UpdatePracticeConfig(cfg domain.PracticeConfig) (*domain
 }
 
 // ListProviders fetches all configured clinic providers and staff.
-func (s *ConfigService) ListProviders() ([]*domain.Provider, error) {
+func (s *PracticeConfigService) ListProviders() ([]*domain.Provider, error) {
 	return s.repo.ListProviders(context.Background())
 }
 
 // SaveProvider creates or updates a clinic provider/staff member.
-func (s *ConfigService) SaveProvider(p domain.Provider) (*domain.Provider, error) {
+func (s *PracticeConfigService) SaveProvider(p domain.Provider) (*domain.Provider, error) {
 	if p.ID == "" {
 		p.ID = fmt.Sprintf("prov_%d", time.Now().UnixNano())
 	}
@@ -83,17 +83,17 @@ func (s *ConfigService) SaveProvider(p domain.Provider) (*domain.Provider, error
 }
 
 // DeleteProvider removes a provider record by ID.
-func (s *ConfigService) DeleteProvider(id string) error {
+func (s *PracticeConfigService) DeleteProvider(id string) error {
 	return s.repo.DeleteProvider(context.Background(), id)
 }
 
 // ListOperatories fetches all configured operatories/treatment rooms.
-func (s *ConfigService) ListOperatories() ([]*domain.Operatory, error) {
+func (s *PracticeConfigService) ListOperatories() ([]*domain.Operatory, error) {
 	return s.repo.ListOperatories(context.Background())
 }
 
 // SaveOperatory creates or updates a clinic operatory/room.
-func (s *ConfigService) SaveOperatory(op domain.Operatory) (*domain.Operatory, error) {
+func (s *PracticeConfigService) SaveOperatory(op domain.Operatory) (*domain.Operatory, error) {
 	if op.ID == "" {
 		op.ID = fmt.Sprintf("op_%d", time.Now().UnixNano())
 	}
@@ -105,6 +105,6 @@ func (s *ConfigService) SaveOperatory(op domain.Operatory) (*domain.Operatory, e
 }
 
 // DeleteOperatory removes an operatory record by ID.
-func (s *ConfigService) DeleteOperatory(id string) error {
+func (s *PracticeConfigService) DeleteOperatory(id string) error {
 	return s.repo.DeleteOperatory(context.Background(), id)
 }

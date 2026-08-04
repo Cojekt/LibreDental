@@ -112,12 +112,19 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 	ip_address TEXT DEFAULT ''
 );
 
+CREATE TABLE IF NOT EXISTS system_settings (
+	key TEXT PRIMARY KEY,
+	value TEXT NOT NULL,
+	updated_at DATETIME NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_audit_patient ON audit_logs(patient_id);
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE IF EXISTS system_settings;
 DROP TABLE IF EXISTS operatories;
 DROP TABLE IF EXISTS providers;
 DROP TABLE IF EXISTS audit_logs;

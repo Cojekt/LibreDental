@@ -11,7 +11,7 @@
     ProviderRole,
     OperatoryType,
   } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
-  import { ConfigService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  import { PracticeConfigService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
 
   let {
     practiceConfig = $bindable(),
@@ -185,7 +185,7 @@
         updated_at: new Date().toISOString(),
       };
 
-      const res = await ConfigService.UpdatePracticeConfig(updatedConfig);
+      const res = await PracticeConfigService.UpdatePracticeConfig(updatedConfig);
       if (res) {
         practiceConfig = res;
         setProfileMessage("Clinic settings saved!", "success");
@@ -258,7 +258,7 @@
         updated_at: new Date().toISOString(),
       };
 
-      await ConfigService.SaveProvider(p);
+      await PracticeConfigService.SaveProvider(p);
       showProviderModal = false;
       await onrefresh();
     } catch (err) {
@@ -269,7 +269,7 @@
   async function handleDeleteProvider(id: string) {
     if (confirm("Are you sure you want to delete this provider?")) {
       try {
-        await ConfigService.DeleteProvider(id);
+        await PracticeConfigService.DeleteProvider(id);
         await onrefresh();
       } catch (err) {
         console.error("Failed to delete provider:", err);
@@ -313,7 +313,7 @@
         updated_at: new Date().toISOString(),
       };
 
-      await ConfigService.SaveOperatory(op);
+      await PracticeConfigService.SaveOperatory(op);
       showOperatoryModal = false;
       await onrefresh();
     } catch (err) {
@@ -324,7 +324,7 @@
   async function handleDeleteOperatory(id: string) {
     if (confirm("Are you sure you want to delete this operatory?")) {
       try {
-        await ConfigService.DeleteOperatory(id);
+        await PracticeConfigService.DeleteOperatory(id);
         await onrefresh();
       } catch (err) {
         console.error("Failed to delete operatory:", err);

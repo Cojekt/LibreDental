@@ -11,15 +11,15 @@ import (
 	"github.com/LibreDental/libredental/pkg/storage"
 )
 
-type ConfigRepository struct {
+type PracticeConfigRepository struct {
 	db *DB
 }
 
-func NewConfigRepository(db *DB) *ConfigRepository {
-	return &ConfigRepository{db: db}
+func NewPracticeConfigRepository(db *DB) *PracticeConfigRepository {
+	return &PracticeConfigRepository{db: db}
 }
 
-func (r *ConfigRepository) Get(ctx context.Context) (*domain.PracticeConfig, error) {
+func (r *PracticeConfigRepository) Get(ctx context.Context) (*domain.PracticeConfig, error) {
 	query := `
 	SELECT id, clinic_name, tagline, tax_id, license_number, phone, email, website,
 	       address_line1, address_line2, city, state_province, postal_code,
@@ -74,7 +74,7 @@ func (r *ConfigRepository) Get(ctx context.Context) (*domain.PracticeConfig, err
 	return &cfg, nil
 }
 
-func (r *ConfigRepository) Save(ctx context.Context, cfg *domain.PracticeConfig) error {
+func (r *PracticeConfigRepository) Save(ctx context.Context, cfg *domain.PracticeConfig) error {
 	now := time.Now().UTC()
 	if cfg.CreatedAt.IsZero() {
 		cfg.CreatedAt = now
@@ -134,7 +134,7 @@ func (r *ConfigRepository) Save(ctx context.Context, cfg *domain.PracticeConfig)
 
 // Providers CRUD
 
-func (r *ConfigRepository) ListProviders(ctx context.Context) ([]*domain.Provider, error) {
+func (r *PracticeConfigRepository) ListProviders(ctx context.Context) ([]*domain.Provider, error) {
 	query := `
 	SELECT id, name, role, specialty, license_number, email, phone, color, is_active, created_at, updated_at
 	FROM providers ORDER BY name ASC`
@@ -171,7 +171,7 @@ func (r *ConfigRepository) ListProviders(ctx context.Context) ([]*domain.Provide
 	return providers, nil
 }
 
-func (r *ConfigRepository) SaveProvider(ctx context.Context, p *domain.Provider) error {
+func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.Provider) error {
 	now := time.Now().UTC()
 	if p.CreatedAt.IsZero() {
 		p.CreatedAt = now
@@ -210,7 +210,7 @@ func (r *ConfigRepository) SaveProvider(ctx context.Context, p *domain.Provider)
 	return nil
 }
 
-func (r *ConfigRepository) DeleteProvider(ctx context.Context, id string) error {
+func (r *PracticeConfigRepository) DeleteProvider(ctx context.Context, id string) error {
 	query := `DELETE FROM providers WHERE id = ?`
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -226,7 +226,7 @@ func (r *ConfigRepository) DeleteProvider(ctx context.Context, id string) error 
 
 // Operatories CRUD
 
-func (r *ConfigRepository) ListOperatories(ctx context.Context) ([]*domain.Operatory, error) {
+func (r *PracticeConfigRepository) ListOperatories(ctx context.Context) ([]*domain.Operatory, error) {
 	query := `
 	SELECT id, name, room_code, type, is_active, created_at, updated_at
 	FROM operatories ORDER BY name ASC`
@@ -262,7 +262,7 @@ func (r *ConfigRepository) ListOperatories(ctx context.Context) ([]*domain.Opera
 	return operatories, nil
 }
 
-func (r *ConfigRepository) SaveOperatory(ctx context.Context, op *domain.Operatory) error {
+func (r *PracticeConfigRepository) SaveOperatory(ctx context.Context, op *domain.Operatory) error {
 	now := time.Now().UTC()
 	if op.CreatedAt.IsZero() {
 		op.CreatedAt = now
@@ -296,7 +296,7 @@ func (r *ConfigRepository) SaveOperatory(ctx context.Context, op *domain.Operato
 	return nil
 }
 
-func (r *ConfigRepository) DeleteOperatory(ctx context.Context, id string) error {
+func (r *PracticeConfigRepository) DeleteOperatory(ctx context.Context, id string) error {
 	query := `DELETE FROM operatories WHERE id = ?`
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {

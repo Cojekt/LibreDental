@@ -61,3 +61,50 @@
     @apply text-red-400 border-red-400/30 hover:bg-red-400/10;
   }
 }
+
+/* Light Theme Overrides */
+html.light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.light .dark-app-wrapper {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light header {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light header h1 {
+  color: #0f172a !important;
+}
+
+html.light .dark-modal-box,
+html.light [role="dialog"] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light [role="dialog"] h2,
+html.light [role="dialog"] h3 {
+  color: #0f172a !important;
+}
+
+html.light [role="dialog"] label {
+  color: #475569 !important;
+}
+
+html.light select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+html.light input[type="date"]::-webkit-calendar-picker-indicator,
+html.light input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.2);
+}
+

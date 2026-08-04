@@ -37,8 +37,8 @@ type AuditRepository interface {
 	Query(ctx context.Context, patientID string, limit int, offset int) ([]*domain.AuditLogEntry, error)
 }
 
-// ConfigRepository defines storage operations for system practice configuration, providers, and operatories.
-type ConfigRepository interface {
+// PracticeConfigRepository defines storage operations for practice configuration, providers, and operatories.
+type PracticeConfigRepository interface {
 	Get(ctx context.Context) (*domain.PracticeConfig, error)
 	Save(ctx context.Context, config *domain.PracticeConfig) error
 
@@ -49,5 +49,11 @@ type ConfigRepository interface {
 	ListOperatories(ctx context.Context) ([]*domain.Operatory, error)
 	SaveOperatory(ctx context.Context, operatory *domain.Operatory) error
 	DeleteOperatory(ctx context.Context, id string) error
+}
+
+// SystemSettingsRepository defines storage operations for local system settings & user preferences.
+type SystemSettingsRepository interface {
+	GetSetting(ctx context.Context, key string) (string, error)
+	SetSetting(ctx context.Context, key string, value string) error
 }
 
