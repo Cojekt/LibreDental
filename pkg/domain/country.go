@@ -127,8 +127,7 @@ func GetSupportedCountries() []CountryConfig {
 func GetCountryConfig(code CountryCode) (CountryConfig, bool) {
 	cfg, ok := supportedCountries[code]
 	if !ok {
-		// Fallback to US if code not found
-		return supportedCountries[CountryUS], false
+		return CountryConfig{}, false
 	}
 	return cfg, true
 }

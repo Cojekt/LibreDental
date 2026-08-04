@@ -19,7 +19,6 @@
     Status,
     AppointmentStatus,
   } from "../bindings/github.com/LibreDental/libredental/pkg/domain/index.js";
-  import { FALLBACK_COUNTRIES } from "./lib/country.js";
 
   import Header from "./components/Header.svelte";
   import OnboardingModal from "./components/OnboardingModal.svelte";
@@ -107,7 +106,7 @@
   // Configuration & Onboarding
   let practiceConfig = $state<PracticeConfig | null>(null);
   let countryMeta = $state<CountryConfig | null>(null);
-  let supportedCountries = $state<CountryConfig[]>(FALLBACK_COUNTRIES);
+  let supportedCountries = $state<CountryConfig[]>([]);
   let showOnboarding = $state(false);
 
   // Patient Modal states
@@ -140,8 +139,8 @@
 
   // Appointment form fields
   let apptPatientId = $state("");
-  let apptProviderId = $state("prov_dr_smith");
-  let apptOperatoryId = $state("op_chair_1");
+  let apptProviderId = $state("");
+  let apptOperatoryId = $state("");
   let apptStartDateStr = $state(new Date().toISOString().split("T")[0]);
   let apptStartTimeStr = $state("09:00");
   let apptEndTimeStr = $state("10:00");
@@ -152,12 +151,9 @@
 
   async function checkConfig() {
     try {
-      const countries = await PracticeConfigService.GetSupportedCountries();
-      if (countries && countries.length > 0) {
-        supportedCountries = countries;
-      }
+      supportedCountries = (await PracticeConfigService.GetSupportedCountries()) || [];
     } catch (e) {
-      console.warn("Using fallback countries:", e);
+      console.error("Failed to fetch supported countries from backend:", e);
     }
 
     try {
@@ -177,18 +173,11 @@
   async function loadCountryMeta(countryCode: string) {
     try {
       const meta = await PracticeConfigService.GetCountryConfig(countryCode);
-      if (meta) {
-        countryMeta = meta;
-        return;
-      }
+      countryMeta = meta || null;
     } catch (e) {
-      console.warn(
-        "Could not fetch country meta from backend, using fallback:",
-        e,
-      );
+      console.error("Could not fetch country meta from backend:", e);
+      countryMeta = null;
     }
-    const found = supportedCountries.find((c) => c.code === countryCode);
-    countryMeta = found || supportedCountries[0];
   }
 
   async function handleOnboardingComplete(countryCode: string) {
@@ -287,6 +276,11 @@
     e.preventDefault();
     if (!firstName || !lastName) return;
 
+    if (!countryMeta || !countryMeta.code) {
+      alert("Practice country configuration is required before managing patient records.");
+      return;
+    }
+
     try {
       if (isEditingPatient) {
         const p = await PatientService.GetPatient(editingPatientId);
@@ -297,10 +291,10 @@
           p.phone_primary = phone;
           p.date_of_birth = new Date(dob).toISOString();
           p.national_id = nationalId;
-          p.national_id_type = countryMeta?.national_id_type || "national_id";
+          p.national_id_type = countryMeta.national_id_type;
           p.state_province = stateProvince;
           p.postal_code = postalCode;
-          p.country_code = countryMeta?.code || ("US" as any);
+          p.country_code = countryMeta.code;
           p.medical_alerts = medicalAlerts
             ? medicalAlerts.split(",").map((s) => s.trim())
             : [];
@@ -323,8 +317,8 @@
           city: "",
           state_province: stateProvince,
           postal_code: postalCode,
-          country_code: countryMeta?.code || ("US" as any),
-          national_id_type: countryMeta?.national_id_type || "national_id",
+          country_code: countryMeta.code,
+          national_id_type: countryMeta.national_id_type,
           national_id: nationalId,
           medical_alerts: medicalAlerts
             ? medicalAlerts.split(",").map((s) => s.trim())
@@ -401,7 +395,10 @@
 
   async function handleSaveAppt(e: Event) {
     e.preventDefault();
-    if (!apptPatientId) return;
+    if (!apptPatientId || !apptProviderId || !apptOperatoryId) {
+      alert("A valid patient, provider, and operatory room must be selected for the appointment.");
+      return;
+    }
 
     try {
       const startTimeISO = new Date(
