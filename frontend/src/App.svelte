@@ -28,6 +28,7 @@
   import ClinicView from "./views/ClinicView.svelte";
   import PatientsView from "./views/PatientsView.svelte";
   import AppointmentsView from "./views/AppointmentsView.svelte";
+  import ChartingView from "./views/ChartingView.svelte";
 
   // App Navigation (Default to "clinic" landing tab on far left)
   let activeTab = $state("clinic");
@@ -541,6 +542,11 @@
         oneditappointment={openEditApptModal}
         onupdatestatus={handleUpdateApptStatus}
         ondeleteappointment={handleDeleteAppt}
+      />
+    {:else if activeTab === "charting"}
+      <ChartingView
+        {patients}
+        {countryMeta}
       />
     {/if}
   </main>

@@ -42,6 +42,9 @@ func main() {
 	systemSettingsRepo := sqlite.NewSystemSettingsRepository(db)
 	systemSettingsService := services.NewSystemSettingsService(systemSettingsRepo, appDir)
 
+	chartRepo := sqlite.NewChartRepository(db)
+	chartService := services.NewChartService(chartRepo)
+
 	app := application.New(application.Options{
 		Name:        "LibreDental™",
 		Description: "Open-Source Dental Practice Management System",
@@ -50,6 +53,7 @@ func main() {
 			application.NewService(appointmentService),
 			application.NewService(practiceConfigService),
 			application.NewService(systemSettingsService),
+			application.NewService(chartService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

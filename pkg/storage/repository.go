@@ -57,3 +57,11 @@ type SystemSettingsRepository interface {
 	SetSetting(ctx context.Context, key string, value string) error
 }
 
+// ChartRepository defines storage operations for dental tooth conditions and patient charts.
+type ChartRepository interface {
+	GetChart(ctx context.Context, patientID string) (*domain.DentalChart, error)
+	SaveCondition(ctx context.Context, condition *domain.ToothCondition) error
+	DeleteCondition(ctx context.Context, id string) error
+}
+
+

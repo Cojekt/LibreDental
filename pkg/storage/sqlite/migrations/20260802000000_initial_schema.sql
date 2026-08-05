@@ -118,12 +118,29 @@ CREATE TABLE IF NOT EXISTS system_settings (
 	updated_at DATETIME NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS dental_conditions (
+	id TEXT PRIMARY KEY,
+	patient_id TEXT NOT NULL,
+	tooth_number INTEGER NOT NULL,
+	surfaces TEXT DEFAULT '[]',
+	ada_code TEXT DEFAULT '',
+	description TEXT DEFAULT '',
+	status TEXT NOT NULL,
+	fee REAL DEFAULT 0.0,
+	created_at DATETIME NOT NULL,
+	updated_at DATETIME NOT NULL,
+	FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_audit_patient ON audit_logs(patient_id);
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_dental_conditions_patient ON dental_conditions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_dental_conditions_tooth ON dental_conditions(patient_id, tooth_number);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE IF EXISTS dental_conditions;
 DROP TABLE IF EXISTS system_settings;
 DROP TABLE IF EXISTS operatories;
 DROP TABLE IF EXISTS providers;
@@ -132,3 +149,4 @@ DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS patients;
 DROP TABLE IF EXISTS practice_config;
 -- +goose StatementEnd
+

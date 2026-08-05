@@ -27,7 +27,7 @@
       id: "charting",
       label: "Dental Charting",
       icon: `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5.25 3 9.25 7 13 4-3.75 7-7.75 7-13 0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>`,
-      enabled: false,
+      enabled: true,
     },
     {
       id: "billing",
