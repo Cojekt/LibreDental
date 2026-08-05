@@ -4,12 +4,27 @@ import (
 	"time"
 )
 
-// BusinessHourDay represents daily practice operating hours.
-type BusinessHourDay struct {
-	Day       string `json:"day"`        // e.g. "Monday", "Tuesday"
+// TimeSlot represents a continuous block of operating hours.
+type TimeSlot struct {
 	OpenTime  string `json:"open_time"`  // e.g. "08:00"
 	CloseTime string `json:"close_time"` // e.g. "17:00"
-	IsClosed  bool   `json:"is_closed"`
+}
+
+// ScheduleBreak represents a planned gap or closure during operating hours (e.g. Lunch Break, Staff Meeting).
+type ScheduleBreak struct {
+	Name      string `json:"name"`       // e.g. "Lunch Break", "Staff Meeting"
+	StartTime string `json:"start_time"` // e.g. "12:00"
+	EndTime   string `json:"end_time"`   // e.g. "13:00"
+}
+
+// BusinessHourDay represents daily practice operating hours.
+type BusinessHourDay struct {
+	Day       string          `json:"day"`        // e.g. "Monday", "Tuesday"
+	OpenTime  string          `json:"open_time"`  // e.g. "08:00"
+	CloseTime string          `json:"close_time"` // e.g. "17:00"
+	IsClosed  bool            `json:"is_closed"`
+	Slots     []TimeSlot      `json:"slots,omitempty"`
+	Breaks    []ScheduleBreak `json:"breaks,omitempty"`
 }
 
 // DefaultBusinessHours returns a standard weekly schedule.
@@ -18,11 +33,23 @@ func DefaultBusinessHours() []BusinessHourDay {
 	schedule := make([]BusinessHourDay, 7)
 	for i, day := range days {
 		isWeekend := (day == "Saturday" || day == "Sunday")
+		breaks := []ScheduleBreak{}
+		if !isWeekend {
+			breaks = append(breaks, ScheduleBreak{
+				Name:      "Lunch Break",
+				StartTime: "12:00",
+				EndTime:   "13:00",
+			})
+		}
 		schedule[i] = BusinessHourDay{
 			Day:       day,
 			OpenTime:  "08:00",
 			CloseTime: "17:00",
 			IsClosed:  isWeekend,
+			Slots: []TimeSlot{
+				{OpenTime: "08:00", CloseTime: "17:00"},
+			},
+			Breaks: breaks,
 		}
 	}
 	return schedule

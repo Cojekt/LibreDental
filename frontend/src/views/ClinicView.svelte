@@ -5,6 +5,8 @@
     Provider,
     Operatory,
     BusinessHourDay,
+    TimeSlot,
+    ScheduleBreak,
   } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import {
     Gender,
@@ -33,6 +35,66 @@
   let savingProfile = $state(false);
   let profileMessage = $state<{ text: string; type: "success" | "error" } | null>(null);
 
+  function ensureDaySlots(hours: BusinessHourDay[]): BusinessHourDay[] {
+    return hours.map(h => {
+      const slots = h.slots && h.slots.length > 0 ? h.slots : [{ open_time: h.open_time || "08:00", close_time: h.close_time || "17:00" }];
+      const breaks = h.breaks ? [...h.breaks] : [];
+      return {
+        ...h,
+        slots: slots,
+        breaks: breaks,
+      };
+    });
+  }
+
+  function addSlot(hour: BusinessHourDay) {
+    if (!hour.slots) hour.slots = [];
+    const lastSlot = hour.slots[hour.slots.length - 1];
+    const newOpen = lastSlot ? lastSlot.close_time : "13:00";
+    hour.slots = [...hour.slots, { open_time: newOpen, close_time: "17:00" }];
+    syncDayBounds(hour);
+  }
+
+  function removeSlot(hour: BusinessHourDay, index: number) {
+    if (hour.slots && hour.slots.length > 1) {
+      hour.slots = hour.slots.filter((_, i) => i !== index);
+      syncDayBounds(hour);
+    }
+  }
+
+  function addBreak(hour: BusinessHourDay) {
+    if (!hour.breaks) hour.breaks = [];
+    hour.breaks = [
+      ...hour.breaks,
+      { name: "Break", start_time: "12:00", end_time: "13:00" }
+    ];
+  }
+
+  function removeBreak(hour: BusinessHourDay, index: number) {
+    if (hour.breaks) {
+      hour.breaks = hour.breaks.filter((_, i) => i !== index);
+    }
+  }
+
+  function syncDayBounds(hour: BusinessHourDay) {
+    if (hour.slots && hour.slots.length > 0) {
+      hour.open_time = hour.slots[0].open_time;
+      hour.close_time = hour.slots[hour.slots.length - 1].close_time;
+    }
+  }
+
+  function formatTime12(time24: string): string {
+    if (!time24) return "";
+    const [hStr, mStr] = time24.split(":");
+    let h = parseInt(hStr, 10);
+    if (isNaN(h)) return time24;
+    const m = mStr || "00";
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+  }
+
   // Form local states for Practice Config
   let clinicName = $state(practiceConfig?.clinic_name || "My Dental Clinic");
   let tagline = $state(practiceConfig?.tagline || "");
@@ -51,15 +113,15 @@
   let toothSystem = $state(practiceConfig?.tooth_system || "universal");
   let dateFormat = $state(practiceConfig?.date_format || "YYYY-MM-DD");
   let businessHours = $state<BusinessHourDay[]>(
-    practiceConfig?.business_hours || [
-      { day: "Monday", open_time: "08:00", close_time: "17:00", is_closed: false },
-      { day: "Tuesday", open_time: "08:00", close_time: "17:00", is_closed: false },
-      { day: "Wednesday", open_time: "08:00", close_time: "17:00", is_closed: false },
-      { day: "Thursday", open_time: "08:00", close_time: "17:00", is_closed: false },
-      { day: "Friday", open_time: "08:00", close_time: "17:00", is_closed: false },
-      { day: "Saturday", open_time: "08:00", close_time: "17:00", is_closed: true },
-      { day: "Sunday", open_time: "08:00", close_time: "17:00", is_closed: true },
-    ]
+    ensureDaySlots(practiceConfig?.business_hours || [
+      { day: "Monday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
+      { day: "Tuesday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
+      { day: "Wednesday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
+      { day: "Thursday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
+      { day: "Friday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
+      { day: "Saturday", open_time: "08:00", close_time: "17:00", is_closed: true, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [] },
+      { day: "Sunday", open_time: "08:00", close_time: "17:00", is_closed: true, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [] },
+    ])
   );
 
   // Reactively sync when practiceConfig changes
@@ -82,7 +144,7 @@
       toothSystem = practiceConfig.tooth_system || "universal";
       dateFormat = practiceConfig.date_format || "YYYY-MM-DD";
       if (practiceConfig.business_hours && practiceConfig.business_hours.length > 0) {
-        businessHours = practiceConfig.business_hours;
+        businessHours = ensureDaySlots(practiceConfig.business_hours);
       }
     }
   });
@@ -409,7 +471,7 @@
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
-              <span>Edit Practice Info</span>
+              <span>{activeSubTab === "hours" ? "Edit Hours" : "Edit Practice Info"}</span>
             </button>
           {:else}
             <button
@@ -648,48 +710,190 @@
       <div class="flex items-center justify-between border-b border-slate-800 pb-4">
         <div>
           <h3 class="text-lg font-bold text-slate-100">⏰ Practice Operating Schedule</h3>
-          <p class="text-xs text-slate-400 mt-0.5">Configure your weekly operating hours for appointment scheduling.</p>
+          <p class="text-xs text-slate-400 mt-0.5">Configure your weekly operating hours, split shifts, and scheduled breaks or closure gaps for appointment scheduling.</p>
         </div>
       </div>
 
-      <div class="space-y-3">
+      <div class="space-y-4">
         {#each businessHours as hour, idx}
-          <div class={`flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border transition-colors ${
-            hour.is_closed ? "border-slate-800/60 bg-slate-950/40 opacity-70" : "border-slate-800 bg-slate-950/80"
+          <div class={`p-4 rounded-xl border transition-all space-y-3 ${
+            hour.is_closed ? "border-slate-800/60 bg-slate-950/40 opacity-70" : "border-slate-800 bg-slate-950/80 shadow-sm"
           }`}>
-            <div class="w-32 flex items-center gap-3">
-              <input
-                type="checkbox"
-                id={`closed-${idx}`}
-                bind:checked={hour.is_closed}
-                disabled={!isEditingProfile}
-                class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <label for={`closed-${idx}`} class="text-sm font-semibold text-slate-200 cursor-pointer select-none">
-                {hour.day}
-              </label>
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <!-- Checkbox & Day Label -->
+              <div class="w-36 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id={`open-${idx}`}
+                  checked={!hour.is_closed}
+                  onchange={(e) => (hour.is_closed = !(e.target as HTMLInputElement).checked)}
+                  disabled={!isEditingProfile}
+                  class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <label for={`open-${idx}`} class="text-sm font-semibold text-slate-200 cursor-pointer select-none">
+                  {hour.day}
+                </label>
+              </div>
+
+              <!-- Day Closed Badge -->
+              {#if hour.is_closed}
+                <span class="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full">
+                  CLOSED
+                </span>
+              {:else if !isEditingProfile}
+                <!-- View Mode (Not Editing) -->
+                <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-300">
+                  {#if hour.slots && hour.slots.length > 1}
+                    <div class="flex flex-wrap items-center gap-2">
+                      {#each hour.slots as slot, sIdx}
+                        <span class="bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2.5 py-1 rounded-lg">
+                          Shift {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(slot.close_time)}
+                        </span>
+                      {/each}
+                    </div>
+                  {:else}
+                    <div class="flex items-center gap-2">
+                      <span>Opens:</span>
+                      <span class="font-semibold text-slate-100">{formatTime12(hour.open_time)}</span>
+                      <span class="ml-2">Closes:</span>
+                      <span class="font-semibold text-slate-100">{formatTime12(hour.close_time)}</span>
+                    </div>
+                  {/if}
+
+                  {#if hour.breaks && hour.breaks.length > 0}
+                    <div class="flex flex-wrap items-center gap-2">
+                      {#each hour.breaks as brk}
+                        <span class="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                          <span>☕ {brk.name || "Break"}:</span>
+                          <span class="font-semibold">{formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}</span>
+                        </span>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
             </div>
 
-            {#if hour.is_closed}
-              <span class="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full">
-                CLOSED
-              </span>
-            {:else}
-              <div class="flex items-center gap-3 text-xs font-medium text-slate-300">
-                <span>Opens:</span>
-                <input
-                  type="time"
-                  bind:value={hour.open_time}
-                  disabled={!isEditingProfile}
-                  class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <span>Closes:</span>
-                <input
-                  type="time"
-                  bind:value={hour.close_time}
-                  disabled={!isEditingProfile}
-                  class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                />
+            <!-- Edit Mode Controls for Open Day -->
+            {#if !hour.is_closed && isEditingProfile}
+              <div class="pl-4 border-l-2 border-sky-500/30 space-y-3 pt-2">
+                <!-- Time Slots / Split Shifts -->
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-400">Working Hours / Shifts</span>
+                    <button
+                      type="button"
+                      onclick={() => addSlot(hour)}
+                      class="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition-colors"
+                    >
+                      <span>+ Add Split Shift / Time Slot</span>
+                    </button>
+                  </div>
+
+                  <div class="space-y-2">
+                    {#each hour.slots || [] as slot, sIdx}
+                      <div class="flex flex-wrap items-center gap-3 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                        {#if (hour.slots || []).length > 1}
+                          <span class="font-semibold text-slate-400 text-[11px]">Shift {sIdx + 1}:</span>
+                        {/if}
+
+                        <div class="flex items-center gap-2">
+                          <span class="text-slate-400">Opens:</span>
+                          <input
+                            type="time"
+                            bind:value={slot.open_time}
+                            onchange={() => syncDayBounds(hour)}
+                            class="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-100 focus:border-sky-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                          <span class="text-slate-400">Closes:</span>
+                          <input
+                            type="time"
+                            bind:value={slot.close_time}
+                            onchange={() => syncDayBounds(hour)}
+                            class="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-100 focus:border-sky-500 focus:outline-none"
+                          />
+                        </div>
+
+                        {#if (hour.slots || []).length > 1}
+                          <button
+                            type="button"
+                            onclick={() => removeSlot(hour, sIdx)}
+                            class="text-rose-400 hover:text-rose-300 ml-auto text-xs px-2 py-0.5 rounded hover:bg-rose-500/10 transition-colors"
+                            title="Remove Shift"
+                          >
+                            ✕ Remove
+                          </button>
+                        {/if}
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+
+                <!-- Scheduled Breaks & Gaps -->
+                <div class="pt-2 border-t border-slate-800/60 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-amber-400/90 flex items-center gap-1.5">
+                      <span>☕ Scheduled Breaks & Gaps</span>
+                    </span>
+                    <button
+                      type="button"
+                      onclick={() => addBreak(hour)}
+                      class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition-colors"
+                    >
+                      <span>+ Add Break / Schedule Gap</span>
+                    </button>
+                  </div>
+
+                  {#if (hour.breaks || []).length === 0}
+                    <p class="text-[11px] text-slate-500 italic">No scheduled breaks or closure gaps configured for this day.</p>
+                  {:else}
+                    <div class="space-y-2">
+                      {#each hour.breaks || [] as brk, bIdx}
+                        <div class="flex flex-wrap items-center gap-3 text-xs bg-amber-500/5 p-2.5 rounded-lg border border-amber-500/20">
+                          <div class="flex items-center gap-2 flex-1 min-w-[160px]">
+                            <span class="text-amber-400 font-semibold text-[11px]">Label:</span>
+                            <input
+                              type="text"
+                              bind:value={brk.name}
+                              placeholder="e.g. Lunch Break, Staff Meeting"
+                              class="w-full rounded border border-amber-500/30 bg-slate-950 px-2.5 py-1 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                            />
+                          </div>
+
+                          <div class="flex items-center gap-2">
+                            <span class="text-amber-400 text-[11px]">Start:</span>
+                            <input
+                              type="time"
+                              bind:value={brk.start_time}
+                              class="rounded border border-amber-500/30 bg-slate-950 px-2 py-1 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                            />
+                          </div>
+
+                          <div class="flex items-center gap-2">
+                            <span class="text-amber-400 text-[11px]">End:</span>
+                            <input
+                              type="time"
+                              bind:value={brk.end_time}
+                              class="rounded border border-amber-500/30 bg-slate-950 px-2 py-1 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onclick={() => removeBreak(hour, bIdx)}
+                            class="text-rose-400 hover:text-rose-300 text-xs px-2 py-1 rounded hover:bg-rose-500/10 transition-colors ml-auto"
+                            title="Remove Break"
+                          >
+                            ✕ Remove
+                          </button>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
               </div>
             {/if}
           </div>
