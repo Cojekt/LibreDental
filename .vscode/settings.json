@@ -38,5 +38,6 @@
   "gopls": {
     "formatting.gofumpt": true
   },
-  "svelte.enable-ts-plugin": true
+  "svelte.enable-ts-plugin": true,
+  "css.lint.unknownAtRules": "ignore"
 }

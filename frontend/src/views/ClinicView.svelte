@@ -14,6 +14,9 @@
     OperatoryType,
   } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import { PracticeConfigService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  import Modal from "../components/ui/Modal.svelte";
+  import FormField from "../components/ui/FormField.svelte";
+  import Input from "../components/ui/Input.svelte";
 
   let {
     practiceConfig = $bindable(),
@@ -1060,213 +1063,177 @@
 </div>
 
 <!-- PROVIDER MODAL -->
-{#if showProviderModal}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-    <div class="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-lg font-bold text-white">
-          {isEditingProvider ? "Edit Staff / Provider" : "Add New Staff / Provider"}
-        </h3>
-        <button
-          type="button"
-          onclick={() => (showProviderModal = false)}
-          class="text-slate-400 hover:text-white text-lg font-bold"
+<Modal
+  bind:showModal={showProviderModal}
+  title={isEditingProvider ? "Edit Staff / Provider" : "Add New Staff / Provider"}
+  subtitle="Configure provider details, specialties, and schedule badges"
+  icon="👨‍⚕️"
+  maxWidth="max-w-md"
+>
+  <form onsubmit={handleSaveProvider} class="space-y-4">
+    <FormField label="Full Name" forId="prov-name" required>
+      <Input
+        id="prov-name"
+        type="text"
+        bind:value={provName}
+        required
+        placeholder="e.g. Dr. Sarah Smith"
+      />
+    </FormField>
+
+    <div class="grid grid-cols-2 gap-3">
+      <FormField label="Role" forId="prov-role">
+        <select
+          id="prov-role"
+          bind:value={provRole}
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
-          ✕
-        </button>
+          <option value="dentist">Dentist</option>
+          <option value="hygienist">Dental Hygienist</option>
+          <option value="assistant">Dental Assistant</option>
+          <option value="staff">Administrative Staff</option>
+        </select>
+      </FormField>
+
+      <FormField label="Specialty" forId="prov-specialty">
+        <Input
+          id="prov-specialty"
+          type="text"
+          bind:value={provSpecialty}
+          placeholder="e.g. Orthodontics"
+        />
+      </FormField>
+    </div>
+
+    <FormField label="License Number" forId="prov-license">
+      <Input
+        id="prov-license"
+        type="text"
+        bind:value={provLicense}
+        placeholder="e.g. DENT-88912"
+      />
+    </FormField>
+
+    <div class="grid grid-cols-2 gap-3">
+      <FormField label="Email" forId="prov-email">
+        <Input
+          id="prov-email"
+          type="email"
+          bind:value={provEmail}
+          placeholder="doctor@example.com"
+        />
+      </FormField>
+
+      <FormField label="Phone" forId="prov-phone">
+        <Input
+          id="prov-phone"
+          type="tel"
+          bind:value={provPhone}
+          placeholder="(555) 019-2834"
+        />
+      </FormField>
+    </div>
+
+    <div class="flex items-center justify-between pt-2">
+      <div>
+        <label for="prov-color" class="block text-xs font-semibold text-slate-300 mb-1">Schedule Color Badge</label>
+        <input
+          id="prov-color"
+          type="color"
+          bind:value={provColor}
+          class="h-9 w-16 cursor-pointer rounded border border-slate-700 bg-slate-950 p-1"
+        />
       </div>
 
-      <form onsubmit={handleSaveProvider} class="space-y-4">
-        <div>
-          <label for="prov-name" class="block text-xs font-semibold text-slate-400 mb-1">Full Name *</label>
-          <input
-            id="prov-name"
-            type="text"
-            bind:value={provName}
-            required
-            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            placeholder="e.g. Dr. Sarah Smith"
-          />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="prov-role" class="block text-xs font-semibold text-slate-400 mb-1">Role</label>
-            <select
-              id="prov-role"
-              bind:value={provRole}
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            >
-              <option value="dentist">Dentist</option>
-              <option value="hygienist">Dental Hygienist</option>
-              <option value="assistant">Dental Assistant</option>
-              <option value="staff">Administrative Staff</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="prov-specialty" class="block text-xs font-semibold text-slate-400 mb-1">Specialty</label>
-            <input
-              id="prov-specialty"
-              type="text"
-              bind:value={provSpecialty}
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-              placeholder="e.g. Orthodontics"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label for="prov-license" class="block text-xs font-semibold text-slate-400 mb-1">License Number</label>
-          <input
-            id="prov-license"
-            type="text"
-            bind:value={provLicense}
-            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            placeholder="e.g. DENT-88912"
-          />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="prov-email" class="block text-xs font-semibold text-slate-400 mb-1">Email</label>
-            <input
-              id="prov-email"
-              type="email"
-              bind:value={provEmail}
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label for="prov-phone" class="block text-xs font-semibold text-slate-400 mb-1">Phone</label>
-            <input
-              id="prov-phone"
-              type="text"
-              bind:value={provPhone}
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between pt-2">
-          <div>
-            <label for="prov-color" class="block text-xs font-semibold text-slate-400 mb-1">Schedule Color Badge</label>
-            <input
-              id="prov-color"
-              type="color"
-              bind:value={provColor}
-              class="h-9 w-16 cursor-pointer rounded border border-slate-700 bg-slate-950 p-1"
-            />
-          </div>
-
-          <div class="flex items-center gap-2 pt-4">
-            <input
-              type="checkbox"
-              id="prov-active"
-              bind:checked={provIsActive}
-              class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4"
-            />
-            <label for="prov-active" class="text-xs font-semibold text-slate-300 cursor-pointer">Active Provider</label>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-          <button
-            type="button"
-            onclick={() => (showProviderModal = false)}
-            class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
-          >
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary text-xs px-5 py-2">
-            Save Staff Member
-          </button>
-        </div>
-      </form>
+      <div class="flex items-center gap-2 pt-4">
+        <input
+          type="checkbox"
+          id="prov-active"
+          bind:checked={provIsActive}
+          class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 cursor-pointer"
+        />
+        <label for="prov-active" class="text-xs font-semibold text-slate-300 cursor-pointer">Active Provider</label>
+      </div>
     </div>
-  </div>
-{/if}
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <button
+        type="button"
+        onclick={() => (showProviderModal = false)}
+        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
+        Save Staff Member
+      </button>
+    </div>
+  </form>
+</Modal>
 
 <!-- OPERATORY MODAL -->
-{#if showOperatoryModal}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-    <div class="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-lg font-bold text-white">
-          {isEditingOperatory ? "Edit Treatment Operatory" : "Add New Operatory"}
-        </h3>
-        <button
-          type="button"
-          onclick={() => (showOperatoryModal = false)}
-          class="text-slate-400 hover:text-white text-lg font-bold"
+<Modal
+  bind:showModal={showOperatoryModal}
+  title={isEditingOperatory ? "Edit Treatment Operatory" : "Add New Operatory"}
+  subtitle="Set up treatment rooms and clinical chair details"
+  icon="🦷"
+  maxWidth="max-w-md"
+>
+  <form onsubmit={handleSaveOperatory} class="space-y-4">
+    <FormField label="Operatory Name" forId="op-name" required>
+      <Input
+        id="op-name"
+        type="text"
+        bind:value={opName}
+        required
+        placeholder="e.g. Operatory 1 (General Dentistry)"
+      />
+    </FormField>
+
+    <div class="grid grid-cols-2 gap-3">
+      <FormField label="Room Code / ID" forId="op-code">
+        <Input
+          id="op-code"
+          type="text"
+          bind:value={opRoomCode}
+          placeholder="e.g. ROOM-A"
+        />
+      </FormField>
+
+      <FormField label="Type" forId="op-type">
+        <select
+          id="op-type"
+          bind:value={opType}
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
-          ✕
-        </button>
-      </div>
-
-      <form onsubmit={handleSaveOperatory} class="space-y-4">
-        <div>
-          <label for="op-name" class="block text-xs font-semibold text-slate-400 mb-1">Operatory Name *</label>
-          <input
-            id="op-name"
-            type="text"
-            bind:value={opName}
-            required
-            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            placeholder="e.g. Operatory 1 (General Dentistry)"
-          />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="op-code" class="block text-xs font-semibold text-slate-400 mb-1">Room Code / ID</label>
-            <input
-              id="op-code"
-              type="text"
-              bind:value={opRoomCode}
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-              placeholder="e.g. ROOM-A"
-            />
-          </div>
-
-          <div>
-            <label for="op-type" class="block text-xs font-semibold text-slate-400 mb-1">Type</label>
-            <select
-              id="op-type"
-              bind:value={opType}
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            >
-              <option value="general">General Dentistry</option>
-              <option value="hygiene">Hygiene Bay</option>
-              <option value="surgery">Oral Surgery Suite</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2 pt-2">
-          <input
-            type="checkbox"
-            id="op-active"
-            bind:checked={opIsActive}
-            class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4"
-          />
-          <label for="op-active" class="text-xs font-semibold text-slate-300 cursor-pointer">Active Operatory</label>
-        </div>
-
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-          <button
-            type="button"
-            onclick={() => (showOperatoryModal = false)}
-            class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
-          >
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary text-xs px-5 py-2">
-            Save Operatory
-          </button>
-        </div>
-      </form>
+          <option value="general">General Dentistry</option>
+          <option value="hygiene">Hygiene Bay</option>
+          <option value="surgery">Oral Surgery Suite</option>
+        </select>
+      </FormField>
     </div>
-  </div>
-{/if}
+
+    <div class="flex items-center gap-2 pt-2">
+      <input
+        type="checkbox"
+        id="op-active"
+        bind:checked={opIsActive}
+        class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 cursor-pointer"
+      />
+      <label for="op-active" class="text-xs font-semibold text-slate-300 cursor-pointer">Active Operatory</label>
+    </div>
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <button
+        type="button"
+        onclick={() => (showOperatoryModal = false)}
+        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
+        Save Operatory
+      </button>
+    </div>
+  </form>
+</Modal>

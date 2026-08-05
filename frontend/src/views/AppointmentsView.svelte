@@ -235,8 +235,8 @@
                 {#each slotAppts as appt}
                   {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
                   <div
-                    class="group/card relative w-full sm:w-[320px] rounded-xl border p-3.5 shadow-md transition-all duration-150 hover:shadow-sky-500/10 hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer"
-                    style="border-left-width: 4px; border-left-color: {appt.color || '#3b82f6'};"
+                    class="group/card relative w-full sm:w-[320px] rounded-xl border border-l-4 p-3.5 shadow-md transition-all duration-150 hover:shadow-sky-500/10 hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer"
+                    style="border-left-color: {appt.color || '#3b82f6'};"
                     onclick={() => oneditappointment(appt)}
                     role="button"
                     tabindex="0"

@@ -120,7 +120,7 @@
   let lastName = $state("");
   let email = $state("");
   let phone = $state("");
-  let dob = $state("1990-01-01");
+  let dob = $state("");
   let nationalId = $state("");
   let stateProvince = $state("");
   let postalCode = $state("");
@@ -248,7 +248,7 @@
     lastName = "";
     email = "";
     phone = "";
-    dob = "1990-01-01";
+    dob = "";
     nationalId = "";
     stateProvince = "";
     postalCode = "";
@@ -265,7 +265,7 @@
     phone = p.phone_primary || "";
     dob = p.date_of_birth
       ? new Date(p.date_of_birth).toISOString().split("T")[0]
-      : "1990-01-01";
+      : "";
     nationalId = p.national_id || "";
     stateProvince = p.state_province || "";
     postalCode = p.postal_code || "";
@@ -275,7 +275,7 @@
 
   async function handleSavePatient(e: Event) {
     e.preventDefault();
-    if (!firstName || !lastName) return;
+    if (!firstName || !lastName || !dob || !phone) return;
 
     if (!countryMeta || !countryMeta.code) {
       alert("Practice country configuration is required before managing patient records.");
@@ -290,7 +290,7 @@
           p.last_name = lastName;
           p.email = email;
           p.phone_primary = phone;
-          p.date_of_birth = new Date(dob).toISOString();
+          p.date_of_birth = dob ? new Date(dob).toISOString() : "";
           p.national_id = nationalId;
           p.national_id_type = countryMeta.national_id_type;
           p.state_province = stateProvince;
@@ -308,7 +308,7 @@
           last_name: lastName,
           middle_name: "",
           preferred_name: "",
-          date_of_birth: new Date(dob).toISOString(),
+          date_of_birth: dob ? new Date(dob).toISOString() : "",
           gender: Gender.GenderUndisclosed,
           email: email,
           phone_primary: phone,

@@ -25,7 +25,7 @@
     <input
       type="text"
       placeholder="Search patients by name, email, or phone..."
-      class="box-border w-full rounded-lg border border-slate-700 bg-slate-800/90 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none shadow-sm transition-all"
+      class="box-border w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none shadow-sm transition-all"
       style="padding-left: 2.75rem; padding-right: 0.75rem;"
       bind:value={searchQuery}
       oninput={onloadpatients}

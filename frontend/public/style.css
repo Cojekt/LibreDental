@@ -197,8 +197,7 @@ body {
     color: var(--muted);
 }
 
-.input,
-input[type="text"] {
+.input {
     flex: 1;
     min-width: 0;
     background: transparent;

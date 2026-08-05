@@ -9,6 +9,13 @@
     @apply bg-slate-950 text-slate-50 m-0 p-0 font-sans;
   }
 
+  /* Form input base styling guaranteeing visible input boxes for all entry fields */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+  select,
+  textarea {
+    @apply rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 shadow-sm transition-all focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed;
+  }
+
   /* Custom styled select dropdowns to remove ugly OS native presets */
   select {
     appearance: none;
@@ -27,16 +34,21 @@
     padding: 8px 12px;
   }
 
-  /* Custom calendar/clock icons for date/time inputs */
+  /* Custom calendar/clock icons and placeholder colors for date/time inputs */
   input[type="date"]::-webkit-calendar-picker-indicator,
   input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(0.8);
     cursor: pointer;
   }
+
+  input[type="date"]:invalid::-webkit-datetime-edit,
+  input[type="time"]:invalid::-webkit-datetime-edit {
+    color: #94a3b8;
+  }
 }
 
 @layer components {
-  /* Button variants extracted from previous App.svelte */
+  /* Button variants */
   .btn {
     @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200;
   }
@@ -103,8 +115,20 @@ html.light select option {
   color: #0f172a;
 }
 
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
 html.light input[type="date"]::-webkit-calendar-picker-indicator,
 html.light input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(0.2);
 }
-
