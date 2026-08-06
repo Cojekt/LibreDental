@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/LibreDental/libredental/pkg/storage"
 )
@@ -133,4 +135,92 @@ func (s *SystemSettingsService) IsSystemDarkMode() (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// GetLanguage returns the saved UI language preference.
+// Returns "system" if none has been set, indicating the OS locale should be used.
+func (s *SystemSettingsService) GetLanguage() (string, error) {
+	val, err := s.repo.GetSetting(context.Background(), "language")
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return "system", nil
+		}
+		return "system", fmt.Errorf("failed to fetch language setting: %w", err)
+	}
+	if val == "" {
+		return "system", nil
+	}
+	return val, nil
+}
+
+// SetLanguage persists the UI language preference.
+// Accepts a BCP 47 language tag (e.g. "en", "fr", "de") or the special value "system".
+func (s *SystemSettingsService) SetLanguage(lang string) error {
+	if lang == "" {
+		return fmt.Errorf("language tag must not be empty")
+	}
+	err := s.repo.SetSetting(context.Background(), "language", lang)
+	if err != nil {
+		return fmt.Errorf("failed to save language setting: %w", err)
+	}
+	return nil
+}
+
+// GetSystemLocale queries the host operating system for the user's locale and returns
+// a BCP 47 language tag (e.g. "en", "en-US", "fr-FR"). Falls back to "en" on any error.
+func (s *SystemSettingsService) GetSystemLocale() (string, error) {
+	var tag string
+
+	switch runtime.GOOS {
+	case "linux":
+		// Prefer LANG env var (e.g. "en_US.UTF-8" → "en-US")
+		for _, key := range []string{"LANGUAGE", "LANG", "LC_ALL", "LC_MESSAGES"} {
+			if v := os.Getenv(key); v != "" && v != "C" && v != "POSIX" {
+				tag = normalizePOSIXLocale(v)
+				break
+			}
+		}
+	case "darwin":
+		out, err := exec.Command("defaults", "read", "-g", "AppleLocale").Output()
+		if err == nil {
+			tag = normalizePOSIXLocale(strings.TrimSpace(string(out)))
+		}
+		if tag == "" {
+			out2, err2 := exec.Command("defaults", "read", "-g", "AppleLanguages").Output()
+			if err2 == nil {
+				// Output is like: ( "en-US", "fr-FR" )
+				raw := strings.TrimSpace(string(out2))
+				raw = strings.Trim(raw, "()\n")
+				parts := strings.Split(raw, ",")
+				if len(parts) > 0 {
+					tag = strings.Trim(strings.TrimSpace(parts[0]), "\"")
+				}
+			}
+		}
+	case "windows":
+		out, err := exec.Command("powershell", "-NoProfile", "-Command",
+			"[System.Globalization.CultureInfo]::CurrentUICulture.Name").Output()
+		if err == nil {
+			tag = strings.TrimSpace(string(out))
+		}
+	}
+
+	if tag == "" {
+		return "en", nil
+	}
+	return tag, nil
+}
+
+// normalizePOSIXLocale converts a POSIX locale string (e.g. "en_US.UTF-8") to a BCP 47 tag (e.g. "en-US").
+func normalizePOSIXLocale(posix string) string {
+	// Strip encoding suffix (e.g. ".UTF-8")
+	if idx := strings.IndexByte(posix, '.'); idx != -1 {
+		posix = posix[:idx]
+	}
+	// Strip modifier (e.g. "@euro")
+	if idx := strings.IndexByte(posix, '@'); idx != -1 {
+		posix = posix[:idx]
+	}
+	// Convert underscore to hyphen: "en_US" → "en-US"
+	return strings.ReplaceAll(posix, "_", "-")
 }

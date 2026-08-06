@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { CountryConfig } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import NavigationTabs from "./NavigationTabs.svelte";
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
 
   let {
     activeTab = $bindable("clinic"),
@@ -61,7 +63,7 @@
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          New Patient
+          {getLocaleVersion(), m.header_new_patient()}
         </button>
       {:else if activeTab === "appointments"}
         <button class="btn btn-primary shadow-md shadow-sky-500/20" onclick={onnewappointment}>
@@ -75,7 +77,7 @@
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          New Appointment
+          {getLocaleVersion(), m.header_new_appointment()}
         </button>
       {/if}
 
@@ -84,7 +86,7 @@
         onclick={onopensettings}
         class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/80 bg-slate-800/90 text-slate-300 hover:bg-slate-700 hover:text-white transition-all shadow-sm cursor-pointer"
         title="Settings"
-        aria-label="Open application settings"
+        aria-label={m.header_settings_label()}
       >
         <svg
           viewBox="0 0 24 24"

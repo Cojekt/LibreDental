@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { SystemSettingsService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion, applyLocale } from "../lib/locale.svelte.js";
+  import { locales } from "../paraglide/runtime.js";
 
   export type ThemeMode = "dark" | "light" | "system";
 
@@ -17,6 +20,7 @@
   let dataDir = $state("Loading storage path...");
   let isOpeningFolder = $state(false);
   let openError = $state<string | null>(null);
+  let selectedLanguage = $state("system");
 
   async function loadDataDir() {
     try {
@@ -27,6 +31,25 @@
     } catch (err) {
       console.error("Failed to get data directory path:", err);
       dataDir = "Unable to resolve storage path";
+    }
+  }
+
+  async function loadLanguage() {
+    try {
+      const lang = await SystemSettingsService.GetLanguage();
+      selectedLanguage = lang || "system";
+    } catch (err) {
+      console.error("Failed to get language setting:", err);
+    }
+  }
+
+  async function handleSelectLanguage(lang: string) {
+    selectedLanguage = lang;
+    applyLocale(lang === "system" ? "en" : lang);
+    try {
+      await SystemSettingsService.SetLanguage(lang);
+    } catch (err) {
+      console.warn("Failed to persist language setting:", err);
     }
   }
 
@@ -51,11 +74,13 @@
   $effect(() => {
     if (showModal) {
       loadDataDir();
+      loadLanguage();
     }
   });
 
   onMount(() => {
     loadDataDir();
+    loadLanguage();
   });
 </script>
 
@@ -96,9 +121,9 @@
           </div>
           <div>
             <h2 id="settings-title" class="m-0 text-base font-semibold text-white tracking-tight">
-              Application Settings
+              {getLocaleVersion(), m.settings_title()}
             </h2>
-            <p class="m-0 text-xs text-slate-400">System preferences and storage</p>
+            <p class="m-0 text-xs text-slate-400">{m.settings_subtitle()}</p>
           </div>
         </div>
         <button
@@ -118,7 +143,7 @@
         <!-- Appearance / Theme Section -->
         <div>
           <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2.5">
-            Appearance & Theme
+            {m.settings_section_appearance()}
           </span>
           <div class="grid grid-cols-3 gap-2.5">
             <!-- System Theme -->
@@ -132,8 +157,8 @@
               }`}
             >
               <div class="text-xl mb-1">💻</div>
-              <div class="text-xs font-semibold">System</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">OS Managed</div>
+              <div class="text-xs font-semibold">{m.settings_theme_system()}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">{m.settings_theme_system_sub()}</div>
             </button>
 
             <!-- Dark Mode -->
@@ -147,8 +172,8 @@
               }`}
             >
               <div class="text-xl mb-1">🌙</div>
-              <div class="text-xs font-semibold">Dark</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">High Contrast</div>
+              <div class="text-xs font-semibold">{m.settings_theme_dark()}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">{m.settings_theme_dark_sub()}</div>
             </button>
 
             <!-- Light Mode -->
@@ -162,16 +187,34 @@
               }`}
             >
               <div class="text-xl mb-1">☀️</div>
-              <div class="text-xs font-semibold">Light</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">Clean Bright</div>
+              <div class="text-xs font-semibold">{m.settings_theme_light()}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">{m.settings_theme_light_sub()}</div>
             </button>
           </div>
+        </div>
+
+        <!-- Language Section -->
+        <div>
+          <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            {m.settings_section_language()}
+          </span>
+          <select
+            id="language-select"
+            value={selectedLanguage}
+            onchange={(e) => handleSelectLanguage((e.target as HTMLSelectElement).value)}
+            class="w-full rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5 text-sm text-slate-200 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-all cursor-pointer"
+          >
+            <option value="system">🌐 {m.settings_language_system()}</option>
+            {#each locales as locale}
+              <option value={locale}>🗣 {locale.toUpperCase()}</option>
+            {/each}
+          </select>
         </div>
 
         <!-- Ultra-compact Data Storage Directory Section -->
         <div>
           <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
-            Data Storage Directory
+            {m.settings_section_storage()}
           </span>
 
           <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5">
@@ -192,7 +235,7 @@
                 <polyline points="15 3 21 3 21 9"></polyline>
                 <line x1="10" y1="14" x2="21" y2="3"></line>
               </svg>
-              <span>{isOpeningFolder ? "..." : "Open"}</span>
+              <span>{isOpeningFolder ? m.settings_storage_opening() : m.settings_storage_open()}</span>
             </button>
           </div>
 
@@ -211,7 +254,7 @@
           onclick={() => (showModal = false)}
           class="btn btn-primary px-5 py-2 text-xs cursor-pointer"
         >
-          Done
+          {m.settings_done()}
         </button>
       </div>
     </div>

@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "build:i18n": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide",
     "dev": "vite",
-    "build:dev": "vite build --minify false --mode development",
-    "build": "vite build --mode production",
+    "build:dev": "npm run build:i18n && vite build --minify false --mode development",
+    "build": "npm run build:i18n && vite build --mode production",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "npm run build:i18n && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -16,6 +17,9 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@inlang/paraglide-js": "^2.23.1",
+    "@inlang/plugin-m-function-matcher": "^2.2.9",
+    "@inlang/plugin-message-format": "^4.4.1",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^26.1.2",

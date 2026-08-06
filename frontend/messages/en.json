@@ -1,0 +1,59 @@
+{
+  "nav_clinic": "My Clinic",
+  "nav_patients": "Patients",
+  "nav_appointments": "Appointments",
+  "nav_charting": "Dental Charting",
+  "nav_billing": "Billing & Claims",
+  "nav_billing_coming_soon": "Coming soon",
+
+  "header_new_patient": "New Patient",
+  "header_new_appointment": "New Appointment",
+  "header_settings_label": "Open application settings",
+
+  "settings_title": "Application Settings",
+  "settings_subtitle": "System preferences and storage",
+  "settings_done": "Done",
+
+  "settings_section_appearance": "Appearance & Theme",
+  "settings_theme_system": "System",
+  "settings_theme_system_sub": "OS Managed",
+  "settings_theme_dark": "Dark",
+  "settings_theme_dark_sub": "High Contrast",
+  "settings_theme_light": "Light",
+  "settings_theme_light_sub": "Clean Bright",
+
+  "settings_section_language": "Language",
+  "settings_language_system": "System Default (follow OS)",
+
+  "settings_section_storage": "Data Storage Directory",
+  "settings_storage_open": "Open",
+  "settings_storage_opening": "...",
+  "settings_storage_error_prefix": "Could not open system file manager",
+
+  "onboarding_title": "Welcome to LibreDental™",
+  "onboarding_subtitle": "One-time initial practice setup",
+  "onboarding_body": "Please select the country where your dental practice is located. This will automatically configure region-specific compliance rules, national identity fields, tooth numbering standards, and address formats.",
+  "onboarding_country_label": "Practice Country / Region Jurisdiction *",
+  "onboarding_regional_config_title": "Automatic Regional Configuration:",
+  "onboarding_field_national_id": "National Identifier:",
+  "onboarding_field_tooth_system": "Tooth Numbering Notation:",
+  "onboarding_tooth_universal": "Universal System (1-32 / US)",
+  "onboarding_tooth_fdi": "FDI Standard (11-48 / ISO 3950)",
+  "onboarding_field_address": "Address Format:",
+  "onboarding_field_currency": "Practice Currency:",
+  "onboarding_submit": "Save & Complete Setup",
+  "onboarding_submitting": "Configuring Practice...",
+
+  "patient_save": "Save Patient",
+  "patient_archive": "Archive",
+  "patient_new": "New Patient",
+
+  "appointment_new": "New Appointment",
+  "appointment_save": "Save Appointment",
+  "appointment_delete": "Delete Appointment",
+
+  "common_cancel": "Cancel",
+  "common_save": "Save",
+  "common_close": "Close",
+  "common_loading": "Loading..."
+}

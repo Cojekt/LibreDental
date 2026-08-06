@@ -10,5 +10,8 @@ export default defineConfig({
     port: Number(process.env.WAILS_VITE_PORT) || 9245,
     strictPort: true,
   },
+  optimizeDeps: {
+    include: ["@wailsio/runtime"],
+  },
   plugins: [tailwindcss(), svelte(), wails("./bindings")],
 });

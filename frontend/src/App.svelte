@@ -6,6 +6,7 @@
     AppointmentService,
     SystemSettingsService,
   } from "../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  import { initLocale, getLocaleVersion } from "./lib/locale.svelte.js";
   import type {
     Patient,
     PracticeConfig,
@@ -492,6 +493,15 @@
     }
 
     await loadTheme();
+
+    // Initialize i18n: load saved language (or OS locale if set to "system")
+    try {
+      const savedLang = await SystemSettingsService.GetLanguage();
+      await initLocale(savedLang || "system");
+    } catch {
+      await initLocale("system");
+    }
+
     await checkConfig();
     await loadClinicData();
     await loadPatients();
@@ -499,7 +509,7 @@
   });
 </script>
 
-<div class="min-h-screen flex flex-col bg-slate-950 text-slate-100 dark-app-wrapper">
+<div class="min-h-screen flex flex-col bg-slate-950 text-slate-100 dark-app-wrapper" data-locale={getLocaleVersion()}>
   <Header
     bind:activeTab
     {countryMeta}
