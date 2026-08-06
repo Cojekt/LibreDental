@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("record not found")
-	ErrConflict      = errors.New("optimistic concurrency conflict: record has been updated by another user")
-	ErrInvalidInput  = errors.New("invalid input data")
+	ErrNotFound     = errors.New("record not found")
+	ErrConflict     = errors.New("optimistic concurrency conflict: record has been updated by another user")
+	ErrInvalidInput = errors.New("invalid input data")
 )
 
 // PatientRepository defines storage operations for patient demographic records.
@@ -67,5 +67,3 @@ type ChartRepository interface {
 	SaveCondition(ctx context.Context, condition *domain.ToothCondition) error
 	DeleteCondition(ctx context.Context, id string) error
 }
-
-

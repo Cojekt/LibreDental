@@ -162,5 +162,3 @@ func primaryToPalmer(idx int) string {
 	}
 	return strconv.Itoa(idx + 101)
 }
-
-

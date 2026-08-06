@@ -48,53 +48,51 @@
     return id || m.patients_unassigned_id();
   }
 
-  const statusBadges: Record<
-    string,
-    { label: string; bg: string; text: string; border: string }
-  > = $derived({
-    scheduled: {
-      label: m.appts_status_scheduled(),
-      bg: "bg-blue-500/15",
-      text: "text-blue-400",
-      border: "border-blue-500/30",
-    },
-    confirmed: {
-      label: m.appts_status_confirmed(),
-      bg: "bg-sky-500/15",
-      text: "text-sky-400",
-      border: "border-sky-500/30",
-    },
-    arrived: {
-      label: m.appts_status_arrived(),
-      bg: "bg-amber-500/15",
-      text: "text-amber-400",
-      border: "border-amber-500/30",
-    },
-    in_chair: {
-      label: m.appts_status_in_chair(),
-      bg: "bg-purple-500/15",
-      text: "text-purple-400",
-      border: "border-purple-500/30",
-    },
-    completed: {
-      label: m.appts_status_completed(),
-      bg: "bg-emerald-500/15",
-      text: "text-emerald-400",
-      border: "border-emerald-500/30",
-    },
-    cancelled: {
-      label: m.appts_status_cancelled(),
-      bg: "bg-rose-500/15",
-      text: "text-rose-400",
-      border: "border-rose-500/30",
-    },
-    no_show: {
-      label: m.appts_status_no_show(),
-      bg: "bg-slate-500/15",
-      text: "text-slate-400",
-      border: "border-slate-500/30",
-    },
-  });
+  const statusBadges: Record<string, { label: string; bg: string; text: string; border: string }> =
+    $derived({
+      scheduled: {
+        label: m.appts_status_scheduled(),
+        bg: "bg-blue-500/15",
+        text: "text-blue-400",
+        border: "border-blue-500/30",
+      },
+      confirmed: {
+        label: m.appts_status_confirmed(),
+        bg: "bg-sky-500/15",
+        text: "text-sky-400",
+        border: "border-sky-500/30",
+      },
+      arrived: {
+        label: m.appts_status_arrived(),
+        bg: "bg-amber-500/15",
+        text: "text-amber-400",
+        border: "border-amber-500/30",
+      },
+      in_chair: {
+        label: m.appts_status_in_chair(),
+        bg: "bg-purple-500/15",
+        text: "text-purple-400",
+        border: "border-purple-500/30",
+      },
+      completed: {
+        label: m.appts_status_completed(),
+        bg: "bg-emerald-500/15",
+        text: "text-emerald-400",
+        border: "border-emerald-500/30",
+      },
+      cancelled: {
+        label: m.appts_status_cancelled(),
+        bg: "bg-rose-500/15",
+        text: "text-rose-400",
+        border: "border-rose-500/30",
+      },
+      no_show: {
+        label: m.appts_status_no_show(),
+        bg: "bg-slate-500/15",
+        text: "text-slate-400",
+        border: "border-slate-500/30",
+      },
+    });
 
   // Time slots 8:00 AM to 6:00 PM
   const timeSlots = [
@@ -133,10 +131,9 @@
 
   let filteredAppointments = $derived(
     appointments.filter((a: Appointment) => {
-      if (selectedProvider !== "all" && a.provider_id !== selectedProvider)
-        return false;
+      if (selectedProvider !== "all" && a.provider_id !== selectedProvider) return false;
       return true;
-    }),
+    })
   );
 
   function formatTime(isoStr: string): string {
@@ -241,9 +238,7 @@
           type="button"
           onclick={() => (viewMode = "grid")}
           class={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-            viewMode === "grid"
-              ? "bg-sky-500 text-white"
-              : "text-slate-400 hover:text-slate-200"
+            viewMode === "grid" ? "bg-sky-500 text-white" : "text-slate-400 hover:text-slate-200"
           }`}
         >
           {m.appts_view_grid()}
@@ -252,9 +247,7 @@
           type="button"
           onclick={() => (viewMode = "agenda")}
           class={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-            viewMode === "agenda"
-              ? "bg-sky-500 text-white"
-              : "text-slate-400 hover:text-slate-200"
+            viewMode === "agenda" ? "bg-sky-500 text-white" : "text-slate-400 hover:text-slate-200"
           }`}
         >
           {m.appts_view_agenda()}
@@ -264,40 +257,29 @@
   </div>
 
   <!-- Day Header -->
-  <div
-    class="flex items-center justify-between border-b border-slate-700/60 pb-2"
-  >
+  <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
       📅 {formattedDateHeading(selectedDate)}
     </h2>
     <span class="text-xs text-slate-400 font-medium">
-      {filteredAppointments.length} appointment{filteredAppointments.length ===
-      1
-        ? ""
-        : "s"} scheduled
+      {filteredAppointments.length} appointment{filteredAppointments.length === 1 ? "" : "s"} scheduled
     </span>
   </div>
 
   {#if loading}
     <div class="flex items-center justify-center py-16 text-slate-400">
-      <div
-        class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-400"
-      ></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-400"></div>
       <span class="ml-3 text-sm font-medium">{m.appts_loading_schedule()}</span>
     </div>
   {:else if viewMode === "grid"}
     <!-- DAY GRID VIEW -->
-    <div
-      class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden"
-    >
+    <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
       <div class="divide-y divide-slate-800">
         {#each timeSlots as slot}
           {@const slotAppts = filteredAppointments.filter(
-            (a: Appointment) => getApptHour(a.start_time) === slot,
+            (a: Appointment) => getApptHour(a.start_time) === slot
           )}
-          <div
-            class="flex min-h-[96px] group hover:bg-slate-800/30 transition-colors"
-          >
+          <div class="flex min-h-[96px] group hover:bg-slate-800/30 transition-colors">
             <!-- Hour label -->
             <div
               class="w-24 flex-shrink-0 border-r border-slate-800 p-3 text-xs font-semibold text-slate-400 bg-slate-900/50"
@@ -315,32 +297,22 @@
                 </div>
               {:else}
                 {#each slotAppts as appt}
-                  {@const badge =
-                    statusBadges[appt.status] || statusBadges.scheduled}
+                  {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
                   <div
                     class="group/card relative w-full sm:w-[320px] rounded-xl border border-l-4 p-3.5 shadow-md transition-all duration-150 hover:shadow-sky-500/10 hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer"
                     style="border-left-color: {appt.color || '#3b82f6'};"
                     onclick={() => oneditappointment(appt)}
                     role="button"
                     tabindex="0"
-                    onkeydown={(e) =>
-                      e.key === "Enter" && oneditappointment(appt)}
+                    onkeydown={(e) => e.key === "Enter" && oneditappointment(appt)}
                   >
                     <div class="flex items-start justify-between">
                       <div>
-                        <div
-                          class="text-sm font-bold text-white flex items-center gap-1.5"
-                        >
+                        <div class="text-sm font-bold text-white flex items-center gap-1.5">
                           {getPatientName(appt.patient_id)}
                         </div>
-                        <div
-                          class="text-xs text-slate-400 mt-0.5 flex items-center gap-2"
-                        >
-                          <span
-                            >⏱ {formatTime(appt.start_time)} - {formatTime(
-                              appt.end_time,
-                            )}</span
-                          >
+                        <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                          <span>⏱ {formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span>
                           {#if getPatientPhone(appt.patient_id)}
                             <span>📞 {getPatientPhone(appt.patient_id)}</span>
                           {/if}
@@ -422,9 +394,7 @@
     </div>
   {:else}
     <!-- AGENDA VIEW TABLE -->
-    <div
-      class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden"
-    >
+    <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
       {#if filteredAppointments.length === 0}
         <div class="py-16 text-center text-slate-400">
           <p class="text-base font-semibold">{m.appts_no_appts_date()}</p>
@@ -447,12 +417,9 @@
           </thead>
           <tbody class="divide-y divide-slate-800">
             {#each filteredAppointments as appt}
-              {@const badge =
-                statusBadges[appt.status] || statusBadges.scheduled}
+              {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
               <tr class="hover:bg-slate-800/50 transition-colors">
-                <td
-                  class="px-4 py-3 font-medium whitespace-nowrap text-sky-400"
-                >
+                <td class="px-4 py-3 font-medium whitespace-nowrap text-sky-400">
                   {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
                 </td>
                 <td class="px-4 py-3 font-semibold text-white">
@@ -470,28 +437,15 @@
                 <td class="px-4 py-3">
                   <select
                     value={appt.status}
-                    onchange={(e) =>
-                      onupdatestatus(
-                        appt.id,
-                        (e.target as HTMLSelectElement).value,
-                      )}
+                    onchange={(e) => onupdatestatus(appt.id, (e.target as HTMLSelectElement).value)}
                     class={`rounded-lg border px-2.5 py-1 text-xs font-semibold focus:outline-none ${badge.bg} ${badge.text} ${badge.border}`}
                   >
-                    <option value="scheduled"
-                      >{m.appts_status_scheduled()}</option
-                    >
-                    <option value="confirmed"
-                      >{m.appts_status_confirmed()}</option
-                    >
+                    <option value="scheduled">{m.appts_status_scheduled()}</option>
+                    <option value="confirmed">{m.appts_status_confirmed()}</option>
                     <option value="arrived">{m.appts_status_arrived()}</option>
-                    <option value="in_chair">{m.appts_status_in_chair()}</option
-                    >
-                    <option value="completed"
-                      >{m.appts_status_completed()}</option
-                    >
-                    <option value="cancelled"
-                      >{m.appts_status_cancelled()}</option
-                    >
+                    <option value="in_chair">{m.appts_status_in_chair()}</option>
+                    <option value="completed">{m.appts_status_completed()}</option>
+                    <option value="cancelled">{m.appts_status_cancelled()}</option>
                     <option value="no_show">{m.appts_status_no_show()}</option>
                   </select>
                 </td>

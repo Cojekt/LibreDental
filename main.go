@@ -3,8 +3,8 @@ package main
 import (
 	"embed"
 	"log"
-	"path/filepath"
 	"os"
+	"path/filepath"
 
 	"github.com/LibreDental/libredental/pkg/services"
 	"github.com/LibreDental/libredental/pkg/storage/sqlite"
@@ -22,7 +22,7 @@ func main() {
 	}
 	appDir := filepath.Join(dataDir, "LibreDental")
 	os.MkdirAll(appDir, 0755)
-	
+
 	dbPath := filepath.Join(appDir, "libredental.db")
 	db, err := sqlite.Open(dbPath)
 	if err != nil {
@@ -64,9 +64,9 @@ func main() {
 	})
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:  "LibreDental™",
-		Width:  1280,
-		Height: 800,
+		Title:            "LibreDental™",
+		Width:            1280,
+		Height:           800,
 		BackgroundColour: application.NewRGB(15, 23, 42),
 		URL:              "/",
 	})

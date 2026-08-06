@@ -8,9 +8,9 @@ import (
 type Gender string
 
 const (
-	GenderMale      Gender = "male"
-	GenderFemale    Gender = "female"
-	GenderOther     Gender = "other"
+	GenderMale        Gender = "male"
+	GenderFemale      Gender = "female"
+	GenderOther       Gender = "other"
 	GenderUndisclosed Gender = "undisclosed"
 )
 
@@ -24,16 +24,16 @@ const (
 
 // Patient represents a dental patient demographic record.
 type Patient struct {
-	ID             string    `json:"id"`
-	FirstName      string    `json:"first_name"`
-	LastName       string    `json:"last_name"`
-	MiddleName     string    `json:"middle_name,omitempty"`
-	PreferredName  string    `json:"preferred_name,omitempty"`
-	DateOfBirth    time.Time `json:"date_of_birth"`
-	Gender         Gender    `json:"gender"`
-	Email          string    `json:"email,omitempty"`
-	PhonePrimary   string    `json:"phone_primary,omitempty"`
-	PhoneSecondary string    `json:"phone_secondary,omitempty"`
+	ID             string      `json:"id"`
+	FirstName      string      `json:"first_name"`
+	LastName       string      `json:"last_name"`
+	MiddleName     string      `json:"middle_name,omitempty"`
+	PreferredName  string      `json:"preferred_name,omitempty"`
+	DateOfBirth    time.Time   `json:"date_of_birth"`
+	Gender         Gender      `json:"gender"`
+	Email          string      `json:"email,omitempty"`
+	PhonePrimary   string      `json:"phone_primary,omitempty"`
+	PhoneSecondary string      `json:"phone_secondary,omitempty"`
 	AddressLine1   string      `json:"address_line1,omitempty"`
 	AddressLine2   string      `json:"address_line2,omitempty"`
 	City           string      `json:"city,omitempty"`

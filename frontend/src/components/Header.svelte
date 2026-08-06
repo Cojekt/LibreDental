@@ -42,9 +42,7 @@
       </div>
       <div class="flex items-center">
         <h1 class="m-0 text-xl font-bold tracking-tight text-slate-50">
-          LibreDental<span class="align-super text-[11px] text-slate-400"
-            >™</span
-          >
+          LibreDental<span class="align-super text-[11px] text-slate-400">™</span>
         </h1>
         {#if countryMeta}
           <span
@@ -58,10 +56,7 @@
 
     <div class="flex items-center gap-3">
       {#if activeTab === "patients"}
-        <button
-          class="btn btn-primary shadow-md shadow-sky-500/20"
-          onclick={onnewpatient}
-        >
+        <button class="btn btn-primary shadow-md shadow-sky-500/20" onclick={onnewpatient}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -75,10 +70,7 @@
           {(getLocaleVersion(), m.header_new_patient())}
         </button>
       {:else if activeTab === "appointments"}
-        <button
-          class="btn btn-primary shadow-md shadow-sky-500/20"
-          onclick={onnewappointment}
-        >
+        <button class="btn btn-primary shadow-md shadow-sky-500/20" onclick={onnewappointment}>
           <svg
             viewBox="0 0 24 24"
             fill="none"

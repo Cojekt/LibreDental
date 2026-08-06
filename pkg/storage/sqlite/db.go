@@ -1,8 +1,8 @@
 package sqlite
 
 import (
-	"embed"
 	"database/sql"
+	"embed"
 	"fmt"
 
 	"github.com/pressly/goose/v3"
@@ -21,7 +21,7 @@ type DB struct {
 func Open(dbPath string) (*DB, error) {
 	// Enable WAL mode, foreign keys, and normal sync for high performance local execution
 	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=synchronous(1)&_pragma=busy_timeout(5000)", dbPath)
-	
+
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open sqlite db: %w", err)

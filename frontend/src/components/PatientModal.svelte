@@ -43,9 +43,7 @@
 
   const modalTitle = $derived.by(() => {
     getLocaleVersion();
-    return isEditing
-      ? m.patient_modal_edit_title()
-      : m.patient_modal_add_title();
+    return isEditing ? m.patient_modal_edit_title() : m.patient_modal_add_title();
   });
   const modalSubtitle = $derived.by(() => {
     getLocaleVersion();
@@ -63,32 +61,15 @@
   <form onsubmit={onsave}>
     <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
       <FormField label={m.patient_first_name()} forId="fname" required>
-        <Input
-          id="fname"
-          type="text"
-          required
-          bind:value={firstName}
-          placeholder="Jane"
-        />
+        <Input id="fname" type="text" required bind:value={firstName} placeholder="Jane" />
       </FormField>
 
       <FormField label={m.patient_last_name()} forId="lname" required>
-        <Input
-          id="lname"
-          type="text"
-          required
-          bind:value={lastName}
-          placeholder="Smith"
-        />
+        <Input id="lname" type="text" required bind:value={lastName} placeholder="Smith" />
       </FormField>
 
       <FormField label={idLabel} forId="national-id">
-        <Input
-          id="national-id"
-          type="text"
-          bind:value={nationalId}
-          placeholder={idPlaceholder}
-        />
+        <Input id="national-id" type="text" bind:value={nationalId} placeholder={idPlaceholder} />
       </FormField>
 
       <FormField label={m.patient_dob()} forId="dob" required>
@@ -102,22 +83,11 @@
       </FormField>
 
       <FormField label={m.patient_email()} forId="email">
-        <Input
-          id="email"
-          type="email"
-          bind:value={email}
-          placeholder="jane.smith@example.com"
-        />
+        <Input id="email" type="email" bind:value={email} placeholder="jane.smith@example.com" />
       </FormField>
 
       <FormField label={m.patient_phone()} forId="phone" required>
-        <Input
-          id="phone"
-          type="tel"
-          required
-          bind:value={phone}
-          placeholder="(555) 019-2834"
-        />
+        <Input id="phone" type="tel" required bind:value={phone} placeholder="(555) 019-2834" />
       </FormField>
 
       <FormField label={stateLabel} forId="state-province">

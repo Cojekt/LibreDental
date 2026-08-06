@@ -174,4 +174,3 @@ func TestPracticeConfigRepository_ProvidersAndOperatories(t *testing.T) {
 		t.Errorf("Expected 0 providers after delete, got %d", len(providersAfterDelete))
 	}
 }
-

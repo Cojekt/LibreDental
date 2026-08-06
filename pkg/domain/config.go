@@ -136,4 +136,3 @@ func NewPracticeConfig(meta CountryConfig) *PracticeConfig {
 		UpdatedAt:     now,
 	}
 }
-

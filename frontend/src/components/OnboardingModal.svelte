@@ -71,9 +71,7 @@
         </div>
 
         {#if selectedCountry}
-          {@const meta = supportedCountries.find(
-            (c: CountryConfig) => c.code === selectedCountry,
-          )}
+          {@const meta = supportedCountries.find((c: CountryConfig) => c.code === selectedCountry)}
           {#if meta}
             <div
               class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-xs text-slate-400 space-y-2"
@@ -81,17 +79,11 @@
               <div class="font-medium text-slate-200 mb-1">
                 {m.onboarding_regional_config_title()}
               </div>
-              <div
-                class="flex justify-between border-b border-slate-800/80 pb-1"
-              >
+              <div class="flex justify-between border-b border-slate-800/80 pb-1">
                 <span>{m.onboarding_field_national_id()}</span>
-                <span class="text-blue-400 font-medium"
-                  >{meta.national_id_name}</span
-                >
+                <span class="text-blue-400 font-medium">{meta.national_id_name}</span>
               </div>
-              <div
-                class="flex justify-between border-b border-slate-800/80 pb-1"
-              >
+              <div class="flex justify-between border-b border-slate-800/80 pb-1">
                 <span>{m.onboarding_field_tooth_system()}</span>
                 <span class="text-blue-400 font-medium">
                   {meta.default_tooth_system === "universal"
@@ -99,9 +91,7 @@
                     : m.onboarding_tooth_fdi()}
                 </span>
               </div>
-              <div
-                class="flex justify-between border-b border-slate-800/80 pb-1"
-              >
+              <div class="flex justify-between border-b border-slate-800/80 pb-1">
                 <span>{m.onboarding_field_address()}</span>
                 <span class="text-slate-300"
                   >{meta.state_province_label} & {meta.postal_code_label}</span

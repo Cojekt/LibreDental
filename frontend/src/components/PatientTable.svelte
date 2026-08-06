@@ -24,9 +24,7 @@
     onarchivepatient: (p: Patient) => void;
   }>();
 
-  const idHeader = $derived(
-    countryMeta?.national_id_name || m.patients_unassigned_id(),
-  );
+  const idHeader = $derived(countryMeta?.national_id_name || m.patients_unassigned_id());
 </script>
 
 <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-800">
@@ -41,9 +39,7 @@
       </p>
       <p class="mb-4 text-sm">{m.patients_no_found_desc()}</p>
       {#if statusFilter === "active"}
-        <button class="btn btn-secondary" onclick={onaddpatient}
-          >{m.patients_add_first()}</button
-        >
+        <button class="btn btn-secondary" onclick={onaddpatient}>{m.patients_add_first()}</button>
       {/if}
     </div>
   {:else}
@@ -92,9 +88,7 @@
                   >{p.national_id}</span
                 >
               {:else}
-                <span class="text-slate-500 text-xs italic"
-                  >{m.patients_unassigned_id()}</span
-                >
+                <span class="text-slate-500 text-xs italic">{m.patients_unassigned_id()}</span>
               {/if}
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
@@ -104,9 +98,7 @@
               </div>
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm"
-              >{p.date_of_birth
-                ? new Date(p.date_of_birth).toLocaleDateString()
-                : "N/A"}</td
+              >{p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString() : "N/A"}</td
             >
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               {#if p.medical_alerts && p.medical_alerts.length > 0}
@@ -127,16 +119,13 @@
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               <div class="flex items-center gap-2">
-                <button
-                  class="btn btn-ghost btn-sm"
-                  onclick={() => oneditpatient(p)}
+                <button class="btn btn-ghost btn-sm" onclick={() => oneditpatient(p)}
                   >{m.patients_btn_edit()}</button
                 >
                 {#if p.status !== "archived"}
                   <button
                     class="btn btn-ghost btn-danger btn-sm"
-                    onclick={() => onarchivepatient(p)}
-                    >{m.patients_btn_archive()}</button
+                    onclick={() => onarchivepatient(p)}>{m.patients_btn_archive()}</button
                   >
                 {/if}
               </div>

@@ -80,19 +80,14 @@
   async function loadTheme() {
     try {
       const dbTheme = await SystemSettingsService.GetTheme();
-      if (
-        dbTheme === "light" ||
-        dbTheme === "dark" ||
-        dbTheme === "system"
-      ) {
+      if (dbTheme === "light" || dbTheme === "dark" || dbTheme === "system") {
         await applyTheme(dbTheme as ThemeMode);
         return;
       }
     } catch (e) {
       console.warn("Could not load theme from DB, fallback to localStorage:", e);
     }
-    const savedTheme =
-      (localStorage.getItem("theme") as ThemeMode) || "system";
+    const savedTheme = (localStorage.getItem("theme") as ThemeMode) || "system";
     await applyTheme(savedTheme);
   }
 
@@ -267,9 +262,7 @@
     lastName = p.last_name;
     email = p.email || "";
     phone = p.phone_primary || "";
-    dob = p.date_of_birth
-      ? new Date(p.date_of_birth).toISOString().split("T")[0]
-      : "";
+    dob = p.date_of_birth ? new Date(p.date_of_birth).toISOString().split("T")[0] : "";
     nationalId = p.national_id || "";
     stateProvince = p.state_province || "";
     postalCode = p.postal_code || "";
@@ -300,9 +293,7 @@
           p.state_province = stateProvince;
           p.postal_code = postalCode;
           p.country_code = countryMeta.code;
-          p.medical_alerts = medicalAlerts
-            ? medicalAlerts.split(",").map((s) => s.trim())
-            : [];
+          p.medical_alerts = medicalAlerts ? medicalAlerts.split(",").map((s) => s.trim()) : [];
           await PatientService.UpdatePatient(p);
         }
       } else {
@@ -325,9 +316,7 @@
           country_code: countryMeta.code,
           national_id_type: countryMeta.national_id_type,
           national_id: nationalId,
-          medical_alerts: medicalAlerts
-            ? medicalAlerts.split(",").map((s) => s.trim())
-            : [],
+          medical_alerts: medicalAlerts ? medicalAlerts.split(",").map((s) => s.trim()) : [],
           allergies: [],
           notes: "",
           version: 1,
@@ -345,11 +334,7 @@
   }
 
   async function handleArchivePatient(p: Patient) {
-    if (
-      confirm(
-        m.confirm_archive_patient({ firstName: p.first_name, lastName: p.last_name }),
-      )
-    ) {
+    if (confirm(m.confirm_archive_patient({ firstName: p.first_name, lastName: p.last_name }))) {
       try {
         await PatientService.ArchivePatient(p.id);
         await loadPatients();
@@ -406,12 +391,8 @@
     }
 
     try {
-      const startTimeISO = new Date(
-        `${apptStartDateStr}T${apptStartTimeStr}:00`,
-      ).toISOString();
-      const endTimeISO = new Date(
-        `${apptStartDateStr}T${apptEndTimeStr}:00`,
-      ).toISOString();
+      const startTimeISO = new Date(`${apptStartDateStr}T${apptStartTimeStr}:00`).toISOString();
+      const endTimeISO = new Date(`${apptStartDateStr}T${apptEndTimeStr}:00`).toISOString();
 
       if (isEditingAppt) {
         const existing = await AppointmentService.GetAppointment(editingApptId);
@@ -484,13 +465,11 @@
 
   onMount(async () => {
     if (typeof window !== "undefined" && window.matchMedia) {
-      window
-        .matchMedia("(prefers-color-scheme: light)")
-        .addEventListener("change", () => {
-          if (theme === "system") {
-            applyTheme("system");
-          }
-        });
+      window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+        if (theme === "system") {
+          applyTheme("system");
+        }
+      });
     }
 
     await loadTheme();
@@ -510,7 +489,10 @@
   });
 </script>
 
-<div class="min-h-screen flex flex-col bg-slate-950 text-slate-100 dark-app-wrapper" data-locale={getLocaleVersion()}>
+<div
+  class="min-h-screen flex flex-col bg-slate-950 text-slate-100 dark-app-wrapper"
+  data-locale={getLocaleVersion()}
+>
   <Header
     bind:activeTab
     {countryMeta}
@@ -557,25 +539,14 @@
         ondeleteappointment={handleDeleteAppt}
       />
     {:else if activeTab === "charting"}
-      <ChartingView
-        {patients}
-        {countryMeta}
-      />
+      <ChartingView {patients} {countryMeta} />
     {/if}
   </main>
 </div>
 
-<SettingsModal
-  bind:showModal={showSettingsModal}
-  bind:theme
-  onchangetheme={applyTheme}
-/>
+<SettingsModal bind:showModal={showSettingsModal} bind:theme onchangetheme={applyTheme} />
 
-<OnboardingModal
-  bind:showOnboarding
-  {supportedCountries}
-  oncomplete={handleOnboardingComplete}
-/>
+<OnboardingModal bind:showOnboarding {supportedCountries} oncomplete={handleOnboardingComplete} />
 
 <PatientModal
   bind:showPatientModal

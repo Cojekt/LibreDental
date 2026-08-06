@@ -62,9 +62,7 @@
           </span>
           <span>{tab.label}</span>
           {#if activeTab === tab.id}
-            <div
-              class="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400"
-            ></div>
+            <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400"></div>
           {/if}
         </button>
       {:else}

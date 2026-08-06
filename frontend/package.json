@@ -9,7 +9,9 @@
     "build:dev": "npm run build:i18n && vite build --minify false --mode development",
     "build": "npm run build:i18n && vite build --mode production",
     "preview": "vite preview",
-    "check": "npm run build:i18n && svelte-check --tsconfig ./tsconfig.json"
+    "check": "npm run build:i18n && svelte-check --tsconfig ./tsconfig.json",
+    "format:check": "prettier --check .",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -23,6 +25,8 @@
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^26.1.2",
+    "prettier": "^3.5.0",
+    "prettier-plugin-svelte": "^3.3.0",
     "svelte": "^5.46.4",
     "svelte-check": "^4.4.8",
     "tslib": "^2.6.2",

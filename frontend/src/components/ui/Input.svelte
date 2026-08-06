@@ -30,15 +30,13 @@
   );
 
   // Use "text" mode when date value is empty and unfocused so custom dynamic placeholder is displayed
-  const effectiveType = $derived(
-    type === "date" && !value && !isFocused ? "text" : type
-  );
+  const effectiveType = $derived(type === "date" && !value && !isFocused ? "text" : type);
 </script>
 
 <input
   {id}
   type={effectiveType}
-  bind:value={value}
+  bind:value
   placeholder={effectivePlaceholder}
   {required}
   {disabled}
@@ -52,9 +50,7 @@
   }}
   class={`rounded-xl border bg-slate-950/80 px-4 py-2.5 text-sm shadow-sm transition-all focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed ${
     fullWidth ? "w-full" : ""
-  } ${
-    type === "date" && !value ? "text-slate-400 placeholder:text-slate-500" : "text-white"
-  } ${
+  } ${type === "date" && !value ? "text-slate-400 placeholder:text-slate-500" : "text-white"} ${
     error
       ? "border-rose-500/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
       : "border-slate-700 hover:border-slate-600 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"

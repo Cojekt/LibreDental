@@ -1,0 +1,127 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: libredental-linux-amd64
+            server_artifact_name: libredental-server-linux-amd64
+            platform: linux
+          - os: macos-latest
+            artifact_name: libredental-darwin-universal
+            server_artifact_name: libredental-server-darwin-arm64
+            platform: darwin
+          - os: windows-latest
+            artifact_name: libredental-windows-amd64.exe
+            server_artifact_name: libredental-server-windows-amd64.exe
+            platform: windows
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            pkg-config \
+            build-essential
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Wails v3 CLI & Task CLI
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+          go install github.com/go-task/task/v3/cmd/task@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Build Application & Server
+        run: |
+          task build
+          task build:server
+
+      - name: Prepare Artifacts (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p release_assets
+          cp bin/libredental release_assets/${{ matrix.artifact_name }}
+          cp bin/libredental-server release_assets/${{ matrix.server_artifact_name }}
+
+      - name: Prepare Artifacts (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p release_assets
+          cp bin/libredental release_assets/${{ matrix.artifact_name }}
+          cp bin/libredental-server release_assets/${{ matrix.server_artifact_name }}
+          if [ -d "bin/libredental.app" ]; then
+            cd bin && zip -r ../release_assets/libredental-darwin-app.zip libredental.app && cd ..
+          fi
+
+      - name: Prepare Artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path release_assets
+          Copy-Item bin/libredental.exe release_assets/${{ matrix.artifact_name }}
+          Copy-Item bin/libredental-server.exe release_assets/${{ matrix.server_artifact_name }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets-${{ matrix.platform }}
+          path: release_assets/*
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_download
+          merge-multiple: true
+
+      - name: Generate SHA256 Checksums
+        run: |
+          cd release_download
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release_download/*
+          generate_release_notes: true

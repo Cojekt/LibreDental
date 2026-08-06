@@ -16,8 +16,8 @@
  *   <span>{getLocaleVersion(), m.settings_title()}</span>
  */
 
-import { setLocale, getLocale, locales } from '../paraglide/runtime.js';
-import { SystemSettingsService } from '../../bindings/github.com/LibreDental/libredental/pkg/services/index.js';
+import { setLocale, getLocale, locales } from "../paraglide/runtime.js";
+import { SystemSettingsService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
 
 // Internal reactive counter — not directly exported (Svelte 5 module state rule).
 let _localeVersion = $state(0);
@@ -46,12 +46,12 @@ export function applyLocale(tag: string) {
 export async function initLocale(savedLang: string): Promise<void> {
   let tag = savedLang;
 
-  if (tag === 'system' || tag === '') {
+  if (tag === "system" || tag === "") {
     try {
       const osLocale = await SystemSettingsService.GetSystemLocale();
-      tag = osLocale || 'en';
+      tag = osLocale || "en";
     } catch {
-      tag = 'en';
+      tag = "en";
     }
   }
 
@@ -61,8 +61,8 @@ export async function initLocale(savedLang: string): Promise<void> {
   const match: string =
     (locales as readonly string[]).find((l) => l === tag) ??
     (locales as readonly string[]).find((l) => tag.startsWith(l)) ??
-    (locales as readonly string[]).find((l) => l === tag.split('-')[0]) ??
-    'en';
+    (locales as readonly string[]).find((l) => l === tag.split("-")[0]) ??
+    "en";
 
   applyLocale(match);
 }

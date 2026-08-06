@@ -35,9 +35,7 @@
     onrefresh: () => Promise<void>;
   }>();
 
-  let activeSubTab = $state<"profile" | "hours" | "providers" | "operatories">(
-    "profile",
-  );
+  let activeSubTab = $state<"profile" | "hours" | "providers" | "operatories">("profile");
   let savingProfile = $state(false);
   let profileMessage = $state<{
     text: string;
@@ -81,10 +79,7 @@
 
   function addBreak(hour: BusinessHourDay) {
     if (!hour.breaks) hour.breaks = [];
-    hour.breaks = [
-      ...hour.breaks,
-      { name: "Break", start_time: "12:00", end_time: "13:00" },
-    ];
+    hour.breaks = [...hour.breaks, { name: "Break", start_time: "12:00", end_time: "13:00" }];
   }
 
   function removeBreak(hour: BusinessHourDay, index: number) {
@@ -138,9 +133,7 @@
           close_time: "17:00",
           is_closed: false,
           slots: [{ open_time: "08:00", close_time: "17:00" }],
-          breaks: [
-            { name: "Lunch Break", start_time: "12:00", end_time: "13:00" },
-          ],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
         },
         {
           day: "Tuesday",
@@ -148,9 +141,7 @@
           close_time: "17:00",
           is_closed: false,
           slots: [{ open_time: "08:00", close_time: "17:00" }],
-          breaks: [
-            { name: "Lunch Break", start_time: "12:00", end_time: "13:00" },
-          ],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
         },
         {
           day: "Wednesday",
@@ -158,9 +149,7 @@
           close_time: "17:00",
           is_closed: false,
           slots: [{ open_time: "08:00", close_time: "17:00" }],
-          breaks: [
-            { name: "Lunch Break", start_time: "12:00", end_time: "13:00" },
-          ],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
         },
         {
           day: "Thursday",
@@ -168,9 +157,7 @@
           close_time: "17:00",
           is_closed: false,
           slots: [{ open_time: "08:00", close_time: "17:00" }],
-          breaks: [
-            { name: "Lunch Break", start_time: "12:00", end_time: "13:00" },
-          ],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
         },
         {
           day: "Friday",
@@ -178,9 +165,7 @@
           close_time: "17:00",
           is_closed: false,
           slots: [{ open_time: "08:00", close_time: "17:00" }],
-          breaks: [
-            { name: "Lunch Break", start_time: "12:00", end_time: "13:00" },
-          ],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
         },
         {
           day: "Saturday",
@@ -198,8 +183,8 @@
           slots: [{ open_time: "08:00", close_time: "17:00" }],
           breaks: [],
         },
-      ],
-    ),
+      ]
+    )
   );
 
   // Reactively sync when practiceConfig or countryMeta changes
@@ -219,13 +204,9 @@
       postalCode = practiceConfig.postal_code || "";
       countryCode = practiceConfig.country_code || countryMeta?.code || "";
       currency = practiceConfig.currency || countryMeta?.default_currency || "";
-      toothSystem =
-        practiceConfig.tooth_system || countryMeta?.default_tooth_system || "";
+      toothSystem = practiceConfig.tooth_system || countryMeta?.default_tooth_system || "";
       dateFormat = practiceConfig.date_format || countryMeta?.date_format || "";
-      if (
-        practiceConfig.business_hours &&
-        practiceConfig.business_hours.length > 0
-      ) {
+      if (practiceConfig.business_hours && practiceConfig.business_hours.length > 0) {
         businessHours = ensureDaySlots(practiceConfig.business_hours);
       }
     } else if (countryMeta) {
@@ -269,9 +250,7 @@
     }, 3000);
   }
 
-  function selectSubTab(
-    tab: "profile" | "hours" | "providers" | "operatories",
-  ) {
+  function selectSubTab(tab: "profile" | "hours" | "providers" | "operatories") {
     activeSubTab = tab;
     if (toastTimeout) clearTimeout(toastTimeout);
     profileMessage = null;
@@ -293,13 +272,9 @@
       postalCode = practiceConfig.postal_code || "";
       countryCode = practiceConfig.country_code || countryMeta?.code || "";
       currency = practiceConfig.currency || countryMeta?.default_currency || "";
-      toothSystem =
-        practiceConfig.tooth_system || countryMeta?.default_tooth_system || "";
+      toothSystem = practiceConfig.tooth_system || countryMeta?.default_tooth_system || "";
       dateFormat = practiceConfig.date_format || countryMeta?.date_format || "";
-      if (
-        practiceConfig.business_hours &&
-        practiceConfig.business_hours.length > 0
-      ) {
+      if (practiceConfig.business_hours && practiceConfig.business_hours.length > 0) {
         businessHours = practiceConfig.business_hours;
       }
     }
@@ -340,8 +315,7 @@
         updated_at: new Date().toISOString(),
       };
 
-      const res =
-        await PracticeConfigService.UpdatePracticeConfig(updatedConfig);
+      const res = await PracticeConfigService.UpdatePracticeConfig(updatedConfig);
       if (res) {
         practiceConfig = res;
         setProfileMessage("Clinic settings saved!", "success");
@@ -358,9 +332,7 @@
 
   function handleCountryChange(code: string) {
     countryCode = code as any;
-    const found = supportedCountries.find(
-      (c: CountryConfig) => c.code === code,
-    );
+    const found = supportedCountries.find((c: CountryConfig) => c.code === code);
     if (found) {
       currency = found.default_currency;
       toothSystem = found.default_tooth_system;
@@ -493,9 +465,7 @@
 
 <div class="space-y-6">
   <!-- Sub Navigation Tabs with Edit / Save / Cancel controls & Minimalist Notification -->
-  <div
-    class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 gap-4"
-  >
+  <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 gap-4">
     <div class="flex border-b border-transparent gap-2">
       <button
         type="button"
@@ -572,18 +542,10 @@
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <path
-                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                />
-                <path
-                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                />
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
-              <span
-                >{activeSubTab === "hours"
-                  ? "Edit Hours"
-                  : "Edit Practice Info"}</span
-              >
+              <span>{activeSubTab === "hours" ? "Edit Hours" : "Edit Practice Info"}</span>
             </button>
           {:else}
             <button
@@ -613,9 +575,7 @@
                   stroke="currentColor"
                   stroke-width="2"
                 >
-                  <path
-                    d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
-                  />
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                   <polyline points="17 21 17 13 7 13 7 21" />
                   <polyline points="7 3 7 8 15 8" />
                 </svg>
@@ -633,9 +593,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- General Demographics -->
       <div class="lg:col-span-2 space-y-6">
-        <div
-          class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4"
-        >
+        <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
           <h3
             class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
           >
@@ -644,9 +602,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label
-                for="clinic-name"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="clinic-name" class="block text-xs font-semibold text-slate-400 mb-1"
                 >Clinic Name *</label
               >
               <input
@@ -659,9 +615,7 @@
               />
             </div>
             <div>
-              <label
-                for="clinic-tagline"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="clinic-tagline" class="block text-xs font-semibold text-slate-400 mb-1"
                 >Tagline / Subtitle</label
               >
               <input
@@ -675,10 +629,7 @@
             </div>
 
             <div>
-              <label
-                for="clinic-tax-id"
-                class="block text-xs font-semibold text-slate-400 mb-1"
-              >
+              <label for="clinic-tax-id" class="block text-xs font-semibold text-slate-400 mb-1">
                 {countryMeta?.national_id_type
                   ? `${countryMeta.national_id_type.toUpperCase()} / Tax ID`
                   : "Tax ID / Business Registration #"}
@@ -694,9 +645,7 @@
             </div>
 
             <div>
-              <label
-                for="clinic-license"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="clinic-license" class="block text-xs font-semibold text-slate-400 mb-1"
                 >Practice License Number</label
               >
               <input
@@ -710,9 +659,7 @@
             </div>
 
             <div>
-              <label
-                for="clinic-phone"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="clinic-phone" class="block text-xs font-semibold text-slate-400 mb-1"
                 >Primary Phone</label
               >
               <input
@@ -726,9 +673,7 @@
             </div>
 
             <div>
-              <label
-                for="clinic-email"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="clinic-email" class="block text-xs font-semibold text-slate-400 mb-1"
                 >Email Address</label
               >
               <input
@@ -742,9 +687,7 @@
             </div>
 
             <div class="sm:col-span-2">
-              <label
-                for="clinic-website"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="clinic-website" class="block text-xs font-semibold text-slate-400 mb-1"
                 >Website URL</label
               >
               <input
@@ -760,9 +703,7 @@
         </div>
 
         <!-- Address Information -->
-        <div
-          class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4"
-        >
+        <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
           <h3
             class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
           >
@@ -771,9 +712,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="sm:col-span-2">
-              <label
-                for="addr-1"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="addr-1" class="block text-xs font-semibold text-slate-400 mb-1"
                 >Street Address</label
               >
               <input
@@ -787,9 +726,7 @@
             </div>
 
             <div>
-              <label
-                for="addr-city"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="addr-city" class="block text-xs font-semibold text-slate-400 mb-1"
                 >City / Municipality</label
               >
               <input
@@ -802,9 +739,7 @@
             </div>
 
             <div>
-              <label
-                for="addr-state"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="addr-state" class="block text-xs font-semibold text-slate-400 mb-1"
                 >State / Province / Region</label
               >
               <input
@@ -817,9 +752,7 @@
             </div>
 
             <div>
-              <label
-                for="addr-zip"
-                class="block text-xs font-semibold text-slate-400 mb-1"
+              <label for="addr-zip" class="block text-xs font-semibold text-slate-400 mb-1"
                 >ZIP / Postal Code</label
               >
               <input
@@ -836,9 +769,7 @@
 
       <!-- Regional & Practice Standards (Read-Only) -->
       <div class="space-y-6">
-        <div
-          class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4"
-        >
+        <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
           <h3
             class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
           >
@@ -846,31 +777,21 @@
           </h3>
 
           <div class="space-y-3">
-            <div
-              class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3"
-            >
-              <span
-                class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+            <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
+              <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
                 >Practice Country</span
               >
-              <span
-                class="text-sm font-medium text-slate-200 mt-0.5 flex items-center gap-2"
-              >
+              <span class="text-sm font-medium text-slate-200 mt-0.5 flex items-center gap-2">
                 <span>{countryMeta?.flag || "📍"}</span>
                 <span>{countryMeta?.name || countryCode} ({countryCode})</span>
               </span>
             </div>
 
-            <div
-              class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3"
-            >
-              <span
-                class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+            <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
+              <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
                 >Tooth Notation System</span
               >
-              <span
-                class="text-sm font-medium text-slate-200 mt-0.5 capitalize"
-              >
+              <span class="text-sm font-medium text-slate-200 mt-0.5 capitalize">
                 {toothSystem === "fdi"
                   ? "FDI World Dental Federation Notation (#11 - #48)"
                   : toothSystem === "palmer"
@@ -879,11 +800,8 @@
               </span>
             </div>
 
-            <div
-              class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3"
-            >
-              <span
-                class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+            <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
+              <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
                 >Default Practice Currency</span
               >
               <span class="text-sm font-medium text-slate-200 mt-0.5 font-mono">
@@ -891,11 +809,8 @@
               </span>
             </div>
 
-            <div
-              class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3"
-            >
-              <span
-                class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+            <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
+              <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
                 >System Date Format</span
               >
               <span class="text-sm font-medium text-slate-200 mt-0.5 font-mono">
@@ -904,8 +819,7 @@
             </div>
           </div>
           <p class="text-[11px] text-slate-500 italic">
-            Regional standards are established during setup to preserve clinical
-            record integrity.
+            Regional standards are established during setup to preserve clinical record integrity.
           </p>
         </div>
       </div>
@@ -914,19 +828,13 @@
 
   <!-- TAB 2: OPERATING HOURS -->
   {#if activeSubTab === "hours"}
-    <div
-      class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-6"
-    >
-      <div
-        class="flex items-center justify-between border-b border-slate-800 pb-4"
-      >
+    <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
         <div>
-          <h3 class="text-lg font-bold text-slate-100">
-            ⏰ Practice Operating Schedule
-          </h3>
+          <h3 class="text-lg font-bold text-slate-100">⏰ Practice Operating Schedule</h3>
           <p class="text-xs text-slate-400 mt-0.5">
-            Configure your weekly operating hours, split shifts, and scheduled
-            breaks or closure gaps for appointment scheduling.
+            Configure your weekly operating hours, split shifts, and scheduled breaks or closure
+            gaps for appointment scheduling.
           </p>
         </div>
       </div>
@@ -947,8 +855,7 @@
                   type="checkbox"
                   id={`open-${idx}`}
                   checked={!hour.is_closed}
-                  onchange={(e) =>
-                    (hour.is_closed = !(e.target as HTMLInputElement).checked)}
+                  onchange={(e) => (hour.is_closed = !(e.target as HTMLInputElement).checked)}
                   disabled={!isEditingProfile}
                   class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
@@ -969,9 +876,7 @@
                 </span>
               {:else if !isEditingProfile}
                 <!-- View Mode (Not Editing) -->
-                <div
-                  class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-300"
-                >
+                <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-300">
                   {#if hour.slots && hour.slots.length > 1}
                     <div class="flex flex-wrap items-center gap-2">
                       {#each hour.slots as slot, sIdx}
@@ -979,7 +884,7 @@
                           class="bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2.5 py-1 rounded-lg"
                         >
                           Shift {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(
-                            slot.close_time,
+                            slot.close_time
                           )}
                         </span>
                       {/each}
@@ -1005,9 +910,7 @@
                         >
                           <span>☕ {brk.name || "Break"}:</span>
                           <span class="font-semibold"
-                            >{formatTime12(brk.start_time)} – {formatTime12(
-                              brk.end_time,
-                            )}</span
+                            >{formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}</span
                           >
                         </span>
                       {/each}
@@ -1023,9 +926,7 @@
                 <!-- Time Slots / Split Shifts -->
                 <div class="space-y-2">
                   <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400"
-                      >Working Hours / Shifts</span
-                    >
+                    <span class="text-xs font-semibold text-slate-400">Working Hours / Shifts</span>
                     <button
                       type="button"
                       onclick={() => addSlot(hour)}
@@ -1084,9 +985,7 @@
                 <!-- Scheduled Breaks & Gaps -->
                 <div class="pt-2 border-t border-slate-800/60 space-y-2">
                   <div class="flex items-center justify-between">
-                    <span
-                      class="text-xs font-semibold text-amber-400/90 flex items-center gap-1.5"
-                    >
+                    <span class="text-xs font-semibold text-amber-400/90 flex items-center gap-1.5">
                       <span>☕ Scheduled Breaks & Gaps</span>
                     </span>
                     <button
@@ -1100,8 +999,7 @@
 
                   {#if (hour.breaks || []).length === 0}
                     <p class="text-[11px] text-slate-500 italic">
-                      No scheduled breaks or closure gaps configured for this
-                      day.
+                      No scheduled breaks or closure gaps configured for this day.
                     </p>
                   {:else}
                     <div class="space-y-2">
@@ -1109,13 +1007,8 @@
                         <div
                           class="flex flex-wrap items-center gap-3 text-xs bg-amber-500/5 p-2.5 rounded-lg border border-amber-500/20"
                         >
-                          <div
-                            class="flex items-center gap-2 flex-1 min-w-[160px]"
-                          >
-                            <span
-                              class="text-amber-400 font-semibold text-[11px]"
-                              >Label:</span
-                            >
+                          <div class="flex items-center gap-2 flex-1 min-w-[160px]">
+                            <span class="text-amber-400 font-semibold text-[11px]">Label:</span>
                             <input
                               type="text"
                               bind:value={brk.name}
@@ -1125,9 +1018,7 @@
                           </div>
 
                           <div class="flex items-center gap-2">
-                            <span class="text-amber-400 text-[11px]"
-                              >Start:</span
-                            >
+                            <span class="text-amber-400 text-[11px]">Start:</span>
                             <input
                               type="time"
                               bind:value={brk.start_time}
@@ -1170,12 +1061,9 @@
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-lg font-bold text-slate-100">
-            👨‍⚕️ Practice Staff & Providers
-          </h3>
+          <h3 class="text-lg font-bold text-slate-100">👨‍⚕️ Practice Staff & Providers</h3>
           <p class="text-xs text-slate-400 mt-0.5">
-            Manage dentists, hygienists, and support staff assigned to patient
-            appointments.
+            Manage dentists, hygienists, and support staff assigned to patient appointments.
           </p>
         </div>
         <button
@@ -1210,8 +1098,7 @@
             No staff members or providers added yet
           </p>
           <p class="text-xs text-slate-500 mt-1">
-            Click "Add Provider / Staff" above to configure practice dentists
-            and hygienists.
+            Click "Add Provider / Staff" above to configure practice dentists and hygienists.
           </p>
         </div>
       {:else}
@@ -1244,14 +1131,10 @@
               </div>
 
               {#if p.license_number || p.email || p.phone}
-                <div
-                  class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800"
-                >
+                <div class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
                   {#if p.license_number}
                     <div>
-                      🪪 License: <span class="text-slate-300 font-mono"
-                        >{p.license_number}</span
-                      >
+                      🪪 License: <span class="text-slate-300 font-mono">{p.license_number}</span>
                     </div>
                   {/if}
                   {#if p.email}
@@ -1293,9 +1176,7 @@
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-lg font-bold text-slate-100">
-            🚪 Treatment Operatories & Chairs
-          </h3>
+          <h3 class="text-lg font-bold text-slate-100">🚪 Treatment Operatories & Chairs</h3>
           <p class="text-xs text-slate-400 mt-0.5">
             Manage treatment rooms, hygiene bays, and surgical suites.
           </p>
@@ -1332,8 +1213,7 @@
             No operatories or treatment rooms configured
           </p>
           <p class="text-xs text-slate-500 mt-1">
-            Click "Add Operatory / Room" above to set up treatment chairs for
-            scheduling.
+            Click "Add Operatory / Room" above to set up treatment chairs for scheduling.
           </p>
         </div>
       {:else}
@@ -1346,9 +1226,7 @@
                 <div>
                   <h4 class="text-sm font-bold text-slate-100">{op.name}</h4>
                   <p class="text-xs text-sky-400 capitalize font-medium mt-0.5">
-                    {op.type} room {op.room_code
-                      ? `• Code: ${op.room_code}`
-                      : ""}
+                    {op.type} room {op.room_code ? `• Code: ${op.room_code}` : ""}
                   </p>
                 </div>
                 <span
@@ -1387,9 +1265,7 @@
 <!-- PROVIDER MODAL -->
 <Modal
   bind:showModal={showProviderModal}
-  title={isEditingProvider
-    ? "Edit Staff / Provider"
-    : "Add New Staff / Provider"}
+  title={isEditingProvider ? "Edit Staff / Provider" : "Add New Staff / Provider"}
   subtitle="Configure provider details, specialties, and schedule badges"
   icon="👨‍⚕️"
   maxWidth="max-w-md"
@@ -1430,12 +1306,7 @@
     </div>
 
     <FormField label="License Number" forId="prov-license">
-      <Input
-        id="prov-license"
-        type="text"
-        bind:value={provLicense}
-        placeholder="e.g. DENT-88912"
-      />
+      <Input id="prov-license" type="text" bind:value={provLicense} placeholder="e.g. DENT-88912" />
     </FormField>
 
     <div class="grid grid-cols-2 gap-3">
@@ -1449,20 +1320,13 @@
       </FormField>
 
       <FormField label="Phone" forId="prov-phone">
-        <Input
-          id="prov-phone"
-          type="tel"
-          bind:value={provPhone}
-          placeholder="(555) 019-2834"
-        />
+        <Input id="prov-phone" type="tel" bind:value={provPhone} placeholder="(555) 019-2834" />
       </FormField>
     </div>
 
     <div class="flex items-center justify-between pt-2">
       <div>
-        <label
-          for="prov-color"
-          class="block text-xs font-semibold text-slate-300 mb-1"
+        <label for="prov-color" class="block text-xs font-semibold text-slate-300 mb-1"
           >Schedule Color Badge</label
         >
         <input
@@ -1480,17 +1344,13 @@
           bind:checked={provIsActive}
           class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 cursor-pointer"
         />
-        <label
-          for="prov-active"
-          class="text-xs font-semibold text-slate-300 cursor-pointer"
+        <label for="prov-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
           >Active Provider</label
         >
       </div>
     </div>
 
-    <div
-      class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800"
-    >
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
       <button
         type="button"
         onclick={() => (showProviderModal = false)}
@@ -1498,10 +1358,7 @@
       >
         Cancel
       </button>
-      <button
-        type="submit"
-        class="btn btn-primary text-xs px-5 py-2 cursor-pointer"
-      >
+      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
         Save Staff Member
       </button>
     </div>
@@ -1529,12 +1386,7 @@
 
     <div class="grid grid-cols-2 gap-3">
       <FormField label="Room Code / ID" forId="op-code">
-        <Input
-          id="op-code"
-          type="text"
-          bind:value={opRoomCode}
-          placeholder="e.g. ROOM-A"
-        />
+        <Input id="op-code" type="text" bind:value={opRoomCode} placeholder="e.g. ROOM-A" />
       </FormField>
 
       <FormField label="Type" forId="op-type">
@@ -1557,16 +1409,12 @@
         bind:checked={opIsActive}
         class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 cursor-pointer"
       />
-      <label
-        for="op-active"
-        class="text-xs font-semibold text-slate-300 cursor-pointer"
+      <label for="op-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
         >Active Operatory</label
       >
     </div>
 
-    <div
-      class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800"
-    >
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
       <button
         type="button"
         onclick={() => (showOperatoryModal = false)}
@@ -1574,10 +1422,7 @@
       >
         Cancel
       </button>
-      <button
-        type="submit"
-        class="btn btn-primary text-xs px-5 py-2 cursor-pointer"
-      >
+      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
         Save Operatory
       </button>
     </div>

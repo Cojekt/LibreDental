@@ -88,13 +88,7 @@
   });
 </script>
 
-<Modal
-  bind:showModal
-  title={modalTitle}
-  subtitle={modalSubtitle}
-  icon="📅"
-  maxWidth="max-w-xl"
->
+<Modal bind:showModal title={modalTitle} subtitle={modalSubtitle} icon="📅" maxWidth="max-w-xl">
   <form onsubmit={onsave} class="space-y-4">
     <!-- Patient Picker -->
     <FormField label={m.appt_label_patient()} forId="appt-patient" required>
@@ -107,9 +101,7 @@
         <option value="" disabled>{m.appt_select_patient_placeholder()}</option>
         {#each patients as p}
           <option value={p.id}>
-            {p.last_name}, {p.first_name} ({p.phone_primary ||
-              p.email ||
-              "No contact info"})
+            {p.last_name}, {p.first_name} ({p.phone_primary || p.email || "No contact info"})
           </option>
         {/each}
       </select>
@@ -139,11 +131,7 @@
         </select>
       </FormField>
 
-      <FormField
-        label={m.appt_label_operatory()}
-        forId="appt-operatory"
-        required
-      >
+      <FormField label={m.appt_label_operatory()} forId="appt-operatory" required>
         <select
           id="appt-operatory"
           bind:value={operatoryId}
@@ -167,33 +155,18 @@
         <Input id="appt-date" type="date" bind:value={startDateStr} required />
       </FormField>
 
-      <FormField
-        label={m.appt_label_start_time()}
-        forId="appt-start-time"
-        required
-      >
-        <Input
-          id="appt-start-time"
-          type="time"
-          bind:value={startTimeStr}
-          required
-        />
+      <FormField label={m.appt_label_start_time()} forId="appt-start-time" required>
+        <Input id="appt-start-time" type="time" bind:value={startTimeStr} required />
       </FormField>
 
       <FormField label={m.appt_label_end_time()} forId="appt-end-time" required>
-        <Input
-          id="appt-end-time"
-          type="time"
-          bind:value={endTimeStr}
-          required
-        />
+        <Input id="appt-end-time" type="time" bind:value={endTimeStr} required />
       </FormField>
     </div>
 
     <!-- Quick Duration Presets -->
     <div class="flex items-center gap-2 pt-1">
-      <span
-        class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+      <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
         >{m.appt_label_quick_duration()}</span
       >
       <button
@@ -234,9 +207,7 @@
       </FormField>
 
       <div class="flex flex-col gap-1.5">
-        <span class="text-xs font-semibold text-slate-300"
-          >{m.appt_label_color_marker()}</span
-        >
+        <span class="text-xs font-semibold text-slate-300">{m.appt_label_color_marker()}</span>
         <div class="flex items-center gap-2 pt-1">
           {#each colorOptions as c}
             <button
@@ -277,9 +248,7 @@
     </FormField>
 
     <!-- Action buttons -->
-    <div
-      class="flex items-center justify-between border-t border-slate-800 pt-4 mt-6"
-    >
+    <div class="flex items-center justify-between border-t border-slate-800 pt-4 mt-6">
       <div>
         {#if isEditing && ondelete}
           <button

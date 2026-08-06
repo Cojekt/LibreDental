@@ -21,9 +21,7 @@
 
   // Patient selection state
   let selectedPatientId = $state<string>("");
-  let selectedPatient = $derived(
-    patients.find((p: Patient) => p.id === selectedPatientId) || null,
-  );
+  let selectedPatient = $derived(patients.find((p: Patient) => p.id === selectedPatientId) || null);
 
   // Dental Chart state
   let currentChart = $state<DentalChart | null>(null);
@@ -47,7 +45,7 @@
 
   // Active tooth system strictly derived from country configuration
   let currentToothSystem = $derived<ToothSystem>(
-    countryMeta?.default_tooth_system || ToothSystem.ToothSystemUniversal,
+    countryMeta?.default_tooth_system || ToothSystem.ToothSystemUniversal
   );
 
   // Tooth numbering helper functions
@@ -209,22 +207,17 @@
 
   function getConditionsForTooth(toothNum: number): ToothCondition[] {
     if (!currentChart || !currentChart.conditions) return [];
-    return currentChart.conditions.filter(
-      (c: ToothCondition) => c.tooth_number === toothNum,
-    );
+    return currentChart.conditions.filter((c: ToothCondition) => c.tooth_number === toothNum);
   }
 
   function getToothPrimaryStatus(toothNum: number): string | null {
     const conds = getConditionsForTooth(toothNum);
     if (conds.length === 0) return null;
-    if (conds.some((c: ToothCondition) => c.status === "missing"))
-      return "missing";
+    if (conds.some((c: ToothCondition) => c.status === "missing")) return "missing";
     if (conds.some((c: ToothCondition) => c.status === "treatment_planned"))
       return "treatment_planned";
-    if (conds.some((c: ToothCondition) => c.status === "completed"))
-      return "completed";
-    if (conds.some((c: ToothCondition) => c.status === "existing"))
-      return "existing";
+    if (conds.some((c: ToothCondition) => c.status === "completed")) return "completed";
+    if (conds.some((c: ToothCondition) => c.status === "existing")) return "existing";
     return null;
   }
 
@@ -338,9 +331,7 @@
             stroke-width="2"
             class="h-5 w-5"
           >
-            <path
-              d="M12 2C8 2 5 5 5 9c0 5.25 3 9.25 7 13 4-3.75 7-7.75 7-13 0-4-3-7-7-7z"
-            />
+            <path d="M12 2C8 2 5 5 5 9c0 5.25 3 9.25 7 13 4-3.75 7-7.75 7-13 0-4-3-7-7-7z" />
             <circle cx="12" cy="9" r="2.5" />
           </svg>
         </div>
@@ -354,9 +345,7 @@
 
       <!-- Patient Select Dropdown -->
       <div class="flex items-center gap-2">
-        <label
-          for="chart-patient-select"
-          class="text-xs font-medium text-slate-400">Patient:</label
+        <label for="chart-patient-select" class="text-xs font-medium text-slate-400">Patient:</label
         >
         <select
           id="chart-patient-select"
@@ -389,17 +378,13 @@
           {:else if currentToothSystem === ToothSystem.ToothSystemPalmer}
             <strong class="text-sky-200">Palmer Notation</strong>
           {:else}
-            <strong class="text-sky-200"
-              >Universal Numbering System (1–32)</strong
-            >
+            <strong class="text-sky-200">Universal Numbering System (1–32)</strong>
           {/if}
         </span>
       </div>
 
       <!-- Dentition Switcher -->
-      <div
-        class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800"
-      >
+      <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
         <button
           type="button"
           onclick={() => (dentitionType = "adult")}
@@ -442,27 +427,19 @@
       <div class="flex items-center gap-5">
         <span class="font-semibold text-slate-300">Legend:</span>
         <div class="flex items-center gap-1.5">
-          <span
-            class="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"
-          ></span>
+          <span class="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>
           <span class="text-slate-300">Existing Finding</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <span
-            class="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"
-          ></span>
+          <span class="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>
           <span class="text-slate-300">Treatment Planned</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <span
-            class="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"
-          ></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
           <span class="text-slate-300">Completed</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <span
-            class="w-3 h-3 rounded-full bg-rose-500/80 border border-rose-400"
-          ></span>
+          <span class="w-3 h-3 rounded-full bg-rose-500/80 border border-rose-400"></span>
           <span class="text-slate-300">Missing Tooth</span>
         </div>
       </div>
@@ -479,9 +456,7 @@
         <div
           class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center rounded-2xl z-20"
         >
-          <div
-            class="flex items-center gap-2 text-sky-400 text-sm font-semibold"
-          >
+          <div class="flex items-center gap-2 text-sky-400 text-sm font-semibold">
             <svg
               class="animate-spin h-5 w-5 text-sky-400"
               xmlns="http://www.w3.org/2000/svg"
@@ -509,15 +484,11 @@
 
       <!-- Maxillary Arch (Upper Teeth) -->
       <div>
-        <div
-          class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2"
-        >
+        <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
           <span class="text-xs font-bold uppercase tracking-wider text-sky-400"
             >Upper Arch (Maxillary)</span
           >
-          <span class="text-[11px] text-slate-500 font-mono"
-            >Right &larr; &rarr; Left</span
-          >
+          <span class="text-[11px] text-slate-500 font-mono">Right &larr; &rarr; Left</span>
         </div>
 
         <div class="grid grid-cols-8 sm:grid-cols-16 gap-2 sm:gap-2.5">
@@ -554,15 +525,11 @@
 
       <!-- Mandibular Arch (Lower Teeth) -->
       <div>
-        <div
-          class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2"
-        >
+        <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
           <span class="text-xs font-bold uppercase tracking-wider text-sky-400"
             >Lower Arch (Mandibular)</span
           >
-          <span class="text-[11px] text-slate-500 font-mono"
-            >Right &larr; &rarr; Left</span
-          >
+          <span class="text-[11px] text-slate-500 font-mono">Right &larr; &rarr; Left</span>
         </div>
 
         <div class="grid grid-cols-8 sm:grid-cols-16 gap-2 sm:gap-2.5">
@@ -592,14 +559,10 @@
     </div>
 
     <!-- Chart Conditions Summary Table -->
-    <div
-      class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-4"
-    >
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-base font-bold text-slate-100 m-0">
-            Charted Conditions & Treatment Log
-          </h3>
+          <h3 class="text-base font-bold text-slate-100 m-0">Charted Conditions & Treatment Log</h3>
           <p class="text-xs text-slate-400 m-0">
             Summary of findings for {selectedPatient.first_name}
             {selectedPatient.last_name}
@@ -609,10 +572,7 @@
           <div class="text-xs font-semibold text-slate-300">
             Total Planned Fee: <span class="text-sky-400 font-bold"
               >{formatCurrency(
-                currentChart.conditions.reduce(
-                  (acc, c) => acc + (c.fee || 0),
-                  0,
-                ),
+                currentChart.conditions.reduce((acc, c) => acc + (c.fee || 0), 0)
               )}</span
             >
           </div>
@@ -624,12 +584,9 @@
           class="text-center py-10 border border-dashed border-slate-800 rounded-xl bg-slate-950/40"
         >
           <p class="text-sm text-slate-400 m-0">
-            No tooth conditions or treatment plans recorded yet for this
-            patient.
+            No tooth conditions or treatment plans recorded yet for this patient.
           </p>
-          <p class="text-xs text-slate-500 m-1">
-            Click any tooth above to add findings.
-          </p>
+          <p class="text-xs text-slate-500 m-1">Click any tooth above to add findings.</p>
         </div>
       {:else}
         <div class="overflow-x-auto">
@@ -638,9 +595,7 @@
               <tr
                 class="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-950/60"
               >
-                <th class="py-3 px-4"
-                  >Tooth # ({countryMeta?.code || "Universal"})</th
-                >
+                <th class="py-3 px-4">Tooth # ({countryMeta?.code || "Universal"})</th>
                 <th class="py-3 px-4">Surfaces</th>
                 <th class="py-3 px-4">ADA Code</th>
                 <th class="py-3 px-4">Description</th>
@@ -714,12 +669,9 @@
                           stroke-width="2"
                           class="w-4 h-4"
                         >
-                          <path
-                            d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
                           ></path>
-                          <path
-                            d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                          ></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                       </button>
                       <button
@@ -799,16 +751,12 @@
           <!-- Facial/Buccal (Top) -->
           <div
             class={`col-span-3 h-1.5 transition-colors ${
-              conds.some((c) =>
-                c.surfaces?.includes(ToothSurface.SurfaceFacial),
-              )
-                ? conds.find((c) =>
-                    c.surfaces?.includes(ToothSurface.SurfaceFacial),
-                  )?.status === "completed"
+              conds.some((c) => c.surfaces?.includes(ToothSurface.SurfaceFacial))
+                ? conds.find((c) => c.surfaces?.includes(ToothSurface.SurfaceFacial))?.status ===
+                  "completed"
                   ? "bg-emerald-500"
-                  : conds.find((c) =>
-                        c.surfaces?.includes(ToothSurface.SurfaceFacial),
-                      )?.status === "treatment_planned"
+                  : conds.find((c) => c.surfaces?.includes(ToothSurface.SurfaceFacial))?.status ===
+                      "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
                 : "bg-slate-800"
@@ -818,16 +766,12 @@
           <!-- Mesial (Left) -->
           <div
             class={`w-1.5 h-full transition-colors ${
-              conds.some((c) =>
-                c.surfaces?.includes(ToothSurface.SurfaceMesial),
-              )
-                ? conds.find((c) =>
-                    c.surfaces?.includes(ToothSurface.SurfaceMesial),
-                  )?.status === "completed"
+              conds.some((c) => c.surfaces?.includes(ToothSurface.SurfaceMesial))
+                ? conds.find((c) => c.surfaces?.includes(ToothSurface.SurfaceMesial))?.status ===
+                  "completed"
                   ? "bg-emerald-500"
-                  : conds.find((c) =>
-                        c.surfaces?.includes(ToothSurface.SurfaceMesial),
-                      )?.status === "treatment_planned"
+                  : conds.find((c) => c.surfaces?.includes(ToothSurface.SurfaceMesial))?.status ===
+                      "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
                 : "bg-slate-800"
@@ -840,18 +784,18 @@
               conds.some(
                 (c) =>
                   c.surfaces?.includes(ToothSurface.SurfaceOcclusal) ||
-                  c.surfaces?.includes(ToothSurface.SurfaceIncisal),
+                  c.surfaces?.includes(ToothSurface.SurfaceIncisal)
               )
                 ? conds.find(
                     (c) =>
                       c.surfaces?.includes(ToothSurface.SurfaceOcclusal) ||
-                      c.surfaces?.includes(ToothSurface.SurfaceIncisal),
+                      c.surfaces?.includes(ToothSurface.SurfaceIncisal)
                   )?.status === "completed"
                   ? "bg-emerald-500"
                   : conds.find(
                         (c) =>
                           c.surfaces?.includes(ToothSurface.SurfaceOcclusal) ||
-                          c.surfaces?.includes(ToothSurface.SurfaceIncisal),
+                          c.surfaces?.includes(ToothSurface.SurfaceIncisal)
                       )?.status === "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
@@ -862,16 +806,12 @@
           <!-- Distal (Right) -->
           <div
             class={`w-1.5 h-full transition-colors ${
-              conds.some((c) =>
-                c.surfaces?.includes(ToothSurface.SurfaceDistal),
-              )
-                ? conds.find((c) =>
-                    c.surfaces?.includes(ToothSurface.SurfaceDistal),
-                  )?.status === "completed"
+              conds.some((c) => c.surfaces?.includes(ToothSurface.SurfaceDistal))
+                ? conds.find((c) => c.surfaces?.includes(ToothSurface.SurfaceDistal))?.status ===
+                  "completed"
                   ? "bg-emerald-500"
-                  : conds.find((c) =>
-                        c.surfaces?.includes(ToothSurface.SurfaceDistal),
-                      )?.status === "treatment_planned"
+                  : conds.find((c) => c.surfaces?.includes(ToothSurface.SurfaceDistal))?.status ===
+                      "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
                 : "bg-slate-800"
@@ -881,16 +821,12 @@
           <!-- Lingual (Bottom) -->
           <div
             class={`col-span-3 h-1.5 transition-colors ${
-              conds.some((c) =>
-                c.surfaces?.includes(ToothSurface.SurfaceLingual),
-              )
-                ? conds.find((c) =>
-                    c.surfaces?.includes(ToothSurface.SurfaceLingual),
-                  )?.status === "completed"
+              conds.some((c) => c.surfaces?.includes(ToothSurface.SurfaceLingual))
+                ? conds.find((c) => c.surfaces?.includes(ToothSurface.SurfaceLingual))?.status ===
+                  "completed"
                   ? "bg-emerald-500"
-                  : conds.find((c) =>
-                        c.surfaces?.includes(ToothSurface.SurfaceLingual),
-                      )?.status === "treatment_planned"
+                  : conds.find((c) => c.surfaces?.includes(ToothSurface.SurfaceLingual))?.status ===
+                      "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
                 : "bg-slate-800"
@@ -909,9 +845,7 @@
         {conds.length === 1 ? "entry" : "entries"}
       </span>
     {:else}
-      <span
-        class="mt-1 text-[9px] text-slate-600 group-hover:text-slate-400 transition-colors"
-      >
+      <span class="mt-1 text-[9px] text-slate-600 group-hover:text-slate-400 transition-colors">
         Chart
       </span>
     {/if}
@@ -926,9 +860,7 @@
     <div
       class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl p-6 relative flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
     >
-      <div
-        class="flex items-center justify-between border-b border-slate-800 pb-4"
-      >
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
         <div>
           <h3 class="text-lg font-bold text-slate-100 m-0">
             Tooth {getToothLabel(selectedToothNumber, currentToothSystem)} Conditions
@@ -958,9 +890,7 @@
 
       <!-- Surface Selection Grid -->
       <div class="flex flex-col gap-2">
-        <span class="text-xs font-semibold text-slate-300"
-          >Select Affected Surface(s):</span
-        >
+        <span class="text-xs font-semibold text-slate-300">Select Affected Surface(s):</span>
         <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {#each [{ id: "M", label: "Mesial (M)" }, { id: "D", label: "Distal (D)" }, { id: "O", label: "Occlusal (O)" }, { id: "I", label: "Incisal (I)" }, { id: "F", label: "Facial (F)" }, { id: "L", label: "Lingual (L)" }] as s}
             <button
@@ -980,9 +910,7 @@
 
       <!-- Quick Procedure Presets -->
       <div class="flex flex-col gap-2">
-        <span class="text-xs font-semibold text-slate-300"
-          >Quick Procedure Presets:</span
-        >
+        <span class="text-xs font-semibold text-slate-300">Quick Procedure Presets:</span>
         <div class="flex flex-wrap gap-1.5">
           {#each procedurePresets as preset}
             <button
@@ -990,9 +918,7 @@
               onclick={() => applyPreset(preset)}
               class="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition-colors"
             >
-              {preset.code ? `[${preset.code}] ` : ""}{preset.desc.split(
-                " - ",
-              )[0]}
+              {preset.code ? `[${preset.code}] ` : ""}{preset.desc.split(" - ")[0]}
             </button>
           {/each}
         </div>
@@ -1002,9 +928,7 @@
       <form onsubmit={handleSaveCondition} class="flex flex-col gap-4">
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
-            <label
-              for="condition-ada-code"
-              class="text-xs font-medium text-slate-400"
+            <label for="condition-ada-code" class="text-xs font-medium text-slate-400"
               >ADA Procedure Code</label
             >
             <input
@@ -1016,12 +940,8 @@
             />
           </div>
           <div class="flex flex-col gap-1">
-            <label
-              for="condition-fee"
-              class="text-xs font-medium text-slate-400"
-              >Fee {countryMeta?.default_currency
-                ? `(${countryMeta.default_currency})`
-                : ""}</label
+            <label for="condition-fee" class="text-xs font-medium text-slate-400"
+              >Fee {countryMeta?.default_currency ? `(${countryMeta.default_currency})` : ""}</label
             >
             <input
               id="condition-fee"
@@ -1034,9 +954,7 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <label
-            for="condition-description"
-            class="text-xs font-medium text-slate-400"
+          <label for="condition-description" class="text-xs font-medium text-slate-400"
             >Description / Finding</label
           >
           <input
@@ -1050,10 +968,7 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <label
-            for="condition-status"
-            class="text-xs font-medium text-slate-400">Status</label
-          >
+          <label for="condition-status" class="text-xs font-medium text-slate-400">Status</label>
           <select
             id="condition-status"
             bind:value={formStatus}
@@ -1066,9 +981,7 @@
           </select>
         </div>
 
-        <div
-          class="flex items-center justify-between pt-3 border-t border-slate-800"
-        >
+        <div class="flex items-center justify-between pt-3 border-t border-slate-800">
           {#if isEditingCondition}
             <button
               type="button"
@@ -1089,10 +1002,7 @@
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              class="btn btn-primary text-xs shadow-md shadow-sky-500/20"
-            >
+            <button type="submit" class="btn btn-primary text-xs shadow-md shadow-sky-500/20">
               {isEditingCondition ? "Update Condition" : "Save Condition"}
             </button>
           </div>

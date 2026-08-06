@@ -50,7 +50,9 @@
         <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
           <div class="flex items-center gap-3">
             {#if icon}
-              <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 font-bold text-base shrink-0">
+              <div
+                class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 font-bold text-base shrink-0"
+              >
                 {icon}
               </div>
             {/if}
