@@ -17,5 +17,11 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "bindings/**/*.ts", "bindings/**/*.js"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.svelte",
+    "bindings/**/*.ts",
+    "bindings/**/*.js"
+  ]
 }

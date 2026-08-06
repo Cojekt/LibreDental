@@ -23,7 +23,9 @@
   <!-- Top brand bar -->
   <div class="flex h-16 w-full items-center justify-between px-6 sm:px-8">
     <div class="flex items-center gap-3">
-      <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-cyan-500/20">
+      <div
+        class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-cyan-500/20"
+      >
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -40,10 +42,14 @@
       </div>
       <div class="flex items-center">
         <h1 class="m-0 text-xl font-bold tracking-tight text-slate-50">
-          LibreDental<span class="align-super text-[11px] text-slate-400">™</span>
+          LibreDental<span class="align-super text-[11px] text-slate-400"
+            >™</span
+          >
         </h1>
         {#if countryMeta}
-          <span class="ml-2.5 rounded-xl border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-[11px] font-medium text-slate-300 flex items-center gap-1">
+          <span
+            class="ml-2.5 rounded-xl border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-[11px] font-medium text-slate-300 flex items-center gap-1"
+          >
             📍 {countryMeta.name || countryMeta.code}
           </span>
         {/if}
@@ -52,7 +58,10 @@
 
     <div class="flex items-center gap-3">
       {#if activeTab === "patients"}
-        <button class="btn btn-primary shadow-md shadow-sky-500/20" onclick={onnewpatient}>
+        <button
+          class="btn btn-primary shadow-md shadow-sky-500/20"
+          onclick={onnewpatient}
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -63,10 +72,13 @@
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          {getLocaleVersion(), m.header_new_patient()}
+          {(getLocaleVersion(), m.header_new_patient())}
         </button>
       {:else if activeTab === "appointments"}
-        <button class="btn btn-primary shadow-md shadow-sky-500/20" onclick={onnewappointment}>
+        <button
+          class="btn btn-primary shadow-md shadow-sky-500/20"
+          onclick={onnewappointment}
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -77,7 +89,7 @@
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          {getLocaleVersion(), m.header_new_appointment()}
+          {(getLocaleVersion(), m.header_new_appointment())}
         </button>
       {/if}
 

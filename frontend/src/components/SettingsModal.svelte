@@ -88,7 +88,7 @@
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-fadeIn"
     onclick={() => (showModal = false)}
-    onkeydown={(e) => e.key === 'Escape' && (showModal = false)}
+    onkeydown={(e) => e.key === "Escape" && (showModal = false)}
     role="presentation"
   >
     <div
@@ -101,9 +101,13 @@
       tabindex="-1"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+      <div
+        class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5"
+      >
         <div class="flex items-center gap-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -120,8 +124,11 @@
             </svg>
           </div>
           <div>
-            <h2 id="settings-title" class="m-0 text-base font-semibold text-white tracking-tight">
-              {getLocaleVersion(), m.settings_title()}
+            <h2
+              id="settings-title"
+              class="m-0 text-base font-semibold text-white tracking-tight"
+            >
+              {(getLocaleVersion(), m.settings_title())}
             </h2>
             <p class="m-0 text-xs text-slate-400">{m.settings_subtitle()}</p>
           </div>
@@ -131,7 +138,13 @@
           class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
           aria-label="Close settings"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="h-5 w-5"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -142,7 +155,9 @@
       <div class="space-y-5">
         <!-- Appearance / Theme Section -->
         <div>
-          <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2.5">
+          <span
+            class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2.5"
+          >
             {m.settings_section_appearance()}
           </span>
           <div class="grid grid-cols-3 gap-2.5">
@@ -157,8 +172,12 @@
               }`}
             >
               <div class="text-xl mb-1">💻</div>
-              <div class="text-xs font-semibold">{m.settings_theme_system()}</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">{m.settings_theme_system_sub()}</div>
+              <div class="text-xs font-semibold">
+                {m.settings_theme_system()}
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">
+                {m.settings_theme_system_sub()}
+              </div>
             </button>
 
             <!-- Dark Mode -->
@@ -173,7 +192,9 @@
             >
               <div class="text-xl mb-1">🌙</div>
               <div class="text-xs font-semibold">{m.settings_theme_dark()}</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">{m.settings_theme_dark_sub()}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">
+                {m.settings_theme_dark_sub()}
+              </div>
             </button>
 
             <!-- Light Mode -->
@@ -187,21 +208,28 @@
               }`}
             >
               <div class="text-xl mb-1">☀️</div>
-              <div class="text-xs font-semibold">{m.settings_theme_light()}</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">{m.settings_theme_light_sub()}</div>
+              <div class="text-xs font-semibold">
+                {m.settings_theme_light()}
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">
+                {m.settings_theme_light_sub()}
+              </div>
             </button>
           </div>
         </div>
 
         <!-- Language Section -->
         <div>
-          <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          <span
+            class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
+          >
             {m.settings_section_language()}
           </span>
           <select
             id="language-select"
             value={selectedLanguage}
-            onchange={(e) => handleSelectLanguage((e.target as HTMLSelectElement).value)}
+            onchange={(e) =>
+              handleSelectLanguage((e.target as HTMLSelectElement).value)}
             class="w-full rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5 text-sm text-slate-200 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-all cursor-pointer"
           >
             <option value="system">🌐 {m.settings_language_system()}</option>
@@ -213,14 +241,20 @@
 
         <!-- Ultra-compact Data Storage Directory Section -->
         <div>
-          <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          <span
+            class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
+          >
             {m.settings_section_storage()}
           </span>
 
-          <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5">
+          <div
+            class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5"
+          >
             <div class="flex items-center gap-2.5 min-w-0 overflow-hidden">
               <span class="text-slate-400 text-sm shrink-0">📁</span>
-              <span class="font-mono text-xs text-slate-300 truncate select-all">{dataDir}</span>
+              <span class="font-mono text-xs text-slate-300 truncate select-all"
+                >{dataDir}</span
+              >
             </div>
 
             <button
@@ -230,17 +264,31 @@
               class="btn btn-secondary btn-sm shrink-0 text-xs py-1 px-3 gap-1.5 cursor-pointer"
               title="Open Storage Folder"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="h-3.5 w-3.5"
+              >
+                <path
+                  d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                ></path>
                 <polyline points="15 3 21 3 21 9"></polyline>
                 <line x1="10" y1="14" x2="21" y2="3"></line>
               </svg>
-              <span>{isOpeningFolder ? m.settings_storage_opening() : m.settings_storage_open()}</span>
+              <span
+                >{isOpeningFolder
+                  ? m.settings_storage_opening()
+                  : m.settings_storage_open()}</span
+              >
             </button>
           </div>
 
           {#if openError}
-            <div class="mt-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-lg">
+            <div
+              class="mt-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-lg"
+            >
               ⚠️ {openError}
             </div>
           {/if}

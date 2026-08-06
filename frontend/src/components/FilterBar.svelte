@@ -39,7 +39,9 @@
       oninput={onloadpatients}
     />
   </div>
-  <div class="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 shadow-sm select-none">
+  <div
+    class="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 shadow-sm select-none"
+  >
     <button
       type="button"
       onclick={() => {

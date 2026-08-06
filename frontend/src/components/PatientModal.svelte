@@ -43,7 +43,9 @@
 
   const modalTitle = $derived.by(() => {
     getLocaleVersion();
-    return isEditing ? m.patient_modal_edit_title() : m.patient_modal_add_title();
+    return isEditing
+      ? m.patient_modal_edit_title()
+      : m.patient_modal_add_title();
   });
   const modalSubtitle = $derived.by(() => {
     getLocaleVersion();
@@ -61,46 +63,99 @@
   <form onsubmit={onsave}>
     <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
       <FormField label={m.patient_first_name()} forId="fname" required>
-        <Input id="fname" type="text" required bind:value={firstName} placeholder="Jane" />
+        <Input
+          id="fname"
+          type="text"
+          required
+          bind:value={firstName}
+          placeholder="Jane"
+        />
       </FormField>
 
       <FormField label={m.patient_last_name()} forId="lname" required>
-        <Input id="lname" type="text" required bind:value={lastName} placeholder="Smith" />
+        <Input
+          id="lname"
+          type="text"
+          required
+          bind:value={lastName}
+          placeholder="Smith"
+        />
       </FormField>
 
       <FormField label={idLabel} forId="national-id">
-        <Input id="national-id" type="text" bind:value={nationalId} placeholder={idPlaceholder} />
+        <Input
+          id="national-id"
+          type="text"
+          bind:value={nationalId}
+          placeholder={idPlaceholder}
+        />
       </FormField>
 
       <FormField label={m.patient_dob()} forId="dob" required>
-        <Input id="dob" type="date" required bind:value={dob} dateFormat={countryMeta?.date_format} />
+        <Input
+          id="dob"
+          type="date"
+          required
+          bind:value={dob}
+          dateFormat={countryMeta?.date_format}
+        />
       </FormField>
 
       <FormField label={m.patient_email()} forId="email">
-        <Input id="email" type="email" bind:value={email} placeholder="jane.smith@example.com" />
+        <Input
+          id="email"
+          type="email"
+          bind:value={email}
+          placeholder="jane.smith@example.com"
+        />
       </FormField>
 
       <FormField label={m.patient_phone()} forId="phone" required>
-        <Input id="phone" type="tel" required bind:value={phone} placeholder="(555) 019-2834" />
+        <Input
+          id="phone"
+          type="tel"
+          required
+          bind:value={phone}
+          placeholder="(555) 019-2834"
+        />
       </FormField>
 
       <FormField label={stateLabel} forId="state-province">
-        <Input id="state-province" type="text" bind:value={stateProvince} placeholder="e.g. CA, ON, London" />
+        <Input
+          id="state-province"
+          type="text"
+          bind:value={stateProvince}
+          placeholder="e.g. CA, ON, London"
+        />
       </FormField>
 
       <FormField label={postalLabel} forId="postal-code">
-        <Input id="postal-code" type="text" bind:value={postalCode} placeholder="e.g. 90210, M5V 2T6" />
+        <Input
+          id="postal-code"
+          type="text"
+          bind:value={postalCode}
+          placeholder="e.g. 90210, M5V 2T6"
+        />
       </FormField>
 
       <div class="sm:col-span-2">
         <FormField label={m.patient_medical_alerts()} forId="alerts">
-          <Input id="alerts" type="text" bind:value={medicalAlerts} placeholder="e.g. Penicillin, Latex" />
+          <Input
+            id="alerts"
+            type="text"
+            bind:value={medicalAlerts}
+            placeholder="e.g. Penicillin, Latex"
+          />
         </FormField>
       </div>
     </div>
 
     <div class="flex justify-end gap-3 border-t border-slate-800 pt-4">
-      <button type="button" class="btn btn-secondary cursor-pointer" onclick={() => (showPatientModal = false)}>
+      <button
+        type="button"
+        class="btn btn-secondary cursor-pointer"
+        onclick={() => (showPatientModal = false)}
+      >
         {m.common_cancel()}
       </button>
       <button type="submit" class="btn btn-primary cursor-pointer">
