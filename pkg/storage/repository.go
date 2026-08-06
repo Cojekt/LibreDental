@@ -49,6 +49,10 @@ type PracticeConfigRepository interface {
 	ListOperatories(ctx context.Context) ([]*domain.Operatory, error)
 	SaveOperatory(ctx context.Context, operatory *domain.Operatory) error
 	DeleteOperatory(ctx context.Context, id string) error
+
+	ListCountryConfigs(ctx context.Context) ([]domain.CountryConfig, error)
+	GetCountryConfig(ctx context.Context, code string) (*domain.CountryConfig, error)
+	GetDefaultCountryConfig(ctx context.Context) (*domain.CountryConfig, error)
 }
 
 // SystemSettingsRepository defines storage operations for local system settings & user preferences.

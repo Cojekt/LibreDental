@@ -26,7 +26,7 @@
 
   // Compute effective placeholder for date inputs based on country date format if provided
   const effectivePlaceholder = $derived(
-    placeholder || (type === "date" ? (dateFormat || "MM/DD/YYYY").toLowerCase() : "")
+    placeholder || (type === "date" && dateFormat ? dateFormat.toLowerCase() : "")
   );
 
   // Use "text" mode when date value is empty and unfocused so custom dynamic placeholder is displayed

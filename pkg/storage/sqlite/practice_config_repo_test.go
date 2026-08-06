@@ -29,8 +29,12 @@ func TestPracticeConfigRepository_SaveAndGet(t *testing.T) {
 		t.Fatalf("Expected ErrNotFound before saving config, got: %v", err)
 	}
 
-	// 2. Save PracticeConfig for Canada
-	cfg := domain.NewPracticeConfig(domain.CountryCA)
+	// 2. Save PracticeConfig for Canada fetched from SQL database
+	caMeta, err := repo.GetCountryConfig(ctx, "CA")
+	if err != nil {
+		t.Fatalf("Failed to fetch CA country config from DB: %v", err)
+	}
+	cfg := domain.NewPracticeConfig(*caMeta)
 	err = repo.Save(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to save practice config: %v", err)
@@ -53,7 +57,11 @@ func TestPracticeConfigRepository_SaveAndGet(t *testing.T) {
 	}
 
 	// 4. Save/Update PracticeConfig to United Kingdom
-	updatedCfg := domain.NewPracticeConfig(domain.CountryGB)
+	gbMeta, err := repo.GetCountryConfig(ctx, "GB")
+	if err != nil {
+		t.Fatalf("Failed to fetch GB country config from DB: %v", err)
+	}
+	updatedCfg := domain.NewPracticeConfig(*gbMeta)
 	err = repo.Save(ctx, updatedCfg)
 	if err != nil {
 		t.Fatalf("Failed to update practice config: %v", err)
@@ -69,6 +77,23 @@ func TestPracticeConfigRepository_SaveAndGet(t *testing.T) {
 	}
 	if fetchedUpdated.Currency != "GBP" {
 		t.Errorf("Expected currency 'GBP', got '%s'", fetchedUpdated.Currency)
+	}
+
+	// 5. Test ListCountryConfigs & GetDefaultCountryConfig
+	configs, err := repo.ListCountryConfigs(ctx)
+	if err != nil {
+		t.Fatalf("Failed to list country configs: %v", err)
+	}
+	if len(configs) < 6 {
+		t.Errorf("Expected at least 6 country configs in DB, got %d", len(configs))
+	}
+
+	defConfig, err := repo.GetDefaultCountryConfig(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get default country config: %v", err)
+	}
+	if defConfig.Code != domain.CountryUS {
+		t.Errorf("Expected default country code 'US', got '%s'", defConfig.Code)
 	}
 }
 

@@ -4,11 +4,10 @@
     Patient,
     DentalChart,
     ToothCondition,
-    ToothSurface,
     ToothStatus,
     CountryConfig,
   } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
-  import { ToothSystem } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import { ToothSystem, ToothSurface } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import { ChartService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
 
   let {
@@ -240,14 +239,15 @@
   }
 
   function formatCurrency(amount: number): string {
-    const currency = countryMeta?.default_currency || "USD";
+    const currency = countryMeta?.default_currency || "";
+    if (!currency) return amount.toFixed(2);
     try {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: currency,
       }).format(amount);
     } catch (e) {
-      return `$${amount.toFixed(2)}`;
+      return `${amount.toFixed(2)}`;
     }
   }
 </script>
@@ -455,14 +455,14 @@
           <h3 class="text-base font-bold text-slate-100 m-0">Charted Conditions & Treatment Log</h3>
           <p class="text-xs text-slate-400 m-0">Summary of findings for {selectedPatient.first_name} {selectedPatient.last_name}</p>
         </div>
-        {#if currentChart && currentChart.conditions.length > 0}
+        {#if currentChart && currentChart.conditions && currentChart.conditions.length > 0}
           <div class="text-xs font-semibold text-slate-300">
             Total Planned Fee: <span class="text-sky-400 font-bold">{formatCurrency(currentChart.conditions.reduce((acc, c) => acc + (c.fee || 0), 0))}</span>
           </div>
         {/if}
       </div>
 
-      {#if !currentChart || currentChart.conditions.length === 0}
+      {#if !currentChart || !currentChart.conditions || currentChart.conditions.length === 0}
         <div class="text-center py-10 border border-dashed border-slate-800 rounded-xl bg-slate-950/40">
           <p class="text-sm text-slate-400 m-0">No tooth conditions or treatment plans recorded yet for this patient.</p>
           <p class="text-xs text-slate-500 m-1">Click any tooth above to add findings.</p>
@@ -482,7 +482,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800/60">
-              {#each currentChart.conditions as cond}
+              {#each currentChart.conditions || [] as cond}
                 <tr class="hover:bg-slate-800/40 transition-colors">
                   <td class="py-3 px-4 font-bold text-sky-400">
                     Tooth {getToothLabel(cond.tooth_number, currentToothSystem)}
@@ -592,10 +592,10 @@
         <div class="w-7 h-7 border border-slate-700 grid grid-cols-3 grid-rows-3 bg-slate-900 rounded-md overflow-hidden p-0.5">
           <!-- Facial/Buccal (Top) -->
           <div class={`col-span-3 h-1.5 transition-colors ${
-            conds.some(c => c.surfaces?.includes("F"))
-              ? conds.find(c => c.surfaces?.includes("F"))?.status === "completed"
+            conds.some(c => c.surfaces?.includes(ToothSurface.SurfaceFacial))
+              ? conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceFacial))?.status === "completed"
                 ? "bg-emerald-500"
-                : conds.find(c => c.surfaces?.includes("F"))?.status === "treatment_planned"
+                : conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceFacial))?.status === "treatment_planned"
                 ? "bg-amber-500"
                 : "bg-blue-500"
               : "bg-slate-800"
@@ -603,10 +603,10 @@
           
           <!-- Mesial (Left) -->
           <div class={`w-1.5 h-full transition-colors ${
-            conds.some(c => c.surfaces?.includes("M"))
-              ? conds.find(c => c.surfaces?.includes("M"))?.status === "completed"
+            conds.some(c => c.surfaces?.includes(ToothSurface.SurfaceMesial))
+              ? conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceMesial))?.status === "completed"
                 ? "bg-emerald-500"
-                : conds.find(c => c.surfaces?.includes("M"))?.status === "treatment_planned"
+                : conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceMesial))?.status === "treatment_planned"
                 ? "bg-amber-500"
                 : "bg-blue-500"
               : "bg-slate-800"
@@ -614,10 +614,10 @@
 
           <!-- Occlusal/Incisal (Center) -->
           <div class={`flex-1 h-full transition-colors ${
-            conds.some(c => c.surfaces?.includes("O") || c.surfaces?.includes("I"))
-              ? conds.find(c => c.surfaces?.includes("O") || c.surfaces?.includes("I"))?.status === "completed"
+            conds.some(c => c.surfaces?.includes(ToothSurface.SurfaceOcclusal) || c.surfaces?.includes(ToothSurface.SurfaceIncisal))
+              ? conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceOcclusal) || c.surfaces?.includes(ToothSurface.SurfaceIncisal))?.status === "completed"
                 ? "bg-emerald-500"
-                : conds.find(c => c.surfaces?.includes("O") || c.surfaces?.includes("I"))?.status === "treatment_planned"
+                : conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceOcclusal) || c.surfaces?.includes(ToothSurface.SurfaceIncisal))?.status === "treatment_planned"
                 ? "bg-amber-500"
                 : "bg-blue-500"
               : "bg-slate-800"
@@ -625,10 +625,10 @@
 
           <!-- Distal (Right) -->
           <div class={`w-1.5 h-full transition-colors ${
-            conds.some(c => c.surfaces?.includes("D"))
-              ? conds.find(c => c.surfaces?.includes("D"))?.status === "completed"
+            conds.some(c => c.surfaces?.includes(ToothSurface.SurfaceDistal))
+              ? conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceDistal))?.status === "completed"
                 ? "bg-emerald-500"
-                : conds.find(c => c.surfaces?.includes("D"))?.status === "treatment_planned"
+                : conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceDistal))?.status === "treatment_planned"
                 ? "bg-amber-500"
                 : "bg-blue-500"
               : "bg-slate-800"
@@ -636,10 +636,10 @@
 
           <!-- Lingual (Bottom) -->
           <div class={`col-span-3 h-1.5 transition-colors ${
-            conds.some(c => c.surfaces?.includes("L"))
-              ? conds.find(c => c.surfaces?.includes("L"))?.status === "completed"
+            conds.some(c => c.surfaces?.includes(ToothSurface.SurfaceLingual))
+              ? conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceLingual))?.status === "completed"
                 ? "bg-emerald-500"
-                : conds.find(c => c.surfaces?.includes("L"))?.status === "treatment_planned"
+                : conds.find(c => c.surfaces?.includes(ToothSurface.SurfaceLingual))?.status === "treatment_planned"
                 ? "bg-amber-500"
                 : "bg-blue-500"
               : "bg-slate-800"
@@ -744,7 +744,7 @@
             />
           </div>
           <div class="flex flex-col gap-1">
-            <label for="condition-fee" class="text-xs font-medium text-slate-400">Fee ({countryMeta?.default_currency || "USD"})</label>
+            <label for="condition-fee" class="text-xs font-medium text-slate-400">Fee {countryMeta?.default_currency ? `(${countryMeta.default_currency})` : ""}</label>
             <input
               id="condition-fee"
               type="number"

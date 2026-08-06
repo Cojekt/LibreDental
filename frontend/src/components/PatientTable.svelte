@@ -19,7 +19,7 @@
     onarchivepatient: (p: Patient) => void;
   }>();
 
-  const idHeader = $derived(countryMeta ? countryMeta.national_id_name : "National ID");
+  const idHeader = $derived(countryMeta?.national_id_name || "");
 </script>
 
 <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-800">

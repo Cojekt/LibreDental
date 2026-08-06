@@ -34,10 +34,10 @@
     onsave: (e: Event) => void;
   }>();
 
-  const idLabel = $derived(countryMeta?.national_id_name || "National Identity / Tax ID");
-  const idPlaceholder = $derived(countryMeta?.national_id_placeholder || "Enter ID");
-  const stateLabel = $derived(countryMeta?.state_province_label || "State / Province");
-  const postalLabel = $derived(countryMeta?.postal_code_label || "ZIP / Postal Code");
+  const idLabel = $derived(countryMeta?.national_id_name || "");
+  const idPlaceholder = $derived(countryMeta?.national_id_placeholder || "");
+  const stateLabel = $derived(countryMeta?.state_province_label || "");
+  const postalLabel = $derived(countryMeta?.postal_code_label || "");
 </script>
 
 <Modal

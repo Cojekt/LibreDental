@@ -111,10 +111,10 @@
   let city = $state(practiceConfig?.city || "");
   let stateProvince = $state(practiceConfig?.state_province || "");
   let postalCode = $state(practiceConfig?.postal_code || "");
-  let countryCode = $state(practiceConfig?.country_code || "US");
-  let currency = $state(practiceConfig?.currency || "USD");
-  let toothSystem = $state(practiceConfig?.tooth_system || "universal");
-  let dateFormat = $state(practiceConfig?.date_format || "YYYY-MM-DD");
+  let countryCode = $state(practiceConfig?.country_code || "");
+  let currency = $state(practiceConfig?.currency || "");
+  let toothSystem = $state(practiceConfig?.tooth_system || "");
+  let dateFormat = $state(practiceConfig?.date_format || "");
   let businessHours = $state<BusinessHourDay[]>(
     ensureDaySlots(practiceConfig?.business_hours || [
       { day: "Monday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
@@ -127,7 +127,7 @@
     ])
   );
 
-  // Reactively sync when practiceConfig changes
+  // Reactively sync when practiceConfig or countryMeta changes
   $effect(() => {
     if (practiceConfig) {
       clinicName = practiceConfig.clinic_name || "My Dental Clinic";
@@ -142,13 +142,18 @@
       city = practiceConfig.city || "";
       stateProvince = practiceConfig.state_province || "";
       postalCode = practiceConfig.postal_code || "";
-      countryCode = practiceConfig.country_code || "US";
-      currency = practiceConfig.currency || "USD";
-      toothSystem = practiceConfig.tooth_system || "universal";
-      dateFormat = practiceConfig.date_format || "YYYY-MM-DD";
+      countryCode = practiceConfig.country_code || countryMeta?.code || "";
+      currency = practiceConfig.currency || countryMeta?.default_currency || "";
+      toothSystem = practiceConfig.tooth_system || countryMeta?.default_tooth_system || "";
+      dateFormat = practiceConfig.date_format || countryMeta?.date_format || "";
       if (practiceConfig.business_hours && practiceConfig.business_hours.length > 0) {
         businessHours = ensureDaySlots(practiceConfig.business_hours);
       }
+    } else if (countryMeta) {
+      if (!countryCode) countryCode = countryMeta.code;
+      if (!currency) currency = countryMeta.default_currency;
+      if (!toothSystem) toothSystem = countryMeta.default_tooth_system;
+      if (!dateFormat) dateFormat = countryMeta.date_format;
     }
   });
 
@@ -205,10 +210,10 @@
       city = practiceConfig.city || "";
       stateProvince = practiceConfig.state_province || "";
       postalCode = practiceConfig.postal_code || "";
-      countryCode = practiceConfig.country_code || "US";
-      currency = practiceConfig.currency || "USD";
-      toothSystem = practiceConfig.tooth_system || "universal";
-      dateFormat = practiceConfig.date_format || "YYYY-MM-DD";
+      countryCode = practiceConfig.country_code || countryMeta?.code || "";
+      currency = practiceConfig.currency || countryMeta?.default_currency || "";
+      toothSystem = practiceConfig.tooth_system || countryMeta?.default_tooth_system || "";
+      dateFormat = practiceConfig.date_format || countryMeta?.date_format || "";
       if (practiceConfig.business_hours && practiceConfig.business_hours.length > 0) {
         businessHours = practiceConfig.business_hours;
       }

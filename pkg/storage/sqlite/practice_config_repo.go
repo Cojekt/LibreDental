@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -308,4 +309,115 @@ func (r *PracticeConfigRepository) DeleteOperatory(ctx context.Context, id strin
 		return storage.ErrNotFound
 	}
 	return nil
+}
+
+// CountryConfigs CRUD / Queries
+
+func (r *PracticeConfigRepository) ListCountryConfigs(ctx context.Context) ([]domain.CountryConfig, error) {
+	query := `
+	SELECT code, name, national_id_name, national_id_type, national_id_placeholder,
+	       default_tooth_system, default_currency, state_province_label, postal_code_label, date_format
+	FROM country_configs ORDER BY is_default DESC, name ASC`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list country configs: %w", err)
+	}
+	defer rows.Close()
+
+	var configs []domain.CountryConfig
+	for rows.Next() {
+		var cfg domain.CountryConfig
+		var codeStr, toothStr string
+		err := rows.Scan(
+			&codeStr,
+			&cfg.Name,
+			&cfg.NationalIDName,
+			&cfg.NationalIDType,
+			&cfg.NationalIDPlaceholder,
+			&toothStr,
+			&cfg.DefaultCurrency,
+			&cfg.StateProvinceLabel,
+			&cfg.PostalCodeLabel,
+			&cfg.DateFormat,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan country config: %w", err)
+		}
+		cfg.Code = domain.CountryCode(codeStr)
+		cfg.DefaultToothSystem = domain.ToothSystem(toothStr)
+		configs = append(configs, cfg)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating country configs: %w", err)
+	}
+
+	return configs, nil
+}
+
+func (r *PracticeConfigRepository) GetCountryConfig(ctx context.Context, code string) (*domain.CountryConfig, error) {
+	query := `
+	SELECT code, name, national_id_name, national_id_type, national_id_placeholder,
+	       default_tooth_system, default_currency, state_province_label, postal_code_label, date_format
+	FROM country_configs WHERE code = ?`
+
+	row := r.db.QueryRowContext(ctx, query, code)
+
+	var cfg domain.CountryConfig
+	var codeStr, toothStr string
+	err := row.Scan(
+		&codeStr,
+		&cfg.Name,
+		&cfg.NationalIDName,
+		&cfg.NationalIDType,
+		&cfg.NationalIDPlaceholder,
+		&toothStr,
+		&cfg.DefaultCurrency,
+		&cfg.StateProvinceLabel,
+		&cfg.PostalCodeLabel,
+		&cfg.DateFormat,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to fetch country config for %s: %w", code, err)
+	}
+	cfg.Code = domain.CountryCode(codeStr)
+	cfg.DefaultToothSystem = domain.ToothSystem(toothStr)
+	return &cfg, nil
+}
+
+func (r *PracticeConfigRepository) GetDefaultCountryConfig(ctx context.Context) (*domain.CountryConfig, error) {
+	query := `
+	SELECT code, name, national_id_name, national_id_type, national_id_placeholder,
+	       default_tooth_system, default_currency, state_province_label, postal_code_label, date_format
+	FROM country_configs WHERE is_default = 1 LIMIT 1`
+
+	row := r.db.QueryRowContext(ctx, query)
+
+	var cfg domain.CountryConfig
+	var codeStr, toothStr string
+	err := row.Scan(
+		&codeStr,
+		&cfg.Name,
+		&cfg.NationalIDName,
+		&cfg.NationalIDType,
+		&cfg.NationalIDPlaceholder,
+		&toothStr,
+		&cfg.DefaultCurrency,
+		&cfg.StateProvinceLabel,
+		&cfg.PostalCodeLabel,
+		&cfg.DateFormat,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to fetch default country config: %w", err)
+	}
+	cfg.Code = domain.CountryCode(codeStr)
+	cfg.DefaultToothSystem = domain.ToothSystem(toothStr)
+	return &cfg, nil
 }

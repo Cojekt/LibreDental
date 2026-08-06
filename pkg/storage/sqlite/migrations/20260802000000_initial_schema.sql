@@ -136,10 +136,33 @@ CREATE INDEX IF NOT EXISTS idx_audit_patient ON audit_logs(patient_id);
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_dental_conditions_patient ON dental_conditions(patient_id);
 CREATE INDEX IF NOT EXISTS idx_dental_conditions_tooth ON dental_conditions(patient_id, tooth_number);
+
+CREATE TABLE IF NOT EXISTS country_configs (
+	code TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	national_id_name TEXT NOT NULL,
+	national_id_type TEXT NOT NULL,
+	national_id_placeholder TEXT NOT NULL,
+	default_tooth_system TEXT NOT NULL,
+	default_currency TEXT NOT NULL,
+	state_province_label TEXT NOT NULL,
+	postal_code_label TEXT NOT NULL,
+	date_format TEXT NOT NULL,
+	is_default INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT OR IGNORE INTO country_configs (code, name, national_id_name, national_id_type, national_id_placeholder, default_tooth_system, default_currency, state_province_label, postal_code_label, date_format, is_default) VALUES
+('US', 'United States', 'Social Security Number (SSN)', 'ssn', '000-00-0000', 'universal', 'USD', 'State', 'ZIP Code', 'MM/DD/YYYY', 1),
+('CA', 'Canada', 'Social Insurance Number (SIN)', 'sin', '000-000-000', 'fdi', 'CAD', 'Province', 'Postal Code', 'YYYY-MM-DD', 0),
+('GB', 'United Kingdom', 'NHS Number', 'nhs_number', '000 000 0000', 'fdi', 'GBP', 'County', 'Postcode', 'DD/MM/YYYY', 0),
+('AU', 'Australia', 'Medicare Card Number', 'medicare_num', '0000 00000 0', 'fdi', 'AUD', 'State', 'Postcode', 'DD/MM/YYYY', 0),
+('DE', 'Germany', 'Tax / Health Insurance ID', 'tax_id', 'X000000000', 'fdi', 'EUR', 'State / Bundesland', 'PLZ (Postal Code)', 'DD.MM.YYYY', 0),
+('FR', 'France', 'NIR (NIR / Numéro SS)', 'nir', '1 00 00 00 000 000 00', 'fdi', 'EUR', 'Region / Department', 'Code Postal', 'DD/MM/YYYY', 0);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE IF EXISTS country_configs;
 DROP TABLE IF EXISTS dental_conditions;
 DROP TABLE IF EXISTS system_settings;
 DROP TABLE IF EXISTS operatories;

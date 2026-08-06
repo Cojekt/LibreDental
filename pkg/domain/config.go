@@ -120,9 +120,8 @@ type PracticeConfig struct {
 	UpdatedAt     time.Time         `json:"updated_at"`
 }
 
-// NewPracticeConfig creates a new PracticeConfig populated with regional defaults from the specified country code.
-func NewPracticeConfig(code CountryCode) *PracticeConfig {
-	meta, _ := GetCountryConfig(code)
+// NewPracticeConfig creates a new PracticeConfig populated with regional defaults from country metadata.
+func NewPracticeConfig(meta CountryConfig) *PracticeConfig {
 	now := time.Now().UTC()
 
 	return &PracticeConfig{

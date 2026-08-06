@@ -161,6 +161,7 @@
       const cfg = await PracticeConfigService.GetConfig();
       if (!cfg || !cfg.country_code) {
         showOnboarding = true;
+        await loadCountryMeta("");
       } else {
         practiceConfig = cfg;
         await loadCountryMeta(cfg.country_code);
@@ -168,6 +169,7 @@
     } catch (err) {
       console.error("Failed to check practice config:", err);
       showOnboarding = true;
+      await loadCountryMeta("");
     }
   }
 

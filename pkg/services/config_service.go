@@ -32,28 +32,39 @@ func (s *PracticeConfigService) GetConfig() (*domain.PracticeConfig, error) {
 
 // SetConfig initializes or updates the practice country and derives all regional defaults.
 func (s *PracticeConfigService) SetConfig(countryCode string) (*domain.PracticeConfig, error) {
-	code := domain.CountryCode(countryCode)
-	cfg := domain.NewPracticeConfig(code)
-
-	err := s.repo.Save(context.Background(), cfg)
+	meta, err := s.GetCountryConfig(countryCode)
 	if err != nil {
+		return nil, fmt.Errorf("failed to fetch country config for %s: %w", countryCode, err)
+	}
+
+	cfg := domain.NewPracticeConfig(*meta)
+
+	if err := s.repo.Save(context.Background(), cfg); err != nil {
 		return nil, fmt.Errorf("failed to save practice config: %w", err)
 	}
 	return cfg, nil
 }
 
-// GetSupportedCountries returns the list of all supported country configurations.
+// GetSupportedCountries returns the list of all supported country configurations from the database.
 func (s *PracticeConfigService) GetSupportedCountries() ([]domain.CountryConfig, error) {
-	return domain.GetSupportedCountries(), nil
+	return s.repo.ListCountryConfigs(context.Background())
 }
 
-// GetCountryConfig returns country metadata for a specific country code.
+// GetCountryConfig returns country metadata for a specific country code from the database, or default fallback.
 func (s *PracticeConfigService) GetCountryConfig(countryCode string) (*domain.CountryConfig, error) {
-	cfg, ok := domain.GetCountryConfig(domain.CountryCode(countryCode))
-	if !ok {
-		return nil, fmt.Errorf("unsupported country code: %s", countryCode)
+	ctx := context.Background()
+	if countryCode != "" {
+		cfg, err := s.repo.GetCountryConfig(ctx, countryCode)
+		if err == nil {
+			return cfg, nil
+		}
 	}
-	return &cfg, nil
+	// Fallback to default country config stored in database
+	defCfg, err := s.repo.GetDefaultCountryConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch default country config from DB: %w", err)
+	}
+	return defCfg, nil
 }
 
 // UpdatePracticeConfig updates practice details and regional configuration.
