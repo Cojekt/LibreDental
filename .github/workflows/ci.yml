@@ -7,8 +7,66 @@ on:
     branches: [ main ]
 
 jobs:
-  ci:
-    name: Lint, Test & Build
+  go-checks:
+    name: Go Code Quality & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Check Go Code Formatting
+        run: |
+          UNFORMATTED=$(gofmt -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "The following Go files are not formatted cleanly with gofmt:"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+
+      - name: Go Vet
+        run: go vet ./...
+
+      - name: Go Unit Tests
+        run: go test -v ./...
+
+  frontend-checks:
+    name: Frontend Quality & Type Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Check Frontend Formatting
+        working-directory: frontend
+        run: npm run format:check
+
+      - name: Svelte & TypeScript Check
+        working-directory: frontend
+        run: npm run check
+
+  build:
+    name: Build Application & Server
+    needs: [go-checks, frontend-checks]
     runs-on: ubuntu-latest
 
     steps:
@@ -35,7 +93,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -45,31 +103,13 @@ jobs:
           go install github.com/go-task/task/v3/cmd/task@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Check Go Code Formatting
-        run: |
-          UNFORMATTED=$(gofmt -l .)
-          if [ -n "$UNFORMATTED" ]; then
-            echo "The following Go files are not formatted cleanly with gofmt:"
-            echo "$UNFORMATTED"
-            exit 1
-          fi
-
-      - name: Go Vet & Test
-        run: |
-          go vet ./...
-          go test -v ./...
-
-      - name: Frontend Dependencies, Format & Type Check
-        run: |
-          cd frontend
-          npm ci
-          npm run format:check
-          npm run check
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
 
       - name: Build Server Binary
-        run: |
-          task build:server
+        run: task build:server
 
       - name: Build Desktop Application
-        run: |
-          task build
+        run: task build
+

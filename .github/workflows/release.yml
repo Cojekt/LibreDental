@@ -54,7 +54,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -64,10 +64,15 @@ jobs:
           go install github.com/go-task/task/v3/cmd/task@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Build Application & Server
-        run: |
-          task build
-          task build:server
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Server Binary
+        run: task build:server
+
+      - name: Build Desktop Application
+        run: task build
 
       - name: Prepare Artifacts (Linux)
         if: runner.os == 'Linux'
