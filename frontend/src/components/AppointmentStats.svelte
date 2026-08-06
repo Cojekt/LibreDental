@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Appointment } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
 
   let { appointments = [] } = $props<{
     appointments: Appointment[];
@@ -16,7 +18,7 @@
   <!-- Scheduled -->
   <div class="rounded-xl border border-slate-700/80 bg-slate-800/80 p-3.5 shadow-sm backdrop-blur">
     <div class="flex items-center justify-between text-xs font-semibold text-slate-400">
-      <span>Scheduled</span>
+      <span>{getLocaleVersion(), m.appts_status_scheduled()}</span>
       <span class="h-2 w-2 rounded-full bg-blue-500"></span>
     </div>
     <div class="mt-2 text-2xl font-bold text-slate-100">{scheduledCount}</div>
@@ -25,7 +27,7 @@
   <!-- Confirmed -->
   <div class="rounded-xl border border-slate-700/80 bg-slate-800/80 p-3.5 shadow-sm backdrop-blur">
     <div class="flex items-center justify-between text-xs font-semibold text-sky-400">
-      <span>Confirmed</span>
+      <span>{m.appts_status_confirmed()}</span>
       <span class="h-2 w-2 rounded-full bg-sky-400"></span>
     </div>
     <div class="mt-2 text-2xl font-bold text-sky-300">{confirmedCount}</div>
@@ -34,7 +36,7 @@
   <!-- Arrived / Waiting -->
   <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 shadow-sm backdrop-blur">
     <div class="flex items-center justify-between text-xs font-semibold text-amber-400">
-      <span>Arrived / Waiting</span>
+      <span>{m.appts_status_arrived()}</span>
       <span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
     </div>
     <div class="mt-2 text-2xl font-bold text-amber-300">{arrivedCount}</div>
@@ -43,7 +45,7 @@
   <!-- In Chair -->
   <div class="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3.5 shadow-sm backdrop-blur">
     <div class="flex items-center justify-between text-xs font-semibold text-purple-400">
-      <span>In Chair</span>
+      <span>{m.appts_status_in_chair()}</span>
       <span class="h-2 w-2 rounded-full bg-purple-400 animate-pulse"></span>
     </div>
     <div class="mt-2 text-2xl font-bold text-purple-300">{inChairCount}</div>
@@ -52,7 +54,7 @@
   <!-- Completed -->
   <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 shadow-sm backdrop-blur">
     <div class="flex items-center justify-between text-xs font-semibold text-emerald-400">
-      <span>Completed</span>
+      <span>{m.appts_status_completed()}</span>
       <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
     </div>
     <div class="mt-2 text-2xl font-bold text-emerald-300">{completedCount}</div>

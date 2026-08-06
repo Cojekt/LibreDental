@@ -66,7 +66,7 @@
       {:else}
         <div
           class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed opacity-50 hover:opacity-75 transition-opacity"
-          title="Coming soon"
+          title={m.nav_billing_coming_soon()}
         >
           <span>{@html tab.icon}</span>
           <span>{tab.label}</span>

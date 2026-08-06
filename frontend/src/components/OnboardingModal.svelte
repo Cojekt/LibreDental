@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { CountryConfig } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
 
   let {
     showOnboarding = $bindable(),
@@ -30,19 +32,19 @@
           📍
         </div>
         <div>
-          <h2 class="m-0 text-xl font-semibold text-white tracking-tight">Welcome to LibreDental™</h2>
-          <p class="m-0 text-xs text-slate-400">One-time initial practice setup</p>
+          <h2 class="m-0 text-xl font-semibold text-white tracking-tight">{getLocaleVersion(), m.onboarding_title()}</h2>
+          <p class="m-0 text-xs text-slate-400">{m.onboarding_subtitle()}</p>
         </div>
       </div>
 
       <p class="text-sm text-slate-300 leading-relaxed mb-6">
-        Please select the country where your dental practice is located. This will automatically configure region-specific compliance rules, national identity fields, tooth numbering standards, and address formats.
+        {m.onboarding_body()}
       </p>
 
       <form onsubmit={handleSubmit} class="flex flex-col gap-5">
         <div class="flex flex-col gap-2">
           <label for="country-select" class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-            Practice Country / Region Jurisdiction *
+            {m.onboarding_country_label()}
           </label>
           <select
             id="country-select"
@@ -61,23 +63,23 @@
           {@const meta = supportedCountries.find((c: CountryConfig) => c.code === selectedCountry)}
           {#if meta}
             <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-xs text-slate-400 space-y-2">
-              <div class="font-medium text-slate-200 mb-1">Automatic Regional Configuration:</div>
+              <div class="font-medium text-slate-200 mb-1">{m.onboarding_regional_config_title()}</div>
               <div class="flex justify-between border-b border-slate-800/80 pb-1">
-                <span>National Identifier:</span>
+                <span>{m.onboarding_field_national_id()}</span>
                 <span class="text-blue-400 font-medium">{meta.national_id_name}</span>
               </div>
               <div class="flex justify-between border-b border-slate-800/80 pb-1">
-                <span>Tooth Numbering Notation:</span>
+                <span>{m.onboarding_field_tooth_system()}</span>
                 <span class="text-blue-400 font-medium">
-                  {meta.default_tooth_system === "universal" ? "Universal System (1-32 / US)" : "FDI Standard (11-48 / ISO 3950)"}
+                  {meta.default_tooth_system === "universal" ? m.onboarding_tooth_universal() : m.onboarding_tooth_fdi()}
                 </span>
               </div>
               <div class="flex justify-between border-b border-slate-800/80 pb-1">
-                <span>Address Format:</span>
+                <span>{m.onboarding_field_address()}</span>
                 <span class="text-slate-300">{meta.state_province_label} & {meta.postal_code_label}</span>
               </div>
               <div class="flex justify-between">
-                <span>Practice Currency:</span>
+                <span>{m.onboarding_field_currency()}</span>
                 <span class="text-slate-300">{meta.default_currency}</span>
               </div>
             </div>
@@ -89,7 +91,7 @@
           disabled={isSubmitting}
           class="w-full rounded-lg bg-blue-600 hover:bg-blue-500 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all disabled:opacity-50 cursor-pointer mt-2"
         >
-          {isSubmitting ? "Configuring Practice..." : "Save & Complete Setup"}
+          {isSubmitting ? m.onboarding_submitting() : m.onboarding_submit()}
         </button>
       </form>
     </div>

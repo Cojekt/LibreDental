@@ -17,6 +17,7 @@
   import Modal from "../components/ui/Modal.svelte";
   import FormField from "../components/ui/FormField.svelte";
   import Input from "../components/ui/Input.svelte";
+  import { m } from "../paraglide/messages.js";
 
   let {
     practiceConfig = $bindable(),
@@ -337,7 +338,7 @@
   }
 
   async function handleDeleteProvider(id: string) {
-    if (confirm("Are you sure you want to delete this provider?")) {
+    if (confirm(m.confirm_delete_provider())) {
       try {
         await PracticeConfigService.DeleteProvider(id);
         await onrefresh();
@@ -392,7 +393,7 @@
   }
 
   async function handleDeleteOperatory(id: string) {
-    if (confirm("Are you sure you want to delete this operatory?")) {
+    if (confirm(m.confirm_delete_operatory())) {
       try {
         await PracticeConfigService.DeleteOperatory(id);
         await onrefresh();

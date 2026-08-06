@@ -7,6 +7,7 @@
     SystemSettingsService,
   } from "../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
   import { initLocale, getLocaleVersion } from "./lib/locale.svelte.js";
+  import { m } from "./paraglide/messages.js";
   import type {
     Patient,
     PracticeConfig,
@@ -281,7 +282,7 @@
     if (!firstName || !lastName || !dob || !phone) return;
 
     if (!countryMeta || !countryMeta.code) {
-      alert("Practice country configuration is required before managing patient records.");
+      alert(m.alert_practice_country_required());
       return;
     }
 
@@ -346,7 +347,7 @@
   async function handleArchivePatient(p: Patient) {
     if (
       confirm(
-        `Are you sure you want to archive ${p.first_name} ${p.last_name}?`,
+        m.confirm_archive_patient({ firstName: p.first_name, lastName: p.last_name }),
       )
     ) {
       try {
@@ -400,7 +401,7 @@
   async function handleSaveAppt(e: Event) {
     e.preventDefault();
     if (!apptPatientId || !apptProviderId || !apptOperatoryId) {
-      alert("A valid patient, provider, and operatory room must be selected for the appointment.");
+      alert(m.alert_appointment_validation());
       return;
     }
 
@@ -463,7 +464,7 @@
   async function handleDeleteAppt(id?: string) {
     const apptId = id || editingApptId;
     if (!apptId) return;
-    if (confirm("Are you sure you want to delete this appointment?")) {
+    if (confirm(m.confirm_delete_appointment())) {
       try {
         await AppointmentService.DeleteAppointment(apptId);
         showApptModal = false;

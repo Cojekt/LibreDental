@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
+
   let {
     searchQuery = $bindable(),
     statusFilter = $bindable(),
@@ -8,6 +11,11 @@
     statusFilter: string;
     onloadpatients: () => void;
   }>();
+
+  const searchPlaceholder = $derived.by(() => {
+    getLocaleVersion();
+    return m.patients_search_placeholder();
+  });
 </script>
 
 <div class="mb-4 flex items-center gap-3">
@@ -24,7 +32,7 @@
     </svg>
     <input
       type="text"
-      placeholder="Search patients by name, email, or phone..."
+      placeholder={searchPlaceholder}
       class="box-border w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none shadow-sm transition-all"
       style="padding-left: 2.75rem; padding-right: 0.75rem;"
       bind:value={searchQuery}
@@ -44,7 +52,7 @@
           : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
       }`}
     >
-      Active Patients
+      {m.patients_filter_active()}
     </button>
     <button
       type="button"
@@ -58,7 +66,7 @@
           : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
       }`}
     >
-      Archived
+      {m.patients_filter_archived()}
     </button>
   </div>
 </div>

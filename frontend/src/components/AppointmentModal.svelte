@@ -3,6 +3,8 @@
   import Modal from "./ui/Modal.svelte";
   import FormField from "./ui/FormField.svelte";
   import Input from "./ui/Input.svelte";
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
 
   let {
     showModal = $bindable(false),
@@ -42,15 +44,15 @@
     ondelete?: () => void;
   }>();
 
-  const statuses = [
-    { id: "scheduled", label: "Scheduled" },
-    { id: "confirmed", label: "Confirmed" },
-    { id: "arrived", label: "Arrived" },
-    { id: "in_chair", label: "In Chair" },
-    { id: "completed", label: "Completed" },
-    { id: "cancelled", label: "Cancelled" },
-    { id: "no_show", label: "No Show" },
-  ];
+  const statuses = $derived([
+    { id: "scheduled", label: m.appts_status_scheduled() },
+    { id: "confirmed", label: m.appts_status_confirmed() },
+    { id: "arrived", label: m.appts_status_arrived() },
+    { id: "in_chair", label: m.appts_status_in_chair() },
+    { id: "completed", label: m.appts_status_completed() },
+    { id: "cancelled", label: m.appts_status_cancelled() },
+    { id: "no_show", label: m.appts_status_no_show() },
+  ]);
 
   const colorOptions = [
     { hex: "#3b82f6", name: "Blue" },
@@ -63,32 +65,41 @@
 
   function setDuration(minutes: number) {
     if (!startTimeStr) return;
-    const [h, m] = startTimeStr.split(":").map(Number);
+    const [h, mins] = startTimeStr.split(":").map(Number);
     const date = new Date();
-    date.setHours(h, m + minutes, 0, 0);
+    date.setHours(h, mins + minutes, 0, 0);
     const endH = String(date.getHours()).padStart(2, "0");
     const endM = String(date.getMinutes()).padStart(2, "0");
     endTimeStr = `${endH}:${endM}`;
   }
+
+  const modalTitle = $derived.by(() => {
+    getLocaleVersion();
+    return isEditing ? m.appt_modal_edit_title() : m.appt_modal_add_title();
+  });
+  const modalSubtitle = $derived.by(() => {
+    getLocaleVersion();
+    return m.appt_modal_subtitle();
+  });
 </script>
 
 <Modal
   bind:showModal
-  title={isEditing ? "Edit Appointment" : "Schedule New Appointment"}
-  subtitle="Book or modify patient chair time and procedure details"
+  title={modalTitle}
+  subtitle={modalSubtitle}
   icon="📅"
   maxWidth="max-w-xl"
 >
   <form onsubmit={onsave} class="space-y-4">
     <!-- Patient Picker -->
-    <FormField label="Patient" forId="appt-patient" required>
+    <FormField label={m.appt_label_patient()} forId="appt-patient" required>
       <select
         id="appt-patient"
         bind:value={selectedPatientId}
         required
         class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
       >
-        <option value="" disabled>-- Select Patient --</option>
+        <option value="" disabled>{m.appt_select_patient_placeholder()}</option>
         {#each patients as p}
           <option value={p.id}>
             {p.last_name}, {p.first_name} ({p.phone_primary || p.email || 'No contact info'})
@@ -97,14 +108,14 @@
       </select>
       {#if patients.length === 0}
         <p class="text-xs text-amber-400 mt-1">
-          ⚠️ No patients registered yet. Please add a patient first.
+          {m.appt_no_patients_warning()}
         </p>
       {/if}
     </FormField>
 
     <!-- Provider & Operatory -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <FormField label="Provider" forId="appt-provider" required>
+      <FormField label={m.appt_label_provider()} forId="appt-provider" required>
         <select
           id="appt-provider"
           bind:value={providerId}
@@ -112,7 +123,7 @@
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
         >
           {#if configuredProviders.length === 0}
-            <option value="">No Providers Configured</option>
+            <option value="">{m.appt_no_providers()}</option>
           {:else}
             {#each configuredProviders as prov}
               <option value={prov.id}>{prov.name} ({prov.role})</option>
@@ -121,7 +132,7 @@
         </select>
       </FormField>
 
-      <FormField label="Operatory / Chair" forId="appt-operatory" required>
+      <FormField label={m.appt_label_operatory()} forId="appt-operatory" required>
         <select
           id="appt-operatory"
           bind:value={operatoryId}
@@ -129,7 +140,7 @@
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
         >
           {#if configuredOperatories.length === 0}
-            <option value="">No Operatories Configured</option>
+            <option value="">{m.appt_no_operatories()}</option>
           {:else}
             {#each configuredOperatories as op}
               <option value={op.id}>{op.name} ({op.type})</option>
@@ -141,22 +152,22 @@
 
     <!-- Date & Times -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <FormField label="Date" forId="appt-date" required>
+      <FormField label={m.appt_label_date()} forId="appt-date" required>
         <Input id="appt-date" type="date" bind:value={startDateStr} required />
       </FormField>
 
-      <FormField label="Start Time" forId="appt-start-time" required>
+      <FormField label={m.appt_label_start_time()} forId="appt-start-time" required>
         <Input id="appt-start-time" type="time" bind:value={startTimeStr} required />
       </FormField>
 
-      <FormField label="End Time" forId="appt-end-time" required>
+      <FormField label={m.appt_label_end_time()} forId="appt-end-time" required>
         <Input id="appt-end-time" type="time" bind:value={endTimeStr} required />
       </FormField>
     </div>
 
     <!-- Quick Duration Presets -->
     <div class="flex items-center gap-2 pt-1">
-      <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Quick Duration:</span>
+      <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{m.appt_label_quick_duration()}</span>
       <button
         type="button"
         onclick={() => setDuration(30)}
@@ -182,7 +193,7 @@
 
     <!-- Status & Color -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <FormField label="Appointment Status" forId="appt-status">
+      <FormField label={m.appt_label_status()} forId="appt-status">
         <select
           id="appt-status"
           bind:value={status}
@@ -195,7 +206,7 @@
       </FormField>
 
       <div class="flex flex-col gap-1.5">
-        <span class="text-xs font-semibold text-slate-300">Color Marker</span>
+        <span class="text-xs font-semibold text-slate-300">{m.appt_label_color_marker()}</span>
         <div class="flex items-center gap-2 pt-1">
           {#each colorOptions as c}
             <button
@@ -213,7 +224,7 @@
     </div>
 
     <!-- Reason -->
-    <FormField label="Reason for Visit" forId="appt-reason">
+    <FormField label={m.appt_label_reason()} forId="appt-reason">
       <Input
         id="appt-reason"
         type="text"
@@ -223,7 +234,7 @@
     </FormField>
 
     <!-- Clinical / Frontdesk Notes -->
-    <FormField label="Clinical & Administrative Notes" forId="appt-notes">
+    <FormField label={m.appt_label_notes()} forId="appt-notes">
       <textarea
         id="appt-notes"
         bind:value={notes}
@@ -242,7 +253,7 @@
             onclick={ondelete}
             class="px-3.5 py-2 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl border border-rose-500/30 transition-colors cursor-pointer"
           >
-            Delete Appointment
+            {m.appt_delete()}
           </button>
         {/if}
       </div>
@@ -253,13 +264,13 @@
           onclick={() => (showModal = false)}
           class="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white cursor-pointer"
         >
-          Cancel
+          {m.common_cancel()}
         </button>
         <button
           type="submit"
           class="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 hover:from-sky-400 hover:to-blue-500 focus:outline-none cursor-pointer"
         >
-          {isEditing ? "Save Changes" : "Create Appointment"}
+          {isEditing ? m.appt_save_changes() : m.appt_create()}
         </button>
       </div>
     </div>

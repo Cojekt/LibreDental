@@ -9,6 +9,8 @@
   } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import { ToothSystem, ToothSurface } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import { ChartService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
 
   let {
     patients = [],
@@ -225,7 +227,7 @@
   }
 
   async function handleDeleteCondition(id: string) {
-    if (confirm("Are you sure you want to remove this condition record?")) {
+    if (confirm(m.confirm_delete_condition())) {
       try {
         await ChartService.DeleteToothCondition(id);
         if (editingConditionId === id) {
@@ -264,8 +266,8 @@
           </svg>
         </div>
         <div>
-          <h2 class="text-lg font-bold text-slate-100 m-0">Dental Charting</h2>
-          <p class="text-xs text-slate-400 m-0">Interactive Odontogram & Treatment Planning</p>
+          <h2 class="text-lg font-bold text-slate-100 m-0">{getLocaleVersion(), m.charting_title()}</h2>
+          <p class="text-xs text-slate-400 m-0">{m.charting_subtitle()}</p>
         </div>
       </div>
 
@@ -335,7 +337,7 @@
 
   {#if !selectedPatient}
     <div class="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/40">
-      <p class="text-slate-400 text-sm m-0 font-medium">Please select a patient to display their dental chart.</p>
+      <p class="text-slate-400 text-sm m-0 font-medium">{m.charting_select_patient_desc()}</p>
     </div>
   {:else}
     <!-- Status Legend -->

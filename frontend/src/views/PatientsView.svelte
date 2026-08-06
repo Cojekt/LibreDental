@@ -2,6 +2,8 @@
   import type { Patient, CountryConfig } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import FilterBar from "../components/FilterBar.svelte";
   import PatientTable from "../components/PatientTable.svelte";
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
 
   let {
     patients,
@@ -29,11 +31,11 @@
 <div class="space-y-5">
   <div class="flex items-center justify-between">
     <div>
-      <h2 class="text-xl font-bold text-slate-100">Patient Directory</h2>
-      <p class="text-xs text-slate-400 mt-0.5">Manage patient records, contact info, and medical histories</p>
+      <h2 class="text-xl font-bold text-slate-100">{getLocaleVersion(), m.patients_directory_title()}</h2>
+      <p class="text-xs text-slate-400 mt-0.5">{m.patients_directory_subtitle()}</p>
     </div>
     <div class="text-xs font-semibold text-slate-300 bg-slate-800/90 px-3.5 py-1.5 rounded-xl border border-slate-700/80 shadow-sm">
-      Total Patients: <span class="text-sky-400 font-bold ml-1">{patients.length}</span>
+      {m.patients_total_count()} <span class="text-sky-400 font-bold ml-1">{patients.length}</span>
     </div>
   </div>
 

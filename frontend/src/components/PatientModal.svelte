@@ -3,6 +3,8 @@
   import Modal from "./ui/Modal.svelte";
   import FormField from "./ui/FormField.svelte";
   import Input from "./ui/Input.svelte";
+  import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
 
   let {
     showPatientModal = $bindable(),
@@ -38,22 +40,31 @@
   const idPlaceholder = $derived(countryMeta?.national_id_placeholder || "");
   const stateLabel = $derived(countryMeta?.state_province_label || "");
   const postalLabel = $derived(countryMeta?.postal_code_label || "");
+
+  const modalTitle = $derived.by(() => {
+    getLocaleVersion();
+    return isEditing ? m.patient_modal_edit_title() : m.patient_modal_add_title();
+  });
+  const modalSubtitle = $derived.by(() => {
+    getLocaleVersion();
+    return m.patient_modal_subtitle();
+  });
 </script>
 
 <Modal
   bind:showModal={showPatientModal}
-  title={isEditing ? "Edit Patient Record" : "Add New Patient"}
-  subtitle="Manage patient demographic information and medical alerts"
+  title={modalTitle}
+  subtitle={modalSubtitle}
   icon="👤"
   maxWidth="max-w-2xl"
 >
   <form onsubmit={onsave}>
     <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <FormField label="First Name" forId="fname" required>
+      <FormField label={m.patient_first_name()} forId="fname" required>
         <Input id="fname" type="text" required bind:value={firstName} placeholder="Jane" />
       </FormField>
 
-      <FormField label="Last Name" forId="lname" required>
+      <FormField label={m.patient_last_name()} forId="lname" required>
         <Input id="lname" type="text" required bind:value={lastName} placeholder="Smith" />
       </FormField>
 
@@ -61,15 +72,15 @@
         <Input id="national-id" type="text" bind:value={nationalId} placeholder={idPlaceholder} />
       </FormField>
 
-      <FormField label="Date of Birth" forId="dob" required>
+      <FormField label={m.patient_dob()} forId="dob" required>
         <Input id="dob" type="date" required bind:value={dob} dateFormat={countryMeta?.date_format} />
       </FormField>
 
-      <FormField label="Email Address" forId="email">
+      <FormField label={m.patient_email()} forId="email">
         <Input id="email" type="email" bind:value={email} placeholder="jane.smith@example.com" />
       </FormField>
 
-      <FormField label="Phone Primary" forId="phone" required>
+      <FormField label={m.patient_phone()} forId="phone" required>
         <Input id="phone" type="tel" required bind:value={phone} placeholder="(555) 019-2834" />
       </FormField>
 
@@ -82,7 +93,7 @@
       </FormField>
 
       <div class="sm:col-span-2">
-        <FormField label="Medical Alerts (comma separated)" forId="alerts">
+        <FormField label={m.patient_medical_alerts()} forId="alerts">
           <Input id="alerts" type="text" bind:value={medicalAlerts} placeholder="e.g. Penicillin, Latex" />
         </FormField>
       </div>
@@ -90,10 +101,10 @@
 
     <div class="flex justify-end gap-3 border-t border-slate-800 pt-4">
       <button type="button" class="btn btn-secondary cursor-pointer" onclick={() => (showPatientModal = false)}>
-        Cancel
+        {m.common_cancel()}
       </button>
       <button type="submit" class="btn btn-primary cursor-pointer">
-        {isEditing ? "Save Changes" : "Save Patient Record"}
+        {isEditing ? m.patient_save_changes() : m.patient_save_record()}
       </button>
     </div>
   </form>
