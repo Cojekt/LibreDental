@@ -94,19 +94,45 @@
       },
     });
 
-  // Time slots 8:00 AM to 6:00 PM
-  const timeSlots = [
-    "08:00",
-    "09:00",
-    "10:00",
-    "11:00",
-    "12:00",
-    "13:00",
-    "14:00",
-    "15:00",
-    "16:00",
-    "17:00",
-  ];
+  // Dynamic time slots derived from filtered appointments (default 07:00 to 18:00, expanding as needed)
+  let timeSlots = $derived.by(() => {
+    let minH = 7;
+    let maxH = 18;
+
+    if (filteredAppointments.length > 0) {
+      for (const a of filteredAppointments) {
+        if (!a.start_time) continue;
+        try {
+          const d = new Date(a.start_time);
+          const h = d.getHours();
+          if (!isNaN(h)) {
+            if (h < minH) minH = h;
+            if (h > maxH) maxH = h;
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    const slots: string[] = [];
+    for (let h = minH; h <= maxH; h++) {
+      slots.push(`${String(h).padStart(2, "0")}:00`);
+    }
+    return slots;
+  });
+
+  function formatSlotLabel(slot: string): string {
+    try {
+      const [hStr] = slot.split(":");
+      const h = parseInt(hStr, 10);
+      const ampm = h >= 12 ? "PM" : "AM";
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      return `${String(h12).padStart(2, "0")}:00 ${ampm}`;
+    } catch {
+      return slot;
+    }
+  }
 
   function getPatientName(patientId: string): string {
     const p = patients.find((pat: Patient) => pat.id === patientId);
@@ -129,11 +155,35 @@
     selectedDate = new Date().toISOString().split("T")[0];
   }
 
+  function isSameDay(isoStr: string, dateStr: string): boolean {
+    if (!isoStr || !dateStr) return false;
+    try {
+      const isoDatePart = isoStr.split("T")[0];
+      if (isoDatePart === dateStr) return true;
+
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return false;
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}` === dateStr;
+    } catch {
+      return false;
+    }
+  }
+
   let filteredAppointments = $derived(
-    appointments.filter((a: Appointment) => {
-      if (selectedProvider !== "all" && a.provider_id !== selectedProvider) return false;
-      return true;
-    })
+    appointments
+      .filter((a: Appointment) => {
+        if (selectedProvider !== "all" && a.provider_id !== selectedProvider) return false;
+        if (viewMode === "grid") {
+          return isSameDay(a.start_time, selectedDate);
+        }
+        return true;
+      })
+      .sort((a: Appointment, b: Appointment) => {
+        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+      })
   );
 
   function formatTime(isoStr: string): string {
@@ -174,45 +224,68 @@
       return dateStr;
     }
   }
+
+  function formatApptDate(isoStr: string): string {
+    if (!isoStr) return "";
+    try {
+      const d = new Date(isoStr);
+      return d.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return isoStr;
+    }
+  }
 </script>
 
 <div class="space-y-6">
-  <!-- Stats Summary -->
+  <!-- Stats Summary (Context-sensitive: Day stats in Calendar View, All stats in Agenda View) -->
   <AppointmentStats appointments={filteredAppointments} />
 
   <!-- Control Bar -->
   <div
     class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-700/80 bg-slate-800/80 p-4 shadow-sm backdrop-blur"
   >
-    <!-- Date Navigation -->
-    <div class="flex items-center gap-2">
-      <button
-        type="button"
-        onclick={() => changeDay(-1)}
-        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+    <!-- Date Navigation (Only shown in Calendar View) -->
+    {#if viewMode === "grid"}
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          onclick={() => changeDay(-1)}
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+        >
+          {(getLocaleVersion(), m.appts_prev_day())}
+        </button>
+        <button
+          type="button"
+          onclick={setToday}
+          class="rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-400 hover:bg-sky-500/20"
+        >
+          {m.appts_today()}
+        </button>
+        <button
+          type="button"
+          onclick={() => changeDay(1)}
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+        >
+          {m.appts_next_day()}
+        </button>
+        <input
+          type="date"
+          bind:value={selectedDate}
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1 text-sm text-slate-200 focus:border-sky-500 focus:outline-none"
+        />
+      </div>
+    {:else}
+      <div
+        class="flex items-center gap-2 text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3 py-1.5 rounded-lg"
       >
-        {(getLocaleVersion(), m.appts_prev_day())}
-      </button>
-      <button
-        type="button"
-        onclick={setToday}
-        class="rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-400 hover:bg-sky-500/20"
-      >
-        {m.appts_today()}
-      </button>
-      <button
-        type="button"
-        onclick={() => changeDay(1)}
-        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
-      >
-        {m.appts_next_day()}
-      </button>
-      <input
-        type="date"
-        bind:value={selectedDate}
-        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1 text-sm text-slate-200 focus:border-sky-500 focus:outline-none"
-      />
-    </div>
+        <span>📋 All Practice Appointments Agenda</span>
+      </div>
+    {/if}
 
     <!-- Provider Filter & View Switcher -->
     <div class="flex items-center gap-3">
@@ -232,7 +305,7 @@
         </select>
       </div>
 
-      <!-- Grid / Agenda toggle -->
+      <!-- Calendar / Agenda toggle -->
       <div class="flex rounded-lg border border-slate-700 bg-slate-900 p-0.5">
         <button
           type="button"
@@ -256,13 +329,19 @@
     </div>
   </div>
 
-  <!-- Day Header -->
+  <!-- Header -->
   <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-      📅 {formattedDateHeading(selectedDate)}
+      {#if viewMode === "grid"}
+        📅 {formattedDateHeading(selectedDate)}
+      {:else}
+        📋 Agenda (All Dates)
+      {/if}
     </h2>
     <span class="text-xs text-slate-400 font-medium">
-      {filteredAppointments.length} appointment{filteredAppointments.length === 1 ? "" : "s"} scheduled
+      {filteredAppointments.length}
+      {#if viewMode === "grid"}appointment{filteredAppointments.length === 1 ? "" : "s"} scheduled{:else}total
+        appointment{filteredAppointments.length === 1 ? "" : "s"}{/if}
     </span>
   </div>
 
@@ -272,7 +351,7 @@
       <span class="ml-3 text-sm font-medium">{m.appts_loading_schedule()}</span>
     </div>
   {:else if viewMode === "grid"}
-    <!-- DAY GRID VIEW -->
+    <!-- CALENDAR VIEW -->
     <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
       <div class="divide-y divide-slate-800">
         {#each timeSlots as slot}
@@ -284,7 +363,7 @@
             <div
               class="w-24 flex-shrink-0 border-r border-slate-800 p-3 text-xs font-semibold text-slate-400 bg-slate-900/50"
             >
-              {slot}
+              {formatSlotLabel(slot)}
             </div>
 
             <!-- Appointments for this time slot -->
@@ -406,7 +485,7 @@
             class="bg-slate-800/90 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-700"
           >
             <tr>
-              <th class="px-4 py-3">{m.appt_label_start_time()}</th>
+              <th class="px-4 py-3">{m.appt_label_date()} & {m.appt_label_start_time()}</th>
               <th class="px-4 py-3">{m.patients_th_name()}</th>
               <th class="px-4 py-3">{m.appt_label_reason()}</th>
               <th class="px-4 py-3">{m.appt_label_provider()}</th>
@@ -419,8 +498,15 @@
             {#each filteredAppointments as appt}
               {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
               <tr class="hover:bg-slate-800/50 transition-colors">
-                <td class="px-4 py-3 font-medium whitespace-nowrap text-sky-400">
-                  {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
+                <td class="px-4 py-3 font-medium whitespace-nowrap">
+                  <div class="text-slate-200 font-semibold text-xs flex items-center gap-1.5">
+                    <span class="text-slate-400">📅</span>
+                    {formatApptDate(appt.start_time)}
+                  </div>
+                  <div class="text-sky-400 text-xs mt-1 flex items-center gap-1.5">
+                    <span class="text-slate-400">⏱</span>
+                    {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
+                  </div>
                 </td>
                 <td class="px-4 py-3 font-semibold text-white">
                   {getPatientName(appt.patient_id)}

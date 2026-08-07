@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   go:mod:tidy:
@@ -171,8 +171,6 @@ tasks:
           sed -E -i'' 's/class=\"btn\"/class=\"p-btn p-prim-col\"/g' "$INDEX_HTML" || true
         fi
 
-
-
   generate:bindings:
     summary: Generates bindings for the frontend
     run: once
@@ -181,7 +179,7 @@ tasks:
     sources:
       - "**/*.[jt]s"
       - exclude: frontend/**/*
-      - frontend/bindings/**/*  # Rerun when switching between dev/production mode causes changes in output
+      - frontend/bindings/**/* # Rerun when switching between dev/production mode causes changes in output
       - "**/*.go"
       - go.mod
       - go.sum
@@ -203,10 +201,22 @@ tasks:
     cmds:
       - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico -iconcomposerinput appicon.icon -macassetdir darwin
 
+  build:i18n:
+    summary: Compiles inlang i18n messages
+    run: once
+    dir: frontend
+    deps:
+      - task: install:frontend:deps
+    cmds:
+      - task: frontend:run
+        vars:
+          SCRIPT: "build:i18n"
+
   dev:frontend:
     summary: Runs the frontend in development mode
     deps:
       - task: install:frontend:deps
+      - task: build:i18n
     cmds:
       - task: frontend:dev:{{.PACKAGE_MANAGER}}
 
@@ -342,13 +352,13 @@ tasks:
     summary: Build, install, and launch on a physical iPhone using Apple tools (xcodebuild/devicectl)
     internal: true
     vars:
-      PROJECT: '{{.PROJECT}}'   # e.g., build/ios/xcode/<YourProject>.xcodeproj
-      SCHEME: '{{.SCHEME}}'     # e.g., ios.dev
+      PROJECT: "{{.PROJECT}}" # e.g., build/ios/xcode/<YourProject>.xcodeproj
+      SCHEME: "{{.SCHEME}}" # e.g., ios.dev
       CONFIG: '{{.CONFIG | default "Debug"}}'
       DERIVED: '{{.DERIVED | default "build/ios/DerivedData"}}'
-      UDID: '{{.UDID}}'         # from `task ios:device:list`
-      BUNDLE_ID: '{{.BUNDLE_ID}}' # e.g., com.yourco.wails.ios.dev
-      TEAM_ID: '{{.TEAM_ID}}'   # optional, if your project is not already set up for signing
+      UDID: "{{.UDID}}" # from `task ios:device:list`
+      BUNDLE_ID: "{{.BUNDLE_ID}}" # e.g., com.yourco.wails.ios.dev
+      TEAM_ID: "{{.TEAM_ID}}" # optional, if your project is not already set up for signing
     preconditions:
       - sh: xcrun -f xcodebuild
         msg: "xcodebuild not found. Please install Xcode."

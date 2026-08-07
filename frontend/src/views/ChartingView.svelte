@@ -23,6 +23,38 @@
   let selectedPatientId = $state<string>("");
   let selectedPatient = $derived(patients.find((p: Patient) => p.id === selectedPatientId) || null);
 
+  function getPatientLabel(p: Patient): string {
+    const dobStr = p.date_of_birth || (p as any).dob;
+    if (!dobStr) return `${p.first_name} ${p.last_name}`;
+    try {
+      const d = new Date(dobStr);
+      if (!isNaN(d.getTime())) {
+        const formattedDob = d.toLocaleDateString();
+        return `${p.first_name} ${p.last_name} (${formattedDob})`;
+      }
+    } catch {
+      // fallback
+    }
+    return `${p.first_name} ${p.last_name}`;
+  }
+
+  function calculateAge(dobStr?: string): number | null {
+    if (!dobStr) return null;
+    try {
+      const dob = new Date(dobStr);
+      if (isNaN(dob.getTime())) return null;
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      return age >= 0 ? age : null;
+    } catch {
+      return null;
+    }
+  }
+
   // Dental Chart state
   let currentChart = $state<DentalChart | null>(null);
   let loadingChart = $state<boolean>(false);
@@ -198,13 +230,6 @@
     }
   });
 
-  // Auto-select first patient if available and none selected
-  $effect(() => {
-    if (!selectedPatientId && patients && patients.length > 0) {
-      selectedPatientId = patients[0].id;
-    }
-  });
-
   function getConditionsForTooth(toothNum: number): ToothCondition[] {
     if (!currentChart || !currentChart.conditions) return [];
     return currentChart.conditions.filter((c: ToothCondition) => c.tooth_number === toothNum);
@@ -352,16 +377,28 @@
           bind:value={selectedPatientId}
           class="bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2 outline-none focus:border-sky-500 transition-colors"
         >
+          <option value="">{m.charting_select_patient_prompt()}</option>
           {#if patients.length === 0}
-            <option value="">No active patients found</option>
+            <option value="" disabled>No active patients found</option>
           {/if}
           {#each patients as p}
             <option value={p.id}>
-              {p.first_name}
-              {p.last_name} ({p.dob ? p.dob.substring(0, 4) : ""})
+              {getPatientLabel(p)}
             </option>
           {/each}
         </select>
+
+        {#if selectedPatient}
+          {@const age = calculateAge(selectedPatient.date_of_birth || (selectedPatient as any).dob)}
+          {#if age !== null}
+            <span
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-medium text-slate-300"
+            >
+              <span class="text-slate-400">Age:</span>
+              <span class="font-bold text-sky-400">{age}</span>
+            </span>
+          {/if}
+        {/if}
       </div>
     </div>
 

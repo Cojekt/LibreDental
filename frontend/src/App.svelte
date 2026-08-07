@@ -225,12 +225,7 @@
   async function loadAppointments() {
     loadingAppointments = true;
     try {
-      const start = `${selectedDate}T00:00:00Z`;
-      const end = `${selectedDate}T23:59:59Z`;
-      const res = await AppointmentService.ListAppointments({
-        start_date: start,
-        end_date: end,
-      } as any);
+      const res = await AppointmentService.ListAppointments({} as any);
       appointments = (res?.filter(Boolean) as Appointment[]) || [];
     } catch (err) {
       console.error("Failed to load appointments:", err);
