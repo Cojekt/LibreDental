@@ -71,8 +71,8 @@ jobs:
 
       - name: Install Wails v3 CLI & Task CLI
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-          go install github.com/go-task/task/v3/cmd/task@latest
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.2
+          go install github.com/go-task/task/v3/cmd/task@v3.41.1
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Install Frontend Dependencies
@@ -125,8 +125,8 @@ jobs:
 
       - name: Install Wails v3 CLI & Task CLI
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-          go install github.com/go-task/task/v3/cmd/task@latest
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.2
+          go install github.com/go-task/task/v3/cmd/task@v3.41.1
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Install Frontend Dependencies
