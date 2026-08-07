@@ -141,5 +141,20 @@
   "charting_title": "Interactive Dental Charting",
   "charting_subtitle": "Select a patient to view and record tooth conditions, restorations, and perio findings",
   "charting_select_patient_prompt": "Select Patient for Charting",
-  "charting_select_patient_desc": "Choose an active patient from the practice directory to launch their dental chart."
+  "charting_select_patient_desc": "Choose an active patient from the practice directory to launch their dental chart.",
+  "patient_info_title": "Patient Info",
+  "patient_info_ssn_default": "Social Security Number (SSN)",
+  "patient_info_no_selected_title": "No Patient Selected",
+  "patient_info_no_selected_desc": "Click on a patient row in the table to inspect their complete record and details.",
+  "patient_info_deselect": "Deselect patient",
+  "patient_info_active": "Active Patient",
+  "patient_info_age": "({age} yrs old)",
+  "patient_info_unhide": "Unhide",
+  "patient_info_hide": "Hide",
+  "patient_info_unhide_ssn": "Unhide SSN",
+  "patient_info_hide_ssn": "Hide SSN",
+  "patient_info_contact_title": "Contact Information",
+  "patient_info_sec_phone": "Sec:",
+  "patient_info_demographics_title": "Demographics & Location",
+  "patient_info_region_address": "Region / Address:"
 }

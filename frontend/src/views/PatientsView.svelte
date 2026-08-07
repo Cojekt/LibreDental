@@ -5,6 +5,7 @@
   } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
   import FilterBar from "../components/FilterBar.svelte";
   import PatientTable from "../components/PatientTable.svelte";
+  import PatientInfoPanel from "../components/PatientInfoPanel.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "../lib/locale.svelte.js";
 
@@ -29,6 +30,20 @@
     oneditpatient: (p: Patient) => void;
     onarchivepatient: (p: Patient) => void;
   }>();
+
+  let selectedPatient = $state<Patient | null>(null);
+
+  // Synchronize selected patient object when patients array changes
+  $effect(() => {
+    if (selectedPatient) {
+      const current = patients.find((p: Patient) => p.id === selectedPatient?.id);
+      selectedPatient = current || null;
+    }
+  });
+
+  function handleSelectPatient(p: Patient) {
+    selectedPatient = p;
+  }
 </script>
 
 <div class="space-y-5">
@@ -51,13 +66,29 @@
 
   <FilterBar bind:searchQuery bind:statusFilter {onloadpatients} />
 
-  <PatientTable
-    {patients}
-    {loading}
-    {statusFilter}
-    {countryMeta}
-    {onaddpatient}
-    {oneditpatient}
-    {onarchivepatient}
-  />
+  <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
+    <div class="lg:col-span-2 xl:col-span-3">
+      <PatientTable
+        {patients}
+        {loading}
+        {statusFilter}
+        {countryMeta}
+        selectedPatientId={selectedPatient?.id}
+        onselectpatient={handleSelectPatient}
+        {onaddpatient}
+        {oneditpatient}
+        {onarchivepatient}
+      />
+    </div>
+
+    <div class="lg:col-span-1 xl:col-span-1">
+      <PatientInfoPanel
+        patient={selectedPatient}
+        {countryMeta}
+        {oneditpatient}
+        {onarchivepatient}
+        onclearselection={() => (selectedPatient = null)}
+      />
+    </div>
+  </div>
 </div>

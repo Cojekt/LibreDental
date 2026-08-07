@@ -11,20 +11,22 @@
     loading,
     statusFilter,
     countryMeta,
+    selectedPatientId,
     onaddpatient,
     oneditpatient,
     onarchivepatient,
+    onselectpatient,
   } = $props<{
     patients: Patient[];
     loading: boolean;
     statusFilter: string;
     countryMeta?: CountryConfig | null;
+    selectedPatientId?: string;
     onaddpatient: () => void;
     oneditpatient: (p: Patient) => void;
     onarchivepatient: (p: Patient) => void;
+    onselectpatient?: (p: Patient) => void;
   }>();
-
-  const idHeader = $derived(countryMeta?.national_id_name || m.patients_unassigned_id());
 </script>
 
 <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-800">
@@ -39,7 +41,9 @@
       </p>
       <p class="mb-4 text-sm">{m.patients_no_found_desc()}</p>
       {#if statusFilter === "active"}
-        <button class="btn btn-secondary" onclick={onaddpatient}>{m.patients_add_first()}</button>
+        <button class="btn btn-secondary cursor-pointer" onclick={onaddpatient}
+          >{m.patients_add_first()}</button
+        >
       {/if}
     </div>
   {:else}
@@ -49,10 +53,6 @@
           <th
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
             >{m.patients_th_name()}</th
-          >
-          <th
-            class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
-            >{idHeader}</th
           >
           <th
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
@@ -74,22 +74,20 @@
       </thead>
       <tbody>
         {#each patients as p}
-          <tr>
+          <tr
+            onclick={() => onselectpatient?.(p)}
+            class="cursor-pointer transition-colors hover:bg-slate-700/40 {selectedPatientId === p.id
+              ? 'bg-slate-700/80 ring-1 ring-inset ring-sky-500/50'
+              : ''}"
+          >
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
-              <div class="font-semibold text-slate-50">
+              <div class="font-semibold text-slate-50 flex items-center gap-2">
+                {#if selectedPatientId === p.id}
+                  <span class="h-2 w-2 rounded-full bg-sky-400"></span>
+                {/if}
                 {p.first_name}
                 {p.last_name}
               </div>
-            </td>
-            <td class="border-b border-slate-700 px-5 py-4 text-sm">
-              {#if p.national_id}
-                <span
-                  class="font-mono text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20"
-                  >{p.national_id}</span
-                >
-              {:else}
-                <span class="text-slate-500 text-xs italic">{m.patients_unassigned_id()}</span>
-              {/if}
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               <div>{p.phone_primary || m.patients_no_phone()}</div>
@@ -119,13 +117,20 @@
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               <div class="flex items-center gap-2">
-                <button class="btn btn-ghost btn-sm" onclick={() => oneditpatient(p)}
-                  >{m.patients_btn_edit()}</button
+                <button
+                  class="btn btn-ghost btn-sm cursor-pointer"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    oneditpatient(p);
+                  }}>{m.patients_btn_edit()}</button
                 >
                 {#if p.status !== "archived"}
                   <button
-                    class="btn btn-ghost btn-danger btn-sm"
-                    onclick={() => onarchivepatient(p)}>{m.patients_btn_archive()}</button
+                    class="btn btn-ghost btn-danger btn-sm cursor-pointer"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      onarchivepatient(p);
+                    }}>{m.patients_btn_archive()}</button
                   >
                 {/if}
               </div>
