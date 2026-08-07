@@ -166,6 +166,7 @@ tasks:
 
   sign:
     summary: Signs the Windows executable
+    internal: true
     desc: |
       Signs the .exe with an Authenticode certificate.
       Set SIGN_CERTIFICATE or SIGN_THUMBPRINT to override the certificate
@@ -180,6 +181,7 @@ tasks:
 
   sign:installer:
     summary: Signs the NSIS installer
+    internal: true
     desc: |
       Creates and signs the NSIS installer.
       Set SIGN_CERTIFICATE or SIGN_THUMBPRINT to override the certificate

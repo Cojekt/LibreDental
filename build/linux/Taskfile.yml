@@ -184,6 +184,7 @@ tasks:
 
   sign:deb:
     summary: Signs the DEB package
+    internal: true
     desc: |
       Signs the .deb package with a PGP key.
       Set PGP_KEY in the vars section to override the key configured globally via
@@ -198,6 +199,7 @@ tasks:
 
   sign:rpm:
     summary: Signs the RPM package
+    internal: true
     desc: |
       Signs the .rpm package with a PGP key.
       Set PGP_KEY in the vars section to override the key configured globally via
@@ -210,6 +212,7 @@ tasks:
 
   sign:packages:
     summary: Signs all Linux packages (DEB and RPM)
+    internal: true
     desc: |
       Signs both .deb and .rpm packages with a PGP key.
       Set PGP_KEY in the vars section to override the key configured globally via

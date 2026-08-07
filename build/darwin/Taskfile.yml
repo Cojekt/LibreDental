@@ -170,6 +170,7 @@ tasks:
 
   sign:
     summary: Signs the application bundle with Developer ID
+    internal: true
     desc: |
       Signs the .app bundle for distribution.
       Uses signing identity from `wails3 setup` (stored in ~/.config/wails/defaults.yaml).
@@ -181,6 +182,7 @@ tasks:
 
   sign:notarize:
     summary: Signs and notarizes the application bundle
+    internal: true
     desc: |
       Signs the .app bundle and submits it for notarization.
       Uses signing identity and keychain profile from `wails3 setup`.

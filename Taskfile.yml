@@ -1,14 +1,14 @@
-version: '3'
+version: "3"
 
 vars:
   APP_NAME: "libredental"
   BIN_DIR: "bin"
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
-  VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  VITE_PORT: "{{.WAILS_VITE_PORT | default 9245}}"
   # Target OS for build/package/run. Defaults to the host OS, and is overridden
   # by `wails3 build GOOS=...` (or the GOOS env var) for cross-compilation. The
   # tasks below dispatch to the matching platform Taskfile via this variable.
-  GOOS: '{{.GOOS | default OS}}'
+  GOOS: "{{.GOOS | default OS}}"
 
 includes:
   common: ./build/Taskfile.yml
@@ -17,47 +17,32 @@ includes:
   linux: ./build/linux/Taskfile.yml
 
 tasks:
-  build:
-    summary: Builds the application
-    cmds:
-      - task: "{{.GOOS}}:build"
-
-  package:
-    summary: Packages a production build of the application
-    cmds:
-      - task: "{{.GOOS}}:package"
-
-  run:
-    summary: Runs the application
-    cmds:
-      - task: "{{.GOOS}}:run"
-
   dev:
-    summary: Runs the application in development mode
+    desc: Runs the application in development mode
     cmds:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
-  setup:docker:
-    summary: Builds Docker image for cross-compilation (~800MB download)
+  demo:
+    desc: Generates a standalone pre-populated demo SQLite database file (libredental-demo.db)
     cmds:
-      - task: common:setup:docker
+      - go run ./pkg/demo/gen.go libredental-demo.db
+
+  build:
+    desc: Builds the application
+    cmds:
+      - task: "{{.GOOS}}:build"
 
   build:server:
     summary: Builds the application in server mode (no GUI, HTTP server only)
     cmds:
       - task: common:build:server
 
-  run:server:
-    summary: Runs the application in server mode
+  package:
+    desc: Packages a production build of the application
     cmds:
-      - task: common:run:server
+      - task: "{{.GOOS}}:package"
 
-  build:docker:
-    summary: Builds a Docker image for server mode deployment
+  run:
+    desc: Runs the application
     cmds:
-      - task: common:build:docker
-
-  run:docker:
-    summary: Builds and runs the Docker image
-    cmds:
-      - task: common:run:docker
+      - task: "{{.GOOS}}:run"

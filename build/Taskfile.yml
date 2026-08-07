@@ -238,15 +238,6 @@ tasks:
 
   build:server:
     summary: Builds the application in server mode (no GUI, HTTP server only)
-    desc: |
-      Builds a production server binary by default: -tags server,production,
-      -trimpath and a stripped binary, mirroring the desktop `build` task.
-      Server mode runs as a pure HTTP server without native GUI dependencies.
-
-      Usage: task build:server [DEV=true] [OBFUSCATED=true] [EXTRA_TAGS=tag1,tag2]
-        DEV=true        development server (-tags server, no strip, inlining kept)
-        OBFUSCATED=true obfuscated build via garble (requires garble installed)
-        EXTRA_TAGS      additional comma-separated build tags
     deps:
       - task: build:frontend
         vars:
@@ -266,6 +257,7 @@ tasks:
 
   run:server:
     summary: Builds and runs a development server (DEV=true)
+    internal: true
     deps:
       - task: build:server
         vars:
@@ -275,6 +267,7 @@ tasks:
 
   build:docker:
     summary: Builds a Docker image for server mode deployment
+    internal: true
     desc: |
       Creates a minimal Docker image containing the production server binary.
       Defaults to a pure-Go static binary on a distroless/static base. The
@@ -309,6 +302,7 @@ tasks:
 
   run:docker:
     summary: Builds and runs the Docker image
+    internal: true
     desc: |
       Builds the Docker image and runs it, exposing port 8080.
       Usage: task run:docker [TAG=myapp:latest] [PORT=8080]
@@ -328,6 +322,7 @@ tasks:
 
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
+    internal: true
     desc: |
       Builds the Docker image needed for cross-compiling to any platform.
       Run this once to enable cross-platform builds from any OS.
@@ -339,11 +334,13 @@ tasks:
 
   ios:device:list:
     summary: Lists connected iOS devices (UDIDs)
+    internal: true
     cmds:
       - xcrun xcdevice list
 
   ios:run:device:
     summary: Build, install, and launch on a physical iPhone using Apple tools (xcodebuild/devicectl)
+    internal: true
     vars:
       PROJECT: '{{.PROJECT}}'   # e.g., build/ios/xcode/<YourProject>.xcodeproj
       SCHEME: '{{.SCHEME}}'     # e.g., ios.dev
