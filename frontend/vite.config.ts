@@ -17,10 +17,6 @@ export default defineConfig({
         import.meta.dirname,
         "./bindings/github.com/LibreDental/libredental/pkg"
       ),
-      $bindings: path.resolve(
-        import.meta.dirname,
-        "./bindings/github.com/LibreDental/libredental/pkg"
-      ),
       $lib: path.resolve(import.meta.dirname, "./src/lib"),
     },
   },
