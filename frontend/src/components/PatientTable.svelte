@@ -73,7 +73,8 @@
         {#each patients as p}
           <tr
             onclick={() => onselectpatient?.(p)}
-            class="cursor-pointer transition-colors hover:bg-slate-700/40 {selectedPatientId === p.id
+            class="cursor-pointer transition-colors hover:bg-slate-700/40 {selectedPatientId ===
+            p.id
               ? 'bg-slate-700/80 ring-1 ring-inset ring-sky-500/50'
               : ''}"
           >

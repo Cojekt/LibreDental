@@ -16,7 +16,7 @@
     Provider,
     Operatory,
   } from "@bindings/domain/index.js";
-  import { Gender, Status, AppointmentStatus } from "@bindings/domain/index.js";
+  import { Sex, Status, AppointmentStatus } from "@bindings/domain/index.js";
 
   import Header from "./components/Header.svelte";
   import OnboardingModal from "./components/OnboardingModal.svelte";
@@ -111,12 +111,31 @@
   // Patient form fields
   let firstName = $state("");
   let lastName = $state("");
+  let sex = $state<Sex>(Sex.SexMale);
   let email = $state("");
   let phone = $state("");
+  let phoneSecondary = $state("");
   let dob = $state("");
   let nationalId = $state("");
+  let addressLine1 = $state("");
+  let addressLine2 = $state("");
+  let city = $state("");
   let stateProvince = $state("");
   let postalCode = $state("");
+  let emergencyName = $state("");
+  let emergencyRel = $state("");
+  let emergencyPhone = $state("");
+  let guarantorName = $state("");
+  let guarantorRel = $state("");
+  let guarantorPhone = $state("");
+  let insuranceCarrier = $state("");
+  let insurancePolicy = $state("");
+  let insuranceGroup = $state("");
+  let preferredContactMethod = $state("phone");
+  let preferredLanguage = $state("en");
+  let reminderOptIn = $state(true);
+  let preferredProviderId = $state("");
+  let referralSource = $state("");
   let medicalAlerts = $state("");
 
   // Appointments state
@@ -236,12 +255,31 @@
     editingPatientId = "";
     firstName = "";
     lastName = "";
+    sex = Sex.SexMale;
     email = "";
     phone = "";
+    phoneSecondary = "";
     dob = "";
     nationalId = "";
+    addressLine1 = "";
+    addressLine2 = "";
+    city = "";
     stateProvince = "";
     postalCode = "";
+    emergencyName = "";
+    emergencyRel = "";
+    emergencyPhone = "";
+    guarantorName = "";
+    guarantorRel = "";
+    guarantorPhone = "";
+    insuranceCarrier = "";
+    insurancePolicy = "";
+    insuranceGroup = "";
+    preferredContactMethod = "phone";
+    preferredLanguage = "en";
+    reminderOptIn = true;
+    preferredProviderId = "";
+    referralSource = "";
     medicalAlerts = "";
     showPatientModal = true;
   }
@@ -251,12 +289,31 @@
     editingPatientId = p.id;
     firstName = p.first_name;
     lastName = p.last_name;
+    sex = p.sex || Sex.SexMale;
     email = p.email || "";
     phone = p.phone_primary || "";
+    phoneSecondary = p.phone_secondary || "";
     dob = p.date_of_birth ? new Date(p.date_of_birth).toISOString().split("T")[0] : "";
     nationalId = p.national_id || "";
+    addressLine1 = p.address_line1 || "";
+    addressLine2 = p.address_line2 || "";
+    city = p.city || "";
     stateProvince = p.state_province || "";
     postalCode = p.postal_code || "";
+    emergencyName = p.emergency_contact_name || "";
+    emergencyRel = p.emergency_contact_rel || "";
+    emergencyPhone = p.emergency_contact_phone || "";
+    guarantorName = p.guarantor_name || "";
+    guarantorRel = p.guarantor_rel || "";
+    guarantorPhone = p.emergency_contact_phone || "";
+    insuranceCarrier = p.insurance_carrier || "";
+    insurancePolicy = p.insurance_policy_number || "";
+    insuranceGroup = p.insurance_group_number || "";
+    preferredContactMethod = p.preferred_contact_method || "phone";
+    preferredLanguage = p.preferred_language || "en";
+    reminderOptIn = p.reminder_opt_in !== false;
+    preferredProviderId = p.preferred_provider_id || "";
+    referralSource = p.referral_source || "";
     medicalAlerts = p.medical_alerts ? p.medical_alerts.join(", ") : "";
     showPatientModal = true;
   }
@@ -276,14 +333,33 @@
         if (p) {
           p.first_name = firstName;
           p.last_name = lastName;
+          p.sex = sex;
           p.email = email;
           p.phone_primary = phone;
+          p.phone_secondary = phoneSecondary;
           p.date_of_birth = dob ? new Date(dob).toISOString() : "";
           p.national_id = nationalId;
           p.national_id_type = countryMeta.national_id_type;
+          p.address_line1 = addressLine1;
+          p.address_line2 = addressLine2;
+          p.city = city;
           p.state_province = stateProvince;
           p.postal_code = postalCode;
           p.country_code = countryMeta.code;
+          p.emergency_contact_name = emergencyName;
+          p.emergency_contact_rel = emergencyRel;
+          p.emergency_contact_phone = emergencyPhone;
+          p.guarantor_name = guarantorName;
+          p.guarantor_rel = guarantorRel;
+          p.guarantor_phone = guarantorPhone;
+          p.insurance_carrier = insuranceCarrier;
+          p.insurance_policy_number = insurancePolicy;
+          p.insurance_group_number = insuranceGroup;
+          p.preferred_contact_method = preferredContactMethod;
+          p.preferred_language = preferredLanguage;
+          p.reminder_opt_in = reminderOptIn;
+          p.preferred_provider_id = preferredProviderId;
+          p.referral_source = referralSource;
           p.medical_alerts = medicalAlerts ? medicalAlerts.split(",").map((s) => s.trim()) : [];
           await PatientService.UpdatePatient(p);
         }
@@ -295,13 +371,27 @@
           middle_name: "",
           preferred_name: "",
           date_of_birth: dob ? new Date(dob).toISOString() : "",
-          gender: Gender.GenderUndisclosed,
+          sex: sex,
           email: email,
           phone_primary: phone,
-          phone_secondary: "",
-          address_line1: "",
-          address_line2: "",
-          city: "",
+          phone_secondary: phoneSecondary,
+          emergency_contact_name: emergencyName,
+          emergency_contact_rel: emergencyRel,
+          emergency_contact_phone: emergencyPhone,
+          guarantor_name: guarantorName,
+          guarantor_rel: guarantorRel,
+          guarantor_phone: guarantorPhone,
+          insurance_carrier: insuranceCarrier,
+          insurance_policy_number: insurancePolicy,
+          insurance_group_number: insuranceGroup,
+          preferred_contact_method: preferredContactMethod,
+          preferred_language: preferredLanguage,
+          reminder_opt_in: reminderOptIn,
+          preferred_provider_id: preferredProviderId,
+          referral_source: referralSource,
+          address_line1: addressLine1,
+          address_line2: addressLine2,
+          city: city,
           state_province: stateProvince,
           postal_code: postalCode,
           country_code: countryMeta.code,
@@ -544,14 +634,34 @@
   isEditing={isEditingPatient}
   bind:firstName
   bind:lastName
+  bind:sex
+  bind:dob
   bind:email
   bind:phone
-  bind:dob
+  bind:phoneSecondary
   bind:nationalId
+  bind:addressLine1
+  bind:addressLine2
+  bind:city
   bind:stateProvince
   bind:postalCode
+  bind:emergencyName
+  bind:emergencyRel
+  bind:emergencyPhone
+  bind:guarantorName
+  bind:guarantorRel
+  bind:guarantorPhone
+  bind:insuranceCarrier
+  bind:insurancePolicy
+  bind:insuranceGroup
+  bind:preferredContactMethod
+  bind:preferredLanguage
+  bind:reminderOptIn
+  bind:preferredProviderId
+  bind:referralSource
   bind:medicalAlerts
   {countryMeta}
+  configuredProviders={providers}
   onsave={handleSavePatient}
 />
 

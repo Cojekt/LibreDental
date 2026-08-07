@@ -37,7 +37,6 @@
   const maskedSSN = $derived.by(() => {
     getLocaleVersion();
     if (!patient?.national_id) return m.patients_unassigned_id();
-    // Return masked pattern bullets
     const raw = patient.national_id;
     if (raw.length === 9 && !raw.includes("-")) {
       return "•••-••-••••";
@@ -55,6 +54,34 @@
   }
 
   const age = $derived(patient?.date_of_birth ? calculateAge(patient.date_of_birth) : null);
+
+  function formatSex(sex?: string): string {
+    getLocaleVersion();
+    if (!sex) return "N/A";
+    switch (sex) {
+      case "male":
+        return m.sex_male();
+      case "female":
+        return m.sex_female();
+      case "other":
+        return m.sex_other();
+      default:
+        return m.sex_undisclosed();
+    }
+  }
+
+  const formattedAddress = $derived.by(() => {
+    if (!patient) return "";
+    const parts = [
+      patient.address_line1,
+      patient.address_line2,
+      patient.city,
+      patient.state_province,
+      patient.postal_code,
+      patient.country_code,
+    ].filter(Boolean);
+    return parts.join(", ");
+  });
 </script>
 
 <div
@@ -159,7 +186,7 @@
             {#if patient.preferred_name}
               <p class="text-xs text-slate-400 italic">"{patient.preferred_name}"</p>
             {/if}
-            <div class="mt-1.5 flex items-center gap-2">
+            <div class="mt-1.5 flex items-center gap-2 flex-wrap">
               {#if patient.status === "archived"}
                 <span
                   class="rounded bg-rose-500/20 px-2 py-0.5 text-[11px] font-semibold text-rose-400 border border-rose-500/30"
@@ -176,6 +203,11 @@
               {#if age !== null}
                 <span class="text-xs text-slate-400">{m.patient_info_age({ age })}</span>
               {/if}
+              <span
+                class="rounded bg-sky-500/15 px-2 py-0.5 text-[11px] font-medium text-sky-300 border border-sky-500/20"
+              >
+                {formatSex(patient.sex)}
+              </span>
             </div>
           </div>
         </div>
@@ -279,7 +311,7 @@
           </div>
         </div>
 
-        <!-- Demographics -->
+        <!-- Demographics & Location -->
         <div class="space-y-2 text-xs">
           <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
             {m.patient_info_demographics_title()}
@@ -288,6 +320,10 @@
             class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-2 text-slate-300"
           >
             <div class="flex justify-between">
+              <span class="text-slate-400">{m.patient_sex()}:</span>
+              <span class="font-medium text-slate-100">{formatSex(patient.sex)}</span>
+            </div>
+            <div class="flex justify-between">
               <span class="text-slate-400">{m.patient_dob()}:</span>
               <span class="font-medium text-slate-100">
                 {patient.date_of_birth
@@ -295,14 +331,127 @@
                   : "N/A"}
               </span>
             </div>
-            {#if patient.state_province || patient.postal_code || patient.country_code}
+            {#if formattedAddress}
               <div class="flex justify-between">
-                <span class="text-slate-400">{m.patient_info_region_address()}</span>
+                <span class="text-slate-400 shrink-0 mr-2">{m.patient_info_region_address()}</span>
                 <span class="font-medium text-slate-100 text-right">
-                  {[patient.state_province, patient.postal_code, patient.country_code]
-                    .filter(Boolean)
-                    .join(", ")}
+                  {formattedAddress}
                 </span>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Emergency Contact -->
+        {#if patient.emergency_contact_name || patient.emergency_contact_phone}
+          <div class="space-y-2 text-xs">
+            <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
+              🆘 {m.patient_info_emergency_title()}
+            </p>
+            <div
+              class="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 space-y-1 text-slate-300"
+            >
+              <div class="font-semibold text-amber-300 flex items-center justify-between">
+                <span>{patient.emergency_contact_name}</span>
+                {#if patient.emergency_contact_rel}
+                  <span class="text-[11px] font-normal text-amber-400/80"
+                    >({patient.emergency_contact_rel})</span
+                  >
+                {/if}
+              </div>
+              {#if patient.emergency_contact_phone}
+                <p class="font-mono text-xs text-slate-200">{patient.emergency_contact_phone}</p>
+              {/if}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Primary Insurance -->
+        {#if patient.insurance_carrier || patient.insurance_policy_number}
+          <div class="space-y-2 text-xs">
+            <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
+              🛡️ {m.patient_info_insurance_title()}
+            </p>
+            <div
+              class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-1.5 text-slate-300"
+            >
+              <p class="font-semibold text-slate-100">
+                {patient.insurance_carrier || "Primary Dental Insurance"}
+              </p>
+              {#if patient.insurance_policy_number}
+                <div class="flex justify-between text-[11px]">
+                  <span class="text-slate-400">Policy / ID:</span>
+                  <span class="font-mono text-sky-400">{patient.insurance_policy_number}</span>
+                </div>
+              {/if}
+              {#if patient.insurance_group_number}
+                <div class="flex justify-between text-[11px]">
+                  <span class="text-slate-400">Group #:</span>
+                  <span class="font-mono text-slate-200">{patient.insurance_group_number}</span>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Guarantor -->
+        {#if patient.guarantor_name}
+          <div class="space-y-2 text-xs">
+            <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
+              💳 {m.patient_info_guarantor_title()}
+            </p>
+            <div
+              class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-1 text-slate-300"
+            >
+              <div class="flex justify-between font-semibold text-slate-100">
+                <span>{patient.guarantor_name}</span>
+                {#if patient.guarantor_rel}
+                  <span class="text-[11px] font-normal text-slate-400"
+                    >({patient.guarantor_rel})</span
+                  >
+                {/if}
+              </div>
+              {#if patient.guarantor_phone}
+                <p class="font-mono text-xs text-slate-300">{patient.guarantor_phone}</p>
+              {/if}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Preferences & Reminders -->
+        <div class="space-y-2 text-xs">
+          <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
+            ⚙️ {m.patient_info_preferences_title()}
+          </p>
+          <div
+            class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-1.5 text-slate-300"
+          >
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400">Contact Preference:</span>
+              <span class="font-semibold text-sky-400 capitalize"
+                >{patient.preferred_contact_method || "phone"}</span
+              >
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400">Reminders:</span>
+              {#if patient.reminder_opt_in !== false}
+                <span
+                  class="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20"
+                >
+                  ✓ {m.patient_info_reminders_enabled()}
+                </span>
+              {:else}
+                <span
+                  class="text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded"
+                >
+                  ✕ {m.patient_info_reminders_disabled()}
+                </span>
+              {/if}
+            </div>
+            {#if patient.referral_source}
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-slate-400">Referral:</span>
+                <span class="text-slate-200">{patient.referral_source}</span>
               </div>
             {/if}
           </div>

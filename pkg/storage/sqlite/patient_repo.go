@@ -42,20 +42,40 @@ func (r *PatientRepository) Create(ctx context.Context, p *domain.Patient) error
 	query := `
 	INSERT INTO patients (
 		id, first_name, last_name, middle_name, preferred_name,
-		date_of_birth, gender, email, phone_primary, phone_secondary,
+		date_of_birth, sex, email, phone_primary, phone_secondary,
+		emergency_contact_name, emergency_contact_rel, emergency_contact_phone,
+		guarantor_name, guarantor_rel, guarantor_phone,
+		insurance_carrier, insurance_policy_number, insurance_group_number,
+		preferred_contact_method, preferred_language, reminder_opt_in,
+		preferred_provider_id, referral_source,
 		address_line1, address_line2, city, state_province, postal_code, country_code,
 		national_id_type, national_id,
 		medical_alerts, allergies, notes, created_at, updated_at, version, status
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query,
+	reminderInt := 1
+	if !p.ReminderOptIn && p.ID != "" {
+		// handle boolean bool
+		if p.ReminderOptIn {
+			reminderInt = 1
+		} else {
+			reminderInt = 0
+		}
+	}
+
+	_, err := r.db.ExecContext(
+		ctx, query,
 		p.ID, p.FirstName, p.LastName, p.MiddleName, p.PreferredName,
-		p.DateOfBirth.Format(time.RFC3339), p.Gender, p.Email, p.PhonePrimary, p.PhoneSecondary,
+		p.DateOfBirth.Format(time.RFC3339), p.Sex, p.Email, p.PhonePrimary, p.PhoneSecondary,
+		p.EmergencyContactName, p.EmergencyContactRel, p.EmergencyContactPhone,
+		p.GuarantorName, p.GuarantorRel, p.GuarantorPhone,
+		p.InsuranceCarrier, p.InsurancePolicyNumber, p.InsuranceGroupNumber,
+		p.PreferredContactMethod, p.PreferredLanguage, reminderInt,
+		p.PreferredProviderID, p.ReferralSource,
 		p.AddressLine1, p.AddressLine2, p.City, p.StateProvince, p.PostalCode, p.CountryCode,
 		p.NationalIDType, p.NationalID,
 		string(alertsJSON), string(allergiesJSON), p.Notes, p.CreatedAt, p.UpdatedAt, p.Version, p.Status,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to insert patient: %w", err)
 	}
@@ -65,7 +85,12 @@ func (r *PatientRepository) Create(ctx context.Context, p *domain.Patient) error
 func (r *PatientRepository) GetByID(ctx context.Context, id string) (*domain.Patient, error) {
 	query := `
 	SELECT id, first_name, last_name, middle_name, preferred_name,
-	       date_of_birth, gender, email, phone_primary, phone_secondary,
+	       date_of_birth, sex, email, phone_primary, phone_secondary,
+	       emergency_contact_name, emergency_contact_rel, emergency_contact_phone,
+	       guarantor_name, guarantor_rel, guarantor_phone,
+	       insurance_carrier, insurance_policy_number, insurance_group_number,
+	       preferred_contact_method, preferred_language, reminder_opt_in,
+	       preferred_provider_id, referral_source,
 	       address_line1, address_line2, city, state_province, postal_code, country_code,
 	       national_id_type, national_id,
 	       medical_alerts, allergies, notes, created_at, updated_at, version, status
@@ -80,24 +105,39 @@ func (r *PatientRepository) Update(ctx context.Context, p *domain.Patient) error
 	alertsJSON, _ := json.Marshal(p.MedicalAlerts)
 	allergiesJSON, _ := json.Marshal(p.Allergies)
 
+	reminderInt := 0
+	if p.ReminderOptIn {
+		reminderInt = 1
+	}
+
 	query := `
 	UPDATE patients SET
 		first_name = ?, last_name = ?, middle_name = ?, preferred_name = ?,
-		date_of_birth = ?, gender = ?, email = ?, phone_primary = ?, phone_secondary = ?,
+		date_of_birth = ?, sex = ?, email = ?, phone_primary = ?, phone_secondary = ?,
+		emergency_contact_name = ?, emergency_contact_rel = ?, emergency_contact_phone = ?,
+		guarantor_name = ?, guarantor_rel = ?, guarantor_phone = ?,
+		insurance_carrier = ?, insurance_policy_number = ?, insurance_group_number = ?,
+		preferred_contact_method = ?, preferred_language = ?, reminder_opt_in = ?,
+		preferred_provider_id = ?, referral_source = ?,
 		address_line1 = ?, address_line2 = ?, city = ?, state_province = ?, postal_code = ?, country_code = ?,
 		national_id_type = ?, national_id = ?,
 		medical_alerts = ?, allergies = ?, notes = ?, updated_at = ?, version = version + 1, status = ?
 	WHERE id = ? AND version = ?`
 
-	res, err := r.db.ExecContext(ctx, query,
+	res, err := r.db.ExecContext(
+		ctx, query,
 		p.FirstName, p.LastName, p.MiddleName, p.PreferredName,
-		p.DateOfBirth.Format(time.RFC3339), p.Gender, p.Email, p.PhonePrimary, p.PhoneSecondary,
+		p.DateOfBirth.Format(time.RFC3339), p.Sex, p.Email, p.PhonePrimary, p.PhoneSecondary,
+		p.EmergencyContactName, p.EmergencyContactRel, p.EmergencyContactPhone,
+		p.GuarantorName, p.GuarantorRel, p.GuarantorPhone,
+		p.InsuranceCarrier, p.InsurancePolicyNumber, p.InsuranceGroupNumber,
+		p.PreferredContactMethod, p.PreferredLanguage, reminderInt,
+		p.PreferredProviderID, p.ReferralSource,
 		p.AddressLine1, p.AddressLine2, p.City, p.StateProvince, p.PostalCode, p.CountryCode,
 		p.NationalIDType, p.NationalID,
 		string(alertsJSON), string(allergiesJSON), p.Notes, now, p.Status,
 		p.ID, p.Version,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to update patient: %w", err)
 	}
@@ -165,7 +205,12 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 
 	selectQuery := fmt.Sprintf(`
 	SELECT id, first_name, last_name, middle_name, preferred_name,
-	       date_of_birth, gender, email, phone_primary, phone_secondary,
+	       date_of_birth, sex, email, phone_primary, phone_secondary,
+	       emergency_contact_name, emergency_contact_rel, emergency_contact_phone,
+	       guarantor_name, guarantor_rel, guarantor_phone,
+	       insurance_carrier, insurance_policy_number, insurance_group_number,
+	       preferred_contact_method, preferred_language, reminder_opt_in,
+	       preferred_provider_id, referral_source,
 	       address_line1, address_line2, city, state_province, postal_code, country_code,
 	       national_id_type, national_id,
 	       medical_alerts, allergies, notes, created_at, updated_at, version, status
@@ -202,11 +247,17 @@ type scannable interface {
 func scanPatient(scanner scannable) (*domain.Patient, error) {
 	var p domain.Patient
 	var dobStr, alertsJSON, allergiesJSON string
-	var genderStr, statusStr, countryStr string
+	var sexStr, statusStr, countryStr string
+	var reminderInt int
 
 	err := scanner.Scan(
 		&p.ID, &p.FirstName, &p.LastName, &p.MiddleName, &p.PreferredName,
-		&dobStr, &genderStr, &p.Email, &p.PhonePrimary, &p.PhoneSecondary,
+		&dobStr, &sexStr, &p.Email, &p.PhonePrimary, &p.PhoneSecondary,
+		&p.EmergencyContactName, &p.EmergencyContactRel, &p.EmergencyContactPhone,
+		&p.GuarantorName, &p.GuarantorRel, &p.GuarantorPhone,
+		&p.InsuranceCarrier, &p.InsurancePolicyNumber, &p.InsuranceGroupNumber,
+		&p.PreferredContactMethod, &p.PreferredLanguage, &reminderInt,
+		&p.PreferredProviderID, &p.ReferralSource,
 		&p.AddressLine1, &p.AddressLine2, &p.City, &p.StateProvince, &p.PostalCode, &countryStr,
 		&p.NationalIDType, &p.NationalID,
 		&alertsJSON, &allergiesJSON, &p.Notes, &p.CreatedAt, &p.UpdatedAt, &p.Version, &statusStr,
@@ -218,9 +269,10 @@ func scanPatient(scanner scannable) (*domain.Patient, error) {
 		return nil, err
 	}
 
-	p.Gender = domain.Gender(genderStr)
+	p.Sex = domain.Sex(sexStr)
 	p.Status = domain.Status(statusStr)
 	p.CountryCode = domain.CountryCode(countryStr)
+	p.ReminderOptIn = reminderInt != 0
 	p.DateOfBirth, _ = time.Parse(time.RFC3339, dobStr)
 	json.Unmarshal([]byte(alertsJSON), &p.MedicalAlerts)
 	json.Unmarshal([]byte(allergiesJSON), &p.Allergies)

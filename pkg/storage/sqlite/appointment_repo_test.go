@@ -31,7 +31,7 @@ func TestAppointmentRepository_CRUD(t *testing.T) {
 		FirstName:   "Jane",
 		LastName:    "Doe",
 		DateOfBirth: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
-		Gender:      domain.GenderFemale,
+		Sex:         domain.SexFemale,
 	}
 	if err := patientRepo.Create(ctx, patient); err != nil {
 		t.Fatalf("Failed to create test patient: %v", err)

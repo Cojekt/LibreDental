@@ -8,7 +8,7 @@
     TimeSlot,
     ScheduleBreak,
   } from "@bindings/domain/models.js";
-  import { Gender, ProviderRole, OperatoryType } from "@bindings/domain/models.js";
+  import { ProviderRole, OperatoryType } from "@bindings/domain/models.js";
   import { PracticeConfigService } from "@bindings/services/index.js";
   import Modal from "../components/ui/Modal.svelte";
   import FormField from "../components/ui/FormField.svelte";
