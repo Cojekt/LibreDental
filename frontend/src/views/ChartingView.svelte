@@ -5,14 +5,11 @@
     ToothCondition,
     ToothStatus,
     CountryConfig,
-  } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
-  import {
-    ToothSystem,
-    ToothSurface,
-  } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
-  import { ChartService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  } from "@bindings/domain/models.js";
+  import { ToothSystem, ToothSurface } from "@bindings/domain/models.js";
+  import { ChartService } from "@bindings/services/index.js";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   let { patients = [], countryMeta = null } = $props<{
     patients: Patient[];

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Appointment } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import type { Appointment } from "@bindings/domain/models.js";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   let { appointments = [] } = $props<{
     appointments: Appointment[];

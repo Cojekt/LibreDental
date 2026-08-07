@@ -1,15 +1,10 @@
 <script lang="ts">
-  import type {
-    Patient,
-    Appointment,
-    Provider,
-    Operatory,
-  } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import type { Patient, Appointment, Provider, Operatory } from "@bindings/domain/models.js";
   import Modal from "./ui/Modal.svelte";
   import FormField from "./ui/FormField.svelte";
   import Input from "./ui/Input.svelte";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   let {
     showModal = $bindable(false),
