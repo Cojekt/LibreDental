@@ -853,7 +853,6 @@
                   checked={!hour.is_closed}
                   onchange={(e) => (hour.is_closed = !(e.target as HTMLInputElement).checked)}
                   disabled={!isEditingProfile}
-                  class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <label
                   for={`open-${idx}`}
@@ -1334,12 +1333,7 @@
       </div>
 
       <div class="flex items-center gap-2 pt-4">
-        <input
-          type="checkbox"
-          id="prov-active"
-          bind:checked={provIsActive}
-          class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 cursor-pointer"
-        />
+        <input type="checkbox" id="prov-active" bind:checked={provIsActive} />
         <label for="prov-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
           >Active Provider</label
         >
@@ -1399,12 +1393,7 @@
     </div>
 
     <div class="flex items-center gap-2 pt-2">
-      <input
-        type="checkbox"
-        id="op-active"
-        bind:checked={opIsActive}
-        class="rounded border-slate-700 text-sky-500 focus:ring-sky-500 h-4 w-4 cursor-pointer"
-      />
+      <input type="checkbox" id="op-active" bind:checked={opIsActive} />
       <label for="op-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
         >Active Operatory</label
       >

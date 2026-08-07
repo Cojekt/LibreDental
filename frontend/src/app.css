@@ -16,6 +16,106 @@
     @apply rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 shadow-sm transition-all focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed;
   }
 
+  /* Custom styled checkboxes */
+  input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 0.375rem;
+    border: 1.5px solid #475569;
+    background-color: #0f172a;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    display: inline-block;
+    position: relative;
+  }
+
+  input[type="checkbox"]:hover:not(:disabled) {
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+  }
+
+  input[type="checkbox"]:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+
+  input[type="checkbox"]:focus-visible {
+    outline: none;
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  }
+
+  input[type="checkbox"]:checked {
+    background-color: #0284c7;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 0.75rem 0.75rem;
+    border-color: #38bdf8;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.45);
+  }
+
+  input[type="checkbox"]:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* Custom styled radio buttons */
+  input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 9999px;
+    border: 1.5px solid #475569;
+    background-color: #0f172a;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    display: inline-block;
+    position: relative;
+  }
+
+  input[type="radio"]:hover:not(:disabled) {
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+  }
+
+  input[type="radio"]:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+
+  input[type="radio"]:focus-visible {
+    outline: none;
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  }
+
+  input[type="radio"]:checked {
+    background-color: #0284c7;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 0.55rem 0.55rem;
+    border-color: #38bdf8;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.45);
+  }
+
+  input[type="radio"]:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
   /* Custom styled select dropdowns to remove ugly OS native presets */
   select {
     appearance: none;
@@ -121,6 +221,25 @@ html.light textarea {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
+}
+
+html.light input[type="checkbox"],
+html.light input[type="radio"] {
+  border-color: #cbd5e1;
+  background-color: #ffffff;
+}
+
+html.light input[type="checkbox"]:hover:not(:disabled),
+html.light input[type="radio"]:hover:not(:disabled) {
+  border-color: #0284c7;
+  box-shadow: 0 0 8px rgba(2, 132, 199, 0.2);
+}
+
+html.light input[type="checkbox"]:checked,
+html.light input[type="radio"]:checked {
+  background-color: #0284c7;
+  border-color: #0284c7;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
 }
 
 html.light input::placeholder,

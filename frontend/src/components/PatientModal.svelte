@@ -347,11 +347,7 @@
           <label
             class="flex items-center gap-2.5 cursor-pointer text-sm text-slate-200 select-none"
           >
-            <input
-              type="checkbox"
-              bind:checked={reminderOptIn}
-              class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-sky-500 focus:ring-sky-500"
-            />
+            <input type="checkbox" bind:checked={reminderOptIn} />
             <span>{m.patient_pref_reminder_opt_in()}</span>
           </label>
         </div>
