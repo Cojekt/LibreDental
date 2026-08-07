@@ -55,7 +55,7 @@ LibreDental™ is a standard **[Wails v3](https://v3.wails.io)** application (Go
 
 ### Prerequisites
 
-* **Go 1.22+**, **Node.js 20+**, and a **C Compiler / WebKit** (Linux: `build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev` | macOS: `xcode-select --install` | Windows: MinGW/MSVC).
+* **Go 1.22+**, **Node.js 20+**, and a **C Compiler / WebKit** (Linux: `build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev` | macOS: `xcode-select --install` | Windows: MinGW/MSVC).
 * **CLI Tools**:
 
   ```bash
