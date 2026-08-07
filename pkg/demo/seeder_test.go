@@ -75,6 +75,32 @@ func TestSeedDatabase(t *testing.T) {
 		t.Errorf("Expected 10 appointments in list, got %d", len(appts))
 	}
 
+	uniqueDays := make(map[string]bool)
+	afterHoursCount := 0
+
+	for _, a := range appts {
+		dayStr := a.StartTime.Format("2006-01-02")
+		uniqueDays[dayStr] = true
+
+		startHour := a.StartTime.Hour()
+		endHour := a.EndTime.Hour()
+		endMin := a.EndTime.Minute()
+
+		// Normal business hours: 08:00 - 17:00
+		isOutsideHours := startHour < 8 || startHour >= 17 || (endHour > 17 || (endHour == 17 && endMin > 0))
+		if isOutsideHours {
+			afterHoursCount++
+		}
+	}
+
+	if len(uniqueDays) <= 1 {
+		t.Errorf("Expected appointments to be spread across multiple days, got %d unique day(s)", len(uniqueDays))
+	}
+
+	if afterHoursCount != 1 {
+		t.Errorf("Expected exactly 1 appointment outside normal business hours, got %d", afterHoursCount)
+	}
+
 	// Verify dental chart
 	chartRepo := sqlite.NewChartRepository(db)
 	chart, err := chartRepo.GetChart(ctx, "pat_101")

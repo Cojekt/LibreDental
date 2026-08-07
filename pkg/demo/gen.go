@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	outputPath := "libredental-demo.db"
+	outputPath := "libredental.db"
 	if len(os.Args) > 1 {
 		outputPath = os.Args[1]
 	}

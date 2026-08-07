@@ -23,9 +23,9 @@ tasks:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   demo:
-    desc: Generates a standalone pre-populated demo SQLite database file (libredental-demo.db)
+    desc: Generates a standalone pre-populated database file (libredental.db)
     cmds:
-      - go run ./pkg/demo/gen.go libredental-demo.db
+      - go run ./pkg/demo/gen.go libredental.db
 
   build:
     desc: Builds the application
