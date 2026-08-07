@@ -1,12 +1,9 @@
 <script lang="ts">
-  import type {
-    Patient,
-    CountryConfig,
-  } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  import type { Patient, CountryConfig } from "@bindings/domain/models.js";
   import FilterBar from "../components/FilterBar.svelte";
   import PatientTable from "../components/PatientTable.svelte";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   let {
     patients,

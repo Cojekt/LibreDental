@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { SystemSettingsService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  import { SystemSettingsService } from "@bindings/services/index.js";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion, applyLocale } from "../lib/locale.svelte.js";
+  import { getLocaleVersion, applyLocale } from "$lib/locale.svelte.js";
   import { locales } from "../paraglide/runtime.js";
 
   export type ThemeMode = "dark" | "light" | "system";

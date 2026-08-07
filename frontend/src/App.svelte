@@ -5,8 +5,8 @@
     PracticeConfigService,
     AppointmentService,
     SystemSettingsService,
-  } from "../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
-  import { initLocale, getLocaleVersion } from "./lib/locale.svelte.js";
+  } from "@bindings/services/index.js";
+  import { initLocale, getLocaleVersion } from "$lib/locale.svelte.js";
   import { m } from "./paraglide/messages.js";
   import type {
     Patient,
@@ -15,12 +15,8 @@
     Appointment,
     Provider,
     Operatory,
-  } from "../bindings/github.com/LibreDental/libredental/pkg/domain/index.js";
-  import {
-    Gender,
-    Status,
-    AppointmentStatus,
-  } from "../bindings/github.com/LibreDental/libredental/pkg/domain/index.js";
+  } from "@bindings/domain/index.js";
+  import { Gender, Status, AppointmentStatus } from "@bindings/domain/index.js";
 
   import Header from "./components/Header.svelte";
   import OnboardingModal from "./components/OnboardingModal.svelte";

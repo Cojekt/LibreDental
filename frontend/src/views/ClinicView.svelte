@@ -7,13 +7,9 @@
     BusinessHourDay,
     TimeSlot,
     ScheduleBreak,
-  } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
-  import {
-    Gender,
-    ProviderRole,
-    OperatoryType,
-  } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
-  import { PracticeConfigService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+  } from "@bindings/domain/models.js";
+  import { Gender, ProviderRole, OperatoryType } from "@bindings/domain/models.js";
+  import { PracticeConfigService } from "@bindings/services/index.js";
   import Modal from "../components/ui/Modal.svelte";
   import FormField from "../components/ui/FormField.svelte";
   import Input from "../components/ui/Input.svelte";

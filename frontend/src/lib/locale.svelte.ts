@@ -17,7 +17,7 @@
  */
 
 import { setLocale, getLocale, locales } from "../paraglide/runtime.js";
-import { SystemSettingsService } from "../../bindings/github.com/LibreDental/libredental/pkg/services/index.js";
+import { SystemSettingsService } from "@bindings/services/index.js";
 
 // Internal reactive counter — not directly exported (Svelte 5 module state rule).
 let _localeVersion = $state(0);

@@ -12,6 +12,12 @@
      * Note that setting allowJs false does not prevent the use
      * of JS in `.svelte` files.
      */
+    "baseUrl": ".",
+    "paths": {
+      "@bindings/*": ["bindings/github.com/LibreDental/libredental/pkg/*"],
+      "$bindings/*": ["bindings/github.com/LibreDental/libredental/pkg/*"],
+      "$lib/*": ["src/lib/*"]
+    },
     "allowJs": true,
     "checkJs": true,
     "isolatedModules": true,
