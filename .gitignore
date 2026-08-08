@@ -2,6 +2,7 @@
 bin/
 *.exe
 *.exe.manifest
+!build/windows/wails.exe.manifest
 *.dll
 *.so
 *.dylib

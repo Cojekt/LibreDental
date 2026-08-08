@@ -6,10 +6,10 @@
 		"0000": {
 			"ProductVersion": "0.1.0",
 			"CompanyName": "Cojekt",
-			"FileDescription": "A LibreDental application",
+			"FileDescription": "LibreDental™ — Open-Source Dental Practice Management",
 			"LegalCopyright": "© 2026, Cojekt",
-			"ProductName": "My Product",
-			"Comments": "This is a comment"
+			"ProductName": "LibreDental",
+			"Comments": "https://github.com/LibreDental/libredental"
 		}
 	}
 }
