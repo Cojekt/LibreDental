@@ -379,8 +379,13 @@ func SeedDatabase(db *sqlite.DB) (*SeedSummary, error) {
 	}
 
 	// 5. Appointments
+	laLoc, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		laLoc = time.FixedZone("PDT", -7*3600)
+	}
+
 	mkTime := func(day time.Time, hour int, minute int) time.Time {
-		return time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, time.UTC)
+		return time.Date(day.Year(), day.Month(), day.Day(), hour, minute, 0, 0, laLoc)
 	}
 
 	appointments := []*domain.Appointment{

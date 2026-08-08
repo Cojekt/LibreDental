@@ -3,6 +3,7 @@
   import AppointmentStats from "../components/AppointmentStats.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { getLocalDateString, isSameDay, parseLocalDate } from "$lib/date.js";
 
   let {
     appointments = [],
@@ -10,9 +11,9 @@
     providers = [],
     operatories = [],
     loading = false,
-    selectedDate = $bindable(new Date().toISOString().split("T")[0]),
+    selectedDate = $bindable(getLocalDateString()),
     selectedProvider = $bindable("all"),
-    viewMode = $bindable("grid"),
+    viewMode = $bindable("calendar"),
     oneditappointment,
     onupdatestatus,
     ondeleteappointment,
@@ -24,12 +25,14 @@
     loading: boolean;
     selectedDate: string;
     selectedProvider: string;
-    viewMode: "grid" | "agenda";
+    viewMode: "calendar" | "grid" | "agenda";
     onnewappointment: () => void;
     oneditappointment: (appt: Appointment) => void;
     onupdatestatus: (id: string, status: string) => void;
     ondeleteappointment: (id: string) => void;
   }>();
+
+  let calendarView = $state<"day" | "week" | "month">("day");
 
   function getProviderName(id: string): string {
     const p = providers.find((prov: Provider) => prov.id === id);
@@ -89,7 +92,7 @@
       },
     });
 
-  // Dynamic time slots derived from filtered appointments (default 07:00 to 18:00, expanding as needed)
+  // Dynamic time slots derived from filtered appointments (default 07:00 to 18:00)
   let timeSlots = $derived.by(() => {
     let minH = 7;
     let maxH = 18;
@@ -141,37 +144,140 @@
   }
 
   function changeDay(delta: number) {
-    const curr = new Date(selectedDate + "T00:00:00");
+    const curr = parseLocalDate(selectedDate);
     curr.setDate(curr.getDate() + delta);
-    selectedDate = curr.toISOString().split("T")[0];
+    selectedDate = getLocalDateString(curr);
+  }
+
+  function changeWeek(delta: number) {
+    const curr = parseLocalDate(selectedDate);
+    curr.setDate(curr.getDate() + delta * 7);
+    selectedDate = getLocalDateString(curr);
+  }
+
+  function changeMonth(delta: number) {
+    const curr = parseLocalDate(selectedDate);
+    curr.setMonth(curr.getMonth() + delta);
+    selectedDate = getLocalDateString(curr);
   }
 
   function setToday() {
-    selectedDate = new Date().toISOString().split("T")[0];
+    selectedDate = getLocalDateString();
   }
 
-  function isSameDay(isoStr: string, dateStr: string): boolean {
-    if (!isoStr || !dateStr) return false;
-    try {
-      const isoDatePart = isoStr.split("T")[0];
-      if (isoDatePart === dateStr) return true;
+  function selectDateAndJumpToDay(dateStr: string) {
+    selectedDate = dateStr;
+    calendarView = "day";
+  }
 
-      const d = new Date(isoStr);
-      if (isNaN(d.getTime())) return false;
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}` === dateStr;
-    } catch {
-      return false;
+  function jumpToDateFromAgenda(isoStr: string) {
+    if (!isoStr) return;
+    try {
+      const localDate = getLocalDateString(isoStr);
+      if (localDate) {
+        selectedDate = localDate;
+        viewMode = "calendar";
+        calendarView = "day";
+      }
+    } catch (e) {
+      console.error("Failed to parse date for jumping:", e);
     }
   }
+
+  // Week Days (Sun - Sat) based on selectedDate
+  let weekDays = $derived.by(() => {
+    const curr = parseLocalDate(selectedDate);
+    const dayOfWeek = isNaN(curr.getTime()) ? 0 : curr.getDay();
+    const sunday = new Date(curr);
+    sunday.setDate(curr.getDate() - dayOfWeek);
+
+    const todayStr = getLocalDateString();
+    const days: {
+      dateStr: string;
+      label: string;
+      dayName: string;
+      isToday: boolean;
+      isSelected: boolean;
+    }[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
+      const dateStr = getLocalDateString(d);
+      const dayName = d.toLocaleDateString(undefined, { weekday: "short" });
+      const label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+      days.push({
+        dateStr,
+        label,
+        dayName,
+        isToday: dateStr === todayStr,
+        isSelected: dateStr === selectedDate,
+      });
+    }
+    return days;
+  });
+
+  // Month Grid (42 cells) based on selectedDate
+  let monthGrid = $derived.by(() => {
+    const curr = parseLocalDate(selectedDate);
+    const year = isNaN(curr.getTime()) ? new Date().getFullYear() : curr.getFullYear();
+    const month = isNaN(curr.getTime()) ? new Date().getMonth() : curr.getMonth();
+
+    const firstOfMonth = new Date(year, month, 1);
+    const startDayOfWeek = firstOfMonth.getDay();
+
+    const startDate = new Date(firstOfMonth);
+    startDate.setDate(startDate.getDate() - startDayOfWeek);
+
+    const todayStr = getLocalDateString();
+    const grid: {
+      dateStr: string;
+      dayNum: number;
+      isCurrentMonth: boolean;
+      isToday: boolean;
+      isSelected: boolean;
+    }[] = [];
+
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      const dateStr = getLocalDateString(d);
+
+      grid.push({
+        dateStr,
+        dayNum: d.getDate(),
+        isCurrentMonth: d.getMonth() === month,
+        isToday: dateStr === todayStr,
+        isSelected: dateStr === selectedDate,
+      });
+    }
+    return grid;
+  });
+
+  let monthYearHeading = $derived.by(() => {
+    try {
+      const d = parseLocalDate(selectedDate);
+      return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    } catch {
+      return selectedDate;
+    }
+  });
+
+  let weekRangeHeading = $derived.by(() => {
+    if (weekDays.length === 0) return "";
+    const start = weekDays[0].label;
+    const end = weekDays[6].label;
+    const year = parseLocalDate(selectedDate).getFullYear();
+    return `${start} - ${end}, ${year}`;
+  });
 
   let filteredAppointments = $derived(
     appointments
       .filter((a: Appointment) => {
         if (selectedProvider !== "all" && a.provider_id !== selectedProvider) return false;
-        if (viewMode === "grid") {
+        const isCalendar = viewMode === "calendar" || viewMode === "grid";
+        if (isCalendar && calendarView === "day") {
           return isSameDay(a.start_time, selectedDate);
         }
         return true;
@@ -208,7 +314,7 @@
 
   function formattedDateHeading(dateStr: string): string {
     try {
-      const d = new Date(dateStr + "T00:00:00");
+      const d = parseLocalDate(dateStr);
       return d.toLocaleDateString(undefined, {
         weekday: "long",
         year: "numeric",
@@ -237,23 +343,111 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Stats Summary (Context-sensitive: Day stats in Calendar View, All stats in Agenda View) -->
+  <!-- Stats Summary -->
   <AppointmentStats appointments={filteredAppointments} />
 
   <!-- Control Bar -->
   <div
     class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-700/80 bg-slate-800/80 p-4 shadow-sm backdrop-blur"
   >
-    <!-- Date Navigation (Only shown in Calendar View) -->
-    {#if viewMode === "grid"}
-      <div class="flex items-center gap-2">
+    <!-- View Switcher (Calendar vs Agenda) & Sub-tabs (Day | Week | Month) -->
+    <div class="flex items-center gap-3">
+      <div class="flex rounded-lg border border-slate-700 bg-slate-900 p-0.5">
         <button
           type="button"
-          onclick={() => changeDay(-1)}
-          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+          onclick={() => (viewMode = "calendar")}
+          class={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+            viewMode === "calendar" || viewMode === "grid"
+              ? "bg-sky-500 text-white shadow-sm"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
         >
-          {(getLocaleVersion(), m.appts_prev_day())}
+          <span>📅</span>
+          {m.appts_view_grid()}
         </button>
+        <button
+          type="button"
+          onclick={() => (viewMode = "agenda")}
+          class={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+            viewMode === "agenda"
+              ? "bg-sky-500 text-white shadow-sm"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span>📋</span>
+          {m.appts_view_agenda()}
+        </button>
+      </div>
+
+      <!-- Sub-tab Slider for Calendar View (Day | Week | Month) -->
+      {#if viewMode === "calendar" || viewMode === "grid"}
+        <div class="flex rounded-lg border border-slate-700/80 bg-slate-900/60 p-0.5">
+          <button
+            type="button"
+            onclick={() => (calendarView = "day")}
+            class={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+              calendarView === "day"
+                ? "bg-slate-700 text-sky-400 shadow border border-sky-500/30"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {m.appts_view_day()}
+          </button>
+          <button
+            type="button"
+            onclick={() => (calendarView = "week")}
+            class={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+              calendarView === "week"
+                ? "bg-slate-700 text-sky-400 shadow border border-sky-500/30"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {m.appts_view_week()}
+          </button>
+          <button
+            type="button"
+            onclick={() => (calendarView = "month")}
+            class={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+              calendarView === "month"
+                ? "bg-slate-700 text-sky-400 shadow border border-sky-500/30"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {m.appts_view_month()}
+          </button>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Date Navigation -->
+    {#if viewMode === "calendar" || viewMode === "grid"}
+      <div class="flex items-center gap-2">
+        {#if calendarView === "day"}
+          <button
+            type="button"
+            onclick={() => changeDay(-1)}
+            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+          >
+            ◀ {m.appts_prev_day()}
+          </button>
+        {:else if calendarView === "week"}
+          <button
+            type="button"
+            onclick={() => changeWeek(-1)}
+            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+          >
+            ◀ {m.appts_prev_week()}
+          </button>
+        {:else if calendarView === "month"}
+          <button
+            type="button"
+            onclick={() => changeMonth(-1)}
+            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+          >
+            ◀ {m.appts_prev_month()}
+          </button>
+        {/if}
+
         <button
           type="button"
           onclick={setToday}
@@ -261,13 +455,33 @@
         >
           {m.appts_today()}
         </button>
-        <button
-          type="button"
-          onclick={() => changeDay(1)}
-          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
-        >
-          {m.appts_next_day()}
-        </button>
+
+        {#if calendarView === "day"}
+          <button
+            type="button"
+            onclick={() => changeDay(1)}
+            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+          >
+            {m.appts_next_day()} ▶
+          </button>
+        {:else if calendarView === "week"}
+          <button
+            type="button"
+            onclick={() => changeWeek(1)}
+            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+          >
+            {m.appts_next_week()} ▶
+          </button>
+        {:else if calendarView === "month"}
+          <button
+            type="button"
+            onclick={() => changeMonth(1)}
+            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+          >
+            {m.appts_next_month()} ▶
+          </button>
+        {/if}
+
         <input
           type="date"
           bind:value={selectedDate}
@@ -278,65 +492,53 @@
       <div
         class="flex items-center gap-2 text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3 py-1.5 rounded-lg"
       >
-        <span>📋 All Practice Appointments Agenda</span>
+        <span>📋</span>
+        <span>{m.appts_agenda_header()}</span>
       </div>
     {/if}
 
-    <!-- Provider Filter & View Switcher -->
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2">
-        <label for="provider-filter" class="text-xs font-medium text-slate-400"
-          >{m.appts_provider_filter()}</label
-        >
-        <select
-          id="provider-filter"
-          bind:value={selectedProvider}
-          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
-        >
-          <option value="all">{m.appts_all_providers()}</option>
-          {#each providers as p}
-            <option value={p.id}>{p.name} ({p.role})</option>
-          {/each}
-        </select>
-      </div>
-
-      <!-- Calendar / Agenda toggle -->
-      <div class="flex rounded-lg border border-slate-700 bg-slate-900 p-0.5">
-        <button
-          type="button"
-          onclick={() => (viewMode = "grid")}
-          class={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-            viewMode === "grid" ? "bg-sky-500 text-white" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          {m.appts_view_grid()}
-        </button>
-        <button
-          type="button"
-          onclick={() => (viewMode = "agenda")}
-          class={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-            viewMode === "agenda" ? "bg-sky-500 text-white" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          {m.appts_view_agenda()}
-        </button>
-      </div>
+    <!-- Provider Filter -->
+    <div class="flex items-center gap-2">
+      <label for="provider-filter" class="text-xs font-medium text-slate-400"
+        >{m.appts_provider_filter()}</label
+      >
+      <select
+        id="provider-filter"
+        bind:value={selectedProvider}
+        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="all">{m.appts_all_providers()}</option>
+        {#each providers as p}
+          <option value={p.id}>{p.name} ({p.role})</option>
+        {/each}
+      </select>
     </div>
   </div>
 
-  <!-- Header -->
+  <!-- View Title Header -->
   <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-      {#if viewMode === "grid"}
-        📅 {formattedDateHeading(selectedDate)}
+      {#if viewMode === "calendar" || viewMode === "grid"}
+        <span>📅</span>
+        {#if calendarView === "day"}
+          {formattedDateHeading(selectedDate)}
+        {:else if calendarView === "week"}
+          Week of {weekRangeHeading}
+        {:else if calendarView === "month"}
+          {monthYearHeading}
+        {/if}
       {:else}
-        📋 Agenda (All Dates)
+        <span>📋</span>
+        Agenda (All Dates)
       {/if}
     </h2>
     <span class="text-xs text-slate-400 font-medium">
       {filteredAppointments.length}
-      {#if viewMode === "grid"}appointment{filteredAppointments.length === 1 ? "" : "s"} scheduled{:else}total
-        appointment{filteredAppointments.length === 1 ? "" : "s"}{/if}
+      {#if viewMode === "calendar" || viewMode === "grid"}
+        appointment{filteredAppointments.length === 1 ? "" : "s"} scheduled
+      {:else}
+        total appointment{filteredAppointments.length === 1 ? "" : "s"}
+      {/if}
     </span>
   </div>
 
@@ -345,118 +547,209 @@
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-400"></div>
       <span class="ml-3 text-sm font-medium">{m.appts_loading_schedule()}</span>
     </div>
-  {:else if viewMode === "grid"}
+  {:else if viewMode === "calendar" || viewMode === "grid"}
     <!-- CALENDAR VIEW -->
-    <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
-      <div class="divide-y divide-slate-800">
-        {#each timeSlots as slot}
-          {@const slotAppts = filteredAppointments.filter(
-            (a: Appointment) => getApptHour(a.start_time) === slot
-          )}
-          <div class="flex min-h-[96px] group hover:bg-slate-800/30 transition-colors">
-            <!-- Hour label -->
-            <div
-              class="w-24 flex-shrink-0 border-r border-slate-800 p-3 text-xs font-semibold text-slate-400 bg-slate-900/50"
-            >
-              {formatSlotLabel(slot)}
-            </div>
+    {#if calendarView === "day"}
+      <!-- DAY VIEW GRID -->
+      <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
+        <div class="divide-y divide-slate-800">
+          {#each timeSlots as slot}
+            {@const slotAppts = filteredAppointments.filter(
+              (a: Appointment) => getApptHour(a.start_time) === slot
+            )}
+            <div class="flex min-h-[96px] group hover:bg-slate-800/30 transition-colors">
+              <div
+                class="w-24 flex-shrink-0 border-r border-slate-800 p-3 text-xs font-semibold text-slate-400 bg-slate-900/50"
+              >
+                {formatSlotLabel(slot)}
+              </div>
 
-            <!-- Appointments for this time slot -->
-            <div class="flex-1 p-2 flex flex-wrap gap-3 items-start">
-              {#if slotAppts.length === 0}
+              <div class="flex-1 p-2 flex flex-wrap gap-3 items-start">
+                {#if slotAppts.length === 0}
+                  <div
+                    class="h-full w-full flex items-center justify-start text-xs text-slate-600 italic px-2 py-4"
+                  >
+                    {m.appts_no_appts_slot()}
+                  </div>
+                {:else}
+                  {#each slotAppts as appt}
+                    {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
+                    <div
+                      class="group/card relative w-full sm:w-[320px] rounded-xl border border-l-4 p-3.5 shadow-md transition-all duration-150 hover:shadow-sky-500/10 hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer"
+                      style="border-left-color: {appt.color || '#3b82f6'};"
+                      onclick={() => oneditappointment(appt)}
+                      role="button"
+                      tabindex="0"
+                      onkeydown={(e) => e.key === "Enter" && oneditappointment(appt)}
+                    >
+                      <div class="flex items-start justify-between">
+                        <div>
+                          <div class="text-sm font-bold text-white flex items-center gap-1.5">
+                            {getPatientName(appt.patient_id)}
+                          </div>
+                          <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                            <span
+                              >⏱ {formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span
+                            >
+                            {#if getPatientPhone(appt.patient_id)}
+                              <span>📞 {getPatientPhone(appt.patient_id)}</span>
+                            {/if}
+                          </div>
+                        </div>
+
+                        <span
+                          class={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badge.bg} ${badge.text} ${badge.border}`}
+                        >
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      {#if appt.reason}
+                        <div
+                          class="mt-2 text-xs font-medium text-sky-200/90 bg-slate-900/60 rounded-lg px-2.5 py-1"
+                        >
+                          📋 {appt.reason}
+                        </div>
+                      {/if}
+
+                      <div
+                        class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-700/50"
+                      >
+                        <span>👤 {getProviderName(appt.provider_id)}</span>
+                        <span>📍 {getOperatoryName(appt.operatory_id)}</span>
+                      </div>
+
+                      <!-- Quick Status Actions -->
+                      <div
+                        class="mt-2.5 flex items-center gap-1.5 pt-2 border-t border-slate-700/40"
+                        onclick={(e) => e.stopPropagation()}
+                        role="presentation"
+                      >
+                        {#if appt.status === "scheduled"}
+                          <button
+                            type="button"
+                            onclick={() => onupdatestatus(appt.id, "confirmed")}
+                            class="px-2 py-0.5 text-[10px] font-semibold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 rounded border border-sky-500/30"
+                          >
+                            {m.appts_action_confirm()}
+                          </button>
+                        {/if}
+                        {#if appt.status === "scheduled" || appt.status === "confirmed"}
+                          <button
+                            type="button"
+                            onclick={() => onupdatestatus(appt.id, "arrived")}
+                            class="px-2 py-0.5 text-[10px] font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded border border-amber-500/30"
+                          >
+                            {m.appts_action_arrived()}
+                          </button>
+                        {/if}
+                        {#if appt.status === "arrived"}
+                          <button
+                            type="button"
+                            onclick={() => onupdatestatus(appt.id, "in_chair")}
+                            class="px-2 py-0.5 text-[10px] font-semibold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded border border-purple-500/30"
+                          >
+                            {m.appts_action_seat()}
+                          </button>
+                        {/if}
+                        {#if appt.status === "in_chair"}
+                          <button
+                            type="button"
+                            onclick={() => onupdatestatus(appt.id, "completed")}
+                            class="px-2 py-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/30"
+                          >
+                            {m.appts_action_complete()}
+                          </button>
+                        {/if}
+                      </div>
+                    </div>
+                  {/each}
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {:else if calendarView === "week"}
+      <!-- WEEK VIEW GRID -->
+      <div class="grid grid-cols-1 md:grid-cols-7 gap-3">
+        {#each weekDays as day}
+          {@const dayAppts = filteredAppointments.filter((a: Appointment) =>
+            isSameDay(a.start_time, day.dateStr)
+          )}
+          <div
+            class={`flex flex-col rounded-xl border transition-all ${
+              day.isSelected
+                ? "border-sky-500/60 bg-slate-900/90 ring-1 ring-sky-500/30 shadow-lg"
+                : day.isToday
+                  ? "border-amber-500/40 bg-slate-900/80"
+                  : "border-slate-800 bg-slate-900/50"
+            }`}
+          >
+            <!-- Day Header (Clickable to switch to Day view) -->
+            <button
+              type="button"
+              onclick={() => selectDateAndJumpToDay(day.dateStr)}
+              class="p-3 text-left border-b border-slate-800 bg-slate-800/40 hover:bg-slate-800/80 rounded-t-xl transition-colors flex items-center justify-between group/weekhead"
+            >
+              <div>
                 <div
-                  class="h-full w-full flex items-center justify-start text-xs text-slate-600 italic px-2 py-4"
+                  class="text-xs font-bold uppercase tracking-wider text-slate-400 group-hover/weekhead:text-sky-400 transition-colors"
                 >
-                  {m.appts_no_appts_slot()}
+                  {day.dayName}
+                </div>
+                <div class="text-sm font-extrabold text-white mt-0.5">{day.label}</div>
+              </div>
+              {#if day.isToday}
+                <span
+                  class="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30"
+                >
+                  Today
+                </span>
+              {/if}
+            </button>
+
+            <!-- Appointments List for Day -->
+            <div class="p-2 space-y-2 flex-1 overflow-y-auto max-h-[650px] min-h-[160px]">
+              {#if dayAppts.length === 0}
+                <div
+                  class="h-full flex items-center justify-center text-center text-xs text-slate-600 italic py-6"
+                >
+                  No appointments
                 </div>
               {:else}
-                {#each slotAppts as appt}
+                {#each dayAppts as appt}
                   {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
                   <div
-                    class="group/card relative w-full sm:w-[320px] rounded-xl border border-l-4 p-3.5 shadow-md transition-all duration-150 hover:shadow-sky-500/10 hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer"
+                    class="relative rounded-lg border border-l-4 p-2.5 shadow-sm hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer transition-all hover:scale-[1.01]"
                     style="border-left-color: {appt.color || '#3b82f6'};"
                     onclick={() => oneditappointment(appt)}
                     role="button"
                     tabindex="0"
                     onkeydown={(e) => e.key === "Enter" && oneditappointment(appt)}
                   >
-                    <div class="flex items-start justify-between">
-                      <div>
-                        <div class="text-sm font-bold text-white flex items-center gap-1.5">
-                          {getPatientName(appt.patient_id)}
-                        </div>
-                        <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                          <span>⏱ {formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span>
-                          {#if getPatientPhone(appt.patient_id)}
-                            <span>📞 {getPatientPhone(appt.patient_id)}</span>
-                          {/if}
-                        </div>
+                    <div class="text-xs font-bold text-white truncate">
+                      {getPatientName(appt.patient_id)}
+                    </div>
+                    <div class="text-[11px] text-sky-400 font-semibold mt-1">
+                      ⏱ {formatTime(appt.start_time)}
+                    </div>
+                    {#if appt.reason}
+                      <div
+                        class="text-[11px] text-slate-300 truncate mt-1 bg-slate-900/60 px-1.5 py-0.5 rounded"
+                      >
+                        {appt.reason}
                       </div>
-
+                    {/if}
+                    <div class="mt-2 flex items-center justify-between text-[10px]">
+                      <span class="text-slate-400 truncate max-w-[90px]"
+                        >👤 {getProviderName(appt.provider_id)}</span
+                      >
                       <span
-                        class={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badge.bg} ${badge.text} ${badge.border}`}
+                        class={`rounded-full border px-1.5 py-0.2 text-[9px] font-semibold uppercase ${badge.bg} ${badge.text} ${badge.border}`}
                       >
                         {badge.label}
                       </span>
-                    </div>
-
-                    {#if appt.reason}
-                      <div
-                        class="mt-2 text-xs font-medium text-sky-200/90 bg-slate-900/60 rounded-lg px-2.5 py-1"
-                      >
-                        📋 {appt.reason}
-                      </div>
-                    {/if}
-
-                    <div
-                      class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-700/50"
-                    >
-                      <span>👤 {getProviderName(appt.provider_id)}</span>
-                      <span>📍 {getOperatoryName(appt.operatory_id)}</span>
-                    </div>
-
-                    <!-- Quick Status Change Actions -->
-                    <div
-                      class="mt-2.5 flex items-center gap-1.5 pt-2 border-t border-slate-700/40"
-                      onclick={(e) => e.stopPropagation()}
-                      role="presentation"
-                    >
-                      {#if appt.status === "scheduled"}
-                        <button
-                          type="button"
-                          onclick={() => onupdatestatus(appt.id, "confirmed")}
-                          class="px-2 py-0.5 text-[10px] font-semibold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 rounded border border-sky-500/30"
-                        >
-                          {m.appts_action_confirm()}
-                        </button>
-                      {/if}
-                      {#if appt.status === "scheduled" || appt.status === "confirmed"}
-                        <button
-                          type="button"
-                          onclick={() => onupdatestatus(appt.id, "arrived")}
-                          class="px-2 py-0.5 text-[10px] font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded border border-amber-500/30"
-                        >
-                          {m.appts_action_arrived()}
-                        </button>
-                      {/if}
-                      {#if appt.status === "arrived"}
-                        <button
-                          type="button"
-                          onclick={() => onupdatestatus(appt.id, "in_chair")}
-                          class="px-2 py-0.5 text-[10px] font-semibold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded border border-purple-500/30"
-                        >
-                          {m.appts_action_seat()}
-                        </button>
-                      {/if}
-                      {#if appt.status === "in_chair"}
-                        <button
-                          type="button"
-                          onclick={() => onupdatestatus(appt.id, "completed")}
-                          class="px-2 py-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/30"
-                        >
-                          {m.appts_action_complete()}
-                        </button>
-                      {/if}
                     </div>
                   </div>
                 {/each}
@@ -465,9 +758,96 @@
           </div>
         {/each}
       </div>
-    </div>
+    {:else if calendarView === "month"}
+      <!-- MONTH VIEW GRID -->
+      <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
+        <!-- Day Names Header -->
+        <div
+          class="grid grid-cols-7 border-b border-slate-800 bg-slate-800/80 text-center text-xs font-bold text-slate-400 py-2.5"
+        >
+          <div>Sun</div>
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+        </div>
+
+        <!-- 42 Calendar Cells -->
+        <div class="grid grid-cols-7 divide-x divide-y divide-slate-800/80">
+          {#each monthGrid as cell}
+            {@const cellAppts = filteredAppointments.filter((a: Appointment) =>
+              isSameDay(a.start_time, cell.dateStr)
+            )}
+            <div
+              class={`min-h-[110px] p-1.5 flex flex-col transition-colors group ${
+                !cell.isCurrentMonth
+                  ? "bg-slate-950/40 text-slate-600 opacity-50"
+                  : cell.isSelected
+                    ? "bg-sky-950/20 text-slate-200"
+                    : "bg-slate-900/40 text-slate-300 hover:bg-slate-800/30"
+              }`}
+            >
+              <!-- Cell Header / Day Number (Clickable to switch to Day view) -->
+              <div class="flex items-center justify-between mb-1 px-1">
+                <button
+                  type="button"
+                  onclick={() => selectDateAndJumpToDay(cell.dateStr)}
+                  class={`text-xs font-bold px-1.5 py-0.5 rounded transition-all hover:bg-sky-500/20 hover:text-sky-400 ${
+                    cell.isToday
+                      ? "bg-amber-500 text-slate-950 font-black shadow-sm"
+                      : cell.isSelected
+                        ? "bg-sky-500 text-white font-bold"
+                        : "text-slate-400"
+                  }`}
+                >
+                  {cell.dayNum}
+                </button>
+                {#if cellAppts.length > 0}
+                  <span
+                    class="text-[10px] font-semibold text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded-full border border-slate-700"
+                  >
+                    {cellAppts.length}
+                  </span>
+                {/if}
+              </div>
+
+              <!-- Appointment List Chips -->
+              <div class="space-y-1 flex-1 overflow-y-auto max-h-[95px]">
+                {#each cellAppts.slice(0, 3) as appt}
+                  <button
+                    type="button"
+                    onclick={() => oneditappointment(appt)}
+                    class="w-full text-left rounded px-1.5 py-0.5 text-[11px] font-medium border border-l-2 bg-slate-800/90 hover:bg-slate-700/80 truncate flex items-center gap-1 transition-all"
+                    style="border-left-color: {appt.color || '#3b82f6'};"
+                  >
+                    <span class="text-sky-400 text-[10px] font-semibold"
+                      >{formatTime(appt.start_time)}</span
+                    >
+                    <span class="font-semibold text-white truncate"
+                      >{getPatientName(appt.patient_id)}</span
+                    >
+                  </button>
+                {/each}
+
+                {#if cellAppts.length > 3}
+                  <button
+                    type="button"
+                    onclick={() => selectDateAndJumpToDay(cell.dateStr)}
+                    class="w-full text-center text-[10px] font-bold text-sky-400 hover:underline pt-0.5"
+                  >
+                    +{cellAppts.length - 3} more
+                  </button>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
   {:else}
-    <!-- AGENDA VIEW TABLE -->
+    <!-- AGENDA VIEW TABLE (WITH CLICKABLE DATES) -->
     <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
       {#if filteredAppointments.length === 0}
         <div class="py-16 text-center text-slate-400">
@@ -493,15 +873,25 @@
             {#each filteredAppointments as appt}
               {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
               <tr class="hover:bg-slate-800/50 transition-colors">
+                <!-- Clickable Date Badge to Jump to Calendar View -->
                 <td class="px-4 py-3 font-medium whitespace-nowrap">
-                  <div class="text-slate-200 font-semibold text-xs flex items-center gap-1.5">
-                    <span class="text-slate-400">📅</span>
-                    {formatApptDate(appt.start_time)}
-                  </div>
-                  <div class="text-sky-400 text-xs mt-1 flex items-center gap-1.5">
-                    <span class="text-slate-400">⏱</span>
-                    {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
-                  </div>
+                  <button
+                    type="button"
+                    onclick={() => jumpToDateFromAgenda(appt.start_time)}
+                    class="text-left group/date focus:outline-none transition-colors"
+                    title="Click to view this date in Calendar View"
+                  >
+                    <div
+                      class="text-slate-200 font-semibold text-xs flex items-center gap-1.5 group-hover/date:text-sky-400 group-hover/date:underline"
+                    >
+                      <span class="text-slate-400">📅</span>
+                      {formatApptDate(appt.start_time)}
+                    </div>
+                    <div class="text-sky-400 text-xs mt-1 flex items-center gap-1.5">
+                      <span class="text-slate-400">⏱</span>
+                      {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
+                    </div>
+                  </button>
                 </td>
                 <td class="px-4 py-3 font-semibold text-white">
                   {getPatientName(appt.patient_id)}

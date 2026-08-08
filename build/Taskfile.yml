@@ -18,11 +18,8 @@ tasks:
 
   install:frontend:deps:npm:
     dir: frontend
-    sources:
-      - package.json
-      - package-lock.json
-    generates:
-      - node_modules
+    status:
+      - test -d node_modules
     preconditions:
       - sh: npm version
         msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
@@ -216,7 +213,6 @@ tasks:
     summary: Runs the frontend in development mode
     deps:
       - task: install:frontend:deps
-      - task: build:i18n
     cmds:
       - task: frontend:dev:{{.PACKAGE_MANAGER}}
 

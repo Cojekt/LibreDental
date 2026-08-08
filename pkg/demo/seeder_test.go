@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/LibreDental/libredental/pkg/domain"
 	"github.com/LibreDental/libredental/pkg/storage/sqlite"
@@ -75,16 +76,24 @@ func TestSeedDatabase(t *testing.T) {
 		t.Errorf("Expected 10 appointments in list, got %d", len(appts))
 	}
 
+	laLoc, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		laLoc = time.FixedZone("PDT", -7*3600)
+	}
+
 	uniqueDays := make(map[string]bool)
 	afterHoursCount := 0
 
 	for _, a := range appts {
-		dayStr := a.StartTime.Format("2006-01-02")
+		st := a.StartTime.In(laLoc)
+		et := a.EndTime.In(laLoc)
+
+		dayStr := st.Format("2006-01-02")
 		uniqueDays[dayStr] = true
 
-		startHour := a.StartTime.Hour()
-		endHour := a.EndTime.Hour()
-		endMin := a.EndTime.Minute()
+		startHour := st.Hour()
+		endHour := et.Hour()
+		endMin := et.Minute()
 
 		// Normal business hours: 08:00 - 17:00
 		isOutsideHours := startHour < 8 || startHour >= 17 || (endHour > 17 || (endHour == 17 && endMin > 0))

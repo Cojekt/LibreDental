@@ -7,6 +7,7 @@
     SystemSettingsService,
   } from "@bindings/services/index.js";
   import { initLocale, getLocaleVersion } from "$lib/locale.svelte.js";
+  import { getLocalDateString } from "$lib/date.js";
   import { m } from "./paraglide/messages.js";
   import type {
     Patient,
@@ -141,9 +142,9 @@
   // Appointments state
   let appointments = $state<Appointment[]>([]);
   let loadingAppointments = $state(false);
-  let selectedDate = $state(new Date().toISOString().split("T")[0]);
+  let selectedDate = $state(getLocalDateString());
   let selectedProvider = $state("all");
-  let viewMode = $state<"grid" | "agenda">("grid");
+  let viewMode = $state<"calendar" | "grid" | "agenda">("calendar");
 
   // Appointment Modal states
   let showApptModal = $state(false);

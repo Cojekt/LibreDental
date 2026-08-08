@@ -5,6 +5,7 @@
   import Input from "./ui/Input.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { getLocalDateString } from "$lib/date.js";
 
   let {
     showModal = $bindable(false),
@@ -15,7 +16,7 @@
     selectedPatientId = $bindable(""),
     providerId = $bindable(""),
     operatoryId = $bindable(""),
-    startDateStr = $bindable(new Date().toISOString().split("T")[0]),
+    startDateStr = $bindable(getLocalDateString()),
     startTimeStr = $bindable("09:00"),
     endTimeStr = $bindable("10:00"),
     status = $bindable("scheduled"),
