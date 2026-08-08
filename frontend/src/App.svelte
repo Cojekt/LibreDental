@@ -28,6 +28,7 @@
   import PatientsView from "./views/PatientsView.svelte";
   import AppointmentsView from "./views/AppointmentsView.svelte";
   import ChartingView from "./views/ChartingView.svelte";
+  import BillingView from "./views/BillingView.svelte";
 
   // App Navigation (Default to "clinic" landing tab on far left)
   let activeTab = $state("clinic");
@@ -622,6 +623,8 @@
       />
     {:else if activeTab === "charting"}
       <ChartingView {patients} {countryMeta} />
+    {:else if activeTab === "billing"}
+      <BillingView {patients} {providers} />
     {/if}
   </main>
 </div>

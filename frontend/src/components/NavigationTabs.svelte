@@ -37,7 +37,7 @@
       id: "billing",
       label: (getLocaleVersion(), m.nav_billing()),
       icon: `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
-      enabled: false,
+      enabled: true,
     },
   ]);
 </script>

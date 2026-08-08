@@ -67,3 +67,34 @@ type ChartRepository interface {
 	SaveCondition(ctx context.Context, condition *domain.ToothCondition) error
 	DeleteCondition(ctx context.Context, id string) error
 }
+
+// ClaimRepository defines storage operations for insurance claims.
+type ClaimRepository interface {
+	Create(ctx context.Context, claim *domain.Claim) error
+	GetByID(ctx context.Context, id string) (*domain.Claim, error)
+	Update(ctx context.Context, claim *domain.Claim) error
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, patientID string) ([]*domain.Claim, error)
+	// GetTotalBilled returns the sum of all line item fees for a patient's claims.
+	GetTotalBilled(ctx context.Context, patientID string) (float64, error)
+}
+
+// PaymentRepository defines storage operations for patient payment records.
+type PaymentRepository interface {
+	Create(ctx context.Context, payment *domain.Payment) error
+	GetByID(ctx context.Context, id string) (*domain.Payment, error)
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, patientID string) ([]*domain.Payment, error)
+	// GetTotalPaid returns the sum of all payments received for a patient.
+	GetTotalPaid(ctx context.Context, patientID string) (float64, error)
+}
+
+// TreatmentBundleRepository defines storage operations for clinic-wide procedure bundle templates.
+type TreatmentBundleRepository interface {
+	Create(ctx context.Context, bundle *domain.TreatmentBundle) error
+	GetByID(ctx context.Context, id string) (*domain.TreatmentBundle, error)
+	GetByShortname(ctx context.Context, shortname string) (*domain.TreatmentBundle, error)
+	Update(ctx context.Context, bundle *domain.TreatmentBundle) error
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context) ([]*domain.TreatmentBundle, error)
+}
