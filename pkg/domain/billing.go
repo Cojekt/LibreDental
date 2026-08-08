@@ -24,8 +24,6 @@ const (
 	PaymentMethodWriteOff   PaymentMethod = "write_off"
 )
 
-
-
 // ClaimLineItem represents a single CDT-coded procedure on an insurance claim.
 type ClaimLineItem struct {
 	ID               string         `json:"id"`

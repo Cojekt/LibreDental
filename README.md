@@ -19,15 +19,15 @@ LibreDental™ is currently in **early active development**. We are laying the a
 
 ### 100% Free & Open Source Core
 
-* **Everything is free right now**, and the core LibreDental™ software will **always** remain 100% free and open-source under the Apache 2.0 license.
-* **Our Commitment:** We solemnly promise **never to do what Open Dental did**. We will never lock open-source software behind proprietary update fees, restrict self-hosting capabilities, enforce mandatory subscription keys, or rug-pull the community with restrictive relicensing.
+- **Everything is free right now**, and the core LibreDental™ software will **always** remain 100% free and open-source under the Apache 2.0 license.
+- **Our Commitment:** We solemnly promise **never to do what Open Dental did**. We will never lock open-source software behind proprietary update fees, restrict self-hosting capabilities, enforce mandatory subscription keys, or rug-pull the community with restrictive relicensing.
 
 ### Future Sustainability Plan
 
 To support long-term development, maintenance, and support:
 
-* Far down the road, funds *may* be raised by offering an **optional online hosted (SaaS) service** for practices that prefer a managed cloud setup without maintaining local servers.
-* This hosted service is **a while away** and will always remain completely optional. Self-hosted and local installations will never be crippled or paywalled.
+- Far down the road, funds _may_ be raised by offering an **optional online hosted (SaaS) service** for practices that prefer a managed cloud setup without maintaining local servers.
+- This hosted service is **a while away** and will always remain completely optional. Self-hosted and local installations will never be crippled or paywalled.
 
 ---
 
@@ -39,13 +39,13 @@ LibreDental™ is designed from the ground up using **Wails v3** (Go + modern We
 
 Running LibreDental™ fully on the dentist's computer or local practice network (LAN) provides significant advantages for HIPAA (Health Insurance Portability and Accountability Act) compliance:
 
-* **Zero Cloud ePHI Risk:** Protected Health Information (ePHI) stays entirely on the practice's local machine or local server. No third-party cloud servers receive or store patient records.
-* **No Vendor BAA Required for Storage:** Because LibreDental operates as local software with no vendor telemetry or remote data collection, practices maintain 100% custody of their data.
-* **Built-in Compliance Controls:**
-  * **Encryption at Rest:** Support for SQLCipher / local disk encryption for all stored patient data and x-rays.
-  * **Role-Based Access Control (RBAC):** Granular user permissions and auto-lock screen timeouts.
-  * **Immutable Audit Logs:** Full tracking of ePHI access, modifications, exports, and deletions.
-  * **Local Encrypted Backups:** Automated daily backups to local or practice-controlled storage.
+- **Zero Cloud ePHI Risk:** Protected Health Information (ePHI) stays entirely on the practice's local machine or local server. No third-party cloud servers receive or store patient records.
+- **No Vendor BAA Required for Storage:** Because LibreDental operates as local software with no vendor telemetry or remote data collection, practices maintain 100% custody of their data.
+- **Built-in Compliance Controls:**
+  - **Encryption at Rest:** Support for SQLCipher / local disk encryption for all stored patient data and x-rays.
+  - **Role-Based Access Control (RBAC):** Granular user permissions and auto-lock screen timeouts.
+  - **Immutable Audit Logs:** Full tracking of ePHI access, modifications, exports, and deletions.
+  - **Local Encrypted Backups:** Automated daily backups to local or practice-controlled storage.
 
 ---
 
@@ -55,8 +55,8 @@ LibreDental™ is a standard **[Wails v3](https://v3.wails.io)** application (Go
 
 ### Prerequisites
 
-* **Go 1.22+**, **Node.js 20+**, and a **C Compiler / WebKit** (Linux: `build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev` | macOS: `xcode-select --install` | Windows: MinGW/MSVC).
-* **CLI Tools**:
+- **Go 1.22+**, **Node.js 20+**, and a **C Compiler / WebKit** (Linux: `build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev` | macOS: `xcode-select --install` | Windows: MinGW/MSVC).
+- **CLI Tools**:
 
   ```bash
   go install github.com/wailsapp/wails/v3/cmd/wails3@latest
@@ -90,4 +90,4 @@ We welcome contributions from developers, dental professionals, and open-source 
 
 LibreDental™ is licensed under the [Apache License, Version 2.0](LICENSE).
 
-*LibreDental™ is a trademark claiming common law rights. The LibreDental name and logo are trademarks of the LibreDental project.*
+_LibreDental™ is a trademark claiming common law rights. The LibreDental name and logo are trademarks of the LibreDental project._

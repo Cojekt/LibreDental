@@ -11,6 +11,7 @@
     BundleItemTemplate,
     TreatmentBundle,
   } from "@bindings/domain/index.js";
+  import { ClaimStatus, PaymentMethod } from "@bindings/domain/index.js";
 
   // ── Props ─────────────────────────────────────────────────────────────────
   let { patients = [], providers = [] } = $props<{
@@ -35,7 +36,7 @@
   let claimInsuranceCarrier = $state("");
   let claimPolicyNumber = $state("");
   let claimGroupNumber = $state("");
-  let claimStatus = $state("draft");
+  let claimStatus = $state<ClaimStatus>(ClaimStatus.ClaimStatusDraft);
   let claimNotes = $state("");
   let claimLineItems = $state<ClaimLineItem[]>([]);
 
@@ -58,7 +59,7 @@
   let payPatientId = $state("");
   let payClaimId = $state("");
   let payAmount = $state("");
-  let payMethod = $state("cash");
+  let payMethod = $state<PaymentMethod>(PaymentMethod.PaymentMethodCash);
   let payDate = $state(new Date().toISOString().split("T")[0]);
   let payNotes = $state("");
 
@@ -73,16 +74,17 @@
   let bundleShortname = $state("");
   let bundleName = $state("");
   let bundleDescription = $state("");
+  let bundleItems = $state<BundleItemTemplate[]>([]);
   let shortnameError = $state("");
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function patientName(id: string) {
-    const p = patients.find((p) => p.id === id);
+    const p = patients.find((p: Patient) => p.id === id);
     return p ? `${p.first_name} ${p.last_name}` : id;
   }
 
   function providerName(id: string) {
-    const p = providers.find((p) => p.id === id);
+    const p = providers.find((p: Provider) => p.id === id);
     return p ? p.name : id;
   }
 
@@ -91,7 +93,7 @@
   }
 
   function claimTotal(c: Claim) {
-    return c.line_items.reduce((s, i) => s + i.fee, 0);
+    return (c.line_items ?? []).reduce((s, i) => s + i.fee, 0);
   }
 
   // ── Claims ────────────────────────────────────────────────────────────────
@@ -116,7 +118,7 @@
     claimInsuranceCarrier = "";
     claimPolicyNumber = "";
     claimGroupNumber = "";
-    claimStatus = "draft";
+    claimStatus = ClaimStatus.ClaimStatusDraft;
     claimNotes = "";
     claimLineItems = [];
     bundleLookupInput = "";
@@ -135,7 +137,7 @@
     claimGroupNumber = c.group_number ?? "";
     claimStatus = c.status;
     claimNotes = c.notes ?? "";
-    claimLineItems = c.line_items.map((li) => ({ ...li }));
+    claimLineItems = (c.line_items ?? []).map((li) => ({ ...li }));
     bundleLookupInput = "";
     bundleLookupError = "";
     showClaimModal = true;
@@ -160,7 +162,7 @@
     try {
       const b = await BillingService.GetBundleByShortname(sn);
       if (b) {
-        const newItems: ClaimLineItem[] = b.items.map((item, i) => ({
+        const newItems: ClaimLineItem[] = (b.items ?? []).map((item, i) => ({
           id: `li_${Date.now()}_${i}`,
           ada_code: item.ada_code,
           description: item.description,
@@ -266,7 +268,7 @@
     payPatientId = balancePatientId || (patients[0]?.id ?? "");
     payClaimId = "";
     payAmount = "";
-    payMethod = "cash";
+    payMethod = PaymentMethod.PaymentMethodCash;
     payDate = new Date().toISOString().split("T")[0];
     payNotes = "";
     showPaymentModal = true;
@@ -344,7 +346,7 @@
     bundleShortname = b.shortname;
     bundleName = b.name;
     bundleDescription = b.description ?? "";
-    bundleItems = b.items.map((i) => ({ ...i }));
+    bundleItems = (b.items ?? []).map((i) => ({ ...i }));
     shortnameError = "";
     showBundleModal = true;
   }
@@ -354,11 +356,11 @@
   }
 
   function removeBundleItem(idx: number) {
-    bundleItems = bundleItems.filter((_, i) => i !== idx);
+    bundleItems = bundleItems.filter((_, i: number) => i !== idx);
   }
 
   function bundleTotalFee() {
-    return bundleItems.reduce((s, i) => s + (i.default_fee || 0), 0);
+    return bundleItems.reduce((s: number, i: BundleItemTemplate) => s + (i.default_fee || 0), 0);
   }
 
   async function saveBundle(e: Event) {
@@ -553,11 +555,11 @@
                 <td class="text-slate-400">{c.insurance_carrier || "—"}</td>
                 <td>
                   <div class="line-items-preview">
-                    {#each c.line_items.slice(0, 2) as li}
+                    {#each (c.line_items ?? []).slice(0, 2) as li}
                       <span class="ada-badge">{li.ada_code}</span>
                     {/each}
-                    {#if c.line_items.length > 2}
-                      <span class="text-slate-500 text-xs">+{c.line_items.length - 2}</span>
+                    {#if (c.line_items ?? []).length > 2}
+                      <span class="text-slate-500 text-xs">+{(c.line_items ?? []).length - 2}</span>
                     {/if}
                   </div>
                 </td>
@@ -1742,8 +1744,6 @@
   .li-tooth,
   .li-fee {
     text-align: center;
-  }
-  .li-desc {
   }
   .line-items-total {
     text-align: right;
