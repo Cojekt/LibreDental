@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -11,6 +13,7 @@ permissions:
 jobs:
   build:
     name: Build (${{ matrix.platform }})
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -18,15 +21,12 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: libredental-linux-amd64
-            server_artifact_name: libredental-server-linux-amd64
             platform: linux
           - os: macos-latest
             artifact_name: libredental-darwin-universal
-            server_artifact_name: libredental-server-darwin-arm64
             platform: darwin
           - os: windows-latest
             artifact_name: libredental-windows-amd64.exe
-            server_artifact_name: libredental-server-windows-amd64.exe
             platform: windows
 
     steps:
@@ -68,9 +68,6 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build Server Binary
-        run: task build:server
-
       - name: Build Desktop Application
         run: task build
 
@@ -79,14 +76,12 @@ jobs:
         run: |
           mkdir -p release_assets
           cp bin/libredental release_assets/${{ matrix.artifact_name }}
-          cp bin/libredental-server release_assets/${{ matrix.server_artifact_name }}
 
       - name: Prepare Artifacts (macOS)
         if: runner.os == 'macOS'
         run: |
           mkdir -p release_assets
           cp bin/libredental release_assets/${{ matrix.artifact_name }}
-          cp bin/libredental-server release_assets/${{ matrix.server_artifact_name }}
           if [ -d "bin/libredental.app" ]; then
             cd bin && zip -r ../release_assets/libredental-darwin-app.zip libredental.app && cd ..
           fi
@@ -97,7 +92,6 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path release_assets
           Copy-Item bin/libredental.exe release_assets/${{ matrix.artifact_name }}
-          Copy-Item bin/libredental-server.exe release_assets/${{ matrix.server_artifact_name }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -105,9 +99,33 @@ jobs:
           name: build-assets-${{ matrix.platform }}
           path: release_assets/*
 
+  generate-demo:
+    name: Generate Demo Database
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.5"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Generate Demo Database
+        run: go run ./pkg/demo/gen.go libredental.db
+
+      - name: Upload Demo Database Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets-demo
+          path: libredental.db
+
   release:
     name: Publish GitHub Release
-    needs: build
+    needs: [build, generate-demo]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
