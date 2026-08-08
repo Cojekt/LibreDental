@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/pressly/goose/v3 v3.27.3
-	github.com/wailsapp/wails/v3 v3.0.0-beta.2
+	github.com/wailsapp/wails/v3 v3.0.0-beta.4
 	modernc.org/sqlite v1.56.0
 )
 
