@@ -13,10 +13,7 @@
   } from "@bindings/domain/index.js";
 
   // ── Props ─────────────────────────────────────────────────────────────────
-  let {
-    patients = [],
-    providers = [],
-  } = $props<{
+  let { patients = [], providers = [] } = $props<{
     patients: Patient[];
     providers: Provider[];
   }>();
@@ -71,7 +68,6 @@
   let showBundleModal = $state(false);
   let isEditingBundle = $state(false);
   let editingBundleId = $state("");
-
 
   // Bundle form
   let bundleShortname = $state("");
@@ -243,7 +239,9 @@
       return;
     }
     try {
-      patientBalance = (await BillingService.GetPatientBalance(balancePatientId)) as PatientBalance | null;
+      patientBalance = (await BillingService.GetPatientBalance(
+        balancePatientId
+      )) as PatientBalance | null;
     } catch (e) {
       console.error("Failed to load balance:", e);
     }
@@ -329,8 +327,6 @@
     if (billingTab === "bundles") loadBundles();
   });
 
-
-
   function openNewBundle() {
     isEditingBundle = false;
     editingBundleId = "";
@@ -400,8 +396,6 @@
     }
   }
 
-
-
   async function deleteBundle(id: string) {
     if (!confirm("Delete this procedure bundle?")) return;
     try {
@@ -449,21 +443,39 @@
     <div class="billing-header-actions">
       {#if billingTab === "claims"}
         <button class="btn btn-primary" onclick={openNewClaim}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="h-4 w-4"
+          >
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           New Claim
         </button>
       {:else if billingTab === "payments"}
         <button class="btn btn-primary" onclick={openNewPayment}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="h-4 w-4"
+          >
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           Record Payment
         </button>
       {:else if billingTab === "bundles"}
         <button class="btn btn-primary" onclick={openNewBundle}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="h-4 w-4"
+          >
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           New Bundle
@@ -474,7 +486,7 @@
 
   <!-- Inner Tabs -->
   <div class="billing-tabs">
-    {#each [["claims","Claims","M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2z"], ["payments","Payments","M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3z"], ["bundles","Bundles","M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 1-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10"]] as [id, label, path]}
+    {#each [["claims", "Claims", "M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2z"], ["payments", "Payments", "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3z"], ["bundles", "Bundles", "M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 1-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10"]] as [id, label, path]}
       <button
         class="billing-tab-btn {billingTab === id ? 'billing-tab-active' : ''}"
         onclick={() => (billingTab = id as any)}
@@ -502,8 +514,18 @@
       <div class="billing-loading">Loading claims…</div>
     {:else if claims.length === 0}
       <div class="billing-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="billing-empty-icon">
-          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          class="billing-empty-icon"
+        >
+          <path
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2z"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
         <p>No claims yet. Create one to get started.</p>
       </div>
@@ -541,19 +563,41 @@
                 </td>
                 <td class="claim-fee">{fmt(claimTotal(c))}</td>
                 <td>
-                  <span class="status-badge {statusColors[c.status] ?? 'bg-slate-700 text-slate-300'}">
+                  <span
+                    class="status-badge {statusColors[c.status] ?? 'bg-slate-700 text-slate-300'}"
+                  >
                     {c.status}
                   </span>
                 </td>
                 <td class="claim-actions">
                   <button class="action-btn" onclick={() => openEditClaim(c)} title="Edit">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                      <path d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="h-4 w-4"
+                    >
+                      <path
+                        d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
                     </svg>
                   </button>
-                  <button class="action-btn action-btn-danger" onclick={() => deleteClaim(c.id)} title="Delete">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                      <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
+                  <button
+                    class="action-btn action-btn-danger"
+                    onclick={() => deleteClaim(c.id)}
+                    title="Delete"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="h-4 w-4"
+                    >
+                      <path
+                        d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
+                      />
                     </svg>
                   </button>
                 </td>
@@ -564,7 +608,7 @@
       </div>
     {/if}
 
-  <!-- ── PAYMENTS TAB ────────────────────────────────────────────────────── -->
+    <!-- ── PAYMENTS TAB ────────────────────────────────────────────────────── -->
   {:else if billingTab === "payments"}
     <div class="payments-layout">
       <!-- Patient picker + balance card -->
@@ -589,7 +633,11 @@
               <div class="balance-label">Total Paid</div>
               <div class="balance-amount">{fmt(patientBalance.total_paid)}</div>
             </div>
-            <div class="balance-card {patientBalance.outstanding > 0 ? 'balance-outstanding' : 'balance-clear'}">
+            <div
+              class="balance-card {patientBalance.outstanding > 0
+                ? 'balance-outstanding'
+                : 'balance-clear'}"
+            >
               <div class="balance-label">Outstanding</div>
               <div class="balance-amount">{fmt(patientBalance.outstanding)}</div>
             </div>
@@ -623,7 +671,9 @@
               <div class="payment-row">
                 <div class="payment-row-left">
                   <span class="payment-amount">{fmt(pay.amount)}</span>
-                  <span class="status-badge {methodColors[pay.method] ?? 'bg-slate-700 text-slate-300'}">
+                  <span
+                    class="status-badge {methodColors[pay.method] ?? 'bg-slate-700 text-slate-300'}"
+                  >
                     {pay.method.replace("_", " ")}
                   </span>
                   {#if pay.claim_id}
@@ -636,9 +686,21 @@
                   {#if pay.notes}
                     <span class="text-slate-500 text-xs italic">{pay.notes}</span>
                   {/if}
-                  <button class="action-btn action-btn-danger" onclick={() => deletePayment(pay.id)} title="Delete">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
-                      <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
+                  <button
+                    class="action-btn action-btn-danger"
+                    onclick={() => deletePayment(pay.id)}
+                    title="Delete"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="h-3.5 w-3.5"
+                    >
+                      <path
+                        d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -649,16 +711,24 @@
       </div>
     </div>
 
-  <!-- ── BUNDLES TAB ─────────────────────────────────────────────────────── -->
+    <!-- ── BUNDLES TAB ─────────────────────────────────────────────────────── -->
   {:else if billingTab === "bundles"}
-
-
     {#if loadingBundles}
       <div class="billing-loading">Loading bundles…</div>
     {:else if bundles.length === 0}
       <div class="billing-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="billing-empty-icon">
-          <path d="M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 1-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          class="billing-empty-icon"
+        >
+          <path
+            d="M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 1-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
         <p>No procedure bundles yet. Create one to speed up claim entry.</p>
       </div>
@@ -670,7 +740,6 @@
               <div class="bundle-card-title-row">
                 <span class="shortname-badge">{b.shortname}</span>
                 <span class="bundle-name">{b.name}</span>
-
               </div>
               {#if b.description}
                 <p class="bundle-description">{b.description}</p>
@@ -691,14 +760,34 @@
               <span class="bundle-total">Total: <strong>{fmt(b.total_fee)}</strong></span>
               <div class="bundle-card-actions">
                 <button class="action-btn" onclick={() => openEditBundle(b)} title="Edit">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                    <path d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="h-4 w-4"
+                  >
+                    <path
+                      d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
                   </svg>
                 </button>
 
-                <button class="action-btn action-btn-danger" onclick={() => deleteBundle(b.id)} title="Delete">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                    <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
+                <button
+                  class="action-btn action-btn-danger"
+                  onclick={() => deleteBundle(b.id)}
+                  title="Delete"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="h-4 w-4"
+                  >
+                    <path
+                      d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
+                    />
                   </svg>
                 </button>
               </div>
@@ -751,15 +840,30 @@
         <div class="form-grid-3">
           <div class="form-field">
             <label class="form-label" for="cl-carrier">Insurance Carrier</label>
-            <input id="cl-carrier" type="text" bind:value={claimInsuranceCarrier} placeholder="e.g. Delta Dental" />
+            <input
+              id="cl-carrier"
+              type="text"
+              bind:value={claimInsuranceCarrier}
+              placeholder="e.g. Delta Dental"
+            />
           </div>
           <div class="form-field">
             <label class="form-label" for="cl-policy">Policy #</label>
-            <input id="cl-policy" type="text" bind:value={claimPolicyNumber} placeholder="Policy number" />
+            <input
+              id="cl-policy"
+              type="text"
+              bind:value={claimPolicyNumber}
+              placeholder="Policy number"
+            />
           </div>
           <div class="form-field">
             <label class="form-label" for="cl-group">Group #</label>
-            <input id="cl-group" type="text" bind:value={claimGroupNumber} placeholder="Group number" />
+            <input
+              id="cl-group"
+              type="text"
+              bind:value={claimGroupNumber}
+              placeholder="Group number"
+            />
           </div>
         </div>
 
@@ -815,17 +919,55 @@
           {#if claimLineItems.length > 0}
             <div class="line-items-grid-header">
               <span>ADA Code</span><span>Description</span>
-              <span>Tooth</span><span>Fee</span><span>Ins. Allowed</span><span>Pt. Portion</span><span></span>
+              <span>Tooth</span><span>Fee</span><span>Ins. Allowed</span><span>Pt. Portion</span
+              ><span></span>
             </div>
             {#each claimLineItems as li, i}
               <div class="line-item-row">
                 <input type="text" bind:value={li.ada_code} placeholder="D0120" class="li-ada" />
-                <input type="text" bind:value={li.description} placeholder="Description" class="li-desc" />
-                <input type="number" bind:value={li.tooth_number} placeholder="—" min="1" max="32" class="li-tooth" />
-                <input type="number" bind:value={li.fee} step="0.01" min="0" placeholder="0.00" class="li-fee" />
-                <input type="number" bind:value={li.insurance_allowed} step="0.01" min="0" placeholder="0.00" class="li-fee" />
-                <input type="number" bind:value={li.patient_portion} step="0.01" min="0" placeholder="0.00" class="li-fee" />
-                <button type="button" class="action-btn action-btn-danger" onclick={() => removeLineItem(i)}>✕</button>
+                <input
+                  type="text"
+                  bind:value={li.description}
+                  placeholder="Description"
+                  class="li-desc"
+                />
+                <input
+                  type="number"
+                  bind:value={li.tooth_number}
+                  placeholder="—"
+                  min="1"
+                  max="32"
+                  class="li-tooth"
+                />
+                <input
+                  type="number"
+                  bind:value={li.fee}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  class="li-fee"
+                />
+                <input
+                  type="number"
+                  bind:value={li.insurance_allowed}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  class="li-fee"
+                />
+                <input
+                  type="number"
+                  bind:value={li.patient_portion}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  class="li-fee"
+                />
+                <button
+                  type="button"
+                  class="action-btn action-btn-danger"
+                  onclick={() => removeLineItem(i)}>✕</button
+                >
               </div>
             {/each}
             <div class="line-items-total">
@@ -839,7 +981,9 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showClaimModal = false)}>Cancel</button>
+          <button type="button" class="btn btn-secondary" onclick={() => (showClaimModal = false)}
+            >Cancel</button
+          >
           <button type="submit" class="btn btn-primary">
             {isEditingClaim ? "Save Changes" : "Create Claim"}
           </button>
@@ -879,13 +1023,23 @@
         <div class="form-grid-2">
           <div class="form-field">
             <label class="form-label" for="pay-amount">Amount *</label>
-            <input id="pay-amount" type="number" bind:value={payAmount} step="0.01" min="0.01" placeholder="0.00" required />
+            <input
+              id="pay-amount"
+              type="number"
+              bind:value={payAmount}
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              required
+            />
           </div>
           <div class="form-field">
             <label class="form-label" for="pay-method">Method *</label>
             <select id="pay-method" bind:value={payMethod}>
               {#each PAYMENT_METHODS as m}
-                <option value={m}>{m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                <option value={m}
+                  >{m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option
+                >
               {/each}
             </select>
           </div>
@@ -896,7 +1050,11 @@
           <select id="pay-claim" bind:value={payClaimId}>
             <option value="">— None —</option>
             {#each claims.filter((c) => c.patient_id === payPatientId) as c}
-              <option value={c.id}>{c.date_of_service} — {c.insurance_carrier || "No carrier"} ({fmt(claimTotal(c))})</option>
+              <option value={c.id}
+                >{c.date_of_service} — {c.insurance_carrier || "No carrier"} ({fmt(
+                  claimTotal(c)
+                )})</option
+              >
             {/each}
           </select>
         </div>
@@ -907,7 +1065,9 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showPaymentModal = false)}>Cancel</button>
+          <button type="button" class="btn btn-secondary" onclick={() => (showPaymentModal = false)}
+            >Cancel</button
+          >
           <button type="submit" class="btn btn-primary">Record Payment</button>
         </div>
       </form>
@@ -947,20 +1107,33 @@
           </div>
           <div class="form-field">
             <label class="form-label" for="b-name">Full Name *</label>
-            <input id="b-name" type="text" bind:value={bundleName} placeholder="Crown + Build-up" required />
+            <input
+              id="b-name"
+              type="text"
+              bind:value={bundleName}
+              placeholder="Crown + Build-up"
+              required
+            />
           </div>
         </div>
 
         <div class="form-field">
           <label class="form-label" for="b-desc">Description</label>
-          <input id="b-desc" type="text" bind:value={bundleDescription} placeholder="Optional description" />
+          <input
+            id="b-desc"
+            type="text"
+            bind:value={bundleDescription}
+            placeholder="Optional description"
+          />
         </div>
 
         <!-- Bundle items -->
         <div class="line-items-section">
           <div class="line-items-header">
             <span class="form-label mb-0">Procedure Items</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick={addBundleItem}>+ Add Item</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick={addBundleItem}
+              >+ Add Item</button
+            >
           </div>
 
           {#if bundleItems.length > 0}
@@ -970,9 +1143,23 @@
             {#each bundleItems as item, i}
               <div class="bundle-item-edit-row">
                 <input type="text" bind:value={item.ada_code} placeholder="D0120" />
-                <input type="text" bind:value={item.description} placeholder="Procedure description" />
-                <input type="number" bind:value={item.default_fee} step="0.01" min="0" placeholder="0.00" />
-                <button type="button" class="action-btn action-btn-danger" onclick={() => removeBundleItem(i)}>✕</button>
+                <input
+                  type="text"
+                  bind:value={item.description}
+                  placeholder="Procedure description"
+                />
+                <input
+                  type="number"
+                  bind:value={item.default_fee}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                />
+                <button
+                  type="button"
+                  class="action-btn action-btn-danger"
+                  onclick={() => removeBundleItem(i)}>✕</button
+                >
               </div>
             {/each}
             <div class="line-items-total">
@@ -984,7 +1171,9 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showBundleModal = false)}>Cancel</button>
+          <button type="button" class="btn btn-secondary" onclick={() => (showBundleModal = false)}
+            >Cancel</button
+          >
           <button type="submit" class="btn btn-primary">
             {isEditingBundle ? "Save Changes" : "Create Bundle"}
           </button>
@@ -996,107 +1185,266 @@
 
 <style>
   /* ── Layout ──────────────────────────────────────────────────────────── */
-  .billing-view { display: flex; flex-direction: column; gap: 1.25rem; }
+  .billing-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
 
   .billing-header {
-    display: flex; justify-content: space-between; align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
   }
   .billing-title {
-    font-size: 1.5rem; font-weight: 700; color: var(--color-slate-50, #f8fafc);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-slate-50, #f8fafc);
     margin: 0;
   }
-  .billing-subtitle { font-size: 0.85rem; color: #64748b; margin: 0.2rem 0 0; }
-  .billing-header-actions { display: flex; gap: 0.5rem; }
+  .billing-subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0.2rem 0 0;
+  }
+  .billing-header-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
 
   /* ── Inner Tabs ──────────────────────────────────────────────────────── */
   .billing-tabs {
-    display: flex; gap: 0.25rem;
+    display: flex;
+    gap: 0.25rem;
     border-bottom: 1px solid #1e293b;
     padding-bottom: 0;
   }
   .billing-tab-btn {
-    display: flex; align-items: center; gap: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     padding: 0.55rem 1rem;
-    font-size: 0.85rem; font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 600;
     color: #64748b;
-    background: transparent; border: none; cursor: pointer;
+    background: transparent;
+    border: none;
+    cursor: pointer;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
-    transition: color 0.15s, border-color 0.15s;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
     border-radius: 0.375rem 0.375rem 0 0;
   }
-  .billing-tab-btn:hover { color: #94a3b8; }
-  .billing-tab-active { color: #38bdf8 !important; border-bottom-color: #38bdf8 !important; }
+  .billing-tab-btn:hover {
+    color: #94a3b8;
+  }
+  .billing-tab-active {
+    color: #38bdf8 !important;
+    border-bottom-color: #38bdf8 !important;
+  }
 
   /* ── Toolbar ─────────────────────────────────────────────────────────── */
-  .billing-toolbar { display: flex; align-items: center; gap: 1rem; }
-  .billing-filter-select { max-width: 18rem; }
+  .billing-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .billing-filter-select {
+    max-width: 18rem;
+  }
 
   /* ── Loading / Empty ─────────────────────────────────────────────────── */
-  .billing-loading { color: #64748b; font-size: 0.9rem; padding: 2rem 0; text-align: center; }
-  .billing-empty {
-    display: flex; flex-direction: column; align-items: center;
-    gap: 0.75rem; padding: 4rem 0; color: #475569; text-align: center;
+  .billing-loading {
+    color: #64748b;
+    font-size: 0.9rem;
+    padding: 2rem 0;
+    text-align: center;
   }
-  .billing-empty-sm { padding: 2rem 0; }
-  .billing-empty-icon { width: 3rem; height: 3rem; opacity: 0.5; }
+  .billing-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 4rem 0;
+    color: #475569;
+    text-align: center;
+  }
+  .billing-empty-sm {
+    padding: 2rem 0;
+  }
+  .billing-empty-icon {
+    width: 3rem;
+    height: 3rem;
+    opacity: 0.5;
+  }
 
   /* ── Claims Table ────────────────────────────────────────────────────── */
-  .claims-table-wrap { overflow-x: auto; border-radius: 0.75rem; border: 1px solid #1e293b; }
-  .claims-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-  .claims-table thead tr { background: #0f172a; }
+  .claims-table-wrap {
+    overflow-x: auto;
+    border-radius: 0.75rem;
+    border: 1px solid #1e293b;
+  }
+  .claims-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  .claims-table thead tr {
+    background: #0f172a;
+  }
   .claims-table th {
-    padding: 0.75rem 1rem; text-align: left;
-    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
-    color: #64748b; text-transform: uppercase;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    text-transform: uppercase;
     border-bottom: 1px solid #1e293b;
   }
   .claim-row {
     border-bottom: 1px solid #1e293b;
     transition: background 0.1s;
   }
-  .claim-row:hover { background: #0f172a; }
-  .claims-table td { padding: 0.75rem 1rem; color: #cbd5e1; vertical-align: middle; }
-  .claim-date { color: #94a3b8; font-variant-numeric: tabular-nums; }
-  .claim-fee { font-weight: 700; color: #f8fafc; font-variant-numeric: tabular-nums; }
-  .claim-actions { display: flex; gap: 0.25rem; }
+  .claim-row:hover {
+    background: #0f172a;
+  }
+  .claims-table td {
+    padding: 0.75rem 1rem;
+    color: #cbd5e1;
+    vertical-align: middle;
+  }
+  .claim-date {
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+  }
+  .claim-fee {
+    font-weight: 700;
+    color: #f8fafc;
+    font-variant-numeric: tabular-nums;
+  }
+  .claim-actions {
+    display: flex;
+    gap: 0.25rem;
+  }
 
-  .line-items-preview { display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap; }
+  .line-items-preview {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
 
   /* ── Payments ────────────────────────────────────────────────────────── */
-  .payments-layout { display: flex; flex-direction: column; gap: 1.5rem; }
+  .payments-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
 
-  .balance-panel { display: flex; flex-direction: column; gap: 1rem; }
-  .balance-patient-select { max-width: 20rem; }
-  .balance-cards { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .balance-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .balance-patient-select {
+    max-width: 20rem;
+  }
+  .balance-cards {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
   .balance-card {
-    flex: 1; min-width: 9rem;
-    padding: 1rem 1.25rem; border-radius: 0.75rem;
+    flex: 1;
+    min-width: 9rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
     border: 1px solid #1e293b;
     background: #0f172a;
   }
-  .balance-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; margin-bottom: 0.35rem; }
-  .balance-amount { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .balance-billed .balance-amount { color: #94a3b8; }
-  .balance-paid .balance-amount { color: #34d399; }
-  .balance-outstanding { border-color: #f97316; }
-  .balance-outstanding .balance-amount { color: #f97316; }
-  .balance-clear .balance-amount { color: #34d399; }
+  .balance-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+  }
+  .balance-amount {
+    font-size: 1.4rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .balance-billed .balance-amount {
+    color: #94a3b8;
+  }
+  .balance-paid .balance-amount {
+    color: #34d399;
+  }
+  .balance-outstanding {
+    border-color: #f97316;
+  }
+  .balance-outstanding .balance-amount {
+    color: #f97316;
+  }
+  .balance-clear .balance-amount {
+    color: #34d399;
+  }
 
-  .payment-log-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-  .payment-log-title { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin: 0; }
-  .payment-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .payment-log-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .payment-log-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0;
+  }
+  .payment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
   .payment-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0.75rem 1rem; border-radius: 0.625rem;
-    border: 1px solid #1e293b; background: #0f172a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: 0.625rem;
+    border: 1px solid #1e293b;
+    background: #0f172a;
     transition: background 0.1s;
   }
-  .payment-row:hover { background: #111827; }
-  .payment-row-left { display: flex; align-items: center; gap: 0.5rem; }
-  .payment-row-right { display: flex; align-items: center; gap: 0.75rem; }
-  .payment-amount { font-size: 1rem; font-weight: 700; color: #f8fafc; font-variant-numeric: tabular-nums; }
-  .payment-claim-ref { font-size: 0.75rem; color: #64748b; font-family: monospace; }
+  .payment-row:hover {
+    background: #111827;
+  }
+  .payment-row-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .payment-row-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .payment-amount {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f8fafc;
+    font-variant-numeric: tabular-nums;
+  }
+  .payment-claim-ref {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-family: monospace;
+  }
 
   /* ── Bundles ─────────────────────────────────────────────────────────── */
   .bundle-grid {
@@ -1105,169 +1453,389 @@
     gap: 1rem;
   }
   .bundle-card {
-    border: 1px solid #1e293b; border-radius: 0.75rem;
+    border: 1px solid #1e293b;
+    border-radius: 0.75rem;
     background: #0f172a;
-    display: flex; flex-direction: column; gap: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     overflow: hidden;
     transition: border-color 0.15s;
   }
-  .bundle-card:hover { border-color: #334155; }
-  .bundle-archived { opacity: 0.6; }
+  .bundle-card:hover {
+    border-color: #334155;
+  }
+  .bundle-archived {
+    opacity: 0.6;
+  }
 
-  .bundle-card-header { padding: 1rem 1rem 0.75rem; border-bottom: 1px solid #1e293b; }
-  .bundle-card-title-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-  .bundle-name { font-weight: 700; color: #f1f5f9; font-size: 0.95rem; }
-  .bundle-description { color: #64748b; font-size: 0.8rem; margin: 0.3rem 0 0; }
+  .bundle-card-header {
+    padding: 1rem 1rem 0.75rem;
+    border-bottom: 1px solid #1e293b;
+  }
+  .bundle-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .bundle-name {
+    font-weight: 700;
+    color: #f1f5f9;
+    font-size: 0.95rem;
+  }
+  .bundle-description {
+    color: #64748b;
+    font-size: 0.8rem;
+    margin: 0.3rem 0 0;
+  }
 
   .shortname-badge {
-    font-family: ui-monospace, 'Cascadia Code', monospace;
-    font-size: 0.78rem; font-weight: 700;
+    font-family: ui-monospace, "Cascadia Code", monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
     background: linear-gradient(135deg, #1e3a5f, #0c4a6e);
     color: #38bdf8;
     border: 1px solid #0369a1;
-    padding: 0.15rem 0.55rem; border-radius: 0.375rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 0.375rem;
     letter-spacing: 0.04em;
   }
 
-  .bundle-items-list { padding: 0.5rem 1rem; display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
-  .bundle-item-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
-  .bundle-item-desc { flex: 1; color: #94a3b8; }
-  .bundle-item-fee { font-variant-numeric: tabular-nums; color: #f8fafc; font-weight: 600; }
+  .bundle-items-list {
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+  }
+  .bundle-item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+  }
+  .bundle-item-desc {
+    flex: 1;
+    color: #94a3b8;
+  }
+  .bundle-item-fee {
+    font-variant-numeric: tabular-nums;
+    color: #f8fafc;
+    font-weight: 600;
+  }
 
   .bundle-card-footer {
-    padding: 0.65rem 1rem; border-top: 1px solid #1e293b;
-    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.65rem 1rem;
+    border-top: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     background: #080f1a;
   }
-  .bundle-total { font-size: 0.82rem; color: #64748b; }
-  .bundle-total strong { color: #f8fafc; font-size: 0.9rem; }
-  .bundle-card-actions { display: flex; gap: 0.25rem; }
+  .bundle-total {
+    font-size: 0.82rem;
+    color: #64748b;
+  }
+  .bundle-total strong {
+    color: #f8fafc;
+    font-size: 0.9rem;
+  }
+  .bundle-card-actions {
+    display: flex;
+    gap: 0.25rem;
+  }
 
   /* ── Shared Badges ───────────────────────────────────────────────────── */
   .ada-badge {
-    font-family: ui-monospace, 'Cascadia Code', monospace;
-    font-size: 0.72rem; font-weight: 700;
-    background: #1e293b; color: #7dd3fc;
-    padding: 0.1rem 0.45rem; border-radius: 0.3rem;
+    font-family: ui-monospace, "Cascadia Code", monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #1e293b;
+    color: #7dd3fc;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.3rem;
     border: 1px solid #334155;
   }
   .status-badge {
-    display: inline-flex; align-items: center;
-    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
-    padding: 0.15rem 0.55rem; border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
     text-transform: capitalize;
   }
 
   /* ── Action Buttons ──────────────────────────────────────────────────── */
   .action-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 1.9rem; height: 1.9rem; border-radius: 0.375rem;
-    background: transparent; border: 1px solid #334155;
-    color: #94a3b8; cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 0.375rem;
+    background: transparent;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    cursor: pointer;
     transition: all 0.15s;
   }
-  .action-btn:hover { background: #1e293b; color: #f1f5f9; }
-  .action-btn-danger:hover { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4); color: #ef4444; }
+  .action-btn:hover {
+    background: #1e293b;
+    color: #f1f5f9;
+  }
+  .action-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+  }
 
   /* ── Modal ───────────────────────────────────────────────────────────── */
   .modal-backdrop {
-    position: fixed; inset: 0; z-index: 50;
-    background: rgba(0,0,0,0.7);
-    display: flex; align-items: center; justify-content: center;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 1rem;
     backdrop-filter: blur(4px);
   }
   .modal-box {
-    background: #0f172a; border: 1px solid #1e293b;
-    border-radius: 1rem; width: 100%; max-width: 36rem;
-    max-height: 90vh; overflow-y: auto;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 1rem;
+    width: 100%;
+    max-width: 36rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
   }
-  .modal-wide { max-width: 64rem; }
+  .modal-wide {
+    max-width: 64rem;
+  }
 
   .modal-header {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 1.25rem 1.5rem 0;
   }
-  .modal-title { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; margin: 0; }
+  .modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0;
+  }
   .modal-close {
-    background: none; border: none; color: #64748b;
-    font-size: 1rem; cursor: pointer; padding: 0.25rem;
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.25rem;
     transition: color 0.15s;
   }
-  .modal-close:hover { color: #f1f5f9; }
-  .modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-  .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding-top: 0.5rem; }
+  .modal-close:hover {
+    color: #f1f5f9;
+  }
+  .modal-body {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+  }
 
   /* ── Form Helpers ────────────────────────────────────────────────────── */
-  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
-  @media (max-width: 640px) {
-    .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
   }
-  .form-field { display: flex; flex-direction: column; gap: 0.35rem; }
-  .form-label { font-size: 0.78rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
-  .form-label-hint { font-size: 0.72rem; font-weight: 400; color: #64748b; text-transform: none; letter-spacing: 0; }
-  .field-error { font-size: 0.78rem; color: #ef4444; margin: 0; }
+  .form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+  }
+  @media (max-width: 640px) {
+    .form-grid-2,
+    .form-grid-3 {
+      grid-template-columns: 1fr;
+    }
+  }
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .form-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .form-label-hint {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: #64748b;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .field-error {
+    font-size: 0.78rem;
+    color: #ef4444;
+    margin: 0;
+  }
 
   /* ── Line Items Editor ───────────────────────────────────────────────── */
   .line-items-section {
-    border: 1px solid #1e293b; border-radius: 0.625rem;
-    padding: 0.875rem; display: flex; flex-direction: column; gap: 0.5rem;
+    border: 1px solid #1e293b;
+    border-radius: 0.625rem;
+    padding: 0.875rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     background: #080f1a;
   }
-  .line-items-header { display: flex; justify-content: space-between; align-items: center; }
-  .line-items-header-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .line-items-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .line-items-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
   .line-items-grid-header {
-    display: grid; grid-template-columns: 6rem 1fr 4rem 5rem 5rem 5rem 2rem;
-    gap: 0.4rem; font-size: 0.7rem; font-weight: 600; color: #475569;
-    text-transform: uppercase; letter-spacing: 0.04em;
+    display: grid;
+    grid-template-columns: 6rem 1fr 4rem 5rem 5rem 5rem 2rem;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     padding: 0 0.25rem;
   }
   .line-item-row {
-    display: grid; grid-template-columns: 6rem 1fr 4rem 5rem 5rem 5rem 2rem;
-    gap: 0.4rem; align-items: center;
+    display: grid;
+    grid-template-columns: 6rem 1fr 4rem 5rem 5rem 5rem 2rem;
+    gap: 0.4rem;
+    align-items: center;
   }
-  .line-item-row input { padding: 0.3rem 0.5rem; font-size: 0.8rem; }
-  .li-ada, .li-tooth, .li-fee { text-align: center; }
-  .li-desc {}
-  .line-items-total { text-align: right; font-size: 0.85rem; color: #94a3b8; padding-top: 0.25rem; }
-  .line-items-total strong { color: #f8fafc; }
-  .line-items-empty { color: #475569; font-size: 0.82rem; text-align: center; padding: 1rem 0; }
+  .line-item-row input {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  .li-ada,
+  .li-tooth,
+  .li-fee {
+    text-align: center;
+  }
+  .li-desc {
+  }
+  .line-items-total {
+    text-align: right;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    padding-top: 0.25rem;
+  }
+  .line-items-total strong {
+    color: #f8fafc;
+  }
+  .line-items-empty {
+    color: #475569;
+    font-size: 0.82rem;
+    text-align: center;
+    padding: 1rem 0;
+  }
 
   /* ── Bundle Items Editor ─────────────────────────────────────────────── */
   .bundle-items-grid-header {
-    display: grid; grid-template-columns: 6rem 1fr 5rem 2rem;
-    gap: 0.4rem; font-size: 0.7rem; font-weight: 600; color: #475569;
-    text-transform: uppercase; letter-spacing: 0.04em; padding: 0 0.25rem;
+    display: grid;
+    grid-template-columns: 6rem 1fr 5rem 2rem;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0 0.25rem;
   }
   .bundle-item-edit-row {
-    display: grid; grid-template-columns: 6rem 1fr 5rem 2rem;
-    gap: 0.4rem; align-items: center;
+    display: grid;
+    grid-template-columns: 6rem 1fr 5rem 2rem;
+    gap: 0.4rem;
+    align-items: center;
   }
-  .bundle-item-edit-row input { padding: 0.3rem 0.5rem; font-size: 0.8rem; }
+  .bundle-item-edit-row input {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
 
   /* ── Bundle Lookup ───────────────────────────────────────────────────── */
-  .bundle-lookup { display: flex; gap: 0.4rem; align-items: center; }
-  .bundle-lookup-input {
-    width: 11rem; padding: 0.3rem 0.6rem;
-    font-family: ui-monospace, monospace;
-    font-size: 0.82rem; letter-spacing: 0.04em;
+  .bundle-lookup {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
   }
-  .lookup-error { font-size: 0.78rem; color: #f87171; margin: 0; }
+  .bundle-lookup-input {
+    width: 11rem;
+    padding: 0.3rem 0.6rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+  }
+  .lookup-error {
+    font-size: 0.78rem;
+    color: #f87171;
+    margin: 0;
+  }
 
   /* Light theme */
-  :global(html.light) .billing-title { color: #0f172a; }
+  :global(html.light) .billing-title {
+    color: #0f172a;
+  }
   :global(html.light) .bundle-card,
   :global(html.light) .claims-table-wrap,
   :global(html.light) .payment-row,
   :global(html.light) .balance-card,
-  :global(html.light) .line-items-section { background: #ffffff; border-color: #e2e8f0; }
-  :global(html.light) .bundle-card-footer { background: #f8fafc; }
-  :global(html.light) .claims-table thead tr { background: #f1f5f9; }
-  :global(html.light) .claims-table th { color: #475569; border-color: #e2e8f0; }
-  :global(html.light) .claims-table td { color: #0f172a; }
-  :global(html.light) .claim-row:hover { background: #f8fafc; }
-  :global(html.light) .payment-row:hover { background: #f8fafc; }
-  :global(html.light) .modal-box { background: #ffffff; border-color: #cbd5e1; }
+  :global(html.light) .line-items-section {
+    background: #ffffff;
+    border-color: #e2e8f0;
+  }
+  :global(html.light) .bundle-card-footer {
+    background: #f8fafc;
+  }
+  :global(html.light) .claims-table thead tr {
+    background: #f1f5f9;
+  }
+  :global(html.light) .claims-table th {
+    color: #475569;
+    border-color: #e2e8f0;
+  }
+  :global(html.light) .claims-table td {
+    color: #0f172a;
+  }
+  :global(html.light) .claim-row:hover {
+    background: #f8fafc;
+  }
+  :global(html.light) .payment-row:hover {
+    background: #f8fafc;
+  }
+  :global(html.light) .modal-box {
+    background: #ffffff;
+    border-color: #cbd5e1;
+  }
 </style>
