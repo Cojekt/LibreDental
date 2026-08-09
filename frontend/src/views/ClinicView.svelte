@@ -5,14 +5,14 @@
     Provider,
     Operatory,
     BusinessHourDay,
-    TimeSlot,
-    ScheduleBreak,
   } from "@bindings/domain/models.js";
   import { ProviderRole, OperatoryType } from "@bindings/domain/models.js";
   import { PracticeConfigService } from "@bindings/services/index.js";
-  import Modal from "../components/ui/Modal.svelte";
-  import FormField from "../components/ui/FormField.svelte";
-  import Input from "../components/ui/Input.svelte";
+  import TabNav from "../components/ui/TabNav.svelte";
+  import ClinicProfileSection from "./clinic/ClinicProfileSection.svelte";
+  import ClinicHoursSection from "./clinic/ClinicHoursSection.svelte";
+  import ProvidersSection from "./clinic/ProvidersSection.svelte";
+  import OperatoriesSection from "./clinic/OperatoriesSection.svelte";
   import { m } from "../paraglide/messages.js";
 
   let {
@@ -183,7 +183,6 @@
     )
   );
 
-  // Reactively sync when practiceConfig or countryMeta changes
   $effect(() => {
     if (practiceConfig) {
       clinicName = practiceConfig.clinic_name || "My Dental Clinic";
@@ -244,12 +243,6 @@
     toastTimeout = setTimeout(() => {
       profileMessage = null;
     }, 3000);
-  }
-
-  function selectSubTab(tab: "profile" | "hours" | "providers" | "operatories") {
-    activeSubTab = tab;
-    if (toastTimeout) clearTimeout(toastTimeout);
-    profileMessage = null;
   }
 
   function resetFormFields() {
@@ -323,16 +316,6 @@
       setProfileMessage("Failed to save settings.", "error");
     } finally {
       savingProfile = false;
-    }
-  }
-
-  function handleCountryChange(code: string) {
-    countryCode = code as any;
-    const found = supportedCountries.find((c: CountryConfig) => c.code === code);
-    if (found) {
-      currency = found.default_currency;
-      toothSystem = found.default_tooth_system;
-      dateFormat = found.date_format;
     }
   }
 
@@ -457,57 +440,18 @@
       }
     }
   }
+
+  let tabs = $derived([
+    { id: "profile", label: "Practice Profile & Standards" },
+    { id: "hours", label: "Operating Hours" },
+    { id: "providers", label: "Providers & Staff", count: providers.length },
+    { id: "operatories", label: "Operatories & Chairs", count: operatories.length },
+  ]);
 </script>
 
 <div class="space-y-6">
-  <!-- Sub Navigation Tabs with Edit / Save / Cancel controls & Minimalist Notification -->
   <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 gap-4">
-    <div class="flex border-b border-transparent gap-2">
-      <button
-        type="button"
-        onclick={() => selectSubTab("profile")}
-        class={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-          activeSubTab === "profile"
-            ? "border-sky-400 text-sky-400"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-        }`}
-      >
-        Practice Profile & Standards
-      </button>
-      <button
-        type="button"
-        onclick={() => selectSubTab("hours")}
-        class={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-          activeSubTab === "hours"
-            ? "border-sky-400 text-sky-400"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-        }`}
-      >
-        Operating Hours
-      </button>
-      <button
-        type="button"
-        onclick={() => selectSubTab("providers")}
-        class={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-          activeSubTab === "providers"
-            ? "border-sky-400 text-sky-400"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-        }`}
-      >
-        Providers & Staff ({providers.length})
-      </button>
-      <button
-        type="button"
-        onclick={() => selectSubTab("operatories")}
-        class={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-          activeSubTab === "operatories"
-            ? "border-sky-400 text-sky-400"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-        }`}
-      >
-        Operatories & Chairs ({operatories.length})
-      </button>
-    </div>
+    <TabNav {tabs} bind:activeTab={activeSubTab} />
 
     <div class="flex items-center gap-3">
       {#if profileMessage}
@@ -584,832 +528,71 @@
     </div>
   </div>
 
-  <!-- TAB 1: PRACTICE PROFILE & STANDARDS -->
-  {#if activeSubTab === "profile"}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- General Demographics -->
-      <div class="lg:col-span-2 space-y-6">
-        <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
-          <h3
-            class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
-          >
-            🏢 Clinic Identity & Information
-          </h3>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label for="clinic-name" class="block text-xs font-semibold text-slate-400 mb-1"
-                >Clinic Name *</label
-              >
-              <input
-                id="clinic-name"
-                type="text"
-                bind:value={clinicName}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-                placeholder="e.g. Bright Smile Dental Clinic"
-              />
-            </div>
-            <div>
-              <label for="clinic-tagline" class="block text-xs font-semibold text-slate-400 mb-1"
-                >Tagline / Subtitle</label
-              >
-              <input
-                id="clinic-tagline"
-                type="text"
-                bind:value={tagline}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-                placeholder="e.g. Comprehensive Family & Cosmetic Dentistry"
-              />
-            </div>
-
-            <div>
-              <label for="clinic-tax-id" class="block text-xs font-semibold text-slate-400 mb-1">
-                {countryMeta?.national_id_type
-                  ? `${countryMeta.national_id_type.toUpperCase()} / Tax ID`
-                  : "Tax ID / Business Registration #"}
-              </label>
-              <input
-                id="clinic-tax-id"
-                type="text"
-                bind:value={taxId}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-                placeholder="e.g. 12-3456789"
-              />
-            </div>
-
-            <div>
-              <label for="clinic-license" class="block text-xs font-semibold text-slate-400 mb-1"
-                >Practice License Number</label
-              >
-              <input
-                id="clinic-license"
-                type="text"
-                bind:value={licenseNumber}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-                placeholder="e.g. DEN-LIC-8829"
-              />
-            </div>
-
-            <div>
-              <label for="clinic-phone" class="block text-xs font-semibold text-slate-400 mb-1"
-                >Primary Phone</label
-              >
-              <input
-                id="clinic-phone"
-                type="text"
-                bind:value={phone}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-                placeholder="e.g. +1 (555) 234-5678"
-              />
-            </div>
-
-            <div>
-              <label for="clinic-email" class="block text-xs font-semibold text-slate-400 mb-1"
-                >Email Address</label
-              >
-              <input
-                id="clinic-email"
-                type="email"
-                bind:value={email}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-                placeholder="e.g. contact@brightsmiledental.com"
-              />
-            </div>
-
-            <div class="sm:col-span-2">
-              <label for="clinic-website" class="block text-xs font-semibold text-slate-400 mb-1"
-                >Website URL</label
-              >
-              <input
-                id="clinic-website"
-                type="url"
-                bind:value={website}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-                placeholder="e.g. https://www.brightsmiledental.com"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Address Information -->
-        <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
-          <h3
-            class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
-          >
-            📍 Physical Address
-          </h3>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="sm:col-span-2">
-              <label for="addr-1" class="block text-xs font-semibold text-slate-400 mb-1"
-                >Street Address</label
-              >
-              <input
-                id="addr-1"
-                type="text"
-                bind:value={addressLine1}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-                placeholder="e.g. 100 Main Street, Suite 400"
-              />
-            </div>
-
-            <div>
-              <label for="addr-city" class="block text-xs font-semibold text-slate-400 mb-1"
-                >City / Municipality</label
-              >
-              <input
-                id="addr-city"
-                type="text"
-                bind:value={city}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            <div>
-              <label for="addr-state" class="block text-xs font-semibold text-slate-400 mb-1"
-                >State / Province / Region</label
-              >
-              <input
-                id="addr-state"
-                type="text"
-                bind:value={stateProvince}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            <div>
-              <label for="addr-zip" class="block text-xs font-semibold text-slate-400 mb-1"
-                >ZIP / Postal Code</label
-              >
-              <input
-                id="addr-zip"
-                type="text"
-                bind:value={postalCode}
-                disabled={!isEditingProfile}
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Regional & Practice Standards (Read-Only) -->
-      <div class="space-y-6">
-        <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
-          <h3
-            class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
-          >
-            🌐 Regional & Dental Standards
-          </h3>
-
-          <div class="space-y-3">
-            <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-              <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-                >Practice Country</span
-              >
-              <span class="text-sm font-medium text-slate-200 mt-0.5 flex items-center gap-2">
-                <span>{countryMeta?.flag || "📍"}</span>
-                <span>{countryMeta?.name || countryCode} ({countryCode})</span>
-              </span>
-            </div>
-
-            <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-              <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-                >Tooth Notation System</span
-              >
-              <span class="text-sm font-medium text-slate-200 mt-0.5 capitalize">
-                {toothSystem === "fdi"
-                  ? "FDI World Dental Federation Notation (#11 - #48)"
-                  : toothSystem === "palmer"
-                    ? "Palmer Notation Method"
-                    : "Universal Numbering System (#1 - #32)"}
-              </span>
-            </div>
-
-            <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-              <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-                >Default Practice Currency</span
-              >
-              <span class="text-sm font-medium text-slate-200 mt-0.5 font-mono">
-                {currency || "USD"}
-              </span>
-            </div>
-
-            <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-              <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-                >System Date Format</span
-              >
-              <span class="text-sm font-medium text-slate-200 mt-0.5 font-mono">
-                {dateFormat || "YYYY-MM-DD"}
-              </span>
-            </div>
-          </div>
-          <p class="text-[11px] text-slate-500 italic">
-            Regional standards are established during setup to preserve clinical record integrity.
-          </p>
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  <!-- TAB 2: OPERATING HOURS -->
-  {#if activeSubTab === "hours"}
-    <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-6">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-        <div>
-          <h3 class="text-lg font-bold text-slate-100">⏰ Practice Operating Schedule</h3>
-          <p class="text-xs text-slate-400 mt-0.5">
-            Configure your weekly operating hours, split shifts, and scheduled breaks or closure
-            gaps for appointment scheduling.
-          </p>
-        </div>
-      </div>
-
-      <div class="space-y-4">
-        {#each businessHours as hour, idx}
-          <div
-            class={`p-4 rounded-xl border transition-all space-y-3 ${
-              hour.is_closed
-                ? "border-slate-800/60 bg-slate-950/40 opacity-70"
-                : "border-slate-800 bg-slate-950/80 shadow-sm"
-            }`}
-          >
-            <div class="flex flex-wrap items-center justify-between gap-4">
-              <!-- Checkbox & Day Label -->
-              <div class="w-36 flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id={`open-${idx}`}
-                  checked={!hour.is_closed}
-                  onchange={(e) => (hour.is_closed = !(e.target as HTMLInputElement).checked)}
-                  disabled={!isEditingProfile}
-                />
-                <label
-                  for={`open-${idx}`}
-                  class="text-sm font-semibold text-slate-200 cursor-pointer select-none"
-                >
-                  {hour.day}
-                </label>
-              </div>
-
-              <!-- Day Closed Badge -->
-              {#if hour.is_closed}
-                <span
-                  class="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full"
-                >
-                  CLOSED
-                </span>
-              {:else if !isEditingProfile}
-                <!-- View Mode (Not Editing) -->
-                <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-300">
-                  {#if hour.slots && hour.slots.length > 1}
-                    <div class="flex flex-wrap items-center gap-2">
-                      {#each hour.slots as slot, sIdx}
-                        <span
-                          class="bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2.5 py-1 rounded-lg"
-                        >
-                          Shift {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(
-                            slot.close_time
-                          )}
-                        </span>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="flex items-center gap-2">
-                      <span>Opens:</span>
-                      <span class="font-semibold text-slate-100"
-                        >{formatTime12(hour.open_time)}</span
-                      >
-                      <span class="ml-2">Closes:</span>
-                      <span class="font-semibold text-slate-100"
-                        >{formatTime12(hour.close_time)}</span
-                      >
-                    </div>
-                  {/if}
-
-                  {#if hour.breaks && hour.breaks.length > 0}
-                    <div class="flex flex-wrap items-center gap-2">
-                      {#each hour.breaks as brk}
-                        <span
-                          class="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1"
-                        >
-                          <span>☕ {brk.name || "Break"}:</span>
-                          <span class="font-semibold"
-                            >{formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}</span
-                          >
-                        </span>
-                      {/each}
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            </div>
-
-            <!-- Edit Mode Controls for Open Day -->
-            {#if !hour.is_closed && isEditingProfile}
-              <div class="pl-4 border-l-2 border-sky-500/30 space-y-3 pt-2">
-                <!-- Time Slots / Split Shifts -->
-                <div class="space-y-2">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-400">Working Hours / Shifts</span>
-                    <button
-                      type="button"
-                      onclick={() => addSlot(hour)}
-                      class="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition-colors"
-                    >
-                      <span>+ Add Split Shift / Time Slot</span>
-                    </button>
-                  </div>
-
-                  <div class="space-y-2">
-                    {#each hour.slots || [] as slot, sIdx}
-                      <div
-                        class="flex flex-wrap items-center gap-3 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800"
-                      >
-                        {#if (hour.slots || []).length > 1}
-                          <span class="font-semibold text-slate-400 text-[11px]"
-                            >Shift {sIdx + 1}:</span
-                          >
-                        {/if}
-
-                        <div class="flex items-center gap-2">
-                          <span class="text-slate-400">Opens:</span>
-                          <input
-                            type="time"
-                            bind:value={slot.open_time}
-                            onchange={() => syncDayBounds(hour)}
-                            class="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-100 focus:border-sky-500 focus:outline-none"
-                          />
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                          <span class="text-slate-400">Closes:</span>
-                          <input
-                            type="time"
-                            bind:value={slot.close_time}
-                            onchange={() => syncDayBounds(hour)}
-                            class="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-100 focus:border-sky-500 focus:outline-none"
-                          />
-                        </div>
-
-                        {#if (hour.slots || []).length > 1}
-                          <button
-                            type="button"
-                            onclick={() => removeSlot(hour, sIdx)}
-                            class="text-rose-400 hover:text-rose-300 ml-auto text-xs px-2 py-0.5 rounded hover:bg-rose-500/10 transition-colors"
-                            title="Remove Shift"
-                          >
-                            ✕ Remove
-                          </button>
-                        {/if}
-                      </div>
-                    {/each}
-                  </div>
-                </div>
-
-                <!-- Scheduled Breaks & Gaps -->
-                <div class="pt-2 border-t border-slate-800/60 space-y-2">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-amber-400/90 flex items-center gap-1.5">
-                      <span>☕ Scheduled Breaks & Gaps</span>
-                    </span>
-                    <button
-                      type="button"
-                      onclick={() => addBreak(hour)}
-                      class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition-colors"
-                    >
-                      <span>+ Add Break / Schedule Gap</span>
-                    </button>
-                  </div>
-
-                  {#if (hour.breaks || []).length === 0}
-                    <p class="text-[11px] text-slate-500 italic">
-                      No scheduled breaks or closure gaps configured for this day.
-                    </p>
-                  {:else}
-                    <div class="space-y-2">
-                      {#each hour.breaks || [] as brk, bIdx}
-                        <div
-                          class="flex flex-wrap items-center gap-3 text-xs bg-amber-500/5 p-2.5 rounded-lg border border-amber-500/20"
-                        >
-                          <div class="flex items-center gap-2 flex-1 min-w-[160px]">
-                            <span class="text-amber-400 font-semibold text-[11px]">Label:</span>
-                            <input
-                              type="text"
-                              bind:value={brk.name}
-                              placeholder="e.g. Lunch Break, Staff Meeting"
-                              class="w-full rounded border border-amber-500/30 bg-slate-950 px-2.5 py-1 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
-                            />
-                          </div>
-
-                          <div class="flex items-center gap-2">
-                            <span class="text-amber-400 text-[11px]">Start:</span>
-                            <input
-                              type="time"
-                              bind:value={brk.start_time}
-                              class="rounded border border-amber-500/30 bg-slate-950 px-2 py-1 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
-                            />
-                          </div>
-
-                          <div class="flex items-center gap-2">
-                            <span class="text-amber-400 text-[11px]">End:</span>
-                            <input
-                              type="time"
-                              bind:value={brk.end_time}
-                              class="rounded border border-amber-500/30 bg-slate-950 px-2 py-1 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
-                            />
-                          </div>
-
-                          <button
-                            type="button"
-                            onclick={() => removeBreak(hour, bIdx)}
-                            class="text-rose-400 hover:text-rose-300 text-xs px-2 py-1 rounded hover:bg-rose-500/10 transition-colors ml-auto"
-                            title="Remove Break"
-                          >
-                            ✕ Remove
-                          </button>
-                        </div>
-                      {/each}
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            {/if}
-          </div>
-        {/each}
-      </div>
-    </div>
-  {/if}
-
-  <!-- TAB 3: PROVIDERS & STAFF -->
-  {#if activeSubTab === "providers"}
-    <div class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-lg font-bold text-slate-100">👨‍⚕️ Practice Staff & Providers</h3>
-          <p class="text-xs text-slate-400 mt-0.5">
-            Manage dentists, hygienists, and support staff assigned to patient appointments.
-          </p>
-        </div>
-        <button
-          type="button"
-          onclick={openAddProviderModal}
-          class="btn btn-primary shadow-md shadow-sky-500/20 text-xs flex items-center gap-1.5"
-        >
-          <svg
-            class="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add Provider / Staff
-        </button>
-      </div>
-
-      {#if providers.length === 0}
-        <div
-          class="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 py-12 text-center"
-        >
-          <div
-            class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-400 mb-3"
-          >
-            👨‍⚕️
-          </div>
-          <p class="text-base font-semibold text-slate-300">
-            No staff members or providers added yet
-          </p>
-          <p class="text-xs text-slate-500 mt-1">
-            Click "Add Provider / Staff" above to configure practice dentists and hygienists.
-          </p>
-        </div>
-      {:else}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each providers as p}
-            <div
-              class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-3 relative group hover:border-slate-700 transition-colors"
-            >
-              <div class="flex items-start justify-between">
-                <div class="flex items-center gap-3">
-                  <div
-                    class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md"
-                    style="background-color: {p.color || '#3b82f6'};"
-                  >
-                    {p.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 class="text-sm font-bold text-slate-100">{p.name}</h4>
-                    <p class="text-xs text-sky-400 capitalize font-medium">
-                      {p.role}
-                      {p.specialty ? `• ${p.specialty}` : ""}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  class={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${p.is_active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-slate-800 text-slate-500"}`}
-                >
-                  {p.is_active ? "Active" : "Inactive"}
-                </span>
-              </div>
-
-              {#if p.license_number || p.email || p.phone}
-                <div class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
-                  {#if p.license_number}
-                    <div>
-                      🪪 License: <span class="text-slate-300 font-mono">{p.license_number}</span>
-                    </div>
-                  {/if}
-                  {#if p.email}
-                    <div>✉️ {p.email}</div>
-                  {/if}
-                  {#if p.phone}
-                    <div>📞 {p.phone}</div>
-                  {/if}
-                </div>
-              {/if}
-
-              <div
-                class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/60 text-xs"
-              >
-                <button
-                  type="button"
-                  onclick={() => openEditProviderModal(p)}
-                  class="text-sky-400 hover:text-sky-300 font-semibold"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onclick={() => handleDeleteProvider(p.id)}
-                  class="text-rose-400 hover:text-rose-300 font-semibold"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  {/if}
-
-  <!-- TAB 4: OPERATORIES & CHAIRS -->
-  {#if activeSubTab === "operatories"}
-    <div class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-lg font-bold text-slate-100">🚪 Treatment Operatories & Chairs</h3>
-          <p class="text-xs text-slate-400 mt-0.5">
-            Manage treatment rooms, hygiene bays, and surgical suites.
-          </p>
-        </div>
-        <button
-          type="button"
-          onclick={openAddOperatoryModal}
-          class="btn btn-primary shadow-md shadow-sky-500/20 text-xs flex items-center gap-1.5"
-        >
-          <svg
-            class="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add Operatory / Room
-        </button>
-      </div>
-
-      {#if operatories.length === 0}
-        <div
-          class="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 py-12 text-center"
-        >
-          <div
-            class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-400 mb-3"
-          >
-            🚪
-          </div>
-          <p class="text-base font-semibold text-slate-300">
-            No operatories or treatment rooms configured
-          </p>
-          <p class="text-xs text-slate-500 mt-1">
-            Click "Add Operatory / Room" above to set up treatment chairs for scheduling.
-          </p>
-        </div>
-      {:else}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each operatories as op}
-            <div
-              class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-3 relative group hover:border-slate-700 transition-colors"
-            >
-              <div class="flex items-start justify-between">
-                <div>
-                  <h4 class="text-sm font-bold text-slate-100">{op.name}</h4>
-                  <p class="text-xs text-sky-400 capitalize font-medium mt-0.5">
-                    {op.type} room {op.room_code ? `• Code: ${op.room_code}` : ""}
-                  </p>
-                </div>
-                <span
-                  class={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${op.is_active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-slate-800 text-slate-500"}`}
-                >
-                  {op.is_active ? "Active" : "Inactive"}
-                </span>
-              </div>
-
-              <div
-                class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/60 text-xs"
-              >
-                <button
-                  type="button"
-                  onclick={() => openEditOperatoryModal(op)}
-                  class="text-sky-400 hover:text-sky-300 font-semibold"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onclick={() => handleDeleteOperatory(op.id)}
-                  class="text-rose-400 hover:text-rose-300 font-semibold"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  {/if}
+  <div>
+    {#if activeSubTab === "profile"}
+      <ClinicProfileSection
+        {practiceConfig}
+        {countryMeta}
+        {isEditingProfile}
+        bind:clinicName
+        bind:tagline
+        bind:taxId
+        bind:licenseNumber
+        bind:phone
+        bind:email
+        bind:website
+        bind:addressLine1
+        bind:city
+        bind:stateProvince
+        bind:postalCode
+        bind:countryCode
+        bind:currency
+        bind:toothSystem
+        bind:dateFormat
+      />
+    {:else if activeSubTab === "hours"}
+      <ClinicHoursSection
+        bind:businessHours
+        {isEditingProfile}
+        {formatTime12}
+        {addSlot}
+        {removeSlot}
+        {addBreak}
+        {removeBreak}
+        {syncDayBounds}
+      />
+    {:else if activeSubTab === "providers"}
+      <ProvidersSection
+        {providers}
+        {openAddProviderModal}
+        {openEditProviderModal}
+        {handleDeleteProvider}
+        {handleSaveProvider}
+        bind:showProviderModal
+        {isEditingProvider}
+        bind:provName
+        bind:provRole
+        bind:provSpecialty
+        bind:provLicense
+        bind:provEmail
+        bind:provPhone
+        bind:provColor
+        bind:provIsActive
+      />
+    {:else if activeSubTab === "operatories"}
+      <OperatoriesSection
+        {operatories}
+        {openAddOperatoryModal}
+        {openEditOperatoryModal}
+        {handleDeleteOperatory}
+        {handleSaveOperatory}
+        bind:showOperatoryModal
+        {isEditingOperatory}
+        bind:opName
+        bind:opRoomCode
+        bind:opType
+        bind:opIsActive
+      />
+    {/if}
+  </div>
 </div>
-
-<!-- PROVIDER MODAL -->
-<Modal
-  bind:showModal={showProviderModal}
-  title={isEditingProvider ? "Edit Staff / Provider" : "Add New Staff / Provider"}
-  subtitle="Configure provider details, specialties, and schedule badges"
-  icon="👨‍⚕️"
-  maxWidth="max-w-md"
->
-  <form onsubmit={handleSaveProvider} class="space-y-4">
-    <FormField label="Full Name" forId="prov-name" required>
-      <Input
-        id="prov-name"
-        type="text"
-        bind:value={provName}
-        required
-        placeholder="e.g. Dr. Sarah Smith"
-      />
-    </FormField>
-
-    <div class="grid grid-cols-2 gap-3">
-      <FormField label="Role" forId="prov-role">
-        <select
-          id="prov-role"
-          bind:value={provRole}
-          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-        >
-          <option value="dentist">Dentist</option>
-          <option value="hygienist">Dental Hygienist</option>
-          <option value="assistant">Dental Assistant</option>
-          <option value="staff">Administrative Staff</option>
-        </select>
-      </FormField>
-
-      <FormField label="Specialty" forId="prov-specialty">
-        <Input
-          id="prov-specialty"
-          type="text"
-          bind:value={provSpecialty}
-          placeholder="e.g. Orthodontics"
-        />
-      </FormField>
-    </div>
-
-    <FormField label="License Number" forId="prov-license">
-      <Input id="prov-license" type="text" bind:value={provLicense} placeholder="e.g. DENT-88912" />
-    </FormField>
-
-    <div class="grid grid-cols-2 gap-3">
-      <FormField label="Email" forId="prov-email">
-        <Input
-          id="prov-email"
-          type="email"
-          bind:value={provEmail}
-          placeholder="doctor@example.com"
-        />
-      </FormField>
-
-      <FormField label="Phone" forId="prov-phone">
-        <Input id="prov-phone" type="tel" bind:value={provPhone} placeholder="(555) 019-2834" />
-      </FormField>
-    </div>
-
-    <div class="flex items-center justify-between pt-2">
-      <div>
-        <label for="prov-color" class="block text-xs font-semibold text-slate-300 mb-1"
-          >Schedule Color Badge</label
-        >
-        <input
-          id="prov-color"
-          type="color"
-          bind:value={provColor}
-          class="h-9 w-16 cursor-pointer rounded border border-slate-700 bg-slate-950 p-1"
-        />
-      </div>
-
-      <div class="flex items-center gap-2 pt-4">
-        <input type="checkbox" id="prov-active" bind:checked={provIsActive} />
-        <label for="prov-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
-          >Active Provider</label
-        >
-      </div>
-    </div>
-
-    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-      <button
-        type="button"
-        onclick={() => (showProviderModal = false)}
-        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
-      >
-        Cancel
-      </button>
-      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
-        Save Staff Member
-      </button>
-    </div>
-  </form>
-</Modal>
-
-<!-- OPERATORY MODAL -->
-<Modal
-  bind:showModal={showOperatoryModal}
-  title={isEditingOperatory ? "Edit Treatment Operatory" : "Add New Operatory"}
-  subtitle="Set up treatment rooms and clinical chair details"
-  icon="🦷"
-  maxWidth="max-w-md"
->
-  <form onsubmit={handleSaveOperatory} class="space-y-4">
-    <FormField label="Operatory Name" forId="op-name" required>
-      <Input
-        id="op-name"
-        type="text"
-        bind:value={opName}
-        required
-        placeholder="e.g. Operatory 1 (General Dentistry)"
-      />
-    </FormField>
-
-    <div class="grid grid-cols-2 gap-3">
-      <FormField label="Room Code / ID" forId="op-code">
-        <Input id="op-code" type="text" bind:value={opRoomCode} placeholder="e.g. ROOM-A" />
-      </FormField>
-
-      <FormField label="Type" forId="op-type">
-        <select
-          id="op-type"
-          bind:value={opType}
-          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-        >
-          <option value="general">General Dentistry</option>
-          <option value="hygiene">Hygiene Bay</option>
-          <option value="surgery">Oral Surgery Suite</option>
-        </select>
-      </FormField>
-    </div>
-
-    <div class="flex items-center gap-2 pt-2">
-      <input type="checkbox" id="op-active" bind:checked={opIsActive} />
-      <label for="op-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
-        >Active Operatory</label
-      >
-    </div>
-
-    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-      <button
-        type="button"
-        onclick={() => (showOperatoryModal = false)}
-        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
-      >
-        Cancel
-      </button>
-      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
-        Save Operatory
-      </button>
-    </div>
-  </form>
-</Modal>

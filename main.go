@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/LibreDental/libredental/pkg/services"
-	"github.com/LibreDental/libredental/pkg/storage/sqlite"
+	"github.com/LibreDental/libredental/internal/services"
+	"github.com/LibreDental/libredental/internal/storage/sqlite"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 

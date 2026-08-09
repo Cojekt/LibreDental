@@ -14,7 +14,8 @@
      */
     "baseUrl": ".",
     "paths": {
-      "@bindings/*": ["bindings/github.com/LibreDental/libredental/pkg/*"],
+      "@bindings": ["bindings/github.com/LibreDental/libredental/internal"],
+      "@bindings/*": ["bindings/github.com/LibreDental/libredental/internal/*"],
       "$lib/*": ["src/lib/*"]
     },
     "allowJs": true,

@@ -49,40 +49,73 @@ Running LibreDental™ fully on the dentist's computer or local practice network
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started & Contributing
 
-LibreDental™ is a standard **[Wails v3](https://v3.wails.io)** application (Go 1.22+ & Svelte 5 / Vite).
+LibreDental™ is built as a **[Wails v3](https://v3.wails.io)** application combining a Go backend with a modern Svelte 5 / Vite frontend. We welcome contributions from developers, dental professionals, UI/UX designers, and open-source advocates!
 
 ### Prerequisites
 
-- **Go 1.22+**, **Node.js 20+**, and a **C Compiler / WebKit** (Linux: `build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev` | macOS: `xcode-select --install` | Windows: MinGW/MSVC).
-- **CLI Tools**:
+- **Go 1.22+**
+- **Node.js 20+** (npm, pnpm, yarn, or bun)
+- **Other dependencies**:
+  - **Linux**: `build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev`
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+  - **Windows**: C compiler (MinGW-w64 or MSVC)
+- **Global CLI Tools**:
 
   ```bash
   go install github.com/wailsapp/wails/v3/cmd/wails3@latest
   go install github.com/go-task/task/v3/cmd/task@latest
   ```
 
-### Quick Start
+### Quick Start & Development Workflow
 
-```bash
-# Clone repository & install dependencies
-git clone https://github.com/LibreDental/libredental.git && cd libredental
-go mod download
-cd frontend && npm install && cd ..
+1. **Fork & Clone**: Fork the repository and clone it to your local machine:
 
-# Run live-reload development mode
-task dev # (or: wails3 dev)
+   ```bash
+   git clone https://github.com/LibreDental/libredental.git && cd libredental
+   ```
 
-# Production build & packaging
-task build       # Build desktop binary to ./bin/libredental
-task package     # Create OS installer packages (.deb, .rpm, AppImage, etc.)
-task run:server  # Run headless HTTP server mode
-```
+2. **Install Dependencies**:
 
-## 🤝 Contributing
+   ```bash
+   go mod download
+   cd frontend && npm install && cd ..
+   ```
 
-We welcome contributions from developers, dental professionals, and open-source enthusiasts! Please feel free to open issues, submit pull requests, or start discussions.
+3. **Create a Feature Branch**:
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+4. **Development**: Always use **`task dev`** for active development. It handles live-reloading for frontend assets, automatic Go binding generation, and Wails runtime synchronization.
+5. **Code Formatting**: Before opening a Pull Request, run:
+
+   ```bash
+   task format
+   ```
+
+   > [!IMPORTANT]
+   > Running `task format` runs both `gofmt` for Go backend files and Prettier for frontend files. PRs with unformatted code will fail automated CI formatting checks.
+
+6. **Submit a Pull Request**: Push your branch to your fork and submit a PR against `main` with a description of your changes and test steps.
+
+---
+
+## 🛠️ Command Reference
+
+All project build, development, and formatting tasks are managed through [Task](https://taskfile.dev).
+
+| Command | Description |
+| :--- | :--- |
+| `task dev` | **Primary Development Command.** Starts Wails v3 live-reload mode with Vite hot-module replacement and Go hot-rebuilding. |
+| `task format` | Formats Go backend files with `gofmt -w -s` and frontend code with Prettier. **Must be run before creating PRs.** |
+| `task build` | Builds the production desktop binary for your OS in `./bin/libredental`. |
+| `task build:server` | Compiles the headless HTTP server mode binary (`./bin/libredental-server`). |
+| `task demo` | Generates a pre-populated SQLite demo database (`libredental.db`) for testing. |
+| `task package` | Creates production OS installer packages (`.deb`, `.rpm`, `AppImage`, `.dmg`, `.exe`). |
+| `task run` | Executes the compiled application binary from `./bin/libredental`. |
 
 ---
 

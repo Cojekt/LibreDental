@@ -170,21 +170,21 @@
         onclick={() => setDuration(30)}
         class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
       >
-        30 mins
+        {m.appt_quick_duration_30()}
       </button>
       <button
         type="button"
         onclick={() => setDuration(45)}
         class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
       >
-        45 mins
+        {m.appt_quick_duration_45()}
       </button>
       <button
         type="button"
         onclick={() => setDuration(60)}
         class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
       >
-        60 mins
+        {m.appt_quick_duration_60()}
       </button>
     </div>
 
@@ -228,7 +228,7 @@
         id="appt-reason"
         type="text"
         bind:value={reason}
-        placeholder="e.g. Comprehensive Examination, Crown Preparation, Hygiene"
+        placeholder={m.appt_reason_placeholder()}
       />
     </FormField>
 
@@ -238,7 +238,7 @@
         id="appt-notes"
         bind:value={notes}
         rows={2}
-        placeholder="Additional details, premedication required, special chair preferences..."
+        placeholder={m.appt_notes_placeholder()}
         class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
       ></textarea>
     </FormField>
