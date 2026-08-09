@@ -15,17 +15,26 @@ type BillingService struct {
 	claimRepo  storage.ClaimRepository
 	payRepo    storage.PaymentRepository
 	bundleRepo storage.TreatmentBundleRepository
+	procRepo   storage.ProcedureCodeRepository
+	feeRepo    storage.FeeScheduleRepository
+	chartRepo  storage.ChartRepository
 }
 
 func NewBillingService(
 	claimRepo storage.ClaimRepository,
 	payRepo storage.PaymentRepository,
 	bundleRepo storage.TreatmentBundleRepository,
+	procRepo storage.ProcedureCodeRepository,
+	feeRepo storage.FeeScheduleRepository,
+	chartRepo storage.ChartRepository,
 ) *BillingService {
 	return &BillingService{
 		claimRepo:  claimRepo,
 		payRepo:    payRepo,
 		bundleRepo: bundleRepo,
+		procRepo:   procRepo,
+		feeRepo:    feeRepo,
+		chartRepo:  chartRepo,
 	}
 }
 
@@ -234,3 +243,137 @@ func (s *BillingService) DeleteBundle(id string) error {
 	}
 	return s.bundleRepo.Delete(context.Background(), id)
 }
+
+// ─── Procedure Codes & Fee Schedules ─────────────────────────────────────────
+
+// ListProcedureCodes returns all active procedure codes for a given country,
+// with EffectiveFee populated based on provider or practice custom fee overrides.
+func (s *BillingService) ListProcedureCodes(countryCode string, providerID string) ([]*domain.ProcedureCode, error) {
+	if countryCode == "" {
+		countryCode = "US"
+	}
+	ctx := context.Background()
+	cc := domain.CountryCode(countryCode)
+
+	codes, err := s.procRepo.List(ctx, cc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list procedure codes: %w", err)
+	}
+
+	for _, pc := range codes {
+		effFee, err := s.feeRepo.GetEffectiveFee(ctx, cc, pc.Code, providerID)
+		if err == nil && effFee > 0 {
+			pc.EffectiveFee = effFee
+		} else {
+			pc.EffectiveFee = pc.DefaultFee
+		}
+	}
+
+	return codes, nil
+}
+
+// SaveFeeSchedule saves a custom fee override for a procedure code.
+func (s *BillingService) SaveFeeSchedule(fee *domain.FeeSchedule) (*domain.FeeSchedule, error) {
+	if fee == nil || fee.Code == "" {
+		return nil, fmt.Errorf("%w: fee schedule and code are required", storage.ErrInvalidInput)
+	}
+	if fee.CountryCode == "" {
+		fee.CountryCode = domain.CountryUS
+	}
+	if err := s.feeRepo.Save(context.Background(), fee); err != nil {
+		return nil, fmt.Errorf("failed to save fee schedule: %w", err)
+	}
+	return fee, nil
+}
+
+// ListFeeSchedules returns all custom fee schedule overrides for a country and optional provider.
+func (s *BillingService) ListFeeSchedules(countryCode string, providerID string) ([]*domain.FeeSchedule, error) {
+	if countryCode == "" {
+		countryCode = "US"
+	}
+	return s.feeRepo.ListFeeSchedules(context.Background(), domain.CountryCode(countryCode), providerID)
+}
+
+// DeleteFeeSchedule removes a custom fee schedule override.
+func (s *BillingService) DeleteFeeSchedule(id string) error {
+	if id == "" {
+		return fmt.Errorf("%w: ID is required", storage.ErrInvalidInput)
+	}
+	return s.feeRepo.Delete(context.Background(), id)
+}
+
+// ─── Dental Charting Integration ─────────────────────────────────────────────
+
+// CreateClaimFromChartConditions creates an insurance claim directly from charted tooth conditions.
+func (s *BillingService) CreateClaimFromChartConditions(patientID string, providerID string, conditionIDs []string) (*domain.Claim, error) {
+	if patientID == "" {
+		return nil, fmt.Errorf("%w: patient ID is required", storage.ErrInvalidInput)
+	}
+	if len(conditionIDs) == 0 {
+		return nil, fmt.Errorf("%w: at least one condition ID is required", storage.ErrInvalidInput)
+	}
+
+	ctx := context.Background()
+	chart, err := s.chartRepo.GetChart(ctx, patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch patient chart: %w", err)
+	}
+
+	condMap := make(map[string]domain.ToothCondition)
+	for _, c := range chart.Conditions {
+		condMap[c.ID] = c
+	}
+
+	nowStr := time.Now().Format("2006-01-02")
+	claim := &domain.Claim{
+		ID:            fmt.Sprintf("claim_%d", time.Now().UnixNano()),
+		PatientID:     patientID,
+		ProviderID:    providerID,
+		DateOfService: nowStr,
+		Status:        domain.ClaimStatusDraft,
+		Notes:         "Generated from dental chart conditions",
+		LineItems:     []domain.ClaimLineItem{},
+		CreatedAt:     time.Now().UTC(),
+		UpdatedAt:     time.Now().UTC(),
+	}
+
+	for i, condID := range conditionIDs {
+		cond, exists := condMap[condID]
+		if !exists {
+			continue
+		}
+
+		adaCode := cond.ADACode
+		if adaCode == "" {
+			adaCode = "PROC"
+		}
+
+		lineItem := domain.ClaimLineItem{
+			ID:               fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i),
+			ToothConditionID: cond.ID,
+			ToothNumber:      cond.ToothNumber,
+			Surfaces:         cond.Surfaces,
+			ADACode:          adaCode,
+			Description:      cond.Description,
+			Fee:              cond.Fee,
+		}
+		claim.LineItems = append(claim.LineItems, lineItem)
+
+		// Mark tooth condition status as completed if it was treatment planned
+		if cond.Status == domain.ToothStatusTreatmentPlanned {
+			cond.Status = domain.ToothStatusCompleted
+			_ = s.chartRepo.SaveCondition(ctx, &cond)
+		}
+	}
+
+	if len(claim.LineItems) == 0 {
+		return nil, fmt.Errorf("%w: no matching conditions found to create claim", storage.ErrInvalidInput)
+	}
+
+	if err := s.claimRepo.Create(ctx, claim); err != nil {
+		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
+	}
+
+	return claim, nil
+}
+

@@ -21,7 +21,7 @@ func main() {
 		dataDir = "."
 	}
 	appDir := filepath.Join(dataDir, "LibreDental")
-	os.MkdirAll(appDir, 0755)
+	os.MkdirAll(appDir, 0o755)
 
 	dbPath := filepath.Join(appDir, "libredental.db")
 	db, err := sqlite.Open(dbPath)
@@ -48,7 +48,8 @@ func main() {
 	claimRepo := sqlite.NewClaimRepository(db)
 	paymentRepo := sqlite.NewPaymentRepository(db)
 	bundleRepo := sqlite.NewBundleRepository(db)
-	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo)
+	procedureRepo := sqlite.NewProcedureRepository(db)
+	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo)
 
 	app := application.New(application.Options{
 		Name:        "LibreDental™",

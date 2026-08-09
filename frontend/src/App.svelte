@@ -624,7 +624,7 @@
     {:else if activeTab === "charting"}
       <ChartingView {patients} {countryMeta} />
     {:else if activeTab === "billing"}
-      <BillingView {patients} {providers} />
+      <BillingView {patients} {providers} {countryMeta} />
     {/if}
   </main>
 </div>

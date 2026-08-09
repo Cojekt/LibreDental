@@ -5,9 +5,10 @@
     ToothCondition,
     ToothStatus,
     CountryConfig,
+    ProcedureCode,
   } from "@bindings/domain/models.js";
   import { ToothSystem, ToothSurface } from "@bindings/domain/models.js";
-  import { ChartService } from "@bindings/services/index.js";
+  import { ChartService, BillingService } from "@bindings/services/index.js";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
 
@@ -199,6 +200,57 @@
       status: "existing",
     },
   ];
+
+  // Procedure Codes catalog from SQL database for active country
+  let procedureCodes = $state<ProcedureCode[]>([]);
+  let isCreatingClaim = $state(false);
+  let claimNoticeMsg = $state("");
+
+  async function loadProcedureCodes() {
+    const cc = countryMeta?.code || "US";
+    try {
+      const res = await BillingService.ListProcedureCodes(cc, "");
+      procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+    } catch (e) {
+      console.error("Failed to load procedure codes for country:", cc, e);
+    }
+  }
+
+  $effect(() => {
+    loadProcedureCodes();
+  });
+
+  async function handleGenerateClaimFromChart() {
+    if (
+      !selectedPatientId ||
+      !currentChart ||
+      !currentChart.conditions ||
+      currentChart.conditions.length === 0
+    )
+      return;
+
+    const billable = currentChart.conditions.filter(
+      (c) => c.status === "treatment_planned" || c.status === "completed"
+    );
+    if (billable.length === 0) {
+      alert("No treatment-planned or completed conditions found for billing.");
+      return;
+    }
+
+    isCreatingClaim = true;
+    claimNoticeMsg = "";
+    try {
+      const ids = billable.map((c) => c.id);
+      const claim = await BillingService.CreateClaimFromChartConditions(selectedPatientId, "", ids);
+      claimNoticeMsg = `Claim created successfully! (${claim.line_items?.length || 0} line items billed)`;
+      await loadChart(selectedPatientId);
+    } catch (e) {
+      console.error("Failed to create claim from chart:", e);
+      alert("Failed to generate claim from chart.");
+    } finally {
+      isCreatingClaim = false;
+    }
+  }
 
   async function loadChart(patientId: string) {
     if (!patientId) {
@@ -428,7 +480,7 @@
               : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          Adult Teeth (32)
+          {m.charting_adult_teeth()}
         </button>
         <button
           type="button"
@@ -439,7 +491,7 @@
               : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          Primary Teeth (20)
+          {m.charting_primary_teeth()}
         </button>
       </div>
     </div>
@@ -459,22 +511,22 @@
       class="flex flex-wrap items-center justify-between gap-4 bg-slate-900/80 border border-slate-800/80 rounded-xl px-5 py-3 text-xs"
     >
       <div class="flex items-center gap-5">
-        <span class="font-semibold text-slate-300">Legend:</span>
+        <span class="font-semibold text-slate-300">{m.charting_legend_title()}</span>
         <div class="flex items-center gap-1.5">
           <span class="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>
-          <span class="text-slate-300">Existing Finding</span>
+          <span class="text-slate-300">{m.charting_legend_existing()}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>
-          <span class="text-slate-300">Treatment Planned</span>
+          <span class="text-slate-300">{m.charting_legend_planned()}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
-          <span class="text-slate-300">Completed</span>
+          <span class="text-slate-300">{m.charting_legend_completed()}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3 h-3 rounded-full bg-rose-500/80 border border-rose-400"></span>
-          <span class="text-slate-300">Missing Tooth</span>
+          <span class="text-slate-300">{m.charting_legend_missing()}</span>
         </div>
       </div>
       <div class="text-slate-400 text-[11px]">
@@ -511,7 +563,7 @@
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            Loading Dental Chart...
+            {m.common_loading()}
           </div>
         </div>
       {/if}
@@ -520,9 +572,9 @@
       <div>
         <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
           <span class="text-xs font-bold uppercase tracking-wider text-sky-400"
-            >Upper Arch (Maxillary)</span
+            >{m.charting_upper_arch()}</span
           >
-          <span class="text-[11px] text-slate-500 font-mono">Right &larr; &rarr; Left</span>
+          <span class="text-[11px] text-slate-500 font-mono">{m.charting_arch_direction()}</span>
         </div>
 
         <div class="grid grid-cols-8 sm:grid-cols-16 gap-2 sm:gap-2.5">
@@ -561,9 +613,9 @@
       <div>
         <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
           <span class="text-xs font-bold uppercase tracking-wider text-sky-400"
-            >Lower Arch (Mandibular)</span
+            >{m.charting_lower_arch()}</span
           >
-          <span class="text-[11px] text-slate-500 font-mono">Right &larr; &rarr; Left</span>
+          <span class="text-[11px] text-slate-500 font-mono">{m.charting_arch_direction()}</span>
         </div>
 
         <div class="grid grid-cols-8 sm:grid-cols-16 gap-2 sm:gap-2.5">
@@ -596,31 +648,62 @@
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-base font-bold text-slate-100 m-0">Charted Conditions & Treatment Log</h3>
+          <h3 class="text-base font-bold text-slate-100 m-0">{m.charting_summary_title()}</h3>
           <p class="text-xs text-slate-400 m-0">
-            Summary of findings for {selectedPatient.first_name}
-            {selectedPatient.last_name}
+            {m.charting_summary_sub({ firstName: selectedPatient.first_name, lastName: selectedPatient.last_name })}
           </p>
         </div>
         {#if currentChart && currentChart.conditions && currentChart.conditions.length > 0}
-          <div class="text-xs font-semibold text-slate-300">
-            Total Planned Fee: <span class="text-sky-400 font-bold"
-              >{formatCurrency(
-                currentChart.conditions.reduce((acc, c) => acc + (c.fee || 0), 0)
-              )}</span
+          <div class="flex items-center gap-4">
+            <div class="text-xs font-semibold text-slate-300">
+              {m.charting_total_planned_fee()} <span class="text-sky-400 font-bold"
+                >{formatCurrency(
+                  currentChart.conditions.reduce((acc, c) => acc + (c.fee || 0), 0)
+                )}</span
+              >
+            </div>
+            <button
+              type="button"
+              onclick={handleGenerateClaimFromChart}
+              disabled={isCreatingClaim}
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
             >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="w-4 h-4"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              {isCreatingClaim ? m.billing_btn_generating_claim() : m.billing_btn_bill_charted()}
+            </button>
           </div>
         {/if}
       </div>
+
+      {#if claimNoticeMsg}
+        <div
+          class="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-between"
+        >
+          <span>✓ {claimNoticeMsg}</span>
+          <button
+            type="button"
+            onclick={() => (claimNoticeMsg = "")}
+            class="text-emerald-400 hover:text-white">✕</button
+          >
+        </div>
+      {/if}
 
       {#if !currentChart || !currentChart.conditions || currentChart.conditions.length === 0}
         <div
           class="text-center py-10 border border-dashed border-slate-800 rounded-xl bg-slate-950/40"
         >
           <p class="text-sm text-slate-400 m-0">
-            No tooth conditions or treatment plans recorded yet for this patient.
+            {m.charting_no_conditions_title()}
           </p>
-          <p class="text-xs text-slate-500 m-1">Click any tooth above to add findings.</p>
+          <p class="text-xs text-slate-500 m-1">{m.charting_no_conditions_sub()}</p>
         </div>
       {:else}
         <div class="overflow-x-auto">
@@ -629,13 +712,13 @@
               <tr
                 class="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-950/60"
               >
-                <th class="py-3 px-4">Tooth # ({countryMeta?.code || "Universal"})</th>
-                <th class="py-3 px-4">Surfaces</th>
-                <th class="py-3 px-4">ADA Code</th>
-                <th class="py-3 px-4">Description</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4 text-right">Fee</th>
-                <th class="py-3 px-4 text-center">Actions</th>
+                <th class="py-3 px-4">{m.charting_th_tooth({ code: countryMeta?.code || "Universal" })}</th>
+                <th class="py-3 px-4">{m.charting_th_surfaces()}</th>
+                <th class="py-3 px-4">{m.charting_th_code()}</th>
+                <th class="py-3 px-4">{m.charting_th_desc()}</th>
+                <th class="py-3 px-4">{m.charting_th_status()}</th>
+                <th class="py-3 px-4 text-right">{m.charting_th_fee()}</th>
+                <th class="py-3 px-4 text-center">{m.charting_th_actions()}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800/60">
@@ -944,7 +1027,7 @@
 
       <!-- Quick Procedure Presets -->
       <div class="flex flex-col gap-2">
-        <span class="text-xs font-semibold text-slate-300">Quick Procedure Presets:</span>
+        <span class="text-xs font-semibold text-slate-300">{m.charting_modal_presets_label()}</span>
         <div class="flex flex-wrap gap-1.5">
           {#each procedurePresets as preset}
             <button
@@ -960,10 +1043,40 @@
 
       <!-- Form Controls -->
       <form onsubmit={handleSaveCondition} class="flex flex-col gap-4">
+        {#if procedureCodes.length > 0}
+          <div class="flex flex-col gap-1">
+            <label for="condition-catalog-code" class="text-xs font-semibold text-sky-400">
+              📍 {countryMeta?.name || "Regional"} {m.charting_modal_catalog_label()}
+            </label>
+            <select
+              id="condition-catalog-code"
+              onchange={(e) => {
+                const code = (e.target as HTMLSelectElement).value;
+                const item = procedureCodes.find((p) => p.code === code);
+                if (item) {
+                  formADACode = item.code;
+                  formDescription = item.description;
+                  formFee = item.effective_fee || item.default_fee;
+                }
+              }}
+              class="bg-slate-950 border border-sky-500/40 text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-sky-500 cursor-pointer"
+            >
+              <option value="">{m.charting_modal_catalog_prompt({ name: countryMeta?.name || "Country" })}</option>
+              {#each procedureCodes as p}
+                <option value={p.code}>
+                  [{p.category}] {p.code} - {p.description} ({formatCurrency(
+                    p.effective_fee || p.default_fee
+                  )})
+                </option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label for="condition-ada-code" class="text-xs font-medium text-slate-400"
-              >ADA Procedure Code</label
+              >{m.charting_modal_code_label()}</label
             >
             <input
               id="condition-ada-code"
@@ -975,7 +1088,7 @@
           </div>
           <div class="flex flex-col gap-1">
             <label for="condition-fee" class="text-xs font-medium text-slate-400"
-              >Fee {countryMeta?.default_currency ? `(${countryMeta.default_currency})` : ""}</label
+              >{m.charting_modal_fee_label()} {countryMeta?.default_currency ? `(${countryMeta.default_currency})` : ""}</label
             >
             <input
               id="condition-fee"
@@ -989,7 +1102,7 @@
 
         <div class="flex flex-col gap-1">
           <label for="condition-description" class="text-xs font-medium text-slate-400"
-            >Description / Finding</label
+            >{m.charting_modal_desc_label()}</label
           >
           <input
             id="condition-description"
@@ -1002,7 +1115,7 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <label for="condition-status" class="text-xs font-medium text-slate-400">Status</label>
+          <label for="condition-status" class="text-xs font-medium text-slate-400">{m.charting_modal_status_label()}</label>
           <select
             id="condition-status"
             bind:value={formStatus}

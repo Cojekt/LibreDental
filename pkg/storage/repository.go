@@ -98,3 +98,18 @@ type TreatmentBundleRepository interface {
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]*domain.TreatmentBundle, error)
 }
+
+// ProcedureCodeRepository defines storage operations for procedure/billing code catalogs.
+type ProcedureCodeRepository interface {
+	List(ctx context.Context, countryCode domain.CountryCode) ([]*domain.ProcedureCode, error)
+	GetByCode(ctx context.Context, countryCode domain.CountryCode, code string) (*domain.ProcedureCode, error)
+}
+
+// FeeScheduleRepository defines storage operations for practice and provider fee schedules.
+type FeeScheduleRepository interface {
+	Save(ctx context.Context, schedule *domain.FeeSchedule) error
+	Delete(ctx context.Context, id string) error
+	ListFeeSchedules(ctx context.Context, countryCode domain.CountryCode, providerID string) ([]*domain.FeeSchedule, error)
+	GetEffectiveFee(ctx context.Context, countryCode domain.CountryCode, code string, providerID string) (float64, error)
+}
+

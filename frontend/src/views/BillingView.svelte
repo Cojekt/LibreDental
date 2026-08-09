@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { BillingService } from "@bindings/services/index.js";
+  import { BillingService, ChartService } from "@bindings/services/index.js";
   import type {
     Patient,
     Provider,
@@ -10,17 +10,23 @@
     PatientBalance,
     BundleItemTemplate,
     TreatmentBundle,
+    CountryConfig,
+    ProcedureCode,
+    FeeSchedule,
+    ToothCondition,
   } from "@bindings/domain/index.js";
   import { ClaimStatus, PaymentMethod } from "@bindings/domain/index.js";
+  import { m } from "../paraglide/messages.js";
 
   // ── Props ─────────────────────────────────────────────────────────────────
-  let { patients = [], providers = [] } = $props<{
+  let { patients = [], providers = [], countryMeta = null } = $props<{
     patients: Patient[];
     providers: Provider[];
+    countryMeta?: CountryConfig | null;
   }>();
 
   // ── Tab State ─────────────────────────────────────────────────────────────
-  let billingTab = $state<"claims" | "payments" | "bundles">("claims");
+  let billingTab = $state<"claims" | "payments" | "bundles" | "fees">("claims");
 
   // ── Claims State ──────────────────────────────────────────────────────────
   let claims = $state<Claim[]>([]);
@@ -77,6 +83,24 @@
   let bundleItems = $state<BundleItemTemplate[]>([]);
   let shortnameError = $state("");
 
+  // ── Procedure Codes & Fee Schedules State ────────────────────────────────
+  let procedureCodes = $state<ProcedureCode[]>([]);
+  let feeSchedules = $state<FeeSchedule[]>([]);
+  let loadingFees = $state(false);
+  let feeFilterProvider = $state("");
+
+  // Fee schedule modal state
+  let showFeeModal = $state(false);
+  let editingFeeCode = $state("");
+  let editingFeeCustom = $state<number>(0);
+  let editingFeeProviderId = $state("");
+
+  // Chart Conditions Import Modal State for Claim Entry
+  let showChartImportModal = $state(false);
+  let chartImportConditions = $state<ToothCondition[]>([]);
+  let selectedImportConditionIds = $state<string[]>([]);
+  let loadingChartImport = $state(false);
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   function patientName(id: string) {
     const p = patients.find((p: Patient) => p.id === id);
@@ -89,12 +113,116 @@
   }
 
   function fmt(n: number) {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+    const curr = countryMeta?.default_currency || "USD";
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n);
+    } catch {
+      return `${n.toFixed(2)}`;
+    }
   }
 
   function claimTotal(c: Claim) {
     return (c.line_items ?? []).reduce((s, i) => s + i.fee, 0);
   }
+
+  async function loadProcedureCodes() {
+    const cc = countryMeta?.code || "US";
+    try {
+      const res = await BillingService.ListProcedureCodes(cc, feeFilterProvider);
+      procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+    } catch (e) {
+      console.error("Failed to load procedure codes:", e);
+    }
+  }
+
+  async function loadFeeSchedules() {
+    loadingFees = true;
+    const cc = countryMeta?.code || "US";
+    try {
+      const res = await BillingService.ListFeeSchedules(cc, feeFilterProvider);
+      feeSchedules = (res?.filter(Boolean) as FeeSchedule[]) || [];
+    } catch (e) {
+      console.error("Failed to load fee schedules:", e);
+    } finally {
+      loadingFees = false;
+    }
+  }
+
+  function openEditFeeModal(code: string, currentFee: number) {
+    editingFeeCode = code;
+    editingFeeCustom = currentFee;
+    editingFeeProviderId = feeFilterProvider;
+    showFeeModal = true;
+  }
+
+  async function saveFeeSchedule(e: Event) {
+    e.preventDefault();
+    if (!editingFeeCode || editingFeeCustom < 0) return;
+    const cc = countryMeta?.code || "US";
+    try {
+      await BillingService.SaveFeeSchedule({
+        id: `fee_${Date.now()}`,
+        country_code: cc as any,
+        code: editingFeeCode,
+        provider_id: editingFeeProviderId,
+        custom_fee: Number(editingFeeCustom),
+        updated_at: new Date().toISOString(),
+      });
+      showFeeModal = false;
+      await loadProcedureCodes();
+      await loadFeeSchedules();
+    } catch (err) {
+      console.error("Failed to save fee schedule:", err);
+    }
+  }
+
+  async function openChartImportModal() {
+    if (!claimPatientId) {
+      alert("Please select a patient first.");
+      return;
+    }
+    loadingChartImport = true;
+    selectedImportConditionIds = [];
+    try {
+      const chart = await ChartService.GetPatientChart(claimPatientId);
+      chartImportConditions = (chart?.conditions || []).filter(
+        (c) => c.status === "treatment_planned" || c.status === "completed"
+      );
+      if (chartImportConditions.length === 0) {
+        alert("No treatment planned or completed tooth conditions found for this patient.");
+        return;
+      }
+      showChartImportModal = true;
+    } catch (e) {
+      console.error("Failed to load chart conditions:", e);
+      alert("Failed to load patient chart conditions.");
+    } finally {
+      loadingChartImport = false;
+    }
+  }
+
+  function applyChartImport() {
+    const toImport = chartImportConditions.filter((c) => selectedImportConditionIds.includes(c.id));
+    const newItems: ClaimLineItem[] = toImport.map((cond, i) => ({
+      id: `li_${Date.now()}_${i}`,
+      tooth_condition_id: cond.id,
+      tooth_number: cond.tooth_number,
+      surfaces: cond.surfaces,
+      ada_code: cond.ada_code || "PROC",
+      description: cond.description || `Tooth #${cond.tooth_number} procedure`,
+      fee: cond.fee || 0,
+    }));
+
+    claimLineItems = [...claimLineItems, ...newItems];
+    showChartImportModal = false;
+  }
+
+  $effect(() => {
+    if (billingTab === "fees") {
+      loadProcedureCodes();
+      loadFeeSchedules();
+    }
+  });
 
   // ── Claims ────────────────────────────────────────────────────────────────
   async function loadClaims() {
@@ -439,8 +567,8 @@
   <!-- Page Header -->
   <div class="billing-header">
     <div>
-      <h2 class="billing-title">Billing</h2>
-      <p class="billing-subtitle">Claims, payments, and procedure bundles</p>
+      <h2 class="billing-title">{m.billing_title()}</h2>
+      <p class="billing-subtitle">{m.billing_subtitle()}</p>
     </div>
     <div class="billing-header-actions">
       {#if billingTab === "claims"}
@@ -454,7 +582,7 @@
           >
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          New Claim
+          {m.billing_btn_new_claim()}
         </button>
       {:else if billingTab === "payments"}
         <button class="btn btn-primary" onclick={openNewPayment}>
@@ -467,7 +595,7 @@
           >
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Record Payment
+          {m.billing_btn_record_payment()}
         </button>
       {:else if billingTab === "bundles"}
         <button class="btn btn-primary" onclick={openNewBundle}>
@@ -480,7 +608,7 @@
           >
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          New Bundle
+          {m.billing_btn_new_bundle()}
         </button>
       {/if}
     </div>
@@ -488,7 +616,7 @@
 
   <!-- Inner Tabs -->
   <div class="billing-tabs">
-    {#each [["claims", "Claims", "M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2z"], ["payments", "Payments", "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3z"], ["bundles", "Bundles", "M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 1-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10"]] as [id, label, path]}
+    {#each [["claims", m.billing_tab_claims(), "M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2z"], ["payments", m.billing_tab_payments(), "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3z"], ["bundles", m.billing_tab_bundles(), "M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 1-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10"], ["fees", m.billing_tab_fees(), "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"]] as [id, label, path]}
       <button
         class="billing-tab-btn {billingTab === id ? 'billing-tab-active' : ''}"
         onclick={() => (billingTab = id as any)}
@@ -505,7 +633,7 @@
   {#if billingTab === "claims"}
     <div class="billing-toolbar">
       <select bind:value={claimFilterPatient} onchange={loadClaims} class="billing-filter-select">
-        <option value="">All Patients</option>
+        <option value="">{m.billing_filter_all_patients()}</option>
         {#each patients as p}
           <option value={p.id}>{p.first_name} {p.last_name}</option>
         {/each}
@@ -513,7 +641,7 @@
     </div>
 
     {#if loadingClaims}
-      <div class="billing-loading">Loading claims…</div>
+      <div class="billing-loading">{m.common_loading()}</div>
     {:else if claims.length === 0}
       <div class="billing-empty">
         <svg
@@ -529,20 +657,20 @@
             stroke-linejoin="round"
           />
         </svg>
-        <p>No claims yet. Create one to get started.</p>
+        <p>{m.billing_no_claims()}</p>
       </div>
     {:else}
       <div class="claims-table-wrap">
         <table class="claims-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Patient</th>
-              <th>Provider</th>
-              <th>Carrier</th>
-              <th>Procedures</th>
-              <th>Total</th>
-              <th>Status</th>
+              <th>{m.billing_th_date()}</th>
+              <th>{m.billing_th_patient()}</th>
+              <th>{m.billing_th_provider()}</th>
+              <th>{m.billing_th_carrier()}</th>
+              <th>{m.billing_th_procedures()}</th>
+              <th>{m.billing_th_total()}</th>
+              <th>{m.billing_th_status()}</th>
               <th></th>
             </tr>
           </thead>
@@ -798,6 +926,70 @@
         {/each}
       </div>
     {/if}
+  {:else if billingTab === "fees"}
+    <div class="billing-toolbar flex justify-between items-center bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4">
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-semibold text-slate-300">{m.billing_filter_provider_label()}</span>
+        <select bind:value={feeFilterProvider} onchange={() => { loadProcedureCodes(); loadFeeSchedules(); }} class="billing-filter-select">
+          <option value="">{m.billing_filter_all_providers()}</option>
+          {#each providers as pr}
+            <option value={pr.id}>{pr.name}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="text-xs text-sky-400 font-semibold">
+        📍 {countryMeta?.name || "Global"} {m.billing_catalog_banner()}
+      </div>
+    </div>
+
+    {#if loadingFees}
+      <div class="billing-loading">{m.common_loading()}</div>
+    {:else if procedureCodes.length === 0}
+      <div class="billing-empty">
+        <p>No procedure codes available for {countryMeta?.name || "this country"}.</p>
+      </div>
+    {:else}
+      <div class="claims-table-wrap">
+        <table class="claims-table">
+          <thead>
+            <tr>
+              <th>{m.billing_th_code()}</th>
+              <th>{m.billing_th_category()}</th>
+              <th>{m.billing_th_desc()}</th>
+              <th>{m.billing_th_base_fee()}</th>
+              <th>{m.billing_th_effective_fee()}</th>
+              <th class="text-center">{m.patients_th_actions()}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each procedureCodes as p (p.code)}
+              {@const hasCustom = (p.effective_fee || 0) > 0 && (p.effective_fee !== p.default_fee)}
+              <tr class="claim-row">
+                <td class="font-mono font-bold text-sky-400">{p.code}</td>
+                <td><span class="status-badge bg-slate-800 text-slate-300">{p.category}</span></td>
+                <td class="text-slate-200 font-medium">{p.description}</td>
+                <td class="text-slate-400 font-mono">{fmt(p.default_fee)}</td>
+                <td class="font-bold text-slate-100 font-mono">
+                  {fmt(p.effective_fee || p.default_fee)}
+                  {#if hasCustom}
+                    <span class="ml-2 text-[10px] text-amber-400 font-semibold px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-800">{m.billing_custom_tag()}</span>
+                  {/if}
+                </td>
+                <td class="text-center">
+                  <button
+                    type="button"
+                    class="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer"
+                    onclick={() => openEditFeeModal(p.code, p.effective_fee || p.default_fee)}
+                  >
+                    Edit Fee
+                  </button>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -890,6 +1082,13 @@
           <div class="line-items-header">
             <span class="form-label mb-0">Procedure Line Items</span>
             <div class="line-items-header-actions">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm flex items-center gap-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60"
+                onclick={openChartImportModal}
+              >
+                🦷 Import Chart Procedures
+              </button>
               <!-- Bundle shortname lookup -->
               <div class="bundle-lookup">
                 <input
@@ -1181,6 +1380,110 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+{/if}
+
+<!-- Edit Fee Schedule Modal -->
+{#if showFeeModal}
+  <div class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-box max-w-md">
+      <div class="modal-header">
+        <h2 class="modal-title">{m.billing_fee_edit_title()}: {editingFeeCode}</h2>
+        <button class="modal-close" onclick={() => (showFeeModal = false)}>✕</button>
+      </div>
+
+      <form onsubmit={saveFeeSchedule} class="modal-body">
+        <div class="form-field">
+          <label class="form-label" for="fee-custom-amount">
+            {m.billing_fee_custom_label()} ({countryMeta?.default_currency || "USD"}) *
+          </label>
+          <input
+            id="fee-custom-amount"
+            type="number"
+            step="0.01"
+            min="0"
+            bind:value={editingFeeCustom}
+            required
+            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+          />
+        </div>
+        <p class="text-xs text-slate-400">
+          {m.billing_fee_custom_desc()} {editingFeeCode}.
+        </p>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick={() => (showFeeModal = false)}>{m.common_cancel()}</button>
+          <button type="submit" class="btn btn-primary">{m.common_save()}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
+
+<!-- Import Chart Conditions Modal -->
+{#if showChartImportModal}
+  <div class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-box modal-wide max-w-2xl">
+      <div class="modal-header">
+        <h2 class="modal-title">{m.billing_chart_import_title()}</h2>
+        <button class="modal-close" onclick={() => (showChartImportModal = false)}>✕</button>
+      </div>
+
+      <div class="modal-body flex flex-col gap-4">
+        <p class="text-xs text-slate-300 m-0">
+          {m.billing_chart_import_desc()}
+        </p>
+
+        {#if chartImportConditions.length === 0}
+          <div class="p-6 text-center text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl">
+            {m.billing_chart_import_empty()}
+          </div>
+        {:else}
+          <div class="max-h-60 overflow-y-auto border border-slate-800 rounded-xl divide-y divide-slate-800 bg-slate-950">
+            {#each chartImportConditions as cond}
+              <label class="flex items-center justify-between p-3 hover:bg-slate-900 cursor-pointer text-xs">
+                <div class="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    value={cond.id}
+                    checked={selectedImportConditionIds.includes(cond.id)}
+                    onchange={(e) => {
+                      const checked = (e.target as HTMLInputElement).checked;
+                      if (checked) {
+                        selectedImportConditionIds = [...selectedImportConditionIds, cond.id];
+                      } else {
+                        selectedImportConditionIds = selectedImportConditionIds.filter((id) => id !== cond.id);
+                      }
+                    }}
+                    class="rounded border-slate-700 text-sky-500 focus:ring-sky-500"
+                  />
+                  <div>
+                    <div class="font-bold text-slate-200">
+                      Tooth #{cond.tooth_number} {cond.surfaces?.length ? `(${cond.surfaces.join(", ")})` : ""}
+                      <span class="ml-2 font-mono text-sky-400">[{cond.ada_code || "PROC"}]</span>
+                    </div>
+                    <div class="text-slate-400">{cond.description}</div>
+                  </div>
+                </div>
+                <div class="font-mono font-semibold text-slate-100">{fmt(cond.fee || 0)}</div>
+              </label>
+            {/each}
+          </div>
+        {/if}
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick={() => (showChartImportModal = false)}>{m.common_cancel()}</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            disabled={selectedImportConditionIds.length === 0}
+            onclick={applyChartImport}
+          >
+            {m.billing_chart_import_submit({ count: selectedImportConditionIds.length })}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 {/if}

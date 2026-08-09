@@ -103,3 +103,25 @@ type TreatmentBundle struct {
 	CreatedAt   time.Time            `json:"created_at"`
 	UpdatedAt   time.Time            `json:"updated_at"`
 }
+
+// ProcedureCode represents a national standard dental procedure/billing code.
+type ProcedureCode struct {
+	CountryCode  CountryCode `json:"country_code"`
+	Code         string      `json:"code"`
+	Category     string      `json:"category"`
+	Description  string      `json:"description"`
+	DefaultFee   float64     `json:"default_fee"`
+	EffectiveFee float64     `json:"effective_fee,omitempty"`
+	IsActive     bool        `json:"is_active"`
+}
+
+// FeeSchedule represents a practice or provider-specific custom fee override for a procedure code.
+type FeeSchedule struct {
+	ID          string      `json:"id"`
+	CountryCode CountryCode `json:"country_code"`
+	Code        string      `json:"code"`
+	ProviderID  string      `json:"provider_id,omitempty"`
+	CustomFee   float64     `json:"custom_fee"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+}
+
