@@ -46,3 +46,11 @@ tasks:
     desc: Runs the application
     cmds:
       - task: "{{.GOOS}}:run"
+
+  format:
+    desc: Formats Go code with gofmt and frontend code with prettier
+    cmds:
+      - gofmt -w -s .
+      - task: common:frontend:run
+        vars:
+          SCRIPT: "format"
