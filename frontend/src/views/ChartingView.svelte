@@ -113,8 +113,26 @@
         if (idx >= 15 && idx <= 19) return `LR${letters[19 - idx]}`;
       }
       const universalPrimary = [
-        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
-        "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
       ];
       return universalPrimary[idx] || String(num);
     }
@@ -135,12 +153,42 @@
   const lowerPrimaryRight = [116, 117, 118, 119, 120];
 
   const procedurePresets = [
-    { code: "D2391", desc: "1-Surface Composite Resin (Posterior)", fee: 140, status: "treatment_planned" },
-    { code: "D2392", desc: "2-Surface Composite Resin (Posterior)", fee: 185, status: "treatment_planned" },
-    { code: "D2393", desc: "3-Surface Composite Resin (Posterior)", fee: 230, status: "treatment_planned" },
-    { code: "D2750", desc: "Crown - Porcelain Fused to High Noble Metal", fee: 950, status: "treatment_planned" },
-    { code: "D3330", desc: "Endodontic Therapy - Molar Root Canal", fee: 850, status: "treatment_planned" },
-    { code: "D7140", desc: "Extraction, Erupted Tooth or Exposed Root", fee: 160, status: "missing" },
+    {
+      code: "D2391",
+      desc: "1-Surface Composite Resin (Posterior)",
+      fee: 140,
+      status: "treatment_planned",
+    },
+    {
+      code: "D2392",
+      desc: "2-Surface Composite Resin (Posterior)",
+      fee: 185,
+      status: "treatment_planned",
+    },
+    {
+      code: "D2393",
+      desc: "3-Surface Composite Resin (Posterior)",
+      fee: 230,
+      status: "treatment_planned",
+    },
+    {
+      code: "D2750",
+      desc: "Crown - Porcelain Fused to High Noble Metal",
+      fee: 950,
+      status: "treatment_planned",
+    },
+    {
+      code: "D3330",
+      desc: "Endodontic Therapy - Molar Root Canal",
+      fee: 850,
+      status: "treatment_planned",
+    },
+    {
+      code: "D7140",
+      desc: "Extraction, Erupted Tooth or Exposed Root",
+      fee: 160,
+      status: "missing",
+    },
     { code: "D1351", desc: "Dental Sealant - Per Tooth", fee: 55, status: "completed" },
     { code: "EXISTS", desc: "Existing Restoration / Healthy Tooth", fee: 0, status: "existing" },
   ];
@@ -355,7 +403,8 @@
 
       <!-- Patient Select Dropdown -->
       <div class="flex items-center gap-2">
-        <label for="chart-patient-select" class="text-xs font-medium text-slate-400">Patient:</label>
+        <label for="chart-patient-select" class="text-xs font-medium text-slate-400">Patient:</label
+        >
         <select
           id="chart-patient-select"
           bind:value={selectedPatientId}

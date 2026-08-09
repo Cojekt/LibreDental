@@ -313,13 +313,33 @@
               </td>
               <td class="claim-actions">
                 <button class="action-btn" onclick={() => openEditClaim(c)} title="Edit">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                    <path d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="h-4 w-4"
+                  >
+                    <path
+                      d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
                   </svg>
                 </button>
-                <button class="action-btn action-btn-danger" onclick={() => deleteClaim(c.id)} title="Delete">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                    <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16" />
+                <button
+                  class="action-btn action-btn-danger"
+                  onclick={() => deleteClaim(c.id)}
+                  title="Delete"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="h-4 w-4"
+                  >
+                    <path
+                      d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
+                    />
                   </svg>
                 </button>
               </td>
@@ -368,15 +388,30 @@
         <div class="form-grid-3">
           <div class="form-field">
             <label class="form-label" for="cl-carrier">Insurance Carrier</label>
-            <input id="cl-carrier" type="text" bind:value={claimInsuranceCarrier} placeholder="e.g. Delta Dental" />
+            <input
+              id="cl-carrier"
+              type="text"
+              bind:value={claimInsuranceCarrier}
+              placeholder="e.g. Delta Dental"
+            />
           </div>
           <div class="form-field">
             <label class="form-label" for="cl-policy">Policy #</label>
-            <input id="cl-policy" type="text" bind:value={claimPolicyNumber} placeholder="Policy number" />
+            <input
+              id="cl-policy"
+              type="text"
+              bind:value={claimPolicyNumber}
+              placeholder="Policy number"
+            />
           </div>
           <div class="form-field">
             <label class="form-label" for="cl-group">Group #</label>
-            <input id="cl-group" type="text" bind:value={claimGroupNumber} placeholder="Group number" />
+            <input
+              id="cl-group"
+              type="text"
+              bind:value={claimGroupNumber}
+              placeholder="Group number"
+            />
           </div>
         </div>
 
@@ -436,17 +471,55 @@
           {#if claimLineItems.length > 0}
             <div class="line-items-grid-header">
               <span>ADA Code</span><span>Description</span>
-              <span>Tooth</span><span>Fee</span><span>Ins. Allowed</span><span>Pt. Portion</span><span></span>
+              <span>Tooth</span><span>Fee</span><span>Ins. Allowed</span><span>Pt. Portion</span
+              ><span></span>
             </div>
             {#each claimLineItems as li, i}
               <div class="line-item-row">
                 <input type="text" bind:value={li.ada_code} placeholder="D0120" class="li-ada" />
-                <input type="text" bind:value={li.description} placeholder="Description" class="li-desc" />
-                <input type="number" bind:value={li.tooth_number} placeholder="—" min="1" max="32" class="li-tooth" />
-                <input type="number" bind:value={li.fee} step="0.01" min="0" placeholder="0.00" class="li-fee" />
-                <input type="number" bind:value={li.insurance_allowed} step="0.01" min="0" placeholder="0.00" class="li-fee" />
-                <input type="number" bind:value={li.patient_portion} step="0.01" min="0" placeholder="0.00" class="li-fee" />
-                <button type="button" class="action-btn action-btn-danger" onclick={() => removeLineItem(i)}>✕</button>
+                <input
+                  type="text"
+                  bind:value={li.description}
+                  placeholder="Description"
+                  class="li-desc"
+                />
+                <input
+                  type="number"
+                  bind:value={li.tooth_number}
+                  placeholder="—"
+                  min="1"
+                  max="32"
+                  class="li-tooth"
+                />
+                <input
+                  type="number"
+                  bind:value={li.fee}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  class="li-fee"
+                />
+                <input
+                  type="number"
+                  bind:value={li.insurance_allowed}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  class="li-fee"
+                />
+                <input
+                  type="number"
+                  bind:value={li.patient_portion}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  class="li-fee"
+                />
+                <button
+                  type="button"
+                  class="action-btn action-btn-danger"
+                  onclick={() => removeLineItem(i)}>✕</button
+                >
               </div>
             {/each}
             <div class="line-items-total">
@@ -460,7 +533,9 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showClaimModal = false)}>Cancel</button>
+          <button type="button" class="btn btn-secondary" onclick={() => (showClaimModal = false)}
+            >Cancel</button
+          >
           <button type="submit" class="btn btn-primary">
             {isEditingClaim ? "Save Changes" : "Create Claim"}
           </button>
@@ -485,13 +560,19 @@
         </p>
 
         {#if chartImportConditions.length === 0}
-          <div class="p-6 text-center text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl">
+          <div
+            class="p-6 text-center text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl"
+          >
             {m.billing_chart_import_empty()}
           </div>
         {:else}
-          <div class="max-h-60 overflow-y-auto border border-slate-800 rounded-xl divide-y divide-slate-800 bg-slate-950">
+          <div
+            class="max-h-60 overflow-y-auto border border-slate-800 rounded-xl divide-y divide-slate-800 bg-slate-950"
+          >
             {#each chartImportConditions as cond}
-              <label class="flex items-center justify-between p-3 hover:bg-slate-900 cursor-pointer text-xs">
+              <label
+                class="flex items-center justify-between p-3 hover:bg-slate-900 cursor-pointer text-xs"
+              >
                 <div class="flex items-center gap-3">
                   <input
                     type="checkbox"
@@ -525,7 +606,11 @@
         {/if}
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showChartImportModal = false)}>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick={() => (showChartImportModal = false)}
+          >
             {m.common_cancel()}
           </button>
           <button

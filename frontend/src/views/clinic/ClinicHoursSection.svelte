@@ -27,7 +27,8 @@
     <div>
       <h3 class="text-lg font-bold text-slate-100">⏰ Practice Operating Schedule</h3>
       <p class="text-xs text-slate-400 mt-0.5">
-        Configure your weekly operating hours, split shifts, and scheduled breaks or closure gaps for appointment scheduling.
+        Configure your weekly operating hours, split shifts, and scheduled breaks or closure gaps
+        for appointment scheduling.
       </p>
     </div>
   </div>
@@ -72,7 +73,9 @@
                     <span
                       class="bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2.5 py-1 rounded-lg"
                     >
-                      Shift {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(slot.close_time)}
+                      Shift {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(
+                        slot.close_time
+                      )}
                     </span>
                   {/each}
                 </div>
@@ -92,7 +95,9 @@
                       class="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1"
                     >
                       <span>☕ {brk.name || "Break"}:</span>
-                      <span class="font-semibold">{formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}</span>
+                      <span class="font-semibold"
+                        >{formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}</span
+                      >
                     </span>
                   {/each}
                 </div>
@@ -121,7 +126,8 @@
                     class="flex flex-wrap items-center gap-3 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800"
                   >
                     {#if (hour.slots || []).length > 1}
-                      <span class="font-semibold text-slate-400 text-[11px]">Shift {sIdx + 1}:</span>
+                      <span class="font-semibold text-slate-400 text-[11px]">Shift {sIdx + 1}:</span
+                      >
                     {/if}
 
                     <div class="flex items-center gap-2">

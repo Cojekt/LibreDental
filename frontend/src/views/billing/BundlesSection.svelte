@@ -9,9 +9,7 @@
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
 
-  let {
-    countryMeta = null,
-  } = $props<{
+  let { countryMeta = null } = $props<{
     countryMeta?: CountryConfig | null;
   }>();
 
@@ -179,14 +177,34 @@
             <span class="bundle-total">Total: <strong>{fmt(b.total_fee)}</strong></span>
             <div class="bundle-card-actions">
               <button class="action-btn" onclick={() => openEditBundle(b)} title="Edit">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                  <path d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="h-4 w-4"
+                >
+                  <path
+                    d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
                 </svg>
               </button>
 
-              <button class="action-btn action-btn-danger" onclick={() => deleteBundle(b.id)} title="Delete">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-                  <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16" />
+              <button
+                class="action-btn action-btn-danger"
+                onclick={() => deleteBundle(b.id)}
+                title="Delete"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="h-4 w-4"
+                >
+                  <path
+                    d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
+                  />
                 </svg>
               </button>
             </div>
@@ -227,19 +245,32 @@
           </div>
           <div class="form-field">
             <label class="form-label" for="b-name">Full Name *</label>
-            <input id="b-name" type="text" bind:value={bundleName} placeholder="Crown + Build-up" required />
+            <input
+              id="b-name"
+              type="text"
+              bind:value={bundleName}
+              placeholder="Crown + Build-up"
+              required
+            />
           </div>
         </div>
 
         <div class="form-field">
           <label class="form-label" for="b-desc">Description</label>
-          <input id="b-desc" type="text" bind:value={bundleDescription} placeholder="Optional description" />
+          <input
+            id="b-desc"
+            type="text"
+            bind:value={bundleDescription}
+            placeholder="Optional description"
+          />
         </div>
 
         <div class="line-items-section">
           <div class="line-items-header">
             <span class="form-label mb-0">Procedure Items</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick={addBundleItem}>+ Add Item</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick={addBundleItem}
+              >+ Add Item</button
+            >
           </div>
 
           {#if bundleItems.length > 0}
@@ -249,9 +280,23 @@
             {#each bundleItems as item, i}
               <div class="bundle-item-edit-row">
                 <input type="text" bind:value={item.ada_code} placeholder="D0120" />
-                <input type="text" bind:value={item.description} placeholder="Procedure description" />
-                <input type="number" bind:value={item.default_fee} step="0.01" min="0" placeholder="0.00" />
-                <button type="button" class="action-btn action-btn-danger" onclick={() => removeBundleItem(i)}>✕</button>
+                <input
+                  type="text"
+                  bind:value={item.description}
+                  placeholder="Procedure description"
+                />
+                <input
+                  type="number"
+                  bind:value={item.default_fee}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                />
+                <button
+                  type="button"
+                  class="action-btn action-btn-danger"
+                  onclick={() => removeBundleItem(i)}>✕</button
+                >
               </div>
             {/each}
             <div class="line-items-total">
@@ -263,7 +308,9 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showBundleModal = false)}>Cancel</button>
+          <button type="button" class="btn btn-secondary" onclick={() => (showBundleModal = false)}
+            >Cancel</button
+          >
           <button type="submit" class="btn btn-primary">
             {isEditingBundle ? "Save Changes" : "Create Bundle"}
           </button>

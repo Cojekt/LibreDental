@@ -11,10 +11,7 @@
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
 
-  let {
-    providers = [],
-    countryMeta = null,
-  } = $props<{
+  let { providers = [], countryMeta = null } = $props<{
     providers: Provider[];
     countryMeta?: CountryConfig | null;
   }>();

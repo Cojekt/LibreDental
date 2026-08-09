@@ -46,13 +46,17 @@
   <!-- General Demographics -->
   <div class="lg:col-span-2 space-y-6">
     <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
-      <h3 class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3">
+      <h3
+        class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
+      >
         🏢 Clinic Identity & Information
       </h3>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label for="clinic-name" class="block text-xs font-semibold text-slate-400 mb-1">Clinic Name *</label>
+          <label for="clinic-name" class="block text-xs font-semibold text-slate-400 mb-1"
+            >Clinic Name *</label
+          >
           <input
             id="clinic-name"
             type="text"
@@ -63,7 +67,9 @@
           />
         </div>
         <div>
-          <label for="clinic-tagline" class="block text-xs font-semibold text-slate-400 mb-1">Tagline / Subtitle</label>
+          <label for="clinic-tagline" class="block text-xs font-semibold text-slate-400 mb-1"
+            >Tagline / Subtitle</label
+          >
           <input
             id="clinic-tagline"
             type="text"
@@ -91,7 +97,9 @@
         </div>
 
         <div>
-          <label for="clinic-license" class="block text-xs font-semibold text-slate-400 mb-1">Practice License Number</label>
+          <label for="clinic-license" class="block text-xs font-semibold text-slate-400 mb-1"
+            >Practice License Number</label
+          >
           <input
             id="clinic-license"
             type="text"
@@ -103,7 +111,9 @@
         </div>
 
         <div>
-          <label for="clinic-phone" class="block text-xs font-semibold text-slate-400 mb-1">Primary Phone</label>
+          <label for="clinic-phone" class="block text-xs font-semibold text-slate-400 mb-1"
+            >Primary Phone</label
+          >
           <input
             id="clinic-phone"
             type="text"
@@ -115,7 +125,9 @@
         </div>
 
         <div>
-          <label for="clinic-email" class="block text-xs font-semibold text-slate-400 mb-1">Email Address</label>
+          <label for="clinic-email" class="block text-xs font-semibold text-slate-400 mb-1"
+            >Email Address</label
+          >
           <input
             id="clinic-email"
             type="email"
@@ -127,7 +139,9 @@
         </div>
 
         <div class="sm:col-span-2">
-          <label for="clinic-website" class="block text-xs font-semibold text-slate-400 mb-1">Website URL</label>
+          <label for="clinic-website" class="block text-xs font-semibold text-slate-400 mb-1"
+            >Website URL</label
+          >
           <input
             id="clinic-website"
             type="url"
@@ -142,13 +156,17 @@
 
     <!-- Address Information -->
     <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
-      <h3 class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3">
+      <h3
+        class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
+      >
         📍 Physical Address
       </h3>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="sm:col-span-2">
-          <label for="addr-1" class="block text-xs font-semibold text-slate-400 mb-1">Street Address</label>
+          <label for="addr-1" class="block text-xs font-semibold text-slate-400 mb-1"
+            >Street Address</label
+          >
           <input
             id="addr-1"
             type="text"
@@ -160,7 +178,9 @@
         </div>
 
         <div>
-          <label for="addr-city" class="block text-xs font-semibold text-slate-400 mb-1">City / Municipality</label>
+          <label for="addr-city" class="block text-xs font-semibold text-slate-400 mb-1"
+            >City / Municipality</label
+          >
           <input
             id="addr-city"
             type="text"
@@ -171,7 +191,9 @@
         </div>
 
         <div>
-          <label for="addr-state" class="block text-xs font-semibold text-slate-400 mb-1">State / Province / Region</label>
+          <label for="addr-state" class="block text-xs font-semibold text-slate-400 mb-1"
+            >State / Province / Region</label
+          >
           <input
             id="addr-state"
             type="text"
@@ -182,7 +204,9 @@
         </div>
 
         <div>
-          <label for="addr-zip" class="block text-xs font-semibold text-slate-400 mb-1">ZIP / Postal Code</label>
+          <label for="addr-zip" class="block text-xs font-semibold text-slate-400 mb-1"
+            >ZIP / Postal Code</label
+          >
           <input
             id="addr-zip"
             type="text"
@@ -198,13 +222,17 @@
   <!-- Regional & Practice Standards (Read-Only) -->
   <div class="space-y-6">
     <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
-      <h3 class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3">
+      <h3
+        class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
+      >
         🌐 Regional & Dental Standards
       </h3>
 
       <div class="space-y-3">
         <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Practice Country</span>
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+            >Practice Country</span
+          >
           <span class="text-sm font-medium text-slate-200 mt-0.5 flex items-center gap-2">
             <span>{countryMeta?.flag || "📍"}</span>
             <span>{countryMeta?.name || countryCode} ({countryCode})</span>
@@ -212,7 +240,9 @@
         </div>
 
         <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Tooth Notation System</span>
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+            >Tooth Notation System</span
+          >
           <span class="text-sm font-medium text-slate-200 mt-0.5 capitalize">
             {toothSystem === "fdi"
               ? "FDI World Dental Federation Notation (#11 - #48)"
@@ -223,14 +253,18 @@
         </div>
 
         <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Default Practice Currency</span>
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+            >Default Practice Currency</span
+          >
           <span class="text-sm font-medium text-slate-200 mt-0.5 font-mono">
             {currency || "USD"}
           </span>
         </div>
 
         <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">System Date Format</span>
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+            >System Date Format</span
+          >
           <span class="text-sm font-medium text-slate-200 mt-0.5 font-mono">
             {dateFormat || "YYYY-MM-DD"}
           </span>

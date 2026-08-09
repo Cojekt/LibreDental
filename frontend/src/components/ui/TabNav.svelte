@@ -39,7 +39,13 @@
         {#if tab.icon.length <= 4}
           <span>{tab.icon}</span>
         {:else}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="h-4 w-4"
+          >
             <path d={tab.icon} stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         {/if}
@@ -50,9 +56,7 @@
       {#if tab.count !== undefined}
         <span
           class={`text-xs px-2 py-0.5 rounded-full font-medium ${
-            activeTab === tab.id
-              ? "bg-sky-500/20 text-sky-300"
-              : "bg-slate-800 text-slate-400"
+            activeTab === tab.id ? "bg-sky-500/20 text-sky-300" : "bg-slate-800 text-slate-400"
           }`}
         >
           {tab.count}

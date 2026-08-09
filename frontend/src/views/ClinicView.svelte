@@ -123,13 +123,62 @@
   let businessHours = $state<BusinessHourDay[]>(
     ensureDaySlots(
       practiceConfig?.business_hours || [
-        { day: "Monday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
-        { day: "Tuesday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
-        { day: "Wednesday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
-        { day: "Thursday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
-        { day: "Friday", open_time: "08:00", close_time: "17:00", is_closed: false, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }] },
-        { day: "Saturday", open_time: "08:00", close_time: "17:00", is_closed: true, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [] },
-        { day: "Sunday", open_time: "08:00", close_time: "17:00", is_closed: true, slots: [{ open_time: "08:00", close_time: "17:00" }], breaks: [] },
+        {
+          day: "Monday",
+          open_time: "08:00",
+          close_time: "17:00",
+          is_closed: false,
+          slots: [{ open_time: "08:00", close_time: "17:00" }],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
+        },
+        {
+          day: "Tuesday",
+          open_time: "08:00",
+          close_time: "17:00",
+          is_closed: false,
+          slots: [{ open_time: "08:00", close_time: "17:00" }],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
+        },
+        {
+          day: "Wednesday",
+          open_time: "08:00",
+          close_time: "17:00",
+          is_closed: false,
+          slots: [{ open_time: "08:00", close_time: "17:00" }],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
+        },
+        {
+          day: "Thursday",
+          open_time: "08:00",
+          close_time: "17:00",
+          is_closed: false,
+          slots: [{ open_time: "08:00", close_time: "17:00" }],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
+        },
+        {
+          day: "Friday",
+          open_time: "08:00",
+          close_time: "17:00",
+          is_closed: false,
+          slots: [{ open_time: "08:00", close_time: "17:00" }],
+          breaks: [{ name: "Lunch Break", start_time: "12:00", end_time: "13:00" }],
+        },
+        {
+          day: "Saturday",
+          open_time: "08:00",
+          close_time: "17:00",
+          is_closed: true,
+          slots: [{ open_time: "08:00", close_time: "17:00" }],
+          breaks: [],
+        },
+        {
+          day: "Sunday",
+          open_time: "08:00",
+          close_time: "17:00",
+          is_closed: true,
+          slots: [{ open_time: "08:00", close_time: "17:00" }],
+          breaks: [],
+        },
       ]
     )
   );
@@ -426,7 +475,13 @@
               onclick={() => (isEditingProfile = true)}
               class="btn btn-primary text-xs shadow-md shadow-sky-500/20 flex items-center gap-1.5 px-4 py-2"
             >
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
@@ -448,10 +503,18 @@
               class="btn btn-primary text-xs shadow-md shadow-sky-500/20 flex items-center gap-1.5 px-4 py-2"
             >
               {#if savingProfile}
-                <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                <div
+                  class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"
+                ></div>
                 <span>Saving...</span>
               {:else}
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                   <polyline points="17 21 17 13 7 13 7 21" />
                   <polyline points="7 3 7 8 15 8" />

@@ -88,8 +88,12 @@
               class="w-full text-left rounded px-1.5 py-0.5 text-[11px] font-medium border border-l-2 bg-slate-800/90 hover:bg-slate-700/80 truncate flex items-center gap-1 transition-all"
               style="border-left-color: {appt.color || '#3b82f6'};"
             >
-              <span class="text-sky-400 text-[10px] font-semibold">{formatTime(appt.start_time)}</span>
-              <span class="font-semibold text-white truncate">{getPatientName(appt.patient_id)}</span>
+              <span class="text-sky-400 text-[10px] font-semibold"
+                >{formatTime(appt.start_time)}</span
+              >
+              <span class="font-semibold text-white truncate"
+                >{getPatientName(appt.patient_id)}</span
+              >
             </button>
           {/each}
 

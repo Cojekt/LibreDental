@@ -12,10 +12,7 @@
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
 
-  let {
-    patients = [],
-    countryMeta = null,
-  } = $props<{
+  let { patients = [], countryMeta = null } = $props<{
     patients: Patient[];
     countryMeta?: CountryConfig | null;
   }>();
@@ -198,9 +195,7 @@
     </div>
 
     {#if payments.length === 0 && !loadingPayments}
-      <EmptyState
-        title={`No payments recorded${balancePatientId ? " for this patient" : ""}.`}
-      />
+      <EmptyState title={`No payments recorded${balancePatientId ? " for this patient" : ""}.`} />
     {:else}
       <div class="payment-list">
         {#each payments as pay (pay.id)}
@@ -223,8 +218,16 @@
                 onclick={() => deletePayment(pay.id)}
                 title="Delete"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
-                  <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="h-3.5 w-3.5"
+                >
+                  <path
+                    d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
+                  />
                 </svg>
               </button>
             </div>
@@ -277,7 +280,9 @@
             <label class="form-label" for="pay-method">Method *</label>
             <select id="pay-method" bind:value={payMethod}>
               {#each PAYMENT_METHODS as m}
-                <option value={m}>{m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                <option value={m}
+                  >{m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option
+                >
               {/each}
             </select>
           </div>
@@ -301,7 +306,11 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showPaymentModal = false)}>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick={() => (showPaymentModal = false)}
+          >
             Cancel
           </button>
           <button type="submit" class="btn btn-primary">Record Payment</button>

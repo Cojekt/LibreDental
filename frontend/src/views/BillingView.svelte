@@ -45,11 +45,7 @@
 </script>
 
 <div class="space-y-6">
-  <ViewHeader
-    title={m.billing_title()}
-    subtitle={m.billing_subtitle()}
-    icon="💳"
-  />
+  <ViewHeader title={m.billing_title()} subtitle={m.billing_subtitle()} icon="💳" />
 
   <TabNav {tabs} bind:activeTab={billingTab} />
 

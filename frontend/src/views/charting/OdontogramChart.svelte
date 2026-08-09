@@ -194,7 +194,9 @@
 
     <div class="relative w-8 h-8 my-1 flex items-center justify-center">
       {#if status === "missing"}
-        <div class="absolute inset-0 flex items-center justify-center text-rose-500 font-bold text-lg">
+        <div
+          class="absolute inset-0 flex items-center justify-center text-rose-500 font-bold text-lg"
+        >
           ✕
         </div>
       {:else}
@@ -204,9 +206,13 @@
           <div
             class={`col-span-3 h-1.5 transition-colors ${
               conds.some((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceFacial))
-                ? conds.find((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceFacial))?.status === "completed"
+                ? conds.find((c: ToothCondition) =>
+                    c.surfaces?.includes(ToothSurface.SurfaceFacial)
+                  )?.status === "completed"
                   ? "bg-emerald-500"
-                  : conds.find((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceFacial))?.status === "treatment_planned"
+                  : conds.find((c: ToothCondition) =>
+                        c.surfaces?.includes(ToothSurface.SurfaceFacial)
+                      )?.status === "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
                 : "bg-slate-800"
@@ -216,9 +222,13 @@
           <div
             class={`w-1.5 h-full transition-colors ${
               conds.some((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceMesial))
-                ? conds.find((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceMesial))?.status === "completed"
+                ? conds.find((c: ToothCondition) =>
+                    c.surfaces?.includes(ToothSurface.SurfaceMesial)
+                  )?.status === "completed"
                   ? "bg-emerald-500"
-                  : conds.find((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceMesial))?.status === "treatment_planned"
+                  : conds.find((c: ToothCondition) =>
+                        c.surfaces?.includes(ToothSurface.SurfaceMesial)
+                      )?.status === "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
                 : "bg-slate-800"
@@ -252,9 +262,13 @@
           <div
             class={`w-1.5 h-full transition-colors ${
               conds.some((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceDistal))
-                ? conds.find((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceDistal))?.status === "completed"
+                ? conds.find((c: ToothCondition) =>
+                    c.surfaces?.includes(ToothSurface.SurfaceDistal)
+                  )?.status === "completed"
                   ? "bg-emerald-500"
-                  : conds.find((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceDistal))?.status === "treatment_planned"
+                  : conds.find((c: ToothCondition) =>
+                        c.surfaces?.includes(ToothSurface.SurfaceDistal)
+                      )?.status === "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
                 : "bg-slate-800"
@@ -264,9 +278,13 @@
           <div
             class={`col-span-3 h-1.5 transition-colors ${
               conds.some((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceLingual))
-                ? conds.find((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceLingual))?.status === "completed"
+                ? conds.find((c: ToothCondition) =>
+                    c.surfaces?.includes(ToothSurface.SurfaceLingual)
+                  )?.status === "completed"
                   ? "bg-emerald-500"
-                  : conds.find((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceLingual))?.status === "treatment_planned"
+                  : conds.find((c: ToothCondition) =>
+                        c.surfaces?.includes(ToothSurface.SurfaceLingual)
+                      )?.status === "treatment_planned"
                     ? "bg-amber-500"
                     : "bg-blue-500"
                 : "bg-slate-800"
