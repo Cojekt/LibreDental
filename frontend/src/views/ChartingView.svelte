@@ -242,8 +242,10 @@
     try {
       const ids = billable.map((c) => c.id);
       const claim = await BillingService.CreateClaimFromChartConditions(selectedPatientId, "", ids);
-      claimNoticeMsg = `Claim created successfully! (${claim.line_items?.length || 0} line items billed)`;
-      await loadChart(selectedPatientId);
+      if (claim) {
+        claimNoticeMsg = `Claim created successfully! (${claim.line_items?.length || 0} line items billed)`;
+        await loadChart(selectedPatientId);
+      }
     } catch (e) {
       console.error("Failed to create claim from chart:", e);
       alert("Failed to generate claim from chart.");
