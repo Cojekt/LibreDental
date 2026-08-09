@@ -124,4 +124,3 @@ type FeeSchedule struct {
 	CustomFee   float64     `json:"custom_fee"`
 	UpdatedAt   time.Time   `json:"updated_at"`
 }
-

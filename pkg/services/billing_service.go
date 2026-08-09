@@ -376,4 +376,3 @@ func (s *BillingService) CreateClaimFromChartConditions(patientID string, provid
 
 	return claim, nil
 }
-

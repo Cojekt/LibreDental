@@ -650,13 +650,17 @@
         <div>
           <h3 class="text-base font-bold text-slate-100 m-0">{m.charting_summary_title()}</h3>
           <p class="text-xs text-slate-400 m-0">
-            {m.charting_summary_sub({ firstName: selectedPatient.first_name, lastName: selectedPatient.last_name })}
+            {m.charting_summary_sub({
+              firstName: selectedPatient.first_name,
+              lastName: selectedPatient.last_name,
+            })}
           </p>
         </div>
         {#if currentChart && currentChart.conditions && currentChart.conditions.length > 0}
           <div class="flex items-center gap-4">
             <div class="text-xs font-semibold text-slate-300">
-              {m.charting_total_planned_fee()} <span class="text-sky-400 font-bold"
+              {m.charting_total_planned_fee()}
+              <span class="text-sky-400 font-bold"
                 >{formatCurrency(
                   currentChart.conditions.reduce((acc, c) => acc + (c.fee || 0), 0)
                 )}</span
@@ -712,7 +716,9 @@
               <tr
                 class="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-950/60"
               >
-                <th class="py-3 px-4">{m.charting_th_tooth({ code: countryMeta?.code || "Universal" })}</th>
+                <th class="py-3 px-4"
+                  >{m.charting_th_tooth({ code: countryMeta?.code || "Universal" })}</th
+                >
                 <th class="py-3 px-4">{m.charting_th_surfaces()}</th>
                 <th class="py-3 px-4">{m.charting_th_code()}</th>
                 <th class="py-3 px-4">{m.charting_th_desc()}</th>
@@ -1046,7 +1052,8 @@
         {#if procedureCodes.length > 0}
           <div class="flex flex-col gap-1">
             <label for="condition-catalog-code" class="text-xs font-semibold text-sky-400">
-              📍 {countryMeta?.name || "Regional"} {m.charting_modal_catalog_label()}
+              📍 {countryMeta?.name || "Regional"}
+              {m.charting_modal_catalog_label()}
             </label>
             <select
               id="condition-catalog-code"
@@ -1061,7 +1068,9 @@
               }}
               class="bg-slate-950 border border-sky-500/40 text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value="">{m.charting_modal_catalog_prompt({ name: countryMeta?.name || "Country" })}</option>
+              <option value=""
+                >{m.charting_modal_catalog_prompt({ name: countryMeta?.name || "Country" })}</option
+              >
               {#each procedureCodes as p}
                 <option value={p.code}>
                   [{p.category}] {p.code} - {p.description} ({formatCurrency(
@@ -1088,7 +1097,8 @@
           </div>
           <div class="flex flex-col gap-1">
             <label for="condition-fee" class="text-xs font-medium text-slate-400"
-              >{m.charting_modal_fee_label()} {countryMeta?.default_currency ? `(${countryMeta.default_currency})` : ""}</label
+              >{m.charting_modal_fee_label()}
+              {countryMeta?.default_currency ? `(${countryMeta.default_currency})` : ""}</label
             >
             <input
               id="condition-fee"
@@ -1115,7 +1125,9 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <label for="condition-status" class="text-xs font-medium text-slate-400">{m.charting_modal_status_label()}</label>
+          <label for="condition-status" class="text-xs font-medium text-slate-400"
+            >{m.charting_modal_status_label()}</label
+          >
           <select
             id="condition-status"
             bind:value={formStatus}

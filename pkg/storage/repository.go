@@ -112,4 +112,3 @@ type FeeScheduleRepository interface {
 	ListFeeSchedules(ctx context.Context, countryCode domain.CountryCode, providerID string) ([]*domain.FeeSchedule, error)
 	GetEffectiveFee(ctx context.Context, countryCode domain.CountryCode, code string, providerID string) (float64, error)
 }
-

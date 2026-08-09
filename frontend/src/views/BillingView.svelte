@@ -19,7 +19,11 @@
   import { m } from "../paraglide/messages.js";
 
   // ── Props ─────────────────────────────────────────────────────────────────
-  let { patients = [], providers = [], countryMeta = null } = $props<{
+  let {
+    patients = [],
+    providers = [],
+    countryMeta = null,
+  } = $props<{
     patients: Patient[];
     providers: Provider[];
     countryMeta?: CountryConfig | null;
@@ -927,10 +931,20 @@
       </div>
     {/if}
   {:else if billingTab === "fees"}
-    <div class="billing-toolbar flex justify-between items-center bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4">
+    <div
+      class="billing-toolbar flex justify-between items-center bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4"
+    >
       <div class="flex items-center gap-3">
-        <span class="text-xs font-semibold text-slate-300">{m.billing_filter_provider_label()}</span>
-        <select bind:value={feeFilterProvider} onchange={() => { loadProcedureCodes(); loadFeeSchedules(); }} class="billing-filter-select">
+        <span class="text-xs font-semibold text-slate-300">{m.billing_filter_provider_label()}</span
+        >
+        <select
+          bind:value={feeFilterProvider}
+          onchange={() => {
+            loadProcedureCodes();
+            loadFeeSchedules();
+          }}
+          class="billing-filter-select"
+        >
           <option value="">{m.billing_filter_all_providers()}</option>
           {#each providers as pr}
             <option value={pr.id}>{pr.name}</option>
@@ -938,7 +952,8 @@
         </select>
       </div>
       <div class="text-xs text-sky-400 font-semibold">
-        📍 {countryMeta?.name || "Global"} {m.billing_catalog_banner()}
+        📍 {countryMeta?.name || "Global"}
+        {m.billing_catalog_banner()}
       </div>
     </div>
 
@@ -963,7 +978,7 @@
           </thead>
           <tbody>
             {#each procedureCodes as p (p.code)}
-              {@const hasCustom = (p.effective_fee || 0) > 0 && (p.effective_fee !== p.default_fee)}
+              {@const hasCustom = (p.effective_fee || 0) > 0 && p.effective_fee !== p.default_fee}
               <tr class="claim-row">
                 <td class="font-mono font-bold text-sky-400">{p.code}</td>
                 <td><span class="status-badge bg-slate-800 text-slate-300">{p.category}</span></td>
@@ -972,7 +987,10 @@
                 <td class="font-bold text-slate-100 font-mono">
                   {fmt(p.effective_fee || p.default_fee)}
                   {#if hasCustom}
-                    <span class="ml-2 text-[10px] text-amber-400 font-semibold px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-800">{m.billing_custom_tag()}</span>
+                    <span
+                      class="ml-2 text-[10px] text-amber-400 font-semibold px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-800"
+                      >{m.billing_custom_tag()}</span
+                    >
                   {/if}
                 </td>
                 <td class="text-center">
@@ -1409,11 +1427,14 @@
           />
         </div>
         <p class="text-xs text-slate-400">
-          {m.billing_fee_custom_desc()} {editingFeeCode}.
+          {m.billing_fee_custom_desc()}
+          {editingFeeCode}.
         </p>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showFeeModal = false)}>{m.common_cancel()}</button>
+          <button type="button" class="btn btn-secondary" onclick={() => (showFeeModal = false)}
+            >{m.common_cancel()}</button
+          >
           <button type="submit" class="btn btn-primary">{m.common_save()}</button>
         </div>
       </form>
@@ -1436,13 +1457,19 @@
         </p>
 
         {#if chartImportConditions.length === 0}
-          <div class="p-6 text-center text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl">
+          <div
+            class="p-6 text-center text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl"
+          >
             {m.billing_chart_import_empty()}
           </div>
         {:else}
-          <div class="max-h-60 overflow-y-auto border border-slate-800 rounded-xl divide-y divide-slate-800 bg-slate-950">
+          <div
+            class="max-h-60 overflow-y-auto border border-slate-800 rounded-xl divide-y divide-slate-800 bg-slate-950"
+          >
             {#each chartImportConditions as cond}
-              <label class="flex items-center justify-between p-3 hover:bg-slate-900 cursor-pointer text-xs">
+              <label
+                class="flex items-center justify-between p-3 hover:bg-slate-900 cursor-pointer text-xs"
+              >
                 <div class="flex items-center gap-3">
                   <input
                     type="checkbox"
@@ -1453,14 +1480,17 @@
                       if (checked) {
                         selectedImportConditionIds = [...selectedImportConditionIds, cond.id];
                       } else {
-                        selectedImportConditionIds = selectedImportConditionIds.filter((id) => id !== cond.id);
+                        selectedImportConditionIds = selectedImportConditionIds.filter(
+                          (id) => id !== cond.id
+                        );
                       }
                     }}
                     class="rounded border-slate-700 text-sky-500 focus:ring-sky-500"
                   />
                   <div>
                     <div class="font-bold text-slate-200">
-                      Tooth #{cond.tooth_number} {cond.surfaces?.length ? `(${cond.surfaces.join(", ")})` : ""}
+                      Tooth #{cond.tooth_number}
+                      {cond.surfaces?.length ? `(${cond.surfaces.join(", ")})` : ""}
                       <span class="ml-2 font-mono text-sky-400">[{cond.ada_code || "PROC"}]</span>
                     </div>
                     <div class="text-slate-400">{cond.description}</div>
@@ -1473,7 +1503,11 @@
         {/if}
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showChartImportModal = false)}>{m.common_cancel()}</button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick={() => (showChartImportModal = false)}>{m.common_cancel()}</button
+          >
           <button
             type="button"
             class="btn btn-primary"
