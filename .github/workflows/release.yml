@@ -115,7 +115,7 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Generate Demo Database
-        run: go run ./pkg/demo/gen.go libredental.db
+        run: go run ./internal/demo/gen.go libredental.db
 
       - name: Upload Demo Database Artifact
         uses: actions/upload-artifact@v7
