@@ -10,6 +10,9 @@
     ToothCondition,
   } from "@bindings/domain/index.js";
   import { ClaimStatus } from "@bindings/domain/index.js";
+  import Modal from "../../components/ui/Modal.svelte";
+  import FormField from "../../components/ui/FormField.svelte";
+  import Input from "../../components/ui/Input.svelte";
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
@@ -252,15 +255,19 @@
 </script>
 
 <div class="space-y-4">
-  <div class="billing-toolbar flex items-center justify-between gap-4">
-    <select bind:value={claimFilterPatient} onchange={loadClaims} class="billing-filter-select">
+  <div class="flex items-center justify-between gap-4">
+    <select
+      bind:value={claimFilterPatient}
+      onchange={loadClaims}
+      class="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+    >
       <option value="">{m.billing_filter_all_patients()}</option>
       {#each patients as p}
         <option value={p.id}>{p.first_name} {p.last_name}</option>
       {/each}
     </select>
 
-    <button type="button" class="btn btn-primary" onclick={openNewClaim}>
+    <button type="button" class="btn btn-primary text-xs" onclick={openNewClaim}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
         <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
       </svg>
@@ -269,79 +276,90 @@
   </div>
 
   {#if loadingClaims}
-    <div class="billing-loading">{m.common_loading()}</div>
+    <div class="p-8 text-center text-sm text-slate-400">{m.common_loading()}</div>
   {:else if claims.length === 0}
-    <EmptyState
-      title={m.billing_no_claims()}
-      icon="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2z"
-    />
+    <EmptyState title={m.billing_no_claims()} icon="📄" />
   {:else}
-    <div class="claims-table-wrap">
-      <table class="claims-table">
-        <thead>
+    <div class="rounded-xl border border-slate-800 bg-slate-900/40 overflow-x-auto">
+      <table class="w-full text-left text-sm text-slate-300">
+        <thead
+          class="bg-slate-900/80 border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400"
+        >
           <tr>
-            <th>{m.billing_th_date()}</th>
-            <th>{m.billing_th_patient()}</th>
-            <th>{m.billing_th_provider()}</th>
-            <th>{m.billing_th_carrier()}</th>
-            <th>{m.billing_th_procedures()}</th>
-            <th>{m.billing_th_total()}</th>
-            <th>{m.billing_th_status()}</th>
-            <th></th>
+            <th class="px-4 py-3">{m.billing_th_date()}</th>
+            <th class="px-4 py-3">{m.billing_th_patient()}</th>
+            <th class="px-4 py-3">{m.billing_th_provider()}</th>
+            <th class="px-4 py-3">{m.billing_th_carrier()}</th>
+            <th class="px-4 py-3">{m.billing_th_procedures()}</th>
+            <th class="px-4 py-3">{m.billing_th_total()}</th>
+            <th class="px-4 py-3">{m.billing_th_status()}</th>
+            <th class="px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-slate-800/60">
           {#each claims as c (c.id)}
-            <tr class="claim-row">
-              <td class="claim-date">{c.date_of_service}</td>
-              <td>{patientName(c.patient_id)}</td>
-              <td class="text-slate-400">{providerName(c.provider_id)}</td>
-              <td class="text-slate-400">{c.insurance_carrier || "—"}</td>
-              <td>
-                <div class="line-items-preview">
+            <tr class="hover:bg-slate-900/50 transition-colors">
+              <td class="px-4 py-3 text-slate-400 font-mono text-xs">{c.date_of_service}</td>
+              <td class="px-4 py-3 font-semibold text-slate-100">{patientName(c.patient_id)}</td>
+              <td class="px-4 py-3 text-slate-400">{providerName(c.provider_id)}</td>
+              <td class="px-4 py-3 text-slate-400">{c.insurance_carrier || "—"}</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-1.5 flex-wrap">
                   {#each (c.line_items ?? []).slice(0, 2) as li}
-                    <span class="ada-badge">{li.ada_code}</span>
+                    <span
+                      class="px-2 py-0.5 text-xs font-mono font-bold rounded bg-slate-800 text-sky-300 border border-slate-700"
+                    >
+                      {li.ada_code}
+                    </span>
                   {/each}
                   {#if (c.line_items ?? []).length > 2}
-                    <span class="text-slate-500 text-xs">+{(c.line_items ?? []).length - 2}</span>
+                    <span class="text-slate-500 text-xs font-medium"
+                      >+{(c.line_items ?? []).length - 2}</span
+                    >
                   {/if}
                 </div>
               </td>
-              <td class="claim-fee">{fmt(claimTotal(c))}</td>
-              <td>
+              <td class="px-4 py-3 font-bold text-slate-100 font-mono">{fmt(claimTotal(c))}</td>
+              <td class="px-4 py-3">
                 <StatusBadge variant={c.status} />
               </td>
-              <td class="claim-actions">
-                <button class="action-btn" onclick={() => openEditClaim(c)} title="Edit">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="h-4 w-4"
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button
+                    class="p-1.5 text-slate-400 hover:text-sky-300 rounded-lg hover:bg-slate-800 transition-colors"
+                    onclick={() => openEditClaim(c)}
+                    title="Edit"
                   >
-                    <path
-                      d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </button>
-                <button
-                  class="action-btn action-btn-danger"
-                  onclick={() => deleteClaim(c.id)}
-                  title="Delete"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="h-4 w-4"
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="h-4 w-4"
+                    >
+                      <path
+                        d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+                    onclick={() => deleteClaim(c.id)}
+                    title="Delete"
                   >
-                    <path
-                      d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="h-4 w-4"
+                    >
+                      <path
+                        d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </td>
             </tr>
           {/each}
@@ -352,277 +370,293 @@
 </div>
 
 <!-- CLAIM MODAL -->
-{#if showClaimModal}
-  <div class="modal-backdrop" role="dialog" aria-modal="true">
-    <div class="modal-box modal-wide">
-      <div class="modal-header">
-        <h2 class="modal-title">{isEditingClaim ? "Edit Claim" : "New Insurance Claim"}</h2>
-        <button class="modal-close" onclick={() => (showClaimModal = false)}>✕</button>
+<Modal
+  bind:showModal={showClaimModal}
+  title={isEditingClaim ? "Edit Claim" : "New Insurance Claim"}
+  subtitle="Configure claim details, insurance carrier policy numbers, and CDT line items"
+  icon="📄"
+  maxWidth="max-w-4xl"
+>
+  <form onsubmit={saveClaim} class="space-y-5">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <FormField label="Patient" forId="cl-patient" required>
+        <select
+          id="cl-patient"
+          bind:value={claimPatientId}
+          required
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+        >
+          {#each patients as p}
+            <option value={p.id}>{p.first_name} {p.last_name}</option>
+          {/each}
+        </select>
+      </FormField>
+
+      <FormField label="Provider" forId="cl-provider">
+        <select
+          id="cl-provider"
+          bind:value={claimProviderId}
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+        >
+          <option value="">— None —</option>
+          {#each providers as pr}
+            <option value={pr.id}>{pr.name}</option>
+          {/each}
+        </select>
+      </FormField>
+
+      <FormField label="Date of Service" forId="cl-dos" required>
+        <Input id="cl-dos" type="date" bind:value={claimDateOfService} required />
+      </FormField>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <FormField label="Insurance Carrier" forId="cl-carrier">
+        <Input
+          id="cl-carrier"
+          type="text"
+          bind:value={claimInsuranceCarrier}
+          placeholder="e.g. Delta Dental"
+        />
+      </FormField>
+      <FormField label="Policy #" forId="cl-policy">
+        <Input
+          id="cl-policy"
+          type="text"
+          bind:value={claimPolicyNumber}
+          placeholder="Policy number"
+        />
+      </FormField>
+      <FormField label="Group #" forId="cl-group">
+        <Input id="cl-group" type="text" bind:value={claimGroupNumber} placeholder="Group number" />
+      </FormField>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <FormField label="Status" forId="cl-status">
+        <select
+          id="cl-status"
+          bind:value={claimStatus}
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+        >
+          {#each CLAIM_STATUSES as s}
+            <option value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+          {/each}
+        </select>
+      </FormField>
+      <FormField label="Notes" forId="cl-notes">
+        <Input id="cl-notes" type="text" bind:value={claimNotes} placeholder="Optional notes" />
+      </FormField>
+    </div>
+
+    <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">
+          Procedure Line Items
+        </h4>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm flex items-center gap-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60"
+            onclick={openChartImportModal}
+          >
+            🦷 Import Chart Procedures
+          </button>
+          <div class="flex items-center gap-1.5">
+            <input
+              type="text"
+              class="w-36 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+              bind:value={bundleLookupInput}
+              placeholder="Bundle (crwn)"
+              onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), applyBundleLookup())}
+            />
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              onclick={applyBundleLookup}
+              disabled={bundleLookupLoading}
+            >
+              {bundleLookupLoading ? "…" : "Apply"}
+            </button>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick={addLineItem}>
+            + Add Row
+          </button>
+        </div>
       </div>
 
-      <form onsubmit={saveClaim} class="modal-body">
-        <div class="form-grid-3">
-          <div class="form-field">
-            <label class="form-label" for="cl-patient">Patient *</label>
-            <select id="cl-patient" bind:value={claimPatientId} required>
-              {#each patients as p}
-                <option value={p.id}>{p.first_name} {p.last_name}</option>
-              {/each}
-            </select>
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="cl-provider">Provider</label>
-            <select id="cl-provider" bind:value={claimProviderId}>
-              <option value="">— None —</option>
-              {#each providers as pr}
-                <option value={pr.id}>{pr.name}</option>
-              {/each}
-            </select>
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="cl-dos">Date of Service *</label>
-            <input id="cl-dos" type="date" bind:value={claimDateOfService} required />
-          </div>
-        </div>
+      {#if bundleLookupError}
+        <p class="text-xs text-rose-400 m-0">⚠️ {bundleLookupError}</p>
+      {/if}
 
-        <div class="form-grid-3">
-          <div class="form-field">
-            <label class="form-label" for="cl-carrier">Insurance Carrier</label>
-            <input
-              id="cl-carrier"
-              type="text"
-              bind:value={claimInsuranceCarrier}
-              placeholder="e.g. Delta Dental"
-            />
+      {#if claimLineItems.length > 0}
+        <div class="space-y-2">
+          <div
+            class="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1"
+          >
+            <span class="col-span-2">ADA Code</span>
+            <span class="col-span-3">Description</span>
+            <span class="col-span-1 text-center">Tooth</span>
+            <span class="col-span-2 text-right">Fee</span>
+            <span class="col-span-2 text-right">Ins. Allowed</span>
+            <span class="col-span-1 text-center"></span>
           </div>
-          <div class="form-field">
-            <label class="form-label" for="cl-policy">Policy #</label>
-            <input
-              id="cl-policy"
-              type="text"
-              bind:value={claimPolicyNumber}
-              placeholder="Policy number"
-            />
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="cl-group">Group #</label>
-            <input
-              id="cl-group"
-              type="text"
-              bind:value={claimGroupNumber}
-              placeholder="Group number"
-            />
-          </div>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="form-field">
-            <label class="form-label" for="cl-status">Status</label>
-            <select id="cl-status" bind:value={claimStatus}>
-              {#each CLAIM_STATUSES as s}
-                <option value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-              {/each}
-            </select>
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="cl-notes">Notes</label>
-            <input id="cl-notes" type="text" bind:value={claimNotes} placeholder="Optional notes" />
-          </div>
-        </div>
-
-        <div class="line-items-section">
-          <div class="line-items-header">
-            <span class="form-label mb-0">Procedure Line Items</span>
-            <div class="line-items-header-actions">
-              <button
-                type="button"
-                class="btn btn-secondary btn-sm flex items-center gap-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60"
-                onclick={openChartImportModal}
-              >
-                🦷 Import Chart Procedures
-              </button>
-              <div class="bundle-lookup">
-                <input
-                  type="text"
-                  class="bundle-lookup-input"
-                  bind:value={bundleLookupInput}
-                  placeholder="Bundle shortname (e.g. crwn)"
-                  onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), applyBundleLookup())}
+          {#each claimLineItems as li, i}
+            <div class="grid grid-cols-12 gap-2 items-center">
+              <div class="col-span-2">
+                <Input
+                  bind:value={li.ada_code}
+                  placeholder="D0120"
+                  class="font-mono text-xs py-1.5 px-2"
                 />
-                <button
-                  type="button"
-                  class="btn btn-secondary btn-sm"
-                  onclick={applyBundleLookup}
-                  disabled={bundleLookupLoading}
-                >
-                  {bundleLookupLoading ? "…" : "Apply"}
-                </button>
               </div>
-              <button type="button" class="btn btn-secondary btn-sm" onclick={addLineItem}>
-                + Add Row
-              </button>
-            </div>
-          </div>
-
-          {#if bundleLookupError}
-            <p class="lookup-error">{bundleLookupError}</p>
-          {/if}
-
-          {#if claimLineItems.length > 0}
-            <div class="line-items-grid-header">
-              <span>ADA Code</span><span>Description</span>
-              <span>Tooth</span><span>Fee</span><span>Ins. Allowed</span><span>Pt. Portion</span
-              ><span></span>
-            </div>
-            {#each claimLineItems as li, i}
-              <div class="line-item-row">
-                <input type="text" bind:value={li.ada_code} placeholder="D0120" class="li-ada" />
-                <input
-                  type="text"
+              <div class="col-span-3">
+                <Input
                   bind:value={li.description}
                   placeholder="Description"
-                  class="li-desc"
+                  class="text-xs py-1.5 px-2"
                 />
-                <input
+              </div>
+              <div class="col-span-1">
+                <Input
                   type="number"
                   bind:value={li.tooth_number}
-                  placeholder="—"
                   min="1"
                   max="32"
-                  class="li-tooth"
+                  placeholder="—"
+                  class="text-center text-xs py-1.5 px-1"
                 />
-                <input
+              </div>
+              <div class="col-span-2">
+                <Input
                   type="number"
                   bind:value={li.fee}
                   step="0.01"
                   min="0"
                   placeholder="0.00"
-                  class="li-fee"
+                  class="text-right text-xs py-1.5 px-2"
                 />
-                <input
+              </div>
+              <div class="col-span-2">
+                <Input
                   type="number"
                   bind:value={li.insurance_allowed}
                   step="0.01"
                   min="0"
                   placeholder="0.00"
-                  class="li-fee"
+                  class="text-right text-xs py-1.5 px-2"
                 />
-                <input
-                  type="number"
-                  bind:value={li.patient_portion}
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  class="li-fee"
-                />
+              </div>
+              <div class="col-span-1 flex justify-center">
                 <button
                   type="button"
-                  class="action-btn action-btn-danger"
-                  onclick={() => removeLineItem(i)}>✕</button
+                  class="p-1 text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                  onclick={() => removeLineItem(i)}
+                  title="Remove row">✕</button
                 >
               </div>
-            {/each}
-            <div class="line-items-total">
-              Total: <strong>{fmt(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0))}</strong>
             </div>
-          {:else}
-            <div class="line-items-empty">
-              No line items. Add rows manually or apply a bundle shortname above.
-            </div>
-          {/if}
+          {/each}
+          <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
+            Total: <strong class="text-white text-sm font-mono"
+              >{fmt(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0))}</strong
+            >
+          </div>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showClaimModal = false)}
-            >Cancel</button
-          >
-          <button type="submit" class="btn btn-primary">
-            {isEditingClaim ? "Save Changes" : "Create Claim"}
-          </button>
+      {:else}
+        <div
+          class="p-6 text-center text-xs text-slate-500 bg-slate-900/50 rounded-xl border border-dashed border-slate-800"
+        >
+          No line items added yet. Click '+ Add Row' or apply a bundle shortname above.
         </div>
-      </form>
+      {/if}
     </div>
-  </div>
-{/if}
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <button
+        type="button"
+        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+        onclick={() => (showClaimModal = false)}
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
+        {isEditingClaim ? "Save Changes" : "Create Claim"}
+      </button>
+    </div>
+  </form>
+</Modal>
 
 <!-- Import Chart Conditions Modal -->
-{#if showChartImportModal}
-  <div class="modal-backdrop" role="dialog" aria-modal="true">
-    <div class="modal-box modal-wide max-w-2xl">
-      <div class="modal-header">
-        <h2 class="modal-title">{m.billing_chart_import_title()}</h2>
-        <button class="modal-close" onclick={() => (showChartImportModal = false)}>✕</button>
+<Modal
+  bind:showModal={showChartImportModal}
+  title={m.billing_chart_import_title()}
+  subtitle={m.billing_chart_import_desc()}
+  icon="🦷"
+  maxWidth="max-w-2xl"
+>
+  <div class="space-y-4">
+    {#if chartImportConditions.length === 0}
+      <div
+        class="p-6 text-center text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl"
+      >
+        {m.billing_chart_import_empty()}
       </div>
-
-      <div class="modal-body flex flex-col gap-4">
-        <p class="text-xs text-slate-300 m-0">
-          {m.billing_chart_import_desc()}
-        </p>
-
-        {#if chartImportConditions.length === 0}
-          <div
-            class="p-6 text-center text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl"
+    {:else}
+      <div
+        class="max-h-60 overflow-y-auto border border-slate-800 rounded-xl divide-y divide-slate-800 bg-slate-950"
+      >
+        {#each chartImportConditions as cond}
+          <label
+            class="flex items-center justify-between p-3 hover:bg-slate-900 cursor-pointer text-xs transition-colors"
           >
-            {m.billing_chart_import_empty()}
-          </div>
-        {:else}
-          <div
-            class="max-h-60 overflow-y-auto border border-slate-800 rounded-xl divide-y divide-slate-800 bg-slate-950"
-          >
-            {#each chartImportConditions as cond}
-              <label
-                class="flex items-center justify-between p-3 hover:bg-slate-900 cursor-pointer text-xs"
-              >
-                <div class="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    value={cond.id}
-                    checked={selectedImportConditionIds.includes(cond.id)}
-                    onchange={(e) => {
-                      const checked = (e.target as HTMLInputElement).checked;
-                      if (checked) {
-                        selectedImportConditionIds = [...selectedImportConditionIds, cond.id];
-                      } else {
-                        selectedImportConditionIds = selectedImportConditionIds.filter(
-                          (id) => id !== cond.id
-                        );
-                      }
-                    }}
-                    class="rounded border-slate-700 text-sky-500 focus:ring-sky-500"
-                  />
-                  <div>
-                    <div class="font-bold text-slate-200">
-                      Tooth #{cond.tooth_number}
-                      {cond.surfaces?.length ? `(${cond.surfaces.join(", ")})` : ""}
-                      <span class="ml-2 font-mono text-sky-400">[{cond.ada_code || "PROC"}]</span>
-                    </div>
-                    <div class="text-slate-400">{cond.description}</div>
-                  </div>
+            <div class="flex items-center gap-3">
+              <input
+                type="checkbox"
+                value={cond.id}
+                checked={selectedImportConditionIds.includes(cond.id)}
+                onchange={(e) => {
+                  const checked = (e.target as HTMLInputElement).checked;
+                  if (checked) {
+                    selectedImportConditionIds = [...selectedImportConditionIds, cond.id];
+                  } else {
+                    selectedImportConditionIds = selectedImportConditionIds.filter(
+                      (id) => id !== cond.id
+                    );
+                  }
+                }}
+              />
+              <div>
+                <div class="font-bold text-slate-200">
+                  Tooth #{cond.tooth_number}
+                  {cond.surfaces?.length ? `(${cond.surfaces.join(", ")})` : ""}
+                  <span class="ml-2 font-mono text-sky-400">[{cond.ada_code || "PROC"}]</span>
                 </div>
-                <div class="font-mono font-semibold text-slate-100">{fmt(cond.fee || 0)}</div>
-              </label>
-            {/each}
-          </div>
-        {/if}
-
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick={() => (showChartImportModal = false)}
-          >
-            {m.common_cancel()}
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            disabled={selectedImportConditionIds.length === 0}
-            onclick={applyChartImport}
-          >
-            {m.billing_chart_import_submit({ count: selectedImportConditionIds.length })}
-          </button>
-        </div>
+                <div class="text-slate-400">{cond.description}</div>
+              </div>
+            </div>
+            <div class="font-mono font-semibold text-slate-100">{fmt(cond.fee || 0)}</div>
+          </label>
+        {/each}
       </div>
+    {/if}
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <button
+        type="button"
+        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+        onclick={() => (showChartImportModal = false)}
+      >
+        {m.common_cancel()}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary text-xs px-5 py-2 cursor-pointer"
+        disabled={selectedImportConditionIds.length === 0}
+        onclick={applyChartImport}
+      >
+        {m.billing_chart_import_submit({ count: selectedImportConditionIds.length })}
+      </button>
     </div>
   </div>
-{/if}
+</Modal>

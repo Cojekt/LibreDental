@@ -6,6 +6,9 @@
     BundleItemTemplate,
     CountryConfig,
   } from "@bindings/domain/index.js";
+  import Modal from "../../components/ui/Modal.svelte";
+  import FormField from "../../components/ui/FormField.svelte";
+  import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
 
@@ -132,8 +135,12 @@
 </script>
 
 <div class="space-y-4">
-  <div class="flex justify-end mb-2">
-    <button type="button" class="btn btn-primary" onclick={openNewBundle}>
+  <div class="flex justify-end">
+    <button
+      type="button"
+      class="btn btn-primary text-xs flex items-center gap-1.5"
+      onclick={openNewBundle}
+    >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
         <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
       </svg>
@@ -142,41 +149,64 @@
   </div>
 
   {#if loadingBundles}
-    <div class="billing-loading">Loading bundles…</div>
+    <div class="p-8 text-center text-sm text-slate-400">Loading procedure bundles…</div>
   {:else if bundles.length === 0}
     <EmptyState
-      title="No procedure bundles yet"
-      subtitle="Create one to speed up claim entry."
-      icon="M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 1-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10"
+      title="No procedure bundles created yet"
+      subtitle="Create procedure bundle templates (e.g. Crown + Build-up) to speed up claim entry."
+      icon="📦"
     />
   {:else}
-    <div class="bundle-grid">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each bundles as b (b.id)}
-        <div class="bundle-card">
-          <div class="bundle-card-header">
-            <div class="bundle-card-title-row">
-              <span class="shortname-badge">{b.shortname}</span>
-              <span class="bundle-name">{b.name}</span>
+        <div
+          class="rounded-xl border border-slate-800 bg-slate-900/80 hover:border-slate-700 flex flex-col justify-between overflow-hidden transition-colors"
+        >
+          <div class="p-4 space-y-2 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <span
+                class="px-2 py-0.5 text-xs font-mono font-bold rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20"
+              >
+                {b.shortname}
+              </span>
+              <h4 class="text-sm font-bold text-slate-100 m-0 truncate">{b.name}</h4>
             </div>
             {#if b.description}
-              <p class="bundle-description">{b.description}</p>
+              <p class="text-xs text-slate-400 m-0 line-clamp-2">{b.description}</p>
             {/if}
           </div>
 
-          <div class="bundle-items-list">
+          <div class="p-4 space-y-2 flex-1">
             {#each b.items as item}
-              <div class="bundle-item-row">
-                <span class="ada-badge">{item.ada_code}</span>
-                <span class="bundle-item-desc">{item.description}</span>
-                <span class="bundle-item-fee">{fmt(item.default_fee)}</span>
+              <div class="flex items-center justify-between text-xs gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span
+                    class="px-1.5 py-0.5 text-[11px] font-mono font-bold rounded bg-slate-800 text-sky-300 border border-slate-700 shrink-0"
+                  >
+                    {item.ada_code}
+                  </span>
+                  <span class="text-slate-300 truncate">{item.description}</span>
+                </div>
+                <span class="font-mono font-semibold text-slate-100 shrink-0"
+                  >{fmt(item.default_fee)}</span
+                >
               </div>
             {/each}
           </div>
 
-          <div class="bundle-card-footer">
-            <span class="bundle-total">Total: <strong>{fmt(b.total_fee)}</strong></span>
-            <div class="bundle-card-actions">
-              <button class="action-btn" onclick={() => openEditBundle(b)} title="Edit">
+          <div
+            class="flex items-center justify-between px-4 py-3 bg-slate-950/60 border-t border-slate-800 text-xs"
+          >
+            <span class="text-slate-400"
+              >Total: <strong class="text-slate-100 font-mono text-sm">{fmt(b.total_fee)}</strong
+              ></span
+            >
+            <div class="flex items-center gap-1">
+              <button
+                class="p-1.5 text-slate-400 hover:text-sky-300 rounded-lg hover:bg-slate-800 transition-colors"
+                onclick={() => openEditBundle(b)}
+                title="Edit"
+              >
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -191,7 +221,7 @@
               </button>
 
               <button
-                class="action-btn action-btn-danger"
+                class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                 onclick={() => deleteBundle(b.id)}
                 title="Delete"
               >
@@ -216,106 +246,132 @@
 </div>
 
 <!-- BUNDLE MODAL -->
-{#if showBundleModal}
-  <div class="modal-backdrop" role="dialog" aria-modal="true">
-    <div class="modal-box modal-wide">
-      <div class="modal-header">
-        <h2 class="modal-title">{isEditingBundle ? "Edit Bundle" : "New Procedure Bundle"}</h2>
-        <button class="modal-close" onclick={() => (showBundleModal = false)}>✕</button>
+<Modal
+  bind:showModal={showBundleModal}
+  title={isEditingBundle ? "Edit Bundle" : "New Procedure Bundle"}
+  subtitle="Configure multi-code procedure templates for single-click claim entry"
+  icon="📦"
+  maxWidth="max-w-3xl"
+>
+  <form onsubmit={saveBundle} class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <FormField
+        label="Shortname"
+        forId="b-shortname"
+        helpText="Used for fast search lookup (e.g. 'crwn', 'rct-a')"
+        required
+        error={shortnameError}
+      >
+        <Input
+          id="b-shortname"
+          type="text"
+          bind:value={bundleShortname}
+          placeholder="e.g. crwn"
+          required
+        />
+      </FormField>
+      <FormField label="Full Name" forId="b-name" required>
+        <Input
+          id="b-name"
+          type="text"
+          bind:value={bundleName}
+          placeholder="e.g. Crown + Build-up"
+          required
+        />
+      </FormField>
+    </div>
+
+    <FormField label="Description" forId="b-desc">
+      <Input
+        id="b-desc"
+        type="text"
+        bind:value={bundleDescription}
+        placeholder="Optional description of procedure steps included"
+      />
+    </FormField>
+
+    <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">
+          Procedure CDT Items
+        </h4>
+        <button type="button" class="btn btn-secondary btn-sm" onclick={addBundleItem}>
+          + Add Item
+        </button>
       </div>
 
-      <form onsubmit={saveBundle} class="modal-body">
-        <div class="form-grid-2">
-          <div class="form-field">
-            <label class="form-label" for="b-shortname">
-              Shortname *
-              <span class="form-label-hint">e.g. "crwn", "rct-a" — used for fast lookup</span>
-            </label>
-            <input
-              id="b-shortname"
-              type="text"
-              bind:value={bundleShortname}
-              placeholder="crwn"
-              required
-              class={shortnameError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
-            />
-            {#if shortnameError}
-              <p class="field-error">{shortnameError}</p>
-            {/if}
+      {#if bundleItems.length > 0}
+        <div class="space-y-2">
+          <div
+            class="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1"
+          >
+            <span class="col-span-3">ADA Code</span>
+            <span class="col-span-6">Description</span>
+            <span class="col-span-2 text-right">Default Fee</span>
+            <span class="col-span-1 text-center"></span>
           </div>
-          <div class="form-field">
-            <label class="form-label" for="b-name">Full Name *</label>
-            <input
-              id="b-name"
-              type="text"
-              bind:value={bundleName}
-              placeholder="Crown + Build-up"
-              required
-            />
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="b-desc">Description</label>
-          <input
-            id="b-desc"
-            type="text"
-            bind:value={bundleDescription}
-            placeholder="Optional description"
-          />
-        </div>
-
-        <div class="line-items-section">
-          <div class="line-items-header">
-            <span class="form-label mb-0">Procedure Items</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick={addBundleItem}
-              >+ Add Item</button
-            >
-          </div>
-
-          {#if bundleItems.length > 0}
-            <div class="bundle-items-grid-header">
-              <span>ADA Code</span><span>Description</span><span>Default Fee</span><span></span>
-            </div>
-            {#each bundleItems as item, i}
-              <div class="bundle-item-edit-row">
-                <input type="text" bind:value={item.ada_code} placeholder="D0120" />
-                <input
-                  type="text"
+          {#each bundleItems as item, i}
+            <div class="grid grid-cols-12 gap-2 items-center">
+              <div class="col-span-3">
+                <Input
+                  bind:value={item.ada_code}
+                  placeholder="D0120"
+                  class="font-mono text-xs py-1.5 px-2"
+                />
+              </div>
+              <div class="col-span-6">
+                <Input
                   bind:value={item.description}
                   placeholder="Procedure description"
+                  class="text-xs py-1.5 px-2"
                 />
-                <input
+              </div>
+              <div class="col-span-2">
+                <Input
                   type="number"
                   bind:value={item.default_fee}
                   step="0.01"
                   min="0"
                   placeholder="0.00"
+                  class="text-right text-xs py-1.5 px-2"
                 />
+              </div>
+              <div class="col-span-1 flex justify-center">
                 <button
                   type="button"
-                  class="action-btn action-btn-danger"
-                  onclick={() => removeBundleItem(i)}>✕</button
+                  class="p-1 text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                  onclick={() => removeBundleItem(i)}
+                  title="Remove item">✕</button
                 >
               </div>
-            {/each}
-            <div class="line-items-total">
-              Total: <strong>{fmt(bundleTotalFee())}</strong>
             </div>
-          {:else}
-            <div class="line-items-empty">No items yet. Add CDT-coded procedures above.</div>
-          {/if}
+          {/each}
+          <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
+            Total Bundle Fee: <strong class="text-white text-sm font-mono"
+              >{fmt(bundleTotalFee())}</strong
+            >
+          </div>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick={() => (showBundleModal = false)}
-            >Cancel</button
-          >
-          <button type="submit" class="btn btn-primary">
-            {isEditingBundle ? "Save Changes" : "Create Bundle"}
-          </button>
+      {:else}
+        <div
+          class="p-6 text-center text-xs text-slate-500 bg-slate-900/50 rounded-xl border border-dashed border-slate-800"
+        >
+          No CDT procedure items yet. Click '+ Add Item' above.
         </div>
-      </form>
+      {/if}
     </div>
-  </div>
-{/if}
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <button
+        type="button"
+        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+        onclick={() => (showBundleModal = false)}
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
+        {isEditingBundle ? "Save Changes" : "Create Bundle"}
+      </button>
+    </div>
+  </form>
+</Modal>

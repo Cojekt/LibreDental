@@ -8,6 +8,9 @@
     CountryConfig,
   } from "@bindings/domain/index.js";
   import { PaymentMethod } from "@bindings/domain/index.js";
+  import Modal from "../../components/ui/Modal.svelte";
+  import FormField from "../../components/ui/FormField.svelte";
+  import Input from "../../components/ui/Input.svelte";
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
@@ -136,9 +139,13 @@
   }
 </script>
 
-<div class="payments-layout space-y-4">
-  <div class="flex justify-end mb-2">
-    <button type="button" class="btn btn-primary" onclick={openNewPayment}>
+<div class="space-y-6">
+  <div class="flex justify-end">
+    <button
+      type="button"
+      class="btn btn-primary text-xs flex items-center gap-1.5"
+      onclick={openNewPayment}
+    >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
         <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
       </svg>
@@ -146,84 +153,108 @@
     </button>
   </div>
 
-  <div class="balance-panel">
-    <div class="balance-patient-select">
-      <label class="form-label" for="balance-patient">Patient</label>
-      <select id="balance-patient" bind:value={balancePatientId} class="w-full">
-        <option value="">— Select patient —</option>
-        {#each patients as p}
-          <option value={p.id}>{p.first_name} {p.last_name}</option>
-        {/each}
-      </select>
+  <div class="space-y-4">
+    <div class="max-w-xs space-y-1.5">
+      <FormField label="Select Patient for Ledger & Balance" forId="balance-patient">
+        <select
+          id="balance-patient"
+          bind:value={balancePatientId}
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+        >
+          <option value="">— Select patient —</option>
+          {#each patients as p}
+            <option value={p.id}>{p.first_name} {p.last_name}</option>
+          {/each}
+        </select>
+      </FormField>
     </div>
 
     {#if patientBalance && balancePatientId}
-      <div class="balance-cards">
-        <div class="balance-card balance-billed">
-          <div class="balance-label">Total Billed</div>
-          <div class="balance-amount">{fmt(patientBalance.total_billed)}</div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Total Billed
+          </div>
+          <div class="text-2xl font-extrabold text-slate-300 font-mono">
+            {fmt(patientBalance.total_billed)}
+          </div>
         </div>
-        <div class="balance-card balance-paid">
-          <div class="balance-label">Total Paid</div>
-          <div class="balance-amount">{fmt(patientBalance.total_paid)}</div>
+        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Total Paid
+          </div>
+          <div class="text-2xl font-extrabold text-emerald-400 font-mono">
+            {fmt(patientBalance.total_paid)}
+          </div>
         </div>
         <div
-          class="balance-card {patientBalance.outstanding > 0
-            ? 'balance-outstanding'
-            : 'balance-clear'}"
+          class={`rounded-xl border p-4 space-y-1 ${patientBalance.outstanding > 0 ? "border-amber-500/40 bg-amber-950/20" : "border-slate-800 bg-slate-900/60"}`}
         >
-          <div class="balance-label">Outstanding</div>
-          <div class="balance-amount">{fmt(patientBalance.outstanding)}</div>
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Outstanding Balance
+          </div>
+          <div
+            class={`text-2xl font-extrabold font-mono ${patientBalance.outstanding > 0 ? "text-amber-400" : "text-emerald-400"}`}
+          >
+            {fmt(patientBalance.outstanding)}
+          </div>
         </div>
       </div>
     {:else if balancePatientId}
-      <div class="balance-cards">
-        <div class="balance-card balance-clear">
-          <div class="balance-label">Outstanding</div>
-          <div class="balance-amount">$0.00</div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Outstanding Balance
+          </div>
+          <div class="text-2xl font-extrabold text-emerald-400 font-mono">$0.00</div>
         </div>
       </div>
     {/if}
   </div>
 
-  <div class="payment-log">
-    <div class="payment-log-header">
-      <h3 class="payment-log-title">Payment Log</h3>
+  <div class="space-y-3 pt-2">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+      <h3 class="text-base font-bold text-slate-100 m-0">Payment Remittances & Log</h3>
       {#if loadingPayments}
-        <span class="text-slate-400 text-xs">Loading…</span>
+        <span class="text-slate-400 text-xs font-medium">Loading…</span>
       {/if}
     </div>
 
     {#if payments.length === 0 && !loadingPayments}
       <EmptyState title={`No payments recorded${balancePatientId ? " for this patient" : ""}.`} />
     {:else}
-      <div class="payment-list">
+      <div class="space-y-2">
         {#each payments as pay (pay.id)}
-          <div class="payment-row">
-            <div class="payment-row-left">
-              <span class="payment-amount">{fmt(pay.amount)}</span>
+          <div
+            class="flex items-center justify-between p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:border-slate-700 transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <span class="text-base font-bold text-slate-100 font-mono">{fmt(pay.amount)}</span>
               <StatusBadge variant={pay.method} label={pay.method.replace("_", " ")} />
               {#if pay.claim_id}
-                <span class="payment-claim-ref">Claim #{pay.claim_id.slice(-6)}</span>
+                <span
+                  class="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded border border-slate-700"
+                  >Claim #{pay.claim_id.slice(-6)}</span
+                >
               {/if}
             </div>
-            <div class="payment-row-right">
-              <span class="text-slate-400 text-sm">{patientName(pay.patient_id)}</span>
-              <span class="text-slate-500 text-xs">{pay.date}</span>
+            <div class="flex items-center gap-4 text-xs">
+              <span class="text-slate-300 font-medium">{patientName(pay.patient_id)}</span>
+              <span class="text-slate-500 font-mono">{pay.date}</span>
               {#if pay.notes}
-                <span class="text-slate-500 text-xs italic">{pay.notes}</span>
+                <span class="text-slate-400 italic max-w-xs truncate">{pay.notes}</span>
               {/if}
               <button
-                class="action-btn action-btn-danger"
+                class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                 onclick={() => deletePayment(pay.id)}
-                title="Delete"
+                title="Delete payment"
               >
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
-                  class="h-3.5 w-3.5"
+                  class="h-4 w-4"
                 >
                   <path
                     d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"
@@ -239,83 +270,88 @@
 </div>
 
 <!-- PAYMENT MODAL -->
-{#if showPaymentModal}
-  <div class="modal-backdrop" role="dialog" aria-modal="true">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h2 class="modal-title">Record Payment</h2>
-        <button class="modal-close" onclick={() => (showPaymentModal = false)}>✕</button>
-      </div>
-
-      <form onsubmit={savePayment} class="modal-body">
-        <div class="form-grid-2">
-          <div class="form-field">
-            <label class="form-label" for="pay-patient">Patient *</label>
-            <select id="pay-patient" bind:value={payPatientId} required>
-              {#each patients as p}
-                <option value={p.id}>{p.first_name} {p.last_name}</option>
-              {/each}
-            </select>
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="pay-date">Date *</label>
-            <input id="pay-date" type="date" bind:value={payDate} required />
-          </div>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="form-field">
-            <label class="form-label" for="pay-amount">Amount *</label>
-            <input
-              id="pay-amount"
-              type="number"
-              bind:value={payAmount}
-              step="0.01"
-              min="0.01"
-              placeholder="0.00"
-              required
-            />
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="pay-method">Method *</label>
-            <select id="pay-method" bind:value={payMethod}>
-              {#each PAYMENT_METHODS as m}
-                <option value={m}
-                  >{m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option
-                >
-              {/each}
-            </select>
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="pay-claim">Link to Claim (optional)</label>
-          <select id="pay-claim" bind:value={payClaimId}>
-            <option value="">— None —</option>
-            {#each claims.filter((c) => c.patient_id === payPatientId) as c}
-              <option value={c.id}>
-                {c.date_of_service} — {c.insurance_carrier || "No carrier"} ({fmt(claimTotal(c))})
-              </option>
-            {/each}
-          </select>
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="pay-notes">Notes</label>
-          <input id="pay-notes" type="text" bind:value={payNotes} placeholder="Optional notes" />
-        </div>
-
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick={() => (showPaymentModal = false)}
-          >
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">Record Payment</button>
-        </div>
-      </form>
+<Modal
+  bind:showModal={showPaymentModal}
+  title="Record Payment"
+  subtitle="Record a patient payment, copay, or insurance remittance"
+  icon="💵"
+  maxWidth="max-w-md"
+>
+  <form onsubmit={savePayment} class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <FormField label="Patient" forId="pay-patient" required>
+        <select
+          id="pay-patient"
+          bind:value={payPatientId}
+          required
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+        >
+          {#each patients as p}
+            <option value={p.id}>{p.first_name} {p.last_name}</option>
+          {/each}
+        </select>
+      </FormField>
+      <FormField label="Date" forId="pay-date" required>
+        <Input id="pay-date" type="date" bind:value={payDate} required />
+      </FormField>
     </div>
-  </div>
-{/if}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <FormField label="Amount" forId="pay-amount" required>
+        <Input
+          id="pay-amount"
+          type="number"
+          bind:value={payAmount}
+          step="0.01"
+          min="0.01"
+          placeholder="0.00"
+          required
+        />
+      </FormField>
+      <FormField label="Method" forId="pay-method" required>
+        <select
+          id="pay-method"
+          bind:value={payMethod}
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+        >
+          {#each PAYMENT_METHODS as m}
+            <option value={m}>{m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option
+            >
+          {/each}
+        </select>
+      </FormField>
+    </div>
+
+    <FormField label="Link to Claim (optional)" forId="pay-claim">
+      <select
+        id="pay-claim"
+        bind:value={payClaimId}
+        class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="">— None —</option>
+        {#each claims.filter((c) => c.patient_id === payPatientId) as c}
+          <option value={c.id}>
+            {c.date_of_service} — {c.insurance_carrier || "No carrier"} ({fmt(claimTotal(c))})
+          </option>
+        {/each}
+      </select>
+    </FormField>
+
+    <FormField label="Notes" forId="pay-notes">
+      <Input id="pay-notes" type="text" bind:value={payNotes} placeholder="Optional notes" />
+    </FormField>
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <button
+        type="button"
+        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+        onclick={() => (showPaymentModal = false)}
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
+        Record Payment
+      </button>
+    </div>
+  </form>
+</Modal>
