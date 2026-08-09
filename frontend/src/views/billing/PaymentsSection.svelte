@@ -128,7 +128,7 @@
   }
 
   async function deletePayment(id: string) {
-    if (!confirm("Delete this payment record?")) return;
+    if (!confirm(m.billing_pay_confirm_delete())) return;
     try {
       await BillingService.DeletePayment(id);
       await loadPayments();
@@ -173,7 +173,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
           <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Total Billed
+            {m.billing_claims_stats_billed()}
           </div>
           <div class="text-2xl font-extrabold text-slate-300 font-mono">
             {fmt(patientBalance.total_billed)}
@@ -214,14 +214,14 @@
 
   <div class="space-y-3 pt-2">
     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-      <h3 class="text-base font-bold text-slate-100 m-0">Payment Remittances & Log</h3>
+      <h3 class="text-base font-bold text-slate-100 m-0">{m.billing_claims_remittance_title()}</h3>
       {#if loadingPayments}
-        <span class="text-slate-400 text-xs font-medium">Loading…</span>
+        <span class="text-slate-400 text-xs font-medium">{m.common_loading()}</span>
       {/if}
     </div>
 
     {#if payments.length === 0 && !loadingPayments}
-      <EmptyState title={`No payments recorded${balancePatientId ? " for this patient" : ""}.`} />
+      <EmptyState title={m.billing_no_payments()} />
     {:else}
       <div class="space-y-2">
         {#each payments as pay (pay.id)}
@@ -234,7 +234,7 @@
               {#if pay.claim_id}
                 <span
                   class="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded border border-slate-700"
-                  >Claim #{pay.claim_id.slice(-6)}</span
+                  >{m.billing_claims_th_claim_no()} #{pay.claim_id.slice(-6)}</span
                 >
               {/if}
             </div>
@@ -247,7 +247,7 @@
               <button
                 class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                 onclick={() => deletePayment(pay.id)}
-                title="Delete payment"
+                title={m.patient_archive()}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -272,14 +272,14 @@
 <!-- PAYMENT MODAL -->
 <Modal
   bind:showModal={showPaymentModal}
-  title="Record Payment"
-  subtitle="Record a patient payment, copay, or insurance remittance"
+  title={m.billing_pay_modal_title()}
+  subtitle={m.billing_pay_modal_subtitle()}
   icon="💵"
   maxWidth="max-w-md"
 >
   <form onsubmit={savePayment} class="space-y-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <FormField label="Patient" forId="pay-patient" required>
+      <FormField label={m.billing_pay_label_patient()} forId="pay-patient" required>
         <select
           id="pay-patient"
           bind:value={payPatientId}
@@ -291,13 +291,13 @@
           {/each}
         </select>
       </FormField>
-      <FormField label="Date" forId="pay-date" required>
+      <FormField label={m.billing_pay_label_date()} forId="pay-date" required>
         <Input id="pay-date" type="date" bind:value={payDate} required />
       </FormField>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <FormField label="Amount" forId="pay-amount" required>
+      <FormField label={m.billing_pay_label_amount()} forId="pay-amount" required>
         <Input
           id="pay-amount"
           type="number"
@@ -308,27 +308,28 @@
           required
         />
       </FormField>
-      <FormField label="Method" forId="pay-method" required>
+      <FormField label={m.billing_pay_label_method()} forId="pay-method" required>
         <select
           id="pay-method"
           bind:value={payMethod}
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
-          {#each PAYMENT_METHODS as m}
-            <option value={m}>{m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option
+          {#each PAYMENT_METHODS as mMethod}
+            <option value={mMethod}
+              >{mMethod.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option
             >
           {/each}
         </select>
       </FormField>
     </div>
 
-    <FormField label="Link to Claim (optional)" forId="pay-claim">
+    <FormField label={m.billing_pay_label_claim()} forId="pay-claim">
       <select
         id="pay-claim"
         bind:value={payClaimId}
         class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
       >
-        <option value="">— None —</option>
+        <option value="">{m.billing_pay_claim_none()}</option>
         {#each claims.filter((c) => c.patient_id === payPatientId) as c}
           <option value={c.id}>
             {c.date_of_service} — {c.insurance_carrier || "No carrier"} ({fmt(claimTotal(c))})
@@ -337,8 +338,13 @@
       </select>
     </FormField>
 
-    <FormField label="Notes" forId="pay-notes">
-      <Input id="pay-notes" type="text" bind:value={payNotes} placeholder="Optional notes" />
+    <FormField label={m.billing_pay_label_notes()} forId="pay-notes">
+      <Input
+        id="pay-notes"
+        type="text"
+        bind:value={payNotes}
+        placeholder={m.billing_pay_notes_placeholder()}
+      />
     </FormField>
 
     <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
@@ -347,10 +353,10 @@
         class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
         onclick={() => (showPaymentModal = false)}
       >
-        Cancel
+        {m.common_cancel()}
       </button>
       <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
-        Record Payment
+        {m.billing_btn_record_payment()}
       </button>
     </div>
   </form>

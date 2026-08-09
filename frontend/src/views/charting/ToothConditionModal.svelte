@@ -56,10 +56,13 @@
       <div class="flex items-center justify-between border-b border-slate-800 pb-4">
         <div>
           <h3 class="text-lg font-bold text-slate-100 m-0">
-            Tooth {getToothLabel(selectedToothNumber, currentToothSystem)} Conditions
+            {m.charting_modal_title({
+              label: getToothLabel(selectedToothNumber, currentToothSystem),
+            })}
           </h3>
           <p class="text-xs text-slate-400 m-0">
-            {countryMeta?.name || "Practice Country"} Tooth Notation & Surface Inspector
+            {countryMeta?.name || "Practice Country"}
+            {m.charting_modal_inspector_title()}
           </p>
         </div>
         <button
@@ -83,7 +86,8 @@
 
       <!-- Surface Selection Grid -->
       <div class="flex flex-col gap-2">
-        <span class="text-xs font-semibold text-slate-300">Select Affected Surface(s):</span>
+        <span class="text-xs font-semibold text-slate-300">{m.charting_modal_surfaces_label()}</span
+        >
         <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {#each [{ id: "M", label: "Mesial (M)" }, { id: "D", label: "Distal (D)" }, { id: "O", label: "Occlusal (O)" }, { id: "I", label: "Incisal (I)" }, { id: "F", label: "Facial (F)" }, { id: "L", label: "Lingual (L)" }] as s}
             <button
@@ -161,7 +165,7 @@
               id="condition-ada-code"
               type="text"
               bind:value={formADACode}
-              placeholder="e.g. D2392"
+              placeholder={m.charting_modal_code_placeholder()}
               class="bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2 outline-none focus:border-sky-500"
             />
           </div>
@@ -189,7 +193,7 @@
             type="text"
             bind:value={formDescription}
             required
-            placeholder="e.g. 2-Surface Composite Resin"
+            placeholder={m.charting_modal_desc_placeholder()}
             class="bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2 outline-none focus:border-sky-500"
           />
         </div>
@@ -203,10 +207,10 @@
             bind:value={formStatus}
             class="bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2 outline-none focus:border-sky-500"
           >
-            <option value="treatment_planned">Treatment Planned</option>
-            <option value="completed">Completed</option>
-            <option value="existing">Existing Finding</option>
-            <option value="missing">Missing Tooth / Extracted</option>
+            <option value="treatment_planned">{m.charting_modal_status_planned()}</option>
+            <option value="completed">{m.charting_modal_status_completed()}</option>
+            <option value="existing">{m.charting_modal_status_existing()}</option>
+            <option value="missing">{m.charting_modal_status_missing()}</option>
           </select>
         </div>
 
@@ -217,7 +221,7 @@
               onclick={() => handleDeleteCondition(editingConditionId)}
               class="px-3 py-2 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-xl transition-colors"
             >
-              Delete Condition
+              {m.charting_modal_btn_delete()}
             </button>
           {:else}
             <div></div>
@@ -229,10 +233,10 @@
               onclick={() => (showConditionModal = false)}
               class="btn btn-secondary text-xs"
             >
-              Cancel
+              {m.common_cancel()}
             </button>
             <button type="submit" class="btn btn-primary text-xs shadow-md shadow-sky-500/20">
-              {isEditingCondition ? "Update Condition" : "Save Condition"}
+              {isEditingCondition ? m.patient_save_changes() : m.common_save()}
             </button>
           </div>
         </div>

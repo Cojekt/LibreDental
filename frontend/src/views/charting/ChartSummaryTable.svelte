@@ -124,13 +124,13 @@
               <td class="py-3 px-4 font-bold text-sky-400">
                 Tooth {getToothLabel(cond.tooth_number, currentToothSystem)}
                 <span class="text-[10px] text-slate-500 font-normal">
-                  (Internal #{cond.tooth_number})</span
+                  {m.charting_th_internal_no()}{cond.tooth_number})</span
                 >
               </td>
               <td class="py-3 px-4 font-mono font-medium text-slate-300">
                 {cond.surfaces && cond.surfaces.length > 0
                   ? cond.surfaces.join(", ")
-                  : "Whole Tooth"}
+                  : m.charting_surface_whole()}
               </td>
               <td class="py-3 px-4 font-mono text-slate-300">
                 {cond.ada_code || "—"}
@@ -150,7 +150,7 @@
                     type="button"
                     onclick={() => openEditCondition(cond)}
                     class="p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition-colors"
-                    title="Edit condition"
+                    title={m.patients_btn_edit()}
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -167,7 +167,7 @@
                     type="button"
                     onclick={() => handleDeleteCondition(cond.id)}
                     class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-                    title="Delete condition"
+                    title={m.patient_archive()}
                   >
                     <svg
                       viewBox="0 0 24 24"

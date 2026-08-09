@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { BusinessHourDay } from "@bindings/domain/models.js";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     businessHours = $bindable([]),
@@ -25,10 +26,9 @@
 <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-6">
   <div class="flex items-center justify-between border-b border-slate-800 pb-4">
     <div>
-      <h3 class="text-lg font-bold text-slate-100">⏰ Practice Operating Schedule</h3>
+      <h3 class="text-lg font-bold text-slate-100">⏰ {m.clinic_hours_title()}</h3>
       <p class="text-xs text-slate-400 mt-0.5">
-        Configure your weekly operating hours, split shifts, and scheduled breaks or closure gaps
-        for appointment scheduling.
+        {m.clinic_hours_desc()}
       </p>
     </div>
   </div>
@@ -63,7 +63,7 @@
             <span
               class="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full"
             >
-              CLOSED
+              {m.clinic_hours_status_closed()}
             </span>
           {:else if !isEditingProfile}
             <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-300">
@@ -73,17 +73,16 @@
                     <span
                       class="bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2.5 py-1 rounded-lg"
                     >
-                      Shift {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(
-                        slot.close_time
-                      )}
+                      {m.clinic_hours_shift_label()}
+                      {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(slot.close_time)}
                     </span>
                   {/each}
                 </div>
               {:else}
                 <div class="flex items-center gap-2">
-                  <span>Opens:</span>
+                  <span>{m.clinic_hours_opens_label()}</span>
                   <span class="font-semibold text-slate-100">{formatTime12(hour.open_time)}</span>
-                  <span class="ml-2">Closes:</span>
+                  <span class="ml-2">{m.clinic_hours_closes_label()}</span>
                   <span class="font-semibold text-slate-100">{formatTime12(hour.close_time)}</span>
                 </div>
               {/if}
@@ -110,13 +109,15 @@
           <div class="pl-4 border-l-2 border-sky-500/30 space-y-3 pt-2">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-400">Working Hours / Shifts</span>
+                <span class="text-xs font-semibold text-slate-400"
+                  >{m.clinic_hours_working_shifts_title()}</span
+                >
                 <button
                   type="button"
                   onclick={() => addSlot(hour)}
                   class="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition-colors"
                 >
-                  <span>+ Add Split Shift / Time Slot</span>
+                  <span>{m.clinic_hours_add_shift_btn()}</span>
                 </button>
               </div>
 
@@ -126,12 +127,13 @@
                     class="flex flex-wrap items-center gap-3 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800"
                   >
                     {#if (hour.slots || []).length > 1}
-                      <span class="font-semibold text-slate-400 text-[11px]">Shift {sIdx + 1}:</span
+                      <span class="font-semibold text-slate-400 text-[11px]"
+                        >{m.clinic_hours_shift_label()} {sIdx + 1}:</span
                       >
                     {/if}
 
                     <div class="flex items-center gap-2">
-                      <span class="text-slate-400">Opens:</span>
+                      <span class="text-slate-400">{m.clinic_hours_opens_label()}</span>
                       <input
                         type="time"
                         bind:value={slot.open_time}
@@ -141,7 +143,7 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                      <span class="text-slate-400">Closes:</span>
+                      <span class="text-slate-400">{m.clinic_hours_closes_label()}</span>
                       <input
                         type="time"
                         bind:value={slot.close_time}
@@ -155,9 +157,9 @@
                         type="button"
                         onclick={() => removeSlot(hour, sIdx)}
                         class="text-rose-400 hover:text-rose-300 ml-auto text-xs px-2 py-0.5 rounded hover:bg-rose-500/10 transition-colors"
-                        title="Remove Shift"
+                        title={m.clinic_hours_remove_shift_title()}
                       >
-                        ✕ Remove
+                        {m.clinic_hours_remove_btn()}
                       </button>
                     {/if}
                   </div>
@@ -168,20 +170,20 @@
             <div class="pt-2 border-t border-slate-800/60 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold text-amber-400/90 flex items-center gap-1.5">
-                  <span>☕ Scheduled Breaks & Gaps</span>
+                  <span>☕ {m.clinic_hours_breaks_title()}</span>
                 </span>
                 <button
                   type="button"
                   onclick={() => addBreak(hour)}
                   class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition-colors"
                 >
-                  <span>+ Add Break / Schedule Gap</span>
+                  <span>{m.clinic_hours_add_break_btn()}</span>
                 </button>
               </div>
 
               {#if (hour.breaks || []).length === 0}
                 <p class="text-[11px] text-slate-500 italic">
-                  No scheduled breaks or closure gaps configured for this day.
+                  {m.clinic_hours_no_breaks()}
                 </p>
               {:else}
                 <div class="space-y-2">
@@ -190,17 +192,21 @@
                       class="flex flex-wrap items-center gap-3 text-xs bg-amber-500/5 p-2.5 rounded-lg border border-amber-500/20"
                     >
                       <div class="flex items-center gap-2 flex-1 min-w-[160px]">
-                        <span class="text-amber-400 font-semibold text-[11px]">Label:</span>
+                        <span class="text-amber-400 font-semibold text-[11px]"
+                          >{m.clinic_hours_label_prompt()}</span
+                        >
                         <input
                           type="text"
                           bind:value={brk.name}
-                          placeholder="e.g. Lunch Break, Staff Meeting"
+                          placeholder={m.clinic_hours_label_placeholder()}
                           class="w-full rounded border border-amber-500/30 bg-slate-950 px-2.5 py-1 text-xs text-slate-100 focus:border-amber-400 focus:outline-none"
                         />
                       </div>
 
                       <div class="flex items-center gap-2">
-                        <span class="text-amber-400 text-[11px]">Start:</span>
+                        <span class="text-amber-400 text-[11px]"
+                          >{m.clinic_hours_start_prompt()}</span
+                        >
                         <input
                           type="time"
                           bind:value={brk.start_time}
@@ -209,7 +215,8 @@
                       </div>
 
                       <div class="flex items-center gap-2">
-                        <span class="text-amber-400 text-[11px]">End:</span>
+                        <span class="text-amber-400 text-[11px]">{m.clinic_hours_end_prompt()}</span
+                        >
                         <input
                           type="time"
                           bind:value={brk.end_time}
@@ -221,9 +228,9 @@
                         type="button"
                         onclick={() => removeBreak(hour, bIdx)}
                         class="text-rose-400 hover:text-rose-300 text-xs px-2 py-1 rounded hover:bg-rose-500/10 transition-colors ml-auto"
-                        title="Remove Break"
+                        title={m.clinic_hours_remove_break_title()}
                       >
-                        ✕ Remove
+                        {m.clinic_hours_remove_btn()}
                       </button>
                     </div>
                   {/each}

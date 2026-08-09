@@ -167,7 +167,7 @@
                   class="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer"
                   onclick={() => openEditFeeModal(p.code, p.effective_fee || p.default_fee)}
                 >
-                  Edit Fee
+                  {m.patients_btn_edit()}
                 </button>
               </td>
             </tr>
@@ -199,6 +199,7 @@
         min="0"
         bind:value={editingFeeCustom}
         required
+        placeholder={m.billing_fee_amount_placeholder()}
       />
     </FormField>
 

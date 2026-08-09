@@ -4,6 +4,7 @@
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     providers = [],
@@ -43,9 +44,9 @@
 <div class="space-y-6">
   <div class="flex items-center justify-between">
     <div>
-      <h3 class="text-lg font-bold text-slate-100">👨‍⚕️ Practice Staff & Providers</h3>
+      <h3 class="text-lg font-bold text-slate-100">👨‍⚕️ {m.prov_title()}</h3>
       <p class="text-xs text-slate-400 mt-0.5">
-        Manage dentists, hygienists, and support staff assigned to patient appointments.
+        {m.prov_desc()}
       </p>
     </div>
     <button
@@ -57,16 +58,12 @@
         <line x1="12" y1="5" x2="12" y2="19" />
         <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
-      Add Provider / Staff
+      {m.prov_add_btn()}
     </button>
   </div>
 
   {#if providers.length === 0}
-    <EmptyState
-      title="No staff members or providers added yet"
-      subtitle="Click 'Add Provider / Staff' above to configure practice dentists and hygienists."
-      icon="👨‍⚕️"
-    />
+    <EmptyState title={m.prov_empty_title()} subtitle={m.prov_empty_sub()} icon="👨‍⚕️" />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each providers as p}
@@ -100,7 +97,8 @@
             <div class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
               {#if p.license_number}
                 <div>
-                  🪪 License: <span class="text-slate-300 font-mono">{p.license_number}</span>
+                  🪪 {m.prov_license_prefix()}
+                  <span class="text-slate-300 font-mono">{p.license_number}</span>
                 </div>
               {/if}
               {#if p.email}
@@ -120,14 +118,14 @@
               onclick={() => openEditProviderModal(p)}
               class="text-sky-400 hover:text-sky-300 font-semibold"
             >
-              Edit
+              {m.patients_btn_edit()}
             </button>
             <button
               type="button"
               onclick={() => handleDeleteProvider(p.id)}
               class="text-rose-400 hover:text-rose-300 font-semibold"
             >
-              Delete
+              {m.patient_archive()}
             </button>
           </div>
         </div>
@@ -139,61 +137,66 @@
 <!-- PROVIDER MODAL -->
 <Modal
   bind:showModal={showProviderModal}
-  title={isEditingProvider ? "Edit Staff / Provider" : "Add New Staff / Provider"}
-  subtitle="Configure provider details, specialties, and schedule badges"
+  title={isEditingProvider ? m.prov_modal_subtitle() : m.prov_add_btn()}
+  subtitle={m.prov_modal_subtitle()}
   icon="👨‍⚕️"
   maxWidth="max-w-md"
 >
   <form onsubmit={handleSaveProvider} class="space-y-4">
-    <FormField label="Full Name" forId="prov-name" required>
+    <FormField label={m.prov_name_label()} forId="prov-name" required>
       <Input
         id="prov-name"
         type="text"
         bind:value={provName}
         required
-        placeholder="e.g. Dr. Sarah Smith"
+        placeholder={m.prov_name_placeholder()}
       />
     </FormField>
 
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Role" forId="prov-role">
+      <FormField label={m.prov_role_label()} forId="prov-role">
         <select
           id="prov-role"
           bind:value={provRole}
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
-          <option value="dentist">Dentist</option>
-          <option value="hygienist">Dental Hygienist</option>
-          <option value="assistant">Dental Assistant</option>
-          <option value="staff">Administrative Staff</option>
+          <option value="dentist">{m.prov_role_dentist()}</option>
+          <option value="hygienist">{m.prov_role_hygienist()}</option>
+          <option value="assistant">{m.prov_role_assistant()}</option>
+          <option value="staff">{m.prov_role_staff()}</option>
         </select>
       </FormField>
 
-      <FormField label="Specialty" forId="prov-specialty">
+      <FormField label={m.prov_specialty_label()} forId="prov-specialty">
         <Input
           id="prov-specialty"
           type="text"
           bind:value={provSpecialty}
-          placeholder="e.g. Orthodontics"
+          placeholder={m.prov_specialty_placeholder()}
         />
       </FormField>
     </div>
 
-    <FormField label="License Number" forId="prov-license">
-      <Input id="prov-license" type="text" bind:value={provLicense} placeholder="e.g. DENT-88912" />
+    <FormField label={m.prov_license_label()} forId="prov-license">
+      <Input
+        id="prov-license"
+        type="text"
+        bind:value={provLicense}
+        placeholder={m.prov_license_placeholder()}
+      />
     </FormField>
 
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Email" forId="prov-email">
+      <FormField label={m.prov_email_label()} forId="prov-email">
         <Input
           id="prov-email"
           type="email"
           bind:value={provEmail}
-          placeholder="doctor@example.com"
+          placeholder={m.prov_email_placeholder()}
         />
       </FormField>
 
-      <FormField label="Phone" forId="prov-phone">
+      <FormField label={m.prov_phone_label()} forId="prov-phone">
         <Input id="prov-phone" type="tel" bind:value={provPhone} placeholder="(555) 019-2834" />
       </FormField>
     </div>
@@ -201,7 +204,7 @@
     <div class="flex items-center justify-between pt-2">
       <div>
         <label for="prov-color" class="block text-xs font-semibold text-slate-300 mb-1"
-          >Schedule Color Badge</label
+          >{m.prov_color_badge_label()}</label
         >
         <input
           id="prov-color"
@@ -214,7 +217,7 @@
       <div class="flex items-center gap-2 pt-4">
         <input type="checkbox" id="prov-active" bind:checked={provIsActive} />
         <label for="prov-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
-          >Active Provider</label
+          >{m.prov_active_label()}</label
         >
       </div>
     </div>
@@ -225,10 +228,10 @@
         onclick={() => (showProviderModal = false)}
         class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
       >
-        Cancel
+        {m.common_cancel()}
       </button>
       <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
-        Save Staff Member
+        {m.prov_save_btn()}
       </button>
     </div>
   </form>

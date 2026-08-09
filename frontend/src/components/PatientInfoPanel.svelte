@@ -377,13 +377,13 @@
               </p>
               {#if patient.insurance_policy_number}
                 <div class="flex justify-between text-[11px]">
-                  <span class="text-slate-400">Policy / ID:</span>
+                  <span class="text-slate-400">{m.patient_info_policy_label()}</span>
                   <span class="font-mono text-sky-400">{patient.insurance_policy_number}</span>
                 </div>
               {/if}
               {#if patient.insurance_group_number}
                 <div class="flex justify-between text-[11px]">
-                  <span class="text-slate-400">Group #:</span>
+                  <span class="text-slate-400">{m.patient_info_group_label()}</span>
                   <span class="font-mono text-slate-200">{patient.insurance_group_number}</span>
                 </div>
               {/if}
@@ -424,13 +424,13 @@
             class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-1.5 text-slate-300"
           >
             <div class="flex justify-between items-center">
-              <span class="text-slate-400">Contact Preference:</span>
+              <span class="text-slate-400">{m.patient_info_contact_pref()}</span>
               <span class="font-semibold text-sky-400 capitalize"
                 >{patient.preferred_contact_method || "phone"}</span
               >
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-slate-400">Reminders:</span>
+              <span class="text-slate-400">{m.patient_info_reminders_label()}</span>
               {#if patient.reminder_opt_in !== false}
                 <span
                   class="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20"

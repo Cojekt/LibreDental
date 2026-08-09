@@ -63,7 +63,7 @@
       </div>
     </div>
     <div class="text-slate-400 text-[11px]">
-      Click any tooth card to view or record conditions & procedures.
+      {m.charting_guidance_text()}
     </div>
   </div>
 

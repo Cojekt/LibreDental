@@ -4,6 +4,7 @@
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     operatories = [],
@@ -35,9 +36,9 @@
 <div class="space-y-6">
   <div class="flex items-center justify-between">
     <div>
-      <h3 class="text-lg font-bold text-slate-100">🚪 Treatment Operatories & Chairs</h3>
+      <h3 class="text-lg font-bold text-slate-100">🚪 {m.clinic_op_title()}</h3>
       <p class="text-xs text-slate-400 mt-0.5">
-        Manage treatment rooms, hygiene bays, and surgical suites.
+        {m.clinic_op_desc()}
       </p>
     </div>
     <button
@@ -49,16 +50,12 @@
         <line x1="12" y1="5" x2="12" y2="19" />
         <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
-      Add Operatory / Room
+      {m.clinic_op_add_btn()}
     </button>
   </div>
 
   {#if operatories.length === 0}
-    <EmptyState
-      title="No operatories or treatment rooms configured"
-      subtitle="Click 'Add Operatory / Room' above to set up treatment chairs for scheduling."
-      icon="🚪"
-    />
+    <EmptyState title={m.clinic_op_empty_title()} subtitle={m.clinic_op_empty_sub()} icon="🚪" />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each operatories as op}
@@ -87,14 +84,14 @@
               onclick={() => openEditOperatoryModal(op)}
               class="text-sky-400 hover:text-sky-300 font-semibold"
             >
-              Edit
+              {m.patients_btn_edit()}
             </button>
             <button
               type="button"
               onclick={() => handleDeleteOperatory(op.id)}
               class="text-rose-400 hover:text-rose-300 font-semibold"
             >
-              Delete
+              {m.patient_archive()}
             </button>
           </div>
         </div>
@@ -106,39 +103,44 @@
 <!-- OPERATORY MODAL -->
 <Modal
   bind:showModal={showOperatoryModal}
-  title={isEditingOperatory ? "Edit Treatment Operatory" : "Add New Operatory"}
-  subtitle="Set up treatment rooms and clinical chair details"
+  title={isEditingOperatory ? m.clinic_op_modal_edit_title() : m.clinic_op_modal_add_title()}
+  subtitle={m.clinic_op_modal_edit_title()}
   icon="🦷"
   maxWidth="max-w-md"
 >
   <form onsubmit={handleSaveOperatory} class="space-y-4">
-    <FormField label="Operatory Name" forId="op-name" required>
+    <FormField label={m.clinic_op_name_label()} forId="op-name" required>
       <Input
         id="op-name"
         type="text"
         bind:value={opName}
         required
-        placeholder="e.g. Operatory 1 (General Dentistry)"
+        placeholder={m.clinic_op_name_placeholder()}
       />
     </FormField>
 
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Room Code / ID" forId="op-code">
-        <Input id="op-code" type="text" bind:value={opRoomCode} placeholder="e.g. ROOM-A" />
+      <FormField label={m.clinic_op_code_label()} forId="op-code">
+        <Input
+          id="op-code"
+          type="text"
+          bind:value={opRoomCode}
+          placeholder={m.clinic_op_code_placeholder()}
+        />
       </FormField>
 
-      <FormField label="Room Type" forId="op-type">
+      <FormField label={m.clinic_op_type_label()} forId="op-type">
         <select
           id="op-type"
           bind:value={opType}
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
-          <option value="general">General Dentistry</option>
-          <option value="hygiene">Hygiene Bay</option>
-          <option value="surgery">Surgical Suite</option>
-          <option value="ortho">Orthodontics Bay</option>
-          <option value="pediatric">Pediatric Operatory</option>
-          <option value="consultation">Consultation Room</option>
+          <option value="general">{m.clinic_op_type_general()}</option>
+          <option value="hygiene">{m.clinic_op_type_hygiene()}</option>
+          <option value="surgery">{m.clinic_op_type_surgery()}</option>
+          <option value="ortho">{m.clinic_op_type_ortho()}</option>
+          <option value="pediatric">{m.clinic_op_type_pediatric()}</option>
+          <option value="consultation">{m.clinic_op_type_consultation()}</option>
         </select>
       </FormField>
     </div>
@@ -146,7 +148,7 @@
     <div class="flex items-center gap-2 pt-2">
       <input type="checkbox" id="op-active" bind:checked={opIsActive} />
       <label for="op-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
-        >Active Operatory</label
+        >{m.clinic_op_active_label()}</label
       >
     </div>
 
@@ -156,10 +158,10 @@
         onclick={() => (showOperatoryModal = false)}
         class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
       >
-        Cancel
+        {m.common_cancel()}
       </button>
       <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
-        Save Operatory
+        {m.clinic_op_save_btn()}
       </button>
     </div>
   </form>

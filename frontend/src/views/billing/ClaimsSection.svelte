@@ -199,7 +199,7 @@
   }
 
   async function deleteClaim(id: string) {
-    if (!confirm("Delete this claim? This cannot be undone.")) return;
+    if (!confirm(m.billing_claims_confirm_delete())) return;
     try {
       await BillingService.DeleteClaim(id);
       await loadClaims();
@@ -221,7 +221,7 @@
         (c) => c.status === "treatment_planned" || c.status === "completed"
       );
       if (chartImportConditions.length === 0) {
-        alert("No treatment planned or completed tooth conditions found for this patient.");
+        alert(m.billing_chart_import_empty());
         return;
       }
       showChartImportModal = true;
@@ -293,7 +293,7 @@
             <th class="px-4 py-3">{m.billing_th_procedures()}</th>
             <th class="px-4 py-3">{m.billing_th_total()}</th>
             <th class="px-4 py-3">{m.billing_th_status()}</th>
-            <th class="px-4 py-3 text-right">Actions</th>
+            <th class="px-4 py-3 text-right">{m.patients_th_actions()}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800/60">
@@ -328,7 +328,7 @@
                   <button
                     class="p-1.5 text-slate-400 hover:text-sky-300 rounded-lg hover:bg-slate-800 transition-colors"
                     onclick={() => openEditClaim(c)}
-                    title="Edit"
+                    title={m.patients_btn_edit()}
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -345,7 +345,7 @@
                   <button
                     class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                     onclick={() => deleteClaim(c.id)}
-                    title="Delete"
+                    title={m.patient_archive()}
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -372,14 +372,14 @@
 <!-- CLAIM MODAL -->
 <Modal
   bind:showModal={showClaimModal}
-  title={isEditingClaim ? "Edit Claim" : "New Insurance Claim"}
+  title={isEditingClaim ? "Edit Claim" : m.billing_btn_new_claim()}
   subtitle="Configure claim details, insurance carrier policy numbers, and CDT line items"
   icon="📄"
   maxWidth="max-w-4xl"
 >
   <form onsubmit={saveClaim} class="space-y-5">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <FormField label="Patient" forId="cl-patient" required>
+      <FormField label={m.appt_label_patient()} forId="cl-patient" required>
         <select
           id="cl-patient"
           bind:value={claimPatientId}
@@ -392,7 +392,7 @@
         </select>
       </FormField>
 
-      <FormField label="Provider" forId="cl-provider">
+      <FormField label={m.appt_label_provider()} forId="cl-provider">
         <select
           id="cl-provider"
           bind:value={claimProviderId}
@@ -405,13 +405,13 @@
         </select>
       </FormField>
 
-      <FormField label="Date of Service" forId="cl-dos" required>
+      <FormField label={m.appt_label_date()} forId="cl-dos" required>
         <Input id="cl-dos" type="date" bind:value={claimDateOfService} required />
       </FormField>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <FormField label="Insurance Carrier" forId="cl-carrier">
+      <FormField label={m.patient_insurance_carrier()} forId="cl-carrier">
         <Input
           id="cl-carrier"
           type="text"
@@ -419,7 +419,7 @@
           placeholder="e.g. Delta Dental"
         />
       </FormField>
-      <FormField label="Policy #" forId="cl-policy">
+      <FormField label={m.patient_insurance_policy()} forId="cl-policy">
         <Input
           id="cl-policy"
           type="text"
@@ -427,13 +427,13 @@
           placeholder="Policy number"
         />
       </FormField>
-      <FormField label="Group #" forId="cl-group">
+      <FormField label={m.patient_insurance_group()} forId="cl-group">
         <Input id="cl-group" type="text" bind:value={claimGroupNumber} placeholder="Group number" />
       </FormField>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField label="Status" forId="cl-status">
+      <FormField label={m.appt_label_status()} forId="cl-status">
         <select
           id="cl-status"
           bind:value={claimStatus}
@@ -444,15 +444,20 @@
           {/each}
         </select>
       </FormField>
-      <FormField label="Notes" forId="cl-notes">
-        <Input id="cl-notes" type="text" bind:value={claimNotes} placeholder="Optional notes" />
+      <FormField label={m.appt_label_notes()} forId="cl-notes">
+        <Input
+          id="cl-notes"
+          type="text"
+          bind:value={claimNotes}
+          placeholder={m.billing_pay_notes_placeholder()}
+        />
       </FormField>
     </div>
 
     <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">
-          Procedure Line Items
+          {m.billing_th_procedures()}
         </h4>
         <div class="flex flex-wrap items-center gap-2">
           <button
@@ -460,7 +465,7 @@
             class="btn btn-secondary btn-sm flex items-center gap-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60"
             onclick={openChartImportModal}
           >
-            🦷 Import Chart Procedures
+            🦷 {m.billing_btn_import_chart()}
           </button>
           <div class="flex items-center gap-1.5">
             <input
@@ -494,10 +499,10 @@
           <div
             class="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1"
           >
-            <span class="col-span-2">ADA Code</span>
-            <span class="col-span-3">Description</span>
+            <span class="col-span-2">{m.charting_th_code()}</span>
+            <span class="col-span-3">{m.charting_th_desc()}</span>
             <span class="col-span-1 text-center">Tooth</span>
-            <span class="col-span-2 text-right">Fee</span>
+            <span class="col-span-2 text-right">{m.charting_th_fee()}</span>
             <span class="col-span-2 text-right">Ins. Allowed</span>
             <span class="col-span-1 text-center"></span>
           </div>
@@ -513,7 +518,7 @@
               <div class="col-span-3">
                 <Input
                   bind:value={li.description}
-                  placeholder="Description"
+                  placeholder={m.charting_th_desc()}
                   class="text-xs py-1.5 px-2"
                 />
               </div>
@@ -578,10 +583,10 @@
         class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
         onclick={() => (showClaimModal = false)}
       >
-        Cancel
+        {m.common_cancel()}
       </button>
       <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
-        {isEditingClaim ? "Save Changes" : "Create Claim"}
+        {isEditingClaim ? m.patient_save_changes() : m.billing_btn_new_claim()}
       </button>
     </div>
   </form>

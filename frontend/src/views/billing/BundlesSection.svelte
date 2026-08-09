@@ -144,15 +144,15 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
         <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
       </svg>
-      {m.billing_btn_new_bundle()}
+      {m.billing_bundle_btn_create()}
     </button>
   </div>
 
   {#if loadingBundles}
-    <div class="p-8 text-center text-sm text-slate-400">Loading procedure bundles…</div>
+    <div class="p-8 text-center text-sm text-slate-400">{m.common_loading()}</div>
   {:else if bundles.length === 0}
     <EmptyState
-      title="No procedure bundles created yet"
+      title={m.billing_no_bundles()}
       subtitle="Create procedure bundle templates (e.g. Crown + Build-up) to speed up claim entry."
       icon="📦"
     />
@@ -205,7 +205,7 @@
               <button
                 class="p-1.5 text-slate-400 hover:text-sky-300 rounded-lg hover:bg-slate-800 transition-colors"
                 onclick={() => openEditBundle(b)}
-                title="Edit"
+                title={m.patients_btn_edit()}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -223,7 +223,7 @@
               <button
                 class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                 onclick={() => deleteBundle(b.id)}
-                title="Delete"
+                title={m.patient_archive()}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -248,7 +248,7 @@
 <!-- BUNDLE MODAL -->
 <Modal
   bind:showModal={showBundleModal}
-  title={isEditingBundle ? "Edit Bundle" : "New Procedure Bundle"}
+  title={isEditingBundle ? "Edit Bundle" : m.billing_bundle_btn_create()}
   subtitle="Configure multi-code procedure templates for single-click claim entry"
   icon="📦"
   maxWidth="max-w-3xl"
@@ -275,25 +275,25 @@
           id="b-name"
           type="text"
           bind:value={bundleName}
-          placeholder="e.g. Crown + Build-up"
+          placeholder={m.billing_bundle_name_placeholder()}
           required
         />
       </FormField>
     </div>
 
-    <FormField label="Description" forId="b-desc">
+    <FormField label={m.charting_th_desc()} forId="b-desc">
       <Input
         id="b-desc"
         type="text"
         bind:value={bundleDescription}
-        placeholder="Optional description of procedure steps included"
+        placeholder={m.billing_bundle_desc_placeholder()}
       />
     </FormField>
 
     <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-3">
       <div class="flex items-center justify-between">
         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">
-          Procedure CDT Items
+          {m.billing_th_procedures()}
         </h4>
         <button type="button" class="btn btn-secondary btn-sm" onclick={addBundleItem}>
           + Add Item
@@ -305,8 +305,8 @@
           <div
             class="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1"
           >
-            <span class="col-span-3">ADA Code</span>
-            <span class="col-span-6">Description</span>
+            <span class="col-span-3">{m.charting_th_code()}</span>
+            <span class="col-span-6">{m.charting_th_desc()}</span>
             <span class="col-span-2 text-right">Default Fee</span>
             <span class="col-span-1 text-center"></span>
           </div>
@@ -322,7 +322,7 @@
               <div class="col-span-6">
                 <Input
                   bind:value={item.description}
-                  placeholder="Procedure description"
+                  placeholder={m.charting_th_desc()}
                   class="text-xs py-1.5 px-2"
                 />
               </div>
@@ -367,10 +367,10 @@
         class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
         onclick={() => (showBundleModal = false)}
       >
-        Cancel
+        {m.common_cancel()}
       </button>
       <button type="submit" class="btn btn-primary text-xs px-5 py-2 cursor-pointer">
-        {isEditingBundle ? "Save Changes" : "Create Bundle"}
+        {isEditingBundle ? m.patient_save_changes() : m.billing_bundle_btn_save()}
       </button>
     </div>
   </form>

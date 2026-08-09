@@ -38,12 +38,12 @@
         class="bg-slate-800/90 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-700"
       >
         <tr>
-          <th class="px-4 py-3">{m.appt_label_date()} & {m.appt_label_start_time()}</th>
-          <th class="px-4 py-3">{m.patients_th_name()}</th>
+          <th class="px-4 py-3">{m.appt_label_date_time()}</th>
+          <th class="px-4 py-3">{m.appts_th_patient_proc()}</th>
           <th class="px-4 py-3">{m.appt_label_reason()}</th>
-          <th class="px-4 py-3">{m.appt_label_provider()}</th>
+          <th class="px-4 py-3">{m.appts_th_prov_chair()}</th>
           <th class="px-4 py-3">{m.appt_label_operatory()}</th>
-          <th class="px-4 py-3">{m.appt_label_status()}</th>
+          <th class="px-4 py-3">{m.appts_th_status()}</th>
           <th class="px-4 py-3 text-right">{m.patients_th_actions()}</th>
         </tr>
       </thead>
