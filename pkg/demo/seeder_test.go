@@ -43,6 +43,18 @@ func TestSeedDatabase(t *testing.T) {
 	if summary.ConditionsCount != 12 {
 		t.Errorf("Expected 12 conditions, got %d", summary.ConditionsCount)
 	}
+	if summary.FeeSchedulesCount != 2 {
+		t.Errorf("Expected 2 fee schedule overrides, got %d", summary.FeeSchedulesCount)
+	}
+	if summary.BundlesCount != 2 {
+		t.Errorf("Expected 2 treatment bundles, got %d", summary.BundlesCount)
+	}
+	if summary.ClaimsCount != 2 {
+		t.Errorf("Expected 2 claims, got %d", summary.ClaimsCount)
+	}
+	if summary.PaymentsCount != 2 {
+		t.Errorf("Expected 2 payments, got %d", summary.PaymentsCount)
+	}
 
 	ctx := context.Background()
 

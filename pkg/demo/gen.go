@@ -53,5 +53,9 @@ func main() {
 	fmt.Printf("   • Patients            : %d\n", summary.PatientsCount)
 	fmt.Printf("   • Appointments        : %d\n", summary.AppointmentsCount)
 	fmt.Printf("   • Dental Chart Records: %d\n", summary.ConditionsCount)
+	fmt.Printf("   • Fee Schedule Rates  : %d\n", summary.FeeSchedulesCount)
+	fmt.Printf("   • Treatment Bundles   : %d\n", summary.BundlesCount)
+	fmt.Printf("   • Insurance Claims    : %d\n", summary.ClaimsCount)
+	fmt.Printf("   • Patient Payments    : %d\n", summary.PaymentsCount)
 	fmt.Printf("File: %s\n", absPath)
 }
