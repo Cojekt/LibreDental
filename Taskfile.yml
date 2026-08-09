@@ -25,7 +25,7 @@ tasks:
   demo:
     desc: Generates a standalone pre-populated database file (libredental.db)
     cmds:
-      - go run ./pkg/demo/gen.go libredental.db
+      - go run ./internal/demo/gen.go libredental.db
 
   build:
     desc: Builds the application

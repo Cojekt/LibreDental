@@ -2,7 +2,7 @@
   import type {
     Patient,
     CountryConfig,
-  } from "../../bindings/github.com/LibreDental/libredental/pkg/domain/models.js";
+  } from "@bindings/domain/models.js";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "../lib/locale.svelte.js";
 

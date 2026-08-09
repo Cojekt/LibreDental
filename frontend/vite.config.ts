@@ -15,7 +15,7 @@ export default defineConfig({
     alias: {
       "@bindings": path.resolve(
         import.meta.dirname,
-        "./bindings/github.com/LibreDental/libredental/pkg"
+        "./bindings/github.com/LibreDental/libredental/internal"
       ),
       $lib: path.resolve(import.meta.dirname, "./src/lib"),
     },
