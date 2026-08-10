@@ -211,6 +211,54 @@ func (s *SystemSettingsService) GetSystemLocale() (string, error) {
 	return tag, nil
 }
 
+// GetEffectiveLocale resolves the application's active UI locale by inspecting the saved setting
+// (falling back to host OS locale if set to "system" or empty) and matching it against supportedLocales.
+func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (string, error) {
+	tag, err := s.GetLanguage()
+	if err != nil || tag == "system" || tag == "" {
+		sysTag, sysErr := s.GetSystemLocale()
+		if sysErr == nil && sysTag != "" {
+			tag = sysTag
+		} else {
+			tag = "en"
+		}
+	}
+
+	if len(supportedLocales) == 0 {
+		return tag, nil
+	}
+
+	// 1. Exact match
+	for _, l := range supportedLocales {
+		if l == tag {
+			return l, nil
+		}
+	}
+
+	// 2. Prefix match (e.g. tag "en-US" matches supported "en")
+	for _, l := range supportedLocales {
+		if strings.HasPrefix(tag, l) {
+			return l, nil
+		}
+	}
+
+	// 3. Base tag match (e.g. tag "en-US" -> base "en" matches supported "en")
+	baseTag := strings.Split(tag, "-")[0]
+	for _, l := range supportedLocales {
+		if l == baseTag {
+			return l, nil
+		}
+	}
+
+	// Default fallback to "en" if available, else first supported locale
+	for _, l := range supportedLocales {
+		if l == "en" {
+			return "en", nil
+		}
+	}
+	return supportedLocales[0], nil
+}
+
 // normalizePOSIXLocale converts a POSIX locale string (e.g. "en_US.UTF-8") to a BCP 47 tag (e.g. "en-US").
 func normalizePOSIXLocale(posix string) string {
 	// Strip encoding suffix (e.g. ".UTF-8")

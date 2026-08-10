@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { SystemSettingsService } from "@bindings/services/index.js";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion, applyLocale } from "$lib/locale.svelte.js";
+  import { getLocaleVersion, initLocale } from "$lib/locale.svelte.js";
   import { locales } from "../paraglide/runtime.js";
 
   export type ThemeMode = "dark" | "light" | "system";
@@ -45,9 +45,9 @@
 
   async function handleSelectLanguage(lang: string) {
     selectedLanguage = lang;
-    applyLocale(lang === "system" ? "en" : lang);
     try {
       await SystemSettingsService.SetLanguage(lang);
+      await initLocale();
     } catch (err) {
       console.warn("Failed to persist language setting:", err);
     }

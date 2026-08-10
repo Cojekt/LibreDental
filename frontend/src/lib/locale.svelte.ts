@@ -37,34 +37,16 @@ export function applyLocale(tag: string) {
 }
 
 /**
- * Resolve the saved language preference and activate it.
- * Called once during app mount.
- *
- * @param savedLang  From SystemSettingsService.GetLanguage() —
- *                   a BCP 47 tag (e.g. "en", "fr") or "system".
+ * Resolve the effective language preference via Go backend and activate it.
+ * Called during app mount or settings updates.
  */
-export async function initLocale(savedLang: string): Promise<void> {
-  let tag = savedLang;
-
-  if (tag === "system" || tag === "") {
-    try {
-      const osLocale = await SystemSettingsService.GetSystemLocale();
-      tag = osLocale || "en";
-    } catch {
-      tag = "en";
-    }
+export async function initLocale(): Promise<void> {
+  try {
+    const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+    applyLocale(effective || "en");
+  } catch {
+    applyLocale("en");
   }
-
-  // Normalize: find the best-matching supported locale.
-  // With English-only, everything maps to "en". Adding "fr" to settings.json
-  // and creating messages/fr.json will automatically make French selectable.
-  const match: string =
-    (locales as readonly string[]).find((l) => l === tag) ??
-    (locales as readonly string[]).find((l) => tag.startsWith(l)) ??
-    (locales as readonly string[]).find((l) => l === tag.split("-")[0]) ??
-    "en";
-
-  applyLocale(match);
 }
 
 /** Returns the currently active Paraglide locale tag (e.g. "en"). */

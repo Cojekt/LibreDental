@@ -557,13 +557,8 @@
 
     await loadTheme();
 
-    // Initialize i18n: load saved language (or OS locale if set to "system")
-    try {
-      const savedLang = await SystemSettingsService.GetLanguage();
-      await initLocale(savedLang || "system");
-    } catch {
-      await initLocale("system");
-    }
+    // Initialize i18n via Go backend locale resolution
+    await initLocale();
 
     await checkConfig();
     await loadClinicData();
