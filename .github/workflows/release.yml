@@ -114,8 +114,13 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
+      - name: Install Task CLI
+        run: |
+          go install github.com/go-task/task/v3/cmd/task@v3.41.0
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
       - name: Generate Demo Database
-        run: go run ./pkg/demo/gen.go libredental.db
+        run: task demo
 
       - name: Upload Demo Database Artifact
         uses: actions/upload-artifact@v7

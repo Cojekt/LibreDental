@@ -89,7 +89,7 @@
         type="button"
         onclick={onopensettings}
         class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/80 bg-slate-800/90 text-slate-300 hover:bg-slate-700 hover:text-white transition-all shadow-sm cursor-pointer"
-        title="Settings"
+        title={m.settings_title()}
         aria-label={m.header_settings_label()}
       >
         <svg

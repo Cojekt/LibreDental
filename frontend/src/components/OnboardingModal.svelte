@@ -64,7 +64,9 @@
           >
             {#each supportedCountries as country}
               <option value={country.code}>
-                {country.name} ({country.default_currency} • Tooth System: {country.default_tooth_system.toUpperCase()})
+                {country.name} ({country.default_currency}
+                {m.onboarding_tooth_system_bullet()}
+                {country.default_tooth_system.toUpperCase()})
               </option>
             {/each}
           </select>

@@ -14,8 +14,9 @@
      * of JS in `.svelte` files.
      */
     "paths": {
-      "@bindings/*": ["./bindings/github.com/LibreDental/libredental/pkg/*"],
-      "$lib/*": ["./src/lib/*"]
+      "@bindings": ["bindings/github.com/LibreDental/libredental/internal"],
+      "@bindings/*": ["bindings/github.com/LibreDental/libredental/internal/*"],
+      "$lib/*": ["src/lib/*"]
     },
     "allowJs": true,
     "checkJs": true,

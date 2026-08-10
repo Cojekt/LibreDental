@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/LibreDental/libredental/pkg/services"
-	"github.com/LibreDental/libredental/pkg/storage/sqlite"
+	"github.com/LibreDental/libredental/internal/services"
+	"github.com/LibreDental/libredental/internal/storage/sqlite"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -21,7 +21,7 @@ func main() {
 		dataDir = "."
 	}
 	appDir := filepath.Join(dataDir, "LibreDental")
-	os.MkdirAll(appDir, 0755)
+	os.MkdirAll(appDir, 0o755)
 
 	dbPath := filepath.Join(appDir, "libredental.db")
 	db, err := sqlite.Open(dbPath)
@@ -45,6 +45,12 @@ func main() {
 	chartRepo := sqlite.NewChartRepository(db)
 	chartService := services.NewChartService(chartRepo)
 
+	claimRepo := sqlite.NewClaimRepository(db)
+	paymentRepo := sqlite.NewPaymentRepository(db)
+	bundleRepo := sqlite.NewBundleRepository(db)
+	procedureRepo := sqlite.NewProcedureRepository(db)
+	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo)
+
 	app := application.New(application.Options{
 		Name:        "LibreDental™",
 		Description: "Open-Source Dental Practice Management System",
@@ -54,6 +60,7 @@ func main() {
 			application.NewService(practiceConfigService),
 			application.NewService(systemSettingsService),
 			application.NewService(chartService),
+			application.NewService(billingService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

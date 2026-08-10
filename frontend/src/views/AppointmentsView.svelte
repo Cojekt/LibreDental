@@ -1,8 +1,11 @@
 <script lang="ts">
   import type { Patient, Appointment, Provider, Operatory } from "@bindings/domain/models.js";
   import AppointmentStats from "../components/AppointmentStats.svelte";
+  import AppointmentDaySection from "./appointments/AppointmentDaySection.svelte";
+  import AppointmentWeekSection from "./appointments/AppointmentWeekSection.svelte";
+  import AppointmentMonthSection from "./appointments/AppointmentMonthSection.svelte";
+  import AppointmentAgendaSection from "./appointments/AppointmentAgendaSection.svelte";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "$lib/locale.svelte.js";
   import { getLocalDateString, isSameDay, parseLocalDate } from "$lib/date.js";
 
   let {
@@ -92,7 +95,6 @@
       },
     });
 
-  // Dynamic time slots derived from filtered appointments (default 07:00 to 18:00)
   let timeSlots = $derived.by(() => {
     let minH = 7;
     let maxH = 18;
@@ -184,7 +186,6 @@
     }
   }
 
-  // Week Days (Sun - Sat) based on selectedDate
   let weekDays = $derived.by(() => {
     const curr = parseLocalDate(selectedDate);
     const dayOfWeek = isNaN(curr.getTime()) ? 0 : curr.getDay();
@@ -218,7 +219,6 @@
     return days;
   });
 
-  // Month Grid (42 cells) based on selectedDate
   let monthGrid = $derived.by(() => {
     const curr = parseLocalDate(selectedDate);
     const year = isNaN(curr.getTime()) ? new Date().getFullYear() : curr.getFullYear();
@@ -350,7 +350,6 @@
   <div
     class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-700/80 bg-slate-800/80 p-4 shadow-sm backdrop-blur"
   >
-    <!-- View Switcher (Calendar vs Agenda) & Sub-tabs (Day | Week | Month) -->
     <div class="flex items-center gap-3">
       <div class="flex rounded-lg border border-slate-700 bg-slate-900 p-0.5">
         <button
@@ -379,7 +378,6 @@
         </button>
       </div>
 
-      <!-- Sub-tab Slider for Calendar View (Day | Week | Month) -->
       {#if viewMode === "calendar" || viewMode === "grid"}
         <div class="flex rounded-lg border border-slate-700/80 bg-slate-900/60 p-0.5">
           <button
@@ -419,7 +417,6 @@
       {/if}
     </div>
 
-    <!-- Date Navigation -->
     {#if viewMode === "calendar" || viewMode === "grid"}
       <div class="flex items-center gap-2">
         {#if calendarView === "day"}
@@ -497,11 +494,10 @@
       </div>
     {/if}
 
-    <!-- Provider Filter -->
     <div class="flex items-center gap-2">
-      <label for="provider-filter" class="text-xs font-medium text-slate-400"
-        >{m.appts_provider_filter()}</label
-      >
+      <label for="provider-filter" class="text-xs font-medium text-slate-400">
+        {m.appts_provider_filter()}
+      </label>
       <select
         id="provider-filter"
         bind:value={selectedProvider}
@@ -515,7 +511,7 @@
     </div>
   </div>
 
-  <!-- View Title Header -->
+  <!-- Header Title -->
   <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
       {#if viewMode === "calendar" || viewMode === "grid"}
@@ -548,399 +544,61 @@
       <span class="ml-3 text-sm font-medium">{m.appts_loading_schedule()}</span>
     </div>
   {:else if viewMode === "calendar" || viewMode === "grid"}
-    <!-- CALENDAR VIEW -->
     {#if calendarView === "day"}
-      <!-- DAY VIEW GRID -->
-      <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
-        <div class="divide-y divide-slate-800">
-          {#each timeSlots as slot}
-            {@const slotAppts = filteredAppointments.filter(
-              (a: Appointment) => getApptHour(a.start_time) === slot
-            )}
-            <div class="flex min-h-[96px] group hover:bg-slate-800/30 transition-colors">
-              <div
-                class="w-24 flex-shrink-0 border-r border-slate-800 p-3 text-xs font-semibold text-slate-400 bg-slate-900/50"
-              >
-                {formatSlotLabel(slot)}
-              </div>
-
-              <div class="flex-1 p-2 flex flex-wrap gap-3 items-start">
-                {#if slotAppts.length === 0}
-                  <div
-                    class="h-full w-full flex items-center justify-start text-xs text-slate-600 italic px-2 py-4"
-                  >
-                    {m.appts_no_appts_slot()}
-                  </div>
-                {:else}
-                  {#each slotAppts as appt}
-                    {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
-                    <div
-                      class="group/card relative w-full sm:w-[320px] rounded-xl border border-l-4 p-3.5 shadow-md transition-all duration-150 hover:shadow-sky-500/10 hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer"
-                      style="border-left-color: {appt.color || '#3b82f6'};"
-                      onclick={() => oneditappointment(appt)}
-                      role="button"
-                      tabindex="0"
-                      onkeydown={(e) => e.key === "Enter" && oneditappointment(appt)}
-                    >
-                      <div class="flex items-start justify-between">
-                        <div>
-                          <div class="text-sm font-bold text-white flex items-center gap-1.5">
-                            {getPatientName(appt.patient_id)}
-                          </div>
-                          <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                            <span
-                              >⏱ {formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span
-                            >
-                            {#if getPatientPhone(appt.patient_id)}
-                              <span>📞 {getPatientPhone(appt.patient_id)}</span>
-                            {/if}
-                          </div>
-                        </div>
-
-                        <span
-                          class={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badge.bg} ${badge.text} ${badge.border}`}
-                        >
-                          {badge.label}
-                        </span>
-                      </div>
-
-                      {#if appt.reason}
-                        <div
-                          class="mt-2 text-xs font-medium text-sky-200/90 bg-slate-900/60 rounded-lg px-2.5 py-1"
-                        >
-                          📋 {appt.reason}
-                        </div>
-                      {/if}
-
-                      <div
-                        class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-700/50"
-                      >
-                        <span>👤 {getProviderName(appt.provider_id)}</span>
-                        <span>📍 {getOperatoryName(appt.operatory_id)}</span>
-                      </div>
-
-                      <!-- Quick Status Actions -->
-                      <div
-                        class="mt-2.5 flex items-center gap-1.5 pt-2 border-t border-slate-700/40"
-                        onclick={(e) => e.stopPropagation()}
-                        role="presentation"
-                      >
-                        {#if appt.status === "scheduled"}
-                          <button
-                            type="button"
-                            onclick={() => onupdatestatus(appt.id, "confirmed")}
-                            class="px-2 py-0.5 text-[10px] font-semibold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 rounded border border-sky-500/30"
-                          >
-                            {m.appts_action_confirm()}
-                          </button>
-                        {/if}
-                        {#if appt.status === "scheduled" || appt.status === "confirmed"}
-                          <button
-                            type="button"
-                            onclick={() => onupdatestatus(appt.id, "arrived")}
-                            class="px-2 py-0.5 text-[10px] font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded border border-amber-500/30"
-                          >
-                            {m.appts_action_arrived()}
-                          </button>
-                        {/if}
-                        {#if appt.status === "arrived"}
-                          <button
-                            type="button"
-                            onclick={() => onupdatestatus(appt.id, "in_chair")}
-                            class="px-2 py-0.5 text-[10px] font-semibold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded border border-purple-500/30"
-                          >
-                            {m.appts_action_seat()}
-                          </button>
-                        {/if}
-                        {#if appt.status === "in_chair"}
-                          <button
-                            type="button"
-                            onclick={() => onupdatestatus(appt.id, "completed")}
-                            class="px-2 py-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/30"
-                          >
-                            {m.appts_action_complete()}
-                          </button>
-                        {/if}
-                      </div>
-                    </div>
-                  {/each}
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
+      <AppointmentDaySection
+        {timeSlots}
+        {filteredAppointments}
+        {getApptHour}
+        {formatSlotLabel}
+        {formatTime}
+        {getPatientName}
+        {getPatientPhone}
+        {getProviderName}
+        {getOperatoryName}
+        {statusBadges}
+        {oneditappointment}
+        {onupdatestatus}
+        noApptsLabel={m.appts_no_appts_slot()}
+        confirmLabel={m.appts_action_confirm()}
+        arrivedLabel={m.appts_action_arrived()}
+        seatLabel={m.appts_action_seat()}
+        completeLabel={m.appts_action_complete()}
+      />
     {:else if calendarView === "week"}
-      <!-- WEEK VIEW GRID -->
-      <div class="grid grid-cols-1 md:grid-cols-7 gap-3">
-        {#each weekDays as day}
-          {@const dayAppts = filteredAppointments.filter((a: Appointment) =>
-            isSameDay(a.start_time, day.dateStr)
-          )}
-          <div
-            class={`flex flex-col rounded-xl border transition-all ${
-              day.isSelected
-                ? "border-sky-500/60 bg-slate-900/90 ring-1 ring-sky-500/30 shadow-lg"
-                : day.isToday
-                  ? "border-amber-500/40 bg-slate-900/80"
-                  : "border-slate-800 bg-slate-900/50"
-            }`}
-          >
-            <!-- Day Header (Clickable to switch to Day view) -->
-            <button
-              type="button"
-              onclick={() => selectDateAndJumpToDay(day.dateStr)}
-              class="p-3 text-left border-b border-slate-800 bg-slate-800/40 hover:bg-slate-800/80 rounded-t-xl transition-colors flex items-center justify-between group/weekhead"
-            >
-              <div>
-                <div
-                  class="text-xs font-bold uppercase tracking-wider text-slate-400 group-hover/weekhead:text-sky-400 transition-colors"
-                >
-                  {day.dayName}
-                </div>
-                <div class="text-sm font-extrabold text-white mt-0.5">{day.label}</div>
-              </div>
-              {#if day.isToday}
-                <span
-                  class="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30"
-                >
-                  Today
-                </span>
-              {/if}
-            </button>
-
-            <!-- Appointments List for Day -->
-            <div class="p-2 space-y-2 flex-1 overflow-y-auto max-h-[650px] min-h-[160px]">
-              {#if dayAppts.length === 0}
-                <div
-                  class="h-full flex items-center justify-center text-center text-xs text-slate-600 italic py-6"
-                >
-                  No appointments
-                </div>
-              {:else}
-                {#each dayAppts as appt}
-                  {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
-                  <div
-                    class="relative rounded-lg border border-l-4 p-2.5 shadow-sm hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer transition-all hover:scale-[1.01]"
-                    style="border-left-color: {appt.color || '#3b82f6'};"
-                    onclick={() => oneditappointment(appt)}
-                    role="button"
-                    tabindex="0"
-                    onkeydown={(e) => e.key === "Enter" && oneditappointment(appt)}
-                  >
-                    <div class="text-xs font-bold text-white truncate">
-                      {getPatientName(appt.patient_id)}
-                    </div>
-                    <div class="text-[11px] text-sky-400 font-semibold mt-1">
-                      ⏱ {formatTime(appt.start_time)}
-                    </div>
-                    {#if appt.reason}
-                      <div
-                        class="text-[11px] text-slate-300 truncate mt-1 bg-slate-900/60 px-1.5 py-0.5 rounded"
-                      >
-                        {appt.reason}
-                      </div>
-                    {/if}
-                    <div class="mt-2 flex items-center justify-between text-[10px]">
-                      <span class="text-slate-400 truncate max-w-[90px]"
-                        >👤 {getProviderName(appt.provider_id)}</span
-                      >
-                      <span
-                        class={`rounded-full border px-1.5 py-0.2 text-[9px] font-semibold uppercase ${badge.bg} ${badge.text} ${badge.border}`}
-                      >
-                        {badge.label}
-                      </span>
-                    </div>
-                  </div>
-                {/each}
-              {/if}
-            </div>
-          </div>
-        {/each}
-      </div>
+      <AppointmentWeekSection
+        {weekDays}
+        {filteredAppointments}
+        {isSameDay}
+        {selectDateAndJumpToDay}
+        {oneditappointment}
+        {formatTime}
+        {getPatientName}
+        {getProviderName}
+        {statusBadges}
+      />
     {:else if calendarView === "month"}
-      <!-- MONTH VIEW GRID -->
-      <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
-        <!-- Day Names Header -->
-        <div
-          class="grid grid-cols-7 border-b border-slate-800 bg-slate-800/80 text-center text-xs font-bold text-slate-400 py-2.5"
-        >
-          <div>Sun</div>
-          <div>Mon</div>
-          <div>Tue</div>
-          <div>Wed</div>
-          <div>Thu</div>
-          <div>Fri</div>
-          <div>Sat</div>
-        </div>
-
-        <!-- 42 Calendar Cells -->
-        <div class="grid grid-cols-7 divide-x divide-y divide-slate-800/80">
-          {#each monthGrid as cell}
-            {@const cellAppts = filteredAppointments.filter((a: Appointment) =>
-              isSameDay(a.start_time, cell.dateStr)
-            )}
-            <div
-              class={`min-h-[110px] p-1.5 flex flex-col transition-colors group ${
-                !cell.isCurrentMonth
-                  ? "bg-slate-950/40 text-slate-600 opacity-50"
-                  : cell.isSelected
-                    ? "bg-sky-950/20 text-slate-200"
-                    : "bg-slate-900/40 text-slate-300 hover:bg-slate-800/30"
-              }`}
-            >
-              <!-- Cell Header / Day Number (Clickable to switch to Day view) -->
-              <div class="flex items-center justify-between mb-1 px-1">
-                <button
-                  type="button"
-                  onclick={() => selectDateAndJumpToDay(cell.dateStr)}
-                  class={`text-xs font-bold px-1.5 py-0.5 rounded transition-all hover:bg-sky-500/20 hover:text-sky-400 ${
-                    cell.isToday
-                      ? "bg-amber-500 text-slate-950 font-black shadow-sm"
-                      : cell.isSelected
-                        ? "bg-sky-500 text-white font-bold"
-                        : "text-slate-400"
-                  }`}
-                >
-                  {cell.dayNum}
-                </button>
-                {#if cellAppts.length > 0}
-                  <span
-                    class="text-[10px] font-semibold text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded-full border border-slate-700"
-                  >
-                    {cellAppts.length}
-                  </span>
-                {/if}
-              </div>
-
-              <!-- Appointment List Chips -->
-              <div class="space-y-1 flex-1 overflow-y-auto max-h-[95px]">
-                {#each cellAppts.slice(0, 3) as appt}
-                  <button
-                    type="button"
-                    onclick={() => oneditappointment(appt)}
-                    class="w-full text-left rounded px-1.5 py-0.5 text-[11px] font-medium border border-l-2 bg-slate-800/90 hover:bg-slate-700/80 truncate flex items-center gap-1 transition-all"
-                    style="border-left-color: {appt.color || '#3b82f6'};"
-                  >
-                    <span class="text-sky-400 text-[10px] font-semibold"
-                      >{formatTime(appt.start_time)}</span
-                    >
-                    <span class="font-semibold text-white truncate"
-                      >{getPatientName(appt.patient_id)}</span
-                    >
-                  </button>
-                {/each}
-
-                {#if cellAppts.length > 3}
-                  <button
-                    type="button"
-                    onclick={() => selectDateAndJumpToDay(cell.dateStr)}
-                    class="w-full text-center text-[10px] font-bold text-sky-400 hover:underline pt-0.5"
-                  >
-                    +{cellAppts.length - 3} more
-                  </button>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
+      <AppointmentMonthSection
+        {monthGrid}
+        {filteredAppointments}
+        {isSameDay}
+        {selectDateAndJumpToDay}
+        {oneditappointment}
+        {formatTime}
+        {getPatientName}
+      />
     {/if}
   {:else}
-    <!-- AGENDA VIEW TABLE (WITH CLICKABLE DATES) -->
-    <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
-      {#if filteredAppointments.length === 0}
-        <div class="py-16 text-center text-slate-400">
-          <p class="text-base font-semibold">{m.appts_no_appts_date()}</p>
-          <p class="text-xs text-slate-500 mt-1">{m.appts_no_appts_sub()}</p>
-        </div>
-      {:else}
-        <table class="w-full text-left text-sm text-slate-200">
-          <thead
-            class="bg-slate-800/90 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-700"
-          >
-            <tr>
-              <th class="px-4 py-3">{m.appt_label_date()} & {m.appt_label_start_time()}</th>
-              <th class="px-4 py-3">{m.patients_th_name()}</th>
-              <th class="px-4 py-3">{m.appt_label_reason()}</th>
-              <th class="px-4 py-3">{m.appt_label_provider()}</th>
-              <th class="px-4 py-3">{m.appt_label_operatory()}</th>
-              <th class="px-4 py-3">{m.appt_label_status()}</th>
-              <th class="px-4 py-3 text-right">{m.patients_th_actions()}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-800">
-            {#each filteredAppointments as appt}
-              {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
-              <tr class="hover:bg-slate-800/50 transition-colors">
-                <!-- Clickable Date Badge to Jump to Calendar View -->
-                <td class="px-4 py-3 font-medium whitespace-nowrap">
-                  <button
-                    type="button"
-                    onclick={() => jumpToDateFromAgenda(appt.start_time)}
-                    class="text-left group/date focus:outline-none transition-colors"
-                    title="Click to view this date in Calendar View"
-                  >
-                    <div
-                      class="text-slate-200 font-semibold text-xs flex items-center gap-1.5 group-hover/date:text-sky-400 group-hover/date:underline"
-                    >
-                      <span class="text-slate-400">📅</span>
-                      {formatApptDate(appt.start_time)}
-                    </div>
-                    <div class="text-sky-400 text-xs mt-1 flex items-center gap-1.5">
-                      <span class="text-slate-400">⏱</span>
-                      {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
-                    </div>
-                  </button>
-                </td>
-                <td class="px-4 py-3 font-semibold text-white">
-                  {getPatientName(appt.patient_id)}
-                </td>
-                <td class="px-4 py-3 text-slate-300">
-                  {appt.reason || "—"}
-                </td>
-                <td class="px-4 py-3 text-slate-400 text-xs">
-                  {getProviderName(appt.provider_id)}
-                </td>
-                <td class="px-4 py-3 text-slate-400 text-xs">
-                  {getOperatoryName(appt.operatory_id)}
-                </td>
-                <td class="px-4 py-3">
-                  <select
-                    value={appt.status}
-                    onchange={(e) => onupdatestatus(appt.id, (e.target as HTMLSelectElement).value)}
-                    class={`rounded-lg border px-2.5 py-1 text-xs font-semibold focus:outline-none ${badge.bg} ${badge.text} ${badge.border}`}
-                  >
-                    <option value="scheduled">{m.appts_status_scheduled()}</option>
-                    <option value="confirmed">{m.appts_status_confirmed()}</option>
-                    <option value="arrived">{m.appts_status_arrived()}</option>
-                    <option value="in_chair">{m.appts_status_in_chair()}</option>
-                    <option value="completed">{m.appts_status_completed()}</option>
-                    <option value="cancelled">{m.appts_status_cancelled()}</option>
-                    <option value="no_show">{m.appts_status_no_show()}</option>
-                  </select>
-                </td>
-                <td class="px-4 py-3 text-right space-x-2">
-                  <button
-                    type="button"
-                    onclick={() => oneditappointment(appt)}
-                    class="text-xs font-medium text-sky-400 hover:text-sky-300"
-                  >
-                    {m.patients_btn_edit()}
-                  </button>
-                  <button
-                    type="button"
-                    onclick={() => ondeleteappointment(appt.id)}
-                    class="text-xs font-medium text-rose-400 hover:text-rose-300"
-                  >
-                    {m.appt_delete()}
-                  </button>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      {/if}
-    </div>
+    <AppointmentAgendaSection
+      {filteredAppointments}
+      {jumpToDateFromAgenda}
+      {formatApptDate}
+      {formatTime}
+      {getPatientName}
+      {getProviderName}
+      {getOperatoryName}
+      {onupdatestatus}
+      {oneditappointment}
+      {ondeleteappointment}
+    />
   {/if}
 </div>
