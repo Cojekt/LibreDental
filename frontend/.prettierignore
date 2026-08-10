@@ -2,3 +2,5 @@ node_modules
 dist
 bindings
 src/paraglide
+.svelte-check
+
