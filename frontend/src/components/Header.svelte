@@ -41,9 +41,7 @@
         </svg>
       </div>
       <div class="flex items-center">
-        <h1 class="m-0 text-xl font-bold tracking-tight text-slate-50">
-          LibreDental<span class="align-super text-[11px] text-slate-400">™</span>
-        </h1>
+        <h1 class="m-0 text-xl font-bold tracking-tight text-slate-50">LibreDental</h1>
         {#if countryMeta}
           <span
             class="ml-2.5 rounded-xl border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-[11px] font-medium text-slate-300 flex items-center gap-1"

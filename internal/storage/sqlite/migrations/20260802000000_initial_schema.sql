@@ -126,12 +126,6 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 	ip_address TEXT DEFAULT ''
 );
 
-CREATE TABLE IF NOT EXISTS system_settings (
-	key TEXT PRIMARY KEY,
-	value TEXT NOT NULL,
-	updated_at DATETIME NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS dental_conditions (
 	id TEXT PRIMARY KEY,
 	patient_id TEXT NOT NULL,
@@ -178,7 +172,6 @@ INSERT OR IGNORE INTO country_configs (code, name, national_id_name, national_id
 -- +goose StatementBegin
 DROP TABLE IF EXISTS country_configs;
 DROP TABLE IF EXISTS dental_conditions;
-DROP TABLE IF EXISTS system_settings;
 DROP TABLE IF EXISTS operatories;
 DROP TABLE IF EXISTS providers;
 DROP TABLE IF EXISTS audit_logs;

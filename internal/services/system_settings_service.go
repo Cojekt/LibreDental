@@ -1,74 +1,287 @@
 package services
 
 import (
-	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
-	"github.com/LibreDental/libredental/internal/storage"
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
+
+// AppConfig represents local machine settings persisted in config.json.
+type AppConfig struct {
+	Theme        string `json:"theme"`         // "system", "dark", "light"
+	Language     string `json:"language"`      // "system" or BCP 47 tag (e.g. "en")
+	WindowMode   string `json:"window_mode"`   // "window", "fullscreen"
+	WindowWidth  int    `json:"window_width"`  // default 1280
+	WindowHeight int    `json:"window_height"` // default 800
+}
 
 // SystemSettingsService handles application and desktop environment preferences and system actions.
 type SystemSettingsService struct {
-	repo   storage.SystemSettingsRepository
 	appDir string
+	mu     sync.RWMutex
+	window *application.WebviewWindow
+	cfg    AppConfig
 }
 
-// NewSystemSettingsService creates a new SystemSettingsService with repo and app data directory.
-func NewSystemSettingsService(repo storage.SystemSettingsRepository, appDir string) *SystemSettingsService {
-	return &SystemSettingsService{repo: repo, appDir: appDir}
+// NewSystemSettingsService creates a new SystemSettingsService with the app data directory and loads config into memory.
+func NewSystemSettingsService(appDir string) *SystemSettingsService {
+	s := &SystemSettingsService{appDir: appDir}
+	s.cfg = s.loadConfigFromDisk()
+	return s
+}
+
+// SetWindow attaches the main Wails window reference and registers dynamic window resize listeners.
+func (s *SystemSettingsService) SetWindow(win *application.WebviewWindow) {
+	s.mu.Lock()
+	s.window = win
+	s.mu.Unlock()
+
+	if win == nil {
+		return
+	}
+
+	saveCurrentSize := func() {
+		defer func() { _ = recover() }()
+		if !win.IsFullscreen() && !win.IsMaximised() {
+			w, h := win.Size()
+			if w >= 400 && h >= 300 {
+				_ = s.SaveWindowSize(w, h)
+			}
+		}
+	}
+
+	win.OnWindowEvent(events.Common.WindowDidResize, func(event *application.WindowEvent) {
+		saveCurrentSize()
+	})
+
+	win.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		saveCurrentSize()
+	})
+
+	win.OnWindowEvent(events.Linux.WindowDeleteEvent, func(event *application.WindowEvent) {
+		saveCurrentSize()
+	})
+}
+
+func (s *SystemSettingsService) getConfigPath() string {
+	return filepath.Join(s.appDir, "config.json")
+}
+
+func (s *SystemSettingsService) defaultConfig() AppConfig {
+	return AppConfig{
+		Theme:        "system",
+		Language:     "system",
+		WindowMode:   "window",
+		WindowWidth:  1280,
+		WindowHeight: 800,
+	}
+}
+
+func (s *SystemSettingsService) loadConfigFromDisk() AppConfig {
+	cfg := s.defaultConfig()
+	configPath := s.getConfigPath()
+
+	data, err := os.ReadFile(configPath)
+	if err != nil || len(data) == 0 {
+		return cfg
+	}
+
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return s.defaultConfig()
+	}
+
+	if cfg.Theme == "" {
+		cfg.Theme = "system"
+	}
+	if cfg.Language == "" {
+		cfg.Language = "system"
+	}
+	if cfg.WindowMode == "" {
+		cfg.WindowMode = "window"
+	}
+	if cfg.WindowWidth <= 300 {
+		cfg.WindowWidth = 1280
+	}
+	if cfg.WindowHeight <= 300 {
+		cfg.WindowHeight = 800
+	}
+
+	return cfg
+}
+
+func (s *SystemSettingsService) persistConfigLocked() error {
+	if err := os.MkdirAll(s.appDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	data, err := json.MarshalIndent(s.cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	configPath := s.getConfigPath()
+	tmpPath := configPath + ".tmp"
+
+	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
+		return fmt.Errorf("failed to write temporary config file: %w", err)
+	}
+
+	if err := os.Rename(tmpPath, configPath); err != nil {
+		return fmt.Errorf("failed to save config file: %w", err)
+	}
+
+	return nil
+}
+
+// FlushConfig forces config persistence to disk immediately.
+func (s *SystemSettingsService) FlushConfig() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.persistConfigLocked()
+}
+
+// GetWindowSize returns saved window width and height.
+func (s *SystemSettingsService) GetWindowSize() (int, int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.cfg.WindowWidth, s.cfg.WindowHeight, nil
+}
+
+// SaveWindowSize updates window dimensions in memory and persists directly to config.json.
+func (s *SystemSettingsService) SaveWindowSize(width, height int) error {
+	if width < 400 || height < 300 {
+		return nil
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.cfg.WindowWidth == width && s.cfg.WindowHeight == height {
+		return nil
+	}
+
+	s.cfg.WindowWidth = width
+	s.cfg.WindowHeight = height
+
+	return s.persistConfigLocked()
 }
 
 // GetTheme returns the saved application theme preference (defaults to "system").
 func (s *SystemSettingsService) GetTheme() (string, error) {
-	val, err := s.repo.GetSetting(context.Background(), "theme")
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return "system", nil
-		}
-		return "system", fmt.Errorf("failed to fetch theme setting: %w", err)
-	}
-	if val == "" {
-		return "system", nil
-	}
-	return val, nil
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.cfg.Theme, nil
 }
 
-// SetTheme persists the application theme preference ("dark", "light", or "system") in SQLite.
+// SetTheme persists the application theme preference ("dark", "light", or "system") in config.json.
 func (s *SystemSettingsService) SetTheme(theme string) error {
 	if theme != "light" && theme != "dark" && theme != "system" {
 		return fmt.Errorf("invalid theme mode: %s", theme)
 	}
-	err := s.repo.SetSetting(context.Background(), "theme", theme)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.cfg.Theme = theme
+	return s.persistConfigLocked()
+}
+
+// GetWindowMode returns the current window mode ("window" or "fullscreen").
+func (s *SystemSettingsService) GetWindowMode() (string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.cfg.WindowMode, nil
+}
+
+// SetWindowMode persists the window mode and applies it live if a Wails window is attached.
+func (s *SystemSettingsService) SetWindowMode(mode string) error {
+	if mode != "window" && mode != "fullscreen" && mode != "windowed_fullscreen" {
+		return fmt.Errorf("invalid window mode: %s", mode)
+	}
+
+	s.mu.Lock()
+	s.cfg.WindowMode = mode
+	err := s.persistConfigLocked()
+	win := s.window
+	s.mu.Unlock()
+
 	if err != nil {
-		return fmt.Errorf("failed to save theme setting: %w", err)
+		return err
+	}
+
+	if win != nil {
+		s.applyWindowSettingsToWindow(win, mode)
 	}
 	return nil
 }
 
-// GetSetting fetches any custom system setting by key.
+// ApplyWindowSettings applies stored window mode to the attached Wails window.
+func (s *SystemSettingsService) ApplyWindowSettings() error {
+	s.mu.RLock()
+	mode := s.cfg.WindowMode
+	win := s.window
+	s.mu.RUnlock()
+
+	if win != nil {
+		s.applyWindowSettingsToWindow(win, mode)
+	}
+	return nil
+}
+
+func (s *SystemSettingsService) applyWindowSettingsToWindow(win *application.WebviewWindow, mode string) {
+	defer func() { _ = recover() }()
+	switch mode {
+	case "fullscreen":
+		win.Fullscreen()
+	default:
+		win.UnFullscreen()
+	}
+}
+
+// GetSetting fetches a custom system setting by key from config.json.
 func (s *SystemSettingsService) GetSetting(key string) (string, error) {
-	val, err := s.repo.GetSetting(context.Background(), key)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return "", nil
-		}
-		return "", fmt.Errorf("failed to fetch setting (%s): %w", key, err)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	switch key {
+	case "theme":
+		return s.cfg.Theme, nil
+	case "language":
+		return s.cfg.Language, nil
+	case "window_mode":
+		return s.cfg.WindowMode, nil
+	default:
+		return "", nil
 	}
-	return val, nil
 }
 
-// SetSetting saves any custom system setting by key.
+// SetSetting saves a custom system setting by key into config.json.
 func (s *SystemSettingsService) SetSetting(key string, value string) error {
-	err := s.repo.SetSetting(context.Background(), key, value)
-	if err != nil {
-		return fmt.Errorf("failed to save setting (%s): %w", key, err)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	switch key {
+	case "theme":
+		s.cfg.Theme = value
+	case "language":
+		s.cfg.Language = value
+	case "window_mode":
+		s.cfg.WindowMode = value
 	}
-	return nil
+
+	return s.persistConfigLocked()
 }
 
 // GetDataDir returns the absolute path to the local application data / save directory.
@@ -94,7 +307,7 @@ func (s *SystemSettingsService) OpenDataDir() error {
 	return nil
 }
 
-// IsSystemDarkMode queries the host operating system desktop settings (Linux GTK/GNOME, Windows Registry, macOS defaults) for dark mode.
+// IsSystemDarkMode queries host operating system desktop settings for dark mode.
 func (s *SystemSettingsService) IsSystemDarkMode() (bool, error) {
 	switch runtime.GOOS {
 	case "linux":
@@ -108,7 +321,6 @@ func (s *SystemSettingsService) IsSystemDarkMode() (bool, error) {
 			if (len(str) >= 4) && (str[len(str)-5:] == "dark'" || str[len(str)-6:] == "dark'\n" || str[len(str)-4:] == "dark") {
 				return true, nil
 			}
-			// Case-insensitive check for dark in gtk-theme name (e.g. Mint-Y-Dark)
 			for i := 0; i <= len(str)-4; i++ {
 				if (str[i] == 'd' || str[i] == 'D') &&
 					(str[i+1] == 'a' || str[i+1] == 'A') &&
@@ -138,42 +350,32 @@ func (s *SystemSettingsService) IsSystemDarkMode() (bool, error) {
 }
 
 // GetLanguage returns the saved UI language preference.
-// Returns "system" if none has been set, indicating the OS locale should be used.
 func (s *SystemSettingsService) GetLanguage() (string, error) {
-	val, err := s.repo.GetSetting(context.Background(), "language")
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return "system", nil
-		}
-		return "system", fmt.Errorf("failed to fetch language setting: %w", err)
-	}
-	if val == "" {
-		return "system", nil
-	}
-	return val, nil
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.cfg.Language, nil
 }
 
 // SetLanguage persists the UI language preference.
-// Accepts a BCP 47 language tag (e.g. "en", "fr", "de") or the special value "system".
 func (s *SystemSettingsService) SetLanguage(lang string) error {
 	if lang == "" {
-		return fmt.Errorf("language tag must not be empty")
+		return errors.New("language tag must not be empty")
 	}
-	err := s.repo.SetSetting(context.Background(), "language", lang)
-	if err != nil {
-		return fmt.Errorf("failed to save language setting: %w", err)
-	}
-	return nil
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.cfg.Language = lang
+	return s.persistConfigLocked()
 }
 
-// GetSystemLocale queries the host operating system for the user's locale and returns
-// a BCP 47 language tag (e.g. "en", "en-US", "fr-FR"). Falls back to "en" on any error.
+// GetSystemLocale queries the host operating system for the user's locale.
 func (s *SystemSettingsService) GetSystemLocale() (string, error) {
 	var tag string
 
 	switch runtime.GOOS {
 	case "linux":
-		// Prefer LANG env var (e.g. "en_US.UTF-8" → "en-US")
 		for _, key := range []string{"LANGUAGE", "LANG", "LC_ALL", "LC_MESSAGES"} {
 			if v := os.Getenv(key); v != "" && v != "C" && v != "POSIX" {
 				tag = normalizePOSIXLocale(v)
@@ -188,7 +390,6 @@ func (s *SystemSettingsService) GetSystemLocale() (string, error) {
 		if tag == "" {
 			out2, err2 := exec.Command("defaults", "read", "-g", "AppleLanguages").Output()
 			if err2 == nil {
-				// Output is like: ( "en-US", "fr-FR" )
 				raw := strings.TrimSpace(string(out2))
 				raw = strings.Trim(raw, "()\n")
 				parts := strings.Split(raw, ",")
@@ -211,8 +412,7 @@ func (s *SystemSettingsService) GetSystemLocale() (string, error) {
 	return tag, nil
 }
 
-// GetEffectiveLocale resolves the application's active UI locale by inspecting the saved setting
-// (falling back to host OS locale if set to "system" or empty) and matching it against supportedLocales.
+// GetEffectiveLocale resolves the application's active UI locale.
 func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (string, error) {
 	tag, err := s.GetLanguage()
 	if err != nil {
@@ -231,14 +431,12 @@ func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (s
 		return tag, nil
 	}
 
-	// 1. Case-insensitive exact match
 	for _, l := range supportedLocales {
 		if strings.EqualFold(l, tag) {
 			return l, nil
 		}
 	}
 
-	// 2. Match the most specific parent locale on a subtag boundary (e.g. tag "en-US-tx" matches "en-US" over "en")
 	bestMatch := ""
 	for _, l := range supportedLocales {
 		if strings.HasPrefix(strings.ToLower(tag), strings.ToLower(l)+"-") && len(l) > len(bestMatch) {
@@ -249,7 +447,6 @@ func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (s
 		return bestMatch, nil
 	}
 
-	// 3. Case-insensitive base tag match (e.g. tag "en-US" -> base "en" matches supported "en")
 	baseTag := strings.ToLower(strings.Split(tag, "-")[0])
 	for _, l := range supportedLocales {
 		lBase := strings.ToLower(strings.Split(l, "-")[0])
@@ -258,7 +455,6 @@ func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (s
 		}
 	}
 
-	// Default fallback to "en" if available, else first supported locale
 	for _, l := range supportedLocales {
 		if strings.EqualFold(l, "en") {
 			return l, nil
@@ -267,16 +463,12 @@ func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (s
 	return supportedLocales[0], nil
 }
 
-// normalizePOSIXLocale converts a POSIX locale string (e.g. "en_US.UTF-8") to a BCP 47 tag (e.g. "en-US").
 func normalizePOSIXLocale(posix string) string {
-	// Strip encoding suffix (e.g. ".UTF-8")
 	if idx := strings.IndexByte(posix, '.'); idx != -1 {
 		posix = posix[:idx]
 	}
-	// Strip modifier (e.g. "@euro")
 	if idx := strings.IndexByte(posix, '@'); idx != -1 {
 		posix = posix[:idx]
 	}
-	// Convert underscore to hyphen: "en_US" → "en-US"
 	return strings.ReplaceAll(posix, "_", "-")
 }

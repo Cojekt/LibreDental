@@ -39,8 +39,7 @@ func main() {
 	practiceConfigRepo := sqlite.NewPracticeConfigRepository(db)
 	practiceConfigService := services.NewPracticeConfigService(practiceConfigRepo)
 
-	systemSettingsRepo := sqlite.NewSystemSettingsRepository(db)
-	systemSettingsService := services.NewSystemSettingsService(systemSettingsRepo, appDir)
+	systemSettingsService := services.NewSystemSettingsService(appDir)
 
 	chartRepo := sqlite.NewChartRepository(db)
 	chartService := services.NewChartService(chartRepo)
@@ -52,7 +51,7 @@ func main() {
 	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo)
 
 	app := application.New(application.Options{
-		Name:        "LibreDental™",
+		Name:        "LibreDental",
 		Description: "Open-Source Dental Practice Management System",
 		Services: []application.Service{
 			application.NewService(patientService),
@@ -70,13 +69,23 @@ func main() {
 		},
 	})
 
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:            "LibreDental™",
-		Width:            1280,
-		Height:           800,
+	winWidth, winHeight, _ := systemSettingsService.GetWindowSize()
+	winMode, _ := systemSettingsService.GetWindowMode()
+
+	startState := application.WindowStateNormal
+	if winMode == "fullscreen" {
+		startState = application.WindowStateFullscreen
+	}
+
+	win := app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:            "LibreDental",
+		Width:            winWidth,
+		Height:           winHeight,
+		StartState:       startState,
 		BackgroundColour: application.NewRGB(15, 23, 42),
 		URL:              "/",
 	})
+	systemSettingsService.SetWindow(win)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

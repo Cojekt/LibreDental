@@ -1,37 +1,74 @@
 package services_test
 
 import (
-	"context"
-	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/LibreDental/libredental/internal/services"
-	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
-type failingRepo struct{}
+func TestSystemSettingsService_JSONStorage(t *testing.T) {
+	tempDir := t.TempDir()
+	service := services.NewSystemSettingsService(tempDir)
 
-func (f *failingRepo) GetSetting(ctx context.Context, key string) (string, error) {
-	return "", errors.New("db connection failure")
-}
+	// Test default values
+	theme, err := service.GetTheme()
+	if err != nil || theme != "system" {
+		t.Errorf("Expected default theme 'system', got %q (err: %v)", theme, err)
+	}
 
-func (f *failingRepo) SetSetting(ctx context.Context, key string, value string) error {
-	return errors.New("db connection failure")
+	mode, err := service.GetWindowMode()
+	if err != nil || mode != "window" {
+		t.Errorf("Expected default window mode 'window', got %q (err: %v)", mode, err)
+	}
+
+	w, h, err := service.GetWindowSize()
+	if err != nil || w != 1280 || h != 800 {
+		t.Errorf("Expected default window size 1280x800, got %dx%d (err: %v)", w, h, err)
+	}
+
+	// Test setting theme, window mode, and saving dynamic window size
+	if err := service.SetTheme("dark"); err != nil {
+		t.Fatalf("SetTheme failed: %v", err)
+	}
+	if err := service.SetWindowMode("fullscreen"); err != nil {
+		t.Fatalf("SetWindowMode failed: %v", err)
+	}
+	if err := service.SaveWindowSize(1600, 900); err != nil {
+		t.Fatalf("SaveWindowSize failed: %v", err)
+	}
+	if err := service.FlushConfig(); err != nil {
+		t.Fatalf("FlushConfig failed: %v", err)
+	}
+
+	// Verify values persist in JSON
+	configPath := filepath.Join(tempDir, "config.json")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Fatalf("Expected config.json file to exist at %s", configPath)
+	}
+
+	// Create new service instance pointing to same directory
+	service2 := services.NewSystemSettingsService(tempDir)
+	theme, _ = service2.GetTheme()
+	if theme != "dark" {
+		t.Errorf("Expected persisted theme 'dark', got %q", theme)
+	}
+
+	mode, _ = service2.GetWindowMode()
+	if mode != "fullscreen" {
+		t.Errorf("Expected persisted window mode 'fullscreen', got %q", mode)
+	}
+
+	w2, h2, _ := service2.GetWindowSize()
+	if w2 != 1600 || h2 != 900 {
+		t.Errorf("Expected persisted window size 1600x900, got %dx%d", w2, h2)
+	}
 }
 
 func TestSystemSettingsService_GetEffectiveLocale(t *testing.T) {
 	tempDir := t.TempDir()
-	dbPath := filepath.Join(tempDir, "test_settings.db")
-
-	db, err := sqlite.Open(dbPath)
-	if err != nil {
-		t.Fatalf("Failed to open db: %v", err)
-	}
-	defer db.Close()
-
-	settingsRepo := sqlite.NewSystemSettingsRepository(db)
-	service := services.NewSystemSettingsService(settingsRepo, tempDir)
+	service := services.NewSystemSettingsService(tempDir)
 
 	supported := []string{"en", "fr", "en-US"}
 
@@ -107,12 +144,5 @@ func TestSystemSettingsService_GetEffectiveLocale(t *testing.T) {
 	}
 	if effective != "en" {
 		t.Errorf("Expected fallback 'en', got %q", effective)
-	}
-
-	// 7. Database error propagation test
-	failingService := services.NewSystemSettingsService(&failingRepo{}, tempDir)
-	_, err = failingService.GetEffectiveLocale(supported)
-	if err == nil {
-		t.Errorf("Expected error from GetEffectiveLocale when DB read fails, got nil")
 	}
 }

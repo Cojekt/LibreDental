@@ -6,6 +6,7 @@
   import { locales } from "../paraglide/runtime.js";
 
   export type ThemeMode = "dark" | "light" | "system";
+  export type WindowMode = "window" | "windowed_fullscreen" | "fullscreen";
 
   let {
     showModal = $bindable(false),
@@ -21,6 +22,8 @@
   let isOpeningFolder = $state(false);
   let openError = $state<string | null>(null);
   let selectedLanguage = $state("system");
+
+  let windowMode = $state<WindowMode>("window");
 
   async function loadDataDir() {
     try {
@@ -43,6 +46,17 @@
     }
   }
 
+  async function loadWindowSettings() {
+    try {
+      const mode = await SystemSettingsService.GetWindowMode();
+      if (mode === "window" || mode === "windowed_fullscreen" || mode === "fullscreen") {
+        windowMode = mode as WindowMode;
+      }
+    } catch (err) {
+      console.error("Failed to load window settings:", err);
+    }
+  }
+
   async function handleSelectLanguage(lang: string) {
     const previousLanguage = selectedLanguage;
     selectedLanguage = lang;
@@ -51,6 +65,15 @@
     } catch (err) {
       console.warn("Failed to set language preference:", err);
       selectedLanguage = previousLanguage;
+    }
+  }
+
+  async function handleSelectWindowMode(mode: WindowMode) {
+    windowMode = mode;
+    try {
+      await SystemSettingsService.SetWindowMode(mode);
+    } catch (err) {
+      console.error("Failed to set window mode:", err);
     }
   }
 
@@ -76,12 +99,14 @@
     if (showModal) {
       loadDataDir();
       loadLanguage();
+      loadWindowSettings();
     }
   });
 
   onMount(() => {
     loadDataDir();
     loadLanguage();
+    loadWindowSettings();
   });
 </script>
 
@@ -93,7 +118,7 @@
     role="presentation"
   >
     <div
-      class="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl overflow-hidden text-slate-100 dark-modal-box"
+      class="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl overflow-hidden text-slate-100 dark-modal-box max-h-[90vh] overflow-y-auto"
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => e.stopPropagation()}
       role="dialog"
@@ -210,6 +235,44 @@
               <div class="text-[10px] text-slate-400 mt-0.5">
                 {m.settings_theme_light_sub()}
               </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Display & Window Mode Section -->
+        <div>
+          <span
+            class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
+          >
+            {m.settings_section_display()}
+          </span>
+          <div
+            class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-3"
+          >
+            <div class="flex flex-col">
+              <span class="text-xs font-semibold text-slate-200">
+                {windowMode === "fullscreen"
+                  ? m.settings_window_mode_fullscreen()
+                  : m.settings_window_mode_window()}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-label="Toggle fullscreen display mode"
+              aria-checked={windowMode === "fullscreen"}
+              onclick={() =>
+                handleSelectWindowMode(windowMode === "fullscreen" ? "window" : "fullscreen")}
+              class={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                windowMode === "fullscreen" ? "bg-sky-500" : "bg-slate-800"
+              }`}
+            >
+              <span
+                class={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  windowMode === "fullscreen" ? "translate-x-5" : "translate-x-0"
+                }`}
+              ></span>
             </button>
           </div>
         </div>
