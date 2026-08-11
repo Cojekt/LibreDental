@@ -22,6 +22,9 @@ import { SystemSettingsService } from "@bindings/services/index.js";
 // Internal reactive counter — not directly exported (Svelte 5 module state rule).
 let _localeVersion = $state(0);
 
+// Request sequence counter to avoid race conditions during rapid language switching.
+let _currentRequestId = 0;
+
 /** Returns the current locale version counter. Subscribe to this in expressions to force re-render. */
 export function getLocaleVersion(): number {
   return _localeVersion;
@@ -37,34 +40,31 @@ export function applyLocale(tag: string) {
 }
 
 /**
- * Resolve the saved language preference and activate it.
- * Called once during app mount.
- *
- * @param savedLang  From SystemSettingsService.GetLanguage() —
- *                   a BCP 47 tag (e.g. "en", "fr") or "system".
+ * Resolve the effective language preference via Go backend and activate it.
+ * Called during app mount.
  */
-export async function initLocale(savedLang: string): Promise<void> {
-  let tag = savedLang;
-
-  if (tag === "system" || tag === "") {
-    try {
-      const osLocale = await SystemSettingsService.GetSystemLocale();
-      tag = osLocale || "en";
-    } catch {
-      tag = "en";
-    }
+export async function initLocale(): Promise<void> {
+  const reqId = ++_currentRequestId;
+  try {
+    const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+    if (reqId !== _currentRequestId) return;
+    applyLocale(effective || "en");
+  } catch {
+    if (reqId !== _currentRequestId) return;
+    applyLocale("en");
   }
+}
 
-  // Normalize: find the best-matching supported locale.
-  // With English-only, everything maps to "en". Adding "fr" to settings.json
-  // and creating messages/fr.json will automatically make French selectable.
-  const match: string =
-    (locales as readonly string[]).find((l) => l === tag) ??
-    (locales as readonly string[]).find((l) => tag.startsWith(l)) ??
-    (locales as readonly string[]).find((l) => l === tag.split("-")[0]) ??
-    "en";
-
-  applyLocale(match);
+/**
+ * Persist user's selected language preference ("system" or BCP 47 tag) and update active locale.
+ * Throws on persistence or resolution failure so callers can revert transient UI selection.
+ */
+export async function setLanguagePreference(lang: string): Promise<void> {
+  const reqId = ++_currentRequestId;
+  await SystemSettingsService.SetLanguage(lang);
+  const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+  if (reqId !== _currentRequestId) return;
+  applyLocale(effective || "en");
 }
 
 /** Returns the currently active Paraglide locale tag (e.g. "en"). */
