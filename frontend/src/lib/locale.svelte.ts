@@ -22,6 +22,9 @@ import { SystemSettingsService } from "@bindings/services/index.js";
 // Internal reactive counter — not directly exported (Svelte 5 module state rule).
 let _localeVersion = $state(0);
 
+// Request sequence counter to avoid race conditions during rapid language switching.
+let _currentRequestId = 0;
+
 /** Returns the current locale version counter. Subscribe to this in expressions to force re-render. */
 export function getLocaleVersion(): number {
   return _localeVersion;
@@ -38,15 +41,30 @@ export function applyLocale(tag: string) {
 
 /**
  * Resolve the effective language preference via Go backend and activate it.
- * Called during app mount or settings updates.
+ * Called during app mount.
  */
 export async function initLocale(): Promise<void> {
+  const reqId = ++_currentRequestId;
   try {
     const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+    if (reqId !== _currentRequestId) return;
     applyLocale(effective || "en");
   } catch {
+    if (reqId !== _currentRequestId) return;
     applyLocale("en");
   }
+}
+
+/**
+ * Persist user's selected language preference ("system" or BCP 47 tag) and update active locale.
+ * Throws on persistence or resolution failure so callers can revert transient UI selection.
+ */
+export async function setLanguagePreference(lang: string): Promise<void> {
+  const reqId = ++_currentRequestId;
+  await SystemSettingsService.SetLanguage(lang);
+  const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+  if (reqId !== _currentRequestId) return;
+  applyLocale(effective || "en");
 }
 
 /** Returns the currently active Paraglide locale tag (e.g. "en"). */

@@ -215,7 +215,10 @@ func (s *SystemSettingsService) GetSystemLocale() (string, error) {
 // (falling back to host OS locale if set to "system" or empty) and matching it against supportedLocales.
 func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (string, error) {
 	tag, err := s.GetLanguage()
-	if err != nil || tag == "system" || tag == "" {
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve effective locale: %w", err)
+	}
+	if tag == "system" || tag == "" {
 		sysTag, sysErr := s.GetSystemLocale()
 		if sysErr == nil && sysTag != "" {
 			tag = sysTag
@@ -228,32 +231,37 @@ func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (s
 		return tag, nil
 	}
 
-	// 1. Exact match
+	// 1. Case-insensitive exact match
 	for _, l := range supportedLocales {
-		if l == tag {
+		if strings.EqualFold(l, tag) {
 			return l, nil
 		}
 	}
 
-	// 2. Prefix match (e.g. tag "en-US" matches supported "en")
+	// 2. Match the most specific parent locale on a subtag boundary (e.g. tag "en-US-tx" matches "en-US" over "en")
+	bestMatch := ""
 	for _, l := range supportedLocales {
-		if strings.HasPrefix(tag, l) {
-			return l, nil
+		if strings.HasPrefix(strings.ToLower(tag), strings.ToLower(l)+"-") && len(l) > len(bestMatch) {
+			bestMatch = l
 		}
 	}
+	if bestMatch != "" {
+		return bestMatch, nil
+	}
 
-	// 3. Base tag match (e.g. tag "en-US" -> base "en" matches supported "en")
-	baseTag := strings.Split(tag, "-")[0]
+	// 3. Case-insensitive base tag match (e.g. tag "en-US" -> base "en" matches supported "en")
+	baseTag := strings.ToLower(strings.Split(tag, "-")[0])
 	for _, l := range supportedLocales {
-		if l == baseTag {
+		lBase := strings.ToLower(strings.Split(l, "-")[0])
+		if lBase == baseTag {
 			return l, nil
 		}
 	}
 
 	// Default fallback to "en" if available, else first supported locale
 	for _, l := range supportedLocales {
-		if l == "en" {
-			return "en", nil
+		if strings.EqualFold(l, "en") {
+			return l, nil
 		}
 	}
 	return supportedLocales[0], nil
