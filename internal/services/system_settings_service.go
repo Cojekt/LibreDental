@@ -61,7 +61,9 @@ func (s *SystemSettingsService) SetWindow(win *application.WebviewWindow) {
 			if w >= 400 && h >= 300 {
 				_ = s.SaveWindowSize(w, h)
 				if flush {
-					_ = s.FlushConfig()
+if err := s.FlushConfig(); err != nil {
+	log.Printf("failed to flush config on window close: %v", err)
+}
 				}
 			}
 		}

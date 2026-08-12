@@ -241,7 +241,10 @@ func TestSystemSettingsService_WriteFailureRollback(t *testing.T) {
 		t.Fatalf("Expected SetTheme to fail due to invalid appDir path")
 	}
 
-	themeAfterFail, _ := service.GetTheme()
+	themeAfterFail, err := service.GetTheme()
+	if err != nil {
+		t.Fatalf("GetTheme failed after failed write: %v", err)
+	}
 	if themeAfterFail != "system" {
 		t.Errorf("Expected in-memory theme to remain 'system' after failed write, got %q", themeAfterFail)
 	}
