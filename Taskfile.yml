@@ -20,17 +20,7 @@ tasks:
   dev:
     desc: Runs the application in development mode
     cmds:
-      - task: common:frontend:run
-        vars:
-          SCRIPT: "build:i18n"
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
-
-  translate:
-    desc: Compiles Paraglide JS translation messages
-    cmds:
-      - task: common:frontend:run
-        vars:
-          SCRIPT: "build:i18n"
 
   demo:
     desc: Generates a standalone pre-populated database file (libredental.db)

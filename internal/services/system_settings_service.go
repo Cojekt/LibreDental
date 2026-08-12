@@ -28,20 +28,18 @@ type AppConfig struct {
 
 // SystemSettingsService handles application and desktop environment preferences and system actions.
 type SystemSettingsService struct {
-	appDir        string
-	mu            sync.RWMutex
-	window        *application.WebviewWindow
-	cfg           AppConfig
-	lastPersisted AppConfig
-	dirty         bool
-	resizeTimer   *time.Timer
+	appDir      string
+	mu          sync.RWMutex
+	window      *application.WebviewWindow
+	cfg         AppConfig
+	dirty       bool
+	resizeTimer *time.Timer
 }
 
 // NewSystemSettingsService creates a new SystemSettingsService with the app data directory and loads config into memory.
 func NewSystemSettingsService(appDir string) *SystemSettingsService {
 	s := &SystemSettingsService{appDir: appDir}
 	s.cfg = s.loadConfigFromDisk()
-	s.lastPersisted = s.cfg
 	s.dirty = false
 	return s
 }
@@ -76,10 +74,6 @@ func (s *SystemSettingsService) SetWindow(win *application.WebviewWindow) {
 	})
 
 	win.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		saveCurrentSize(true)
-	})
-
-	win.OnWindowEvent(events.Linux.WindowDeleteEvent, func(event *application.WindowEvent) {
 		saveCurrentSize(true)
 	})
 }
@@ -120,10 +114,10 @@ func (s *SystemSettingsService) loadConfigFromDisk() AppConfig {
 	if cfg.WindowMode == "" {
 		cfg.WindowMode = "window"
 	}
-	if cfg.WindowWidth <= 300 {
+	if cfg.WindowWidth < 400 {
 		cfg.WindowWidth = 1280
 	}
-	if cfg.WindowHeight <= 300 {
+	if cfg.WindowHeight < 300 {
 		cfg.WindowHeight = 800
 	}
 
@@ -170,7 +164,6 @@ func (s *SystemSettingsService) FlushConfig() error {
 
 	err := s.persistConfigLocked(s.cfg)
 	if err == nil {
-		s.lastPersisted = s.cfg
 		s.dirty = false
 	}
 	return err
@@ -211,7 +204,6 @@ func (s *SystemSettingsService) SaveWindowSize(width, height int) error {
 
 		if s.dirty {
 			if err := s.persistConfigLocked(s.cfg); err == nil {
-				s.lastPersisted = s.cfg
 				s.dirty = false
 			}
 		}
@@ -248,7 +240,6 @@ func (s *SystemSettingsService) SetTheme(theme string) error {
 	err := s.persistConfigLocked(prospective)
 	if err == nil {
 		s.cfg = prospective
-		s.lastPersisted = prospective
 		s.dirty = false
 	}
 	return err
@@ -268,7 +259,19 @@ func (s *SystemSettingsService) SetWindowMode(mode string) error {
 		return fmt.Errorf("invalid window mode: %s", mode)
 	}
 
+	s.mu.RLock()
+	win := s.window
+	s.mu.RUnlock()
+
+	if win != nil {
+		if applyErr := s.applyWindowSettingsToWindow(win, mode); applyErr != nil {
+			return applyErr
+		}
+	}
+
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if s.resizeTimer != nil {
 		s.resizeTimer.Stop()
 		s.resizeTimer = nil
@@ -280,22 +283,9 @@ func (s *SystemSettingsService) SetWindowMode(mode string) error {
 	err := s.persistConfigLocked(prospective)
 	if err == nil {
 		s.cfg = prospective
-		s.lastPersisted = prospective
 		s.dirty = false
 	}
-	win := s.window
-	s.mu.Unlock()
-
-	if err != nil {
-		return err
-	}
-
-	if win != nil {
-		if applyErr := s.applyWindowSettingsToWindow(win, mode); applyErr != nil {
-			return applyErr
-		}
-	}
-	return nil
+	return err
 }
 
 // ApplyWindowSettings applies stored window mode to the attached Wails window.
@@ -325,52 +315,6 @@ func (s *SystemSettingsService) applyWindowSettingsToWindow(win *application.Web
 		win.UnFullscreen()
 	}
 	return nil
-}
-
-// GetSetting fetches a custom system setting by key from config.json.
-func (s *SystemSettingsService) GetSetting(key string) (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	switch key {
-	case "theme":
-		return s.cfg.Theme, nil
-	case "language":
-		return s.cfg.Language, nil
-	case "window_mode":
-		return s.cfg.WindowMode, nil
-	default:
-		return "", nil
-	}
-}
-
-// SetSetting saves a custom system setting by key into config.json.
-func (s *SystemSettingsService) SetSetting(key string, value string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.resizeTimer != nil {
-		s.resizeTimer.Stop()
-		s.resizeTimer = nil
-	}
-
-	prospective := s.cfg
-	switch key {
-	case "theme":
-		prospective.Theme = value
-	case "language":
-		prospective.Language = value
-	case "window_mode":
-		prospective.WindowMode = value
-	}
-
-	err := s.persistConfigLocked(prospective)
-	if err == nil {
-		s.cfg = prospective
-		s.lastPersisted = prospective
-		s.dirty = false
-	}
-	return err
 }
 
 // GetDataDir returns the absolute path to the local application data / save directory.
@@ -466,7 +410,6 @@ func (s *SystemSettingsService) SetLanguage(lang string) error {
 	err := s.persistConfigLocked(prospective)
 	if err == nil {
 		s.cfg = prospective
-		s.lastPersisted = prospective
 		s.dirty = false
 	}
 	return err

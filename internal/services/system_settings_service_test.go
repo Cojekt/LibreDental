@@ -76,6 +76,29 @@ func TestSystemSettingsService_JSONStorage(t *testing.T) {
 	}
 }
 
+func TestSystemSettingsService_WindowSizeBoundaryRoundTrip(t *testing.T) {
+	tempDir := t.TempDir()
+	service := services.NewSystemSettingsService(tempDir)
+
+	// Save minimum allowed window dimensions (400x300)
+	if err := service.SaveWindowSize(400, 300); err != nil {
+		t.Fatalf("SaveWindowSize failed: %v", err)
+	}
+	if err := service.FlushConfig(); err != nil {
+		t.Fatalf("FlushConfig failed: %v", err)
+	}
+
+	// Re-load config from disk to ensure 400x300 round-trips correctly
+	service2 := services.NewSystemSettingsService(tempDir)
+	w, h, err := service2.GetWindowSize()
+	if err != nil {
+		t.Fatalf("GetWindowSize failed on re-read: %v", err)
+	}
+	if w != 400 || h != 300 {
+		t.Errorf("Expected boundary size 400x300 to round-trip, got %dx%d", w, h)
+	}
+}
+
 func TestSystemSettingsService_GetEffectiveLocale(t *testing.T) {
 	tempDir := t.TempDir()
 	service := services.NewSystemSettingsService(tempDir)

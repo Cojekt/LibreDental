@@ -75,6 +75,15 @@
       await SystemSettingsService.SetWindowMode(mode);
     } catch (err) {
       console.error("Failed to set window mode:", err);
+      try {
+        const actualMode = await SystemSettingsService.GetWindowMode();
+        if (actualMode === "window" || actualMode === "fullscreen") {
+          windowMode = actualMode as WindowMode;
+          return;
+        }
+      } catch {
+        // ignore failure to fetch
+      }
       windowMode = previousMode;
     }
   }
