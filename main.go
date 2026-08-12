@@ -9,6 +9,7 @@ import (
 	"github.com/LibreDental/libredental/internal/services"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
@@ -85,9 +86,29 @@ func main() {
 		BackgroundColour: application.NewRGB(15, 23, 42),
 		URL:              "/",
 	})
-	systemSettingsService.SetWindow(win)
+	systemSettingsService.SetWindow(&wailsWindowAdapter{win: win})
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type wailsWindowAdapter struct {
+	win *application.WebviewWindow
+}
+
+func (w *wailsWindowAdapter) IsFullscreen() bool { return w.win.IsFullscreen() }
+func (w *wailsWindowAdapter) IsMaximised() bool  { return w.win.IsMaximised() }
+func (w *wailsWindowAdapter) Size() (int, int)   { return w.win.Size() }
+func (w *wailsWindowAdapter) Fullscreen()        { w.win.Fullscreen() }
+func (w *wailsWindowAdapter) UnFullscreen()      { w.win.UnFullscreen() }
+func (w *wailsWindowAdapter) OnResize(fn func()) {
+	w.win.OnWindowEvent(events.Common.WindowDidResize, func(event *application.WindowEvent) {
+		fn()
+	})
+}
+func (w *wailsWindowAdapter) OnClose(fn func()) {
+	w.win.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		fn()
+	})
 }

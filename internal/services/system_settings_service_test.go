@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/LibreDental/libredental/internal/services"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func TestSystemSettingsService_JSONStorage(t *testing.T) {
@@ -250,13 +249,28 @@ func TestSystemSettingsService_WriteFailureRollback(t *testing.T) {
 	}
 }
 
+type mockWindow struct {
+	fullscreen bool
+	maximised  bool
+	width      int
+	height     int
+	onResize   func()
+	onClose    func()
+}
+
+func (m *mockWindow) IsFullscreen() bool { return m.fullscreen }
+func (m *mockWindow) IsMaximised() bool  { return m.maximised }
+func (m *mockWindow) Size() (int, int)   { return m.width, m.height }
+func (m *mockWindow) Fullscreen()        { m.fullscreen = true }
+func (m *mockWindow) UnFullscreen()      { m.fullscreen = false }
+func (m *mockWindow) OnResize(fn func()) { m.onResize = fn }
+func (m *mockWindow) OnClose(fn func())  { m.onClose = fn }
+
 func TestSystemSettingsService_ApplyWindowSettings(t *testing.T) {
 	tempDir := t.TempDir()
 	service := services.NewSystemSettingsService(tempDir)
 
-	win := application.NewWindow(application.WebviewWindowOptions{
-		Title: "Test Window",
-	})
+	win := &mockWindow{width: 1280, height: 800}
 	service.SetWindow(win)
 
 	if err := service.SetWindowMode("fullscreen"); err != nil {
@@ -270,5 +284,9 @@ func TestSystemSettingsService_ApplyWindowSettings(t *testing.T) {
 
 	if err := service.ApplyWindowSettings(); err != nil {
 		t.Fatalf("ApplyWindowSettings failed: %v", err)
+	}
+
+	if !win.fullscreen {
+		t.Errorf("Expected window to be fullscreen")
 	}
 }

@@ -12,10 +12,18 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/wailsapp/wails/v3/pkg/application"
-	"github.com/wailsapp/wails/v3/pkg/events"
 )
+
+// Window defines the interface required by SystemSettingsService to interact with the application window.
+type Window interface {
+	IsFullscreen() bool
+	IsMaximised() bool
+	Size() (width, height int)
+	Fullscreen()
+	UnFullscreen()
+	OnResize(fn func())
+	OnClose(fn func())
+}
 
 // AppConfig represents local machine settings persisted in config.json.
 type AppConfig struct {
@@ -30,7 +38,7 @@ type AppConfig struct {
 type SystemSettingsService struct {
 	appDir      string
 	mu          sync.RWMutex
-	window      *application.WebviewWindow
+	window      Window
 	cfg         AppConfig
 	dirty       bool
 	resizeTimer *time.Timer
@@ -44,8 +52,8 @@ func NewSystemSettingsService(appDir string) *SystemSettingsService {
 	return s
 }
 
-// SetWindow attaches the main Wails window reference and registers dynamic window resize listeners.
-func (s *SystemSettingsService) SetWindow(win *application.WebviewWindow) {
+// SetWindow attaches the main window reference and registers dynamic window resize listeners.
+func (s *SystemSettingsService) SetWindow(win Window) {
 	s.mu.Lock()
 	s.window = win
 	s.mu.Unlock()
@@ -71,11 +79,11 @@ func (s *SystemSettingsService) SetWindow(win *application.WebviewWindow) {
 
 	defer func() { _ = recover() }()
 
-	win.OnWindowEvent(events.Common.WindowDidResize, func(event *application.WindowEvent) {
+	win.OnResize(func() {
 		saveCurrentSize(false)
 	})
 
-	win.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+	win.OnClose(func() {
 		saveCurrentSize(true)
 	})
 }
@@ -303,7 +311,7 @@ func (s *SystemSettingsService) ApplyWindowSettings() error {
 	return nil
 }
 
-func (s *SystemSettingsService) applyWindowSettingsToWindow(win *application.WebviewWindow, mode string) (err error) {
+func (s *SystemSettingsService) applyWindowSettingsToWindow(win Window, mode string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("panic recovered while applying window mode %q: %v", mode, r)
