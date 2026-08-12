@@ -51,17 +51,26 @@ func TestSystemSettingsService_JSONStorage(t *testing.T) {
 
 	// Create new service instance pointing to same directory
 	service2 := services.NewSystemSettingsService(tempDir)
-	theme, _ = service2.GetTheme()
+	theme, err = service2.GetTheme()
+	if err != nil {
+		t.Fatalf("GetTheme failed on re-read: %v", err)
+	}
 	if theme != "dark" {
 		t.Errorf("Expected persisted theme 'dark', got %q", theme)
 	}
 
-	mode, _ = service2.GetWindowMode()
+	mode, err = service2.GetWindowMode()
+	if err != nil {
+		t.Fatalf("GetWindowMode failed on re-read: %v", err)
+	}
 	if mode != "fullscreen" {
 		t.Errorf("Expected persisted window mode 'fullscreen', got %q", mode)
 	}
 
-	w2, h2, _ := service2.GetWindowSize()
+	w2, h2, err := service2.GetWindowSize()
+	if err != nil {
+		t.Fatalf("GetWindowSize failed on re-read: %v", err)
+	}
 	if w2 != 1600 || h2 != 900 {
 		t.Errorf("Expected persisted window size 1600x900, got %dx%d", w2, h2)
 	}
