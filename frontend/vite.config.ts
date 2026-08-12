@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import wails from "@wailsio/runtime/plugins/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import path from "node:path";
 
 // https://vitejs.dev/config/
@@ -23,5 +24,13 @@ export default defineConfig({
   optimizeDeps: {
     include: ["@wailsio/runtime"],
   },
-  plugins: [tailwindcss(), svelte(), wails("./bindings")],
+  plugins: [
+    paraglideVitePlugin({
+      project: "./project.inlang",
+      outdir: "./src/paraglide",
+    }),
+    tailwindcss(),
+    svelte(),
+    wails("./bindings"),
+  ],
 });

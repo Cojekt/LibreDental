@@ -55,12 +55,6 @@ type PracticeConfigRepository interface {
 	GetDefaultCountryConfig(ctx context.Context) (*domain.CountryConfig, error)
 }
 
-// SystemSettingsRepository defines storage operations for local system settings & user preferences.
-type SystemSettingsRepository interface {
-	GetSetting(ctx context.Context, key string) (string, error)
-	SetSetting(ctx context.Context, key string, value string) error
-}
-
 // ChartRepository defines storage operations for dental tooth conditions and patient charts.
 type ChartRepository interface {
 	GetChart(ctx context.Context, patientID string) (*domain.DentalChart, error)

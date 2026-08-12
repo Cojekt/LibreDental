@@ -9,6 +9,7 @@ import (
 	"github.com/LibreDental/libredental/internal/services"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
@@ -39,8 +40,7 @@ func main() {
 	practiceConfigRepo := sqlite.NewPracticeConfigRepository(db)
 	practiceConfigService := services.NewPracticeConfigService(practiceConfigRepo)
 
-	systemSettingsRepo := sqlite.NewSystemSettingsRepository(db)
-	systemSettingsService := services.NewSystemSettingsService(systemSettingsRepo, appDir)
+	systemSettingsService := services.NewSystemSettingsService(appDir)
 
 	chartRepo := sqlite.NewChartRepository(db)
 	chartService := services.NewChartService(chartRepo)
@@ -52,7 +52,7 @@ func main() {
 	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo)
 
 	app := application.New(application.Options{
-		Name:        "LibreDental™",
+		Name:        "LibreDental",
 		Description: "Open-Source Dental Practice Management System",
 		Services: []application.Service{
 			application.NewService(patientService),
@@ -70,15 +70,45 @@ func main() {
 		},
 	})
 
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:            "LibreDental™",
-		Width:            1280,
-		Height:           800,
+	winWidth, winHeight, _ := systemSettingsService.GetWindowSize()
+	winMode, _ := systemSettingsService.GetWindowMode()
+
+	startState := application.WindowStateNormal
+	if winMode == "fullscreen" {
+		startState = application.WindowStateFullscreen
+	}
+
+	win := app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:            "LibreDental",
+		Width:            winWidth,
+		Height:           winHeight,
+		StartState:       startState,
 		BackgroundColour: application.NewRGB(15, 23, 42),
 		URL:              "/",
 	})
+	systemSettingsService.SetWindow(&wailsWindowAdapter{win: win})
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type wailsWindowAdapter struct {
+	win *application.WebviewWindow
+}
+
+func (w *wailsWindowAdapter) IsFullscreen() bool { return w.win.IsFullscreen() }
+func (w *wailsWindowAdapter) IsMaximised() bool  { return w.win.IsMaximised() }
+func (w *wailsWindowAdapter) Size() (int, int)   { return w.win.Size() }
+func (w *wailsWindowAdapter) Fullscreen()        { w.win.Fullscreen() }
+func (w *wailsWindowAdapter) UnFullscreen()      { w.win.UnFullscreen() }
+func (w *wailsWindowAdapter) OnResize(fn func()) {
+	w.win.OnWindowEvent(events.Common.WindowDidResize, func(event *application.WindowEvent) {
+		fn()
+	})
+}
+func (w *wailsWindowAdapter) OnClose(fn func()) {
+	w.win.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		fn()
+	})
 }
