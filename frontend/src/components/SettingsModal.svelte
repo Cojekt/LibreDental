@@ -6,7 +6,7 @@
   import { locales } from "../paraglide/runtime.js";
 
   export type ThemeMode = "dark" | "light" | "system";
-  export type WindowMode = "window" | "windowed_fullscreen" | "fullscreen";
+  export type WindowMode = "window" | "fullscreen";
 
   let {
     showModal = $bindable(false),
@@ -49,7 +49,7 @@
   async function loadWindowSettings() {
     try {
       const mode = await SystemSettingsService.GetWindowMode();
-      if (mode === "window" || mode === "windowed_fullscreen" || mode === "fullscreen") {
+      if (mode === "window" || mode === "fullscreen") {
         windowMode = mode as WindowMode;
       }
     } catch (err) {

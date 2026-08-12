@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/LibreDental/libredental/internal/services"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func TestSystemSettingsService_JSONStorage(t *testing.T) {
@@ -144,5 +145,95 @@ func TestSystemSettingsService_GetEffectiveLocale(t *testing.T) {
 	}
 	if effective != "en" {
 		t.Errorf("Expected fallback 'en', got %q", effective)
+	}
+}
+
+func TestSystemSettingsService_RemoveWindowedFullscreen(t *testing.T) {
+	tempDir := t.TempDir()
+	service := services.NewSystemSettingsService(tempDir)
+
+	if err := service.SetWindowMode("windowed_fullscreen"); err == nil {
+		t.Errorf("Expected SetWindowMode('windowed_fullscreen') to fail, but it succeeded")
+	}
+
+	if err := service.SetWindowMode("fullscreen"); err != nil {
+		t.Errorf("Expected SetWindowMode('fullscreen') to succeed, got %v", err)
+	}
+
+	if err := service.SetWindowMode("window"); err != nil {
+		t.Errorf("Expected SetWindowMode('window') to succeed, got %v", err)
+	}
+}
+
+func TestSystemSettingsService_DebounceAndFlush(t *testing.T) {
+	tempDir := t.TempDir()
+	service := services.NewSystemSettingsService(tempDir)
+
+	// Save window size updates in-memory immediately
+	if err := service.SaveWindowSize(1400, 900); err != nil {
+		t.Fatalf("SaveWindowSize failed: %v", err)
+	}
+	w, h, err := service.GetWindowSize()
+	if err != nil || w != 1400 || h != 900 {
+		t.Fatalf("Expected immediate in-memory size 1400x900, got %dx%d (err: %v)", w, h, err)
+	}
+
+	// Flush forces persistence immediately
+	if err := service.FlushConfig(); err != nil {
+		t.Fatalf("FlushConfig failed: %v", err)
+	}
+
+	service2 := services.NewSystemSettingsService(tempDir)
+	w2, h2, _ := service2.GetWindowSize()
+	if w2 != 1400 || h2 != 900 {
+		t.Fatalf("Expected persisted size 1400x900 after flush, got %dx%d", w2, h2)
+	}
+}
+
+func TestSystemSettingsService_WriteFailureRollback(t *testing.T) {
+	// Provide a path where creating directory or writing file fails (file used as directory path)
+	filePath := filepath.Join(t.TempDir(), "not_a_dir")
+	if err := os.WriteFile(filePath, []byte("block"), 0o644); err != nil {
+		t.Fatalf("Failed to create blocking file: %v", err)
+	}
+
+	service := services.NewSystemSettingsService(filePath)
+	origTheme, _ := service.GetTheme()
+	if origTheme != "system" {
+		t.Fatalf("Expected default theme 'system', got %q", origTheme)
+	}
+
+	// SetTheme should fail and NOT alter in-memory theme
+	err := service.SetTheme("dark")
+	if err == nil {
+		t.Fatalf("Expected SetTheme to fail due to invalid appDir path")
+	}
+
+	themeAfterFail, _ := service.GetTheme()
+	if themeAfterFail != "system" {
+		t.Errorf("Expected in-memory theme to remain 'system' after failed write, got %q", themeAfterFail)
+	}
+}
+
+func TestSystemSettingsService_ApplyWindowSettings(t *testing.T) {
+	tempDir := t.TempDir()
+	service := services.NewSystemSettingsService(tempDir)
+
+	win := application.NewWindow(application.WebviewWindowOptions{
+		Title: "Test Window",
+	})
+	service.SetWindow(win)
+
+	if err := service.SetWindowMode("fullscreen"); err != nil {
+		t.Fatalf("SetWindowMode('fullscreen') failed: %v", err)
+	}
+
+	mode, err := service.GetWindowMode()
+	if err != nil || mode != "fullscreen" {
+		t.Fatalf("Expected mode 'fullscreen', got %q (err: %v)", mode, err)
+	}
+
+	if err := service.ApplyWindowSettings(); err != nil {
+		t.Fatalf("ApplyWindowSettings failed: %v", err)
 	}
 }

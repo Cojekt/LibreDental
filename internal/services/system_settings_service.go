@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -26,16 +28,21 @@ type AppConfig struct {
 
 // SystemSettingsService handles application and desktop environment preferences and system actions.
 type SystemSettingsService struct {
-	appDir string
-	mu     sync.RWMutex
-	window *application.WebviewWindow
-	cfg    AppConfig
+	appDir        string
+	mu            sync.RWMutex
+	window        *application.WebviewWindow
+	cfg           AppConfig
+	lastPersisted AppConfig
+	dirty         bool
+	resizeTimer   *time.Timer
 }
 
 // NewSystemSettingsService creates a new SystemSettingsService with the app data directory and loads config into memory.
 func NewSystemSettingsService(appDir string) *SystemSettingsService {
 	s := &SystemSettingsService{appDir: appDir}
 	s.cfg = s.loadConfigFromDisk()
+	s.lastPersisted = s.cfg
+	s.dirty = false
 	return s
 }
 
@@ -49,26 +56,31 @@ func (s *SystemSettingsService) SetWindow(win *application.WebviewWindow) {
 		return
 	}
 
-	saveCurrentSize := func() {
+	saveCurrentSize := func(flush bool) {
 		defer func() { _ = recover() }()
 		if !win.IsFullscreen() && !win.IsMaximised() {
 			w, h := win.Size()
 			if w >= 400 && h >= 300 {
 				_ = s.SaveWindowSize(w, h)
+				if flush {
+					_ = s.FlushConfig()
+				}
 			}
 		}
 	}
 
+	defer func() { _ = recover() }()
+
 	win.OnWindowEvent(events.Common.WindowDidResize, func(event *application.WindowEvent) {
-		saveCurrentSize()
+		saveCurrentSize(false)
 	})
 
 	win.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		saveCurrentSize()
+		saveCurrentSize(true)
 	})
 
 	win.OnWindowEvent(events.Linux.WindowDeleteEvent, func(event *application.WindowEvent) {
-		saveCurrentSize()
+		saveCurrentSize(true)
 	})
 }
 
@@ -118,12 +130,12 @@ func (s *SystemSettingsService) loadConfigFromDisk() AppConfig {
 	return cfg
 }
 
-func (s *SystemSettingsService) persistConfigLocked() error {
+func (s *SystemSettingsService) persistConfigLocked(cfg AppConfig) error {
 	if err := os.MkdirAll(s.appDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	data, err := json.MarshalIndent(s.cfg, "", "  ")
+	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
@@ -146,7 +158,22 @@ func (s *SystemSettingsService) persistConfigLocked() error {
 func (s *SystemSettingsService) FlushConfig() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.persistConfigLocked()
+
+	if s.resizeTimer != nil {
+		s.resizeTimer.Stop()
+		s.resizeTimer = nil
+	}
+
+	if !s.dirty {
+		return nil
+	}
+
+	err := s.persistConfigLocked(s.cfg)
+	if err == nil {
+		s.lastPersisted = s.cfg
+		s.dirty = false
+	}
+	return err
 }
 
 // GetWindowSize returns saved window width and height.
@@ -157,7 +184,7 @@ func (s *SystemSettingsService) GetWindowSize() (int, int, error) {
 	return s.cfg.WindowWidth, s.cfg.WindowHeight, nil
 }
 
-// SaveWindowSize updates window dimensions in memory and persists directly to config.json.
+// SaveWindowSize updates window dimensions in memory and debounces persistence to config.json.
 func (s *SystemSettingsService) SaveWindowSize(width, height int) error {
 	if width < 400 || height < 300 {
 		return nil
@@ -166,14 +193,31 @@ func (s *SystemSettingsService) SaveWindowSize(width, height int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.cfg.WindowWidth == width && s.cfg.WindowHeight == height {
+	if s.cfg.WindowWidth == width && s.cfg.WindowHeight == height && !s.dirty {
 		return nil
 	}
 
 	s.cfg.WindowWidth = width
 	s.cfg.WindowHeight = height
+	s.dirty = true
 
-	return s.persistConfigLocked()
+	if s.resizeTimer != nil {
+		s.resizeTimer.Stop()
+	}
+
+	s.resizeTimer = time.AfterFunc(500*time.Millisecond, func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		if s.dirty {
+			if err := s.persistConfigLocked(s.cfg); err == nil {
+				s.lastPersisted = s.cfg
+				s.dirty = false
+			}
+		}
+	})
+
+	return nil
 }
 
 // GetTheme returns the saved application theme preference (defaults to "system").
@@ -193,8 +237,21 @@ func (s *SystemSettingsService) SetTheme(theme string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Theme = theme
-	return s.persistConfigLocked()
+	if s.resizeTimer != nil {
+		s.resizeTimer.Stop()
+		s.resizeTimer = nil
+	}
+
+	prospective := s.cfg
+	prospective.Theme = theme
+
+	err := s.persistConfigLocked(prospective)
+	if err == nil {
+		s.cfg = prospective
+		s.lastPersisted = prospective
+		s.dirty = false
+	}
+	return err
 }
 
 // GetWindowMode returns the current window mode ("window" or "fullscreen").
@@ -207,13 +264,25 @@ func (s *SystemSettingsService) GetWindowMode() (string, error) {
 
 // SetWindowMode persists the window mode and applies it live if a Wails window is attached.
 func (s *SystemSettingsService) SetWindowMode(mode string) error {
-	if mode != "window" && mode != "fullscreen" && mode != "windowed_fullscreen" {
+	if mode != "window" && mode != "fullscreen" {
 		return fmt.Errorf("invalid window mode: %s", mode)
 	}
 
 	s.mu.Lock()
-	s.cfg.WindowMode = mode
-	err := s.persistConfigLocked()
+	if s.resizeTimer != nil {
+		s.resizeTimer.Stop()
+		s.resizeTimer = nil
+	}
+
+	prospective := s.cfg
+	prospective.WindowMode = mode
+
+	err := s.persistConfigLocked(prospective)
+	if err == nil {
+		s.cfg = prospective
+		s.lastPersisted = prospective
+		s.dirty = false
+	}
 	win := s.window
 	s.mu.Unlock()
 
@@ -222,7 +291,9 @@ func (s *SystemSettingsService) SetWindowMode(mode string) error {
 	}
 
 	if win != nil {
-		s.applyWindowSettingsToWindow(win, mode)
+		if applyErr := s.applyWindowSettingsToWindow(win, mode); applyErr != nil {
+			return applyErr
+		}
 	}
 	return nil
 }
@@ -235,19 +306,25 @@ func (s *SystemSettingsService) ApplyWindowSettings() error {
 	s.mu.RUnlock()
 
 	if win != nil {
-		s.applyWindowSettingsToWindow(win, mode)
+		return s.applyWindowSettingsToWindow(win, mode)
 	}
 	return nil
 }
 
-func (s *SystemSettingsService) applyWindowSettingsToWindow(win *application.WebviewWindow, mode string) {
-	defer func() { _ = recover() }()
+func (s *SystemSettingsService) applyWindowSettingsToWindow(win *application.WebviewWindow, mode string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("panic recovered while applying window mode %q: %v", mode, r)
+			err = fmt.Errorf("panic applying window mode %q: %v", mode, r)
+		}
+	}()
 	switch mode {
 	case "fullscreen":
 		win.Fullscreen()
 	default:
 		win.UnFullscreen()
 	}
+	return nil
 }
 
 // GetSetting fetches a custom system setting by key from config.json.
@@ -272,16 +349,28 @@ func (s *SystemSettingsService) SetSetting(key string, value string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	switch key {
-	case "theme":
-		s.cfg.Theme = value
-	case "language":
-		s.cfg.Language = value
-	case "window_mode":
-		s.cfg.WindowMode = value
+	if s.resizeTimer != nil {
+		s.resizeTimer.Stop()
+		s.resizeTimer = nil
 	}
 
-	return s.persistConfigLocked()
+	prospective := s.cfg
+	switch key {
+	case "theme":
+		prospective.Theme = value
+	case "language":
+		prospective.Language = value
+	case "window_mode":
+		prospective.WindowMode = value
+	}
+
+	err := s.persistConfigLocked(prospective)
+	if err == nil {
+		s.cfg = prospective
+		s.lastPersisted = prospective
+		s.dirty = false
+	}
+	return err
 }
 
 // GetDataDir returns the absolute path to the local application data / save directory.
@@ -366,8 +455,21 @@ func (s *SystemSettingsService) SetLanguage(lang string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Language = lang
-	return s.persistConfigLocked()
+	if s.resizeTimer != nil {
+		s.resizeTimer.Stop()
+		s.resizeTimer = nil
+	}
+
+	prospective := s.cfg
+	prospective.Language = lang
+
+	err := s.persistConfigLocked(prospective)
+	if err == nil {
+		s.cfg = prospective
+		s.lastPersisted = prospective
+		s.dirty = false
+	}
+	return err
 }
 
 // GetSystemLocale queries the host operating system for the user's locale.
