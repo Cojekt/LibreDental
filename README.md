@@ -1,55 +1,50 @@
-# LibreDental™
+# LibreDental
 
 > **Open-Source Modern Dental Practice Management System**
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Early_Development-orange.svg)](#project-status)
+[![Status](https://img.shields.io/badge/Status-Alpha-brightgreen.svg)]()
+[![Stack](https://img.shields.io/badge/Stack-Wails_v3_|Go_|Svelte_5-007ACC.svg)](#tech-stack--architecture)
 
-**LibreDental™** is a modern, open-source dental practice management software designed to give dental practices complete freedom, security, and ownership over their software and patient data.
-
----
-
-## ⚠️ Project Status: Early Development
-
-LibreDental™ is currently in **early active development**. We are laying the architectural foundation for a fast, resilient, and user-friendly desktop app. Features, APIs, and schemas are subject to rapid evolution as we build toward our initial alpha release.
+**LibreDental** is a fast, resilient, open-source dental practice management platform. Built natively for cross-platform desktop performance with local-first reliability, LibreDental™ gives practices total freedom, security, and ownership over their patient data.
 
 ---
 
-## 💡 Our Philosophy & Commitment
+## What is LibreDental?
 
-### 100% Free & Open Source Core
+LibreDental addresses the growing need for modern, open-source dental practice management software. Built natively for desktop performance, it combines zero-latency local operation with modern web interface user experience.
 
-- **Everything is free right now**, and the core LibreDental™ software will **always** remain 100% free and open-source under the Apache 2.0 license.
-- **Our Commitment:** We solemnly promise **never to do what Open Dental did**. We will never lock open-source software behind proprietary update fees, restrict self-hosting capabilities, enforce mandatory subscription keys, or rug-pull the community with restrictive relicensing.
+### Core Capabilities
+* **Patient Management:** Demographics, clinical history, insurance tracking, and patient communication records.
+* **Interactive Odontogram & Restorative Charting:** Visual tooth mapping with surface-level restoration history and treatment planning.
+* **Scheduling & Appointments:** Multi-provider, multi-operatory calendar with real-time status updates and conflict checks.
+* **Billing & Ledger:** Patient accounts, fee schedules, insurance claim management, line-item adjustments, and reporting.
+* **Headless / Server Mode:** Option to run centrally on a local clinic server while lightweight client instances connect over the local network.
+* **Local-First Data Storage:** Uses SQLite for local zero-latency operation and simple file-based backup workflows.
 
-### Future Sustainability Plan
+> *Note: Features evolve rapidly across active Alpha iterations. Check the [Releases page](https://github.com/Cojekt/libredental/releases) for the latest release notes.*
+---
 
-To support long-term development, maintenance, and support:
+## Our Philosophy & Commitment
 
-- Far down the road, funds _may_ be raised by offering an **optional online hosted (SaaS) service** for practices that prefer a managed cloud setup without maintaining local servers.
-- This hosted service is **a while away** and will always remain completely optional. Self-hosted and local installations will never be crippled or paywalled.
+### 100% Free & Open-Source Core
+
+* **Forever Free:** The core LibreDental™ codebase will **always** remain 100% free and open-source under the Apache 2.0 license.
+* **Our Commitment:** We solemnly promise **never to lock open-source software behind proprietary update fees**, restrict self-hosting capabilities, require mandatory licensing keys, or relicense the core project under restrictive terms.
+* **No Vendor Lock-In:** Your practice data belongs entirely to you. Local installations will never be throttled, feature-gated, or dependent on third-party cloud servers.
 
 ---
 
-## 🛡️ Architecture & HIPAA Compliance
+## Tech Stack & Architecture
 
-LibreDental™ is designed from the ground up using **Wails v3** (Go + modern Web frontend) to support a **100% local-first desktop application mode**.
-
-### Local-First Security & HIPAA Advantages
-
-Running LibreDental™ fully on the dentist's computer or local practice network (LAN) provides significant advantages for HIPAA (Health Insurance Portability and Accountability Act) compliance:
-
-- **Zero Cloud ePHI Risk:** Protected Health Information (ePHI) stays entirely on the practice's local machine or local server. No third-party cloud servers receive or store patient records.
-- **No Vendor BAA Required for Storage:** Because LibreDental operates as local software with no vendor telemetry or remote data collection, practices maintain 100% custody of their data.
-- **Built-in Compliance Controls:**
-  - **Encryption at Rest:** Support for SQLCipher / local disk encryption for all stored patient data and x-rays.
-  - **Role-Based Access Control (RBAC):** Granular user permissions and auto-lock screen timeouts.
-  - **Immutable Audit Logs:** Full tracking of ePHI access, modifications, exports, and deletions.
-  - **Local Encrypted Backups:** Automated daily backups to local or practice-controlled storage.
+* **Framework:** [Wails v3](https://v3.wails.io) (Native OS windowing + IPC)
+* **Backend:** Go 1.22+
+* **Frontend:** Svelte 5 + Vite + TypeScript
+* **Database:** Embedded SQLite (zero external database setup needed)
 
 ---
 
-## 🚀 Getting Started & Contributing
+## Getting Started & Contributing
 
 LibreDental™ is built as a **[Wails v3](https://v3.wails.io)** application combining a Go backend with a modern Svelte 5 / Vite frontend. We welcome contributions from developers, dental professionals, UI/UX designers, and open-source advocates!
 
@@ -96,14 +91,14 @@ LibreDental™ is built as a **[Wails v3](https://v3.wails.io)** application com
    task format
    ```
 
-   > [!IMPORTANT]
+   > **IMPORTANT** \
    > Running `task format` runs both `gofmt` for Go backend files and Prettier for frontend files. PRs with unformatted code will fail automated CI formatting checks.
 
 6. **Submit a Pull Request**: Push your branch to your fork and submit a PR against `main` with a description of your changes and test steps.
 
 ---
 
-## 🛠️ Command Reference
+## Command Reference
 
 All project build, development, and formatting tasks are managed through [Task](https://taskfile.dev).
 
@@ -119,8 +114,8 @@ All project build, development, and formatting tasks are managed through [Task](
 
 ---
 
-## 📜 License
+## License
 
-LibreDental™ is licensed under the [Apache License, Version 2.0](LICENSE).
+LibreDental is licensed under the [Apache License, Version 2.0](LICENSE).
 
 _LibreDental™ is a trademark claiming common law rights. The LibreDental name and logo are trademarks of the LibreDental project._
