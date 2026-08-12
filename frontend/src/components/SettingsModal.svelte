@@ -69,11 +69,13 @@
   }
 
   async function handleSelectWindowMode(mode: WindowMode) {
+    const previousMode = windowMode;
     windowMode = mode;
     try {
       await SystemSettingsService.SetWindowMode(mode);
     } catch (err) {
       console.error("Failed to set window mode:", err);
+      windowMode = previousMode;
     }
   }
 
