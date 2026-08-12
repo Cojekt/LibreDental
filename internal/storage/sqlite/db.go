@@ -54,3 +54,9 @@ func (db *DB) migrate() error {
 
 	return nil
 }
+
+// rowScanner covers both *sql.Row and *sql.Rows for shared scan helpers.
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+

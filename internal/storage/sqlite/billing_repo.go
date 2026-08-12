@@ -196,11 +196,6 @@ func (r *ClaimRepository) GetTotalBilled(ctx context.Context, patientID string) 
 	return total, rows.Err()
 }
 
-// rowScanner covers both *sql.Row and *sql.Rows for shared scan helpers.
-type rowScanner interface {
-	Scan(dest ...any) error
-}
-
 func scanClaim(row rowScanner) (*domain.Claim, error) {
 	var c domain.Claim
 	var statusStr, lineItemsJSON string

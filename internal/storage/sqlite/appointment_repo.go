@@ -177,7 +177,7 @@ func (r *AppointmentRepository) List(ctx context.Context, filter domain.Appointm
 	return appointments, nil
 }
 
-func scanAppointment(scanner scannable) (*domain.Appointment, error) {
+func scanAppointment(scanner rowScanner) (*domain.Appointment, error) {
 	var a domain.Appointment
 	var startTimeStr, endTimeStr, statusStr string
 

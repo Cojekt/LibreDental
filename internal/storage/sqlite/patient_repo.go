@@ -240,11 +240,7 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 	return patients, total, nil
 }
 
-type scannable interface {
-	Scan(dest ...interface{}) error
-}
-
-func scanPatient(scanner scannable) (*domain.Patient, error) {
+func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 	var p domain.Patient
 	var dobStr, alertsJSON, allergiesJSON string
 	var sexStr, statusStr, countryStr string
