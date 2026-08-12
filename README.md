@@ -3,8 +3,8 @@
 > **Open-Source Modern Dental Practice Management System**
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Alpha-brightgreen.svg)](#project-status)
-[![Stack](https://img.shields.io/badge/Stack-Wails_v3_|Go_|Svelte_5-007ACC.svg)](#-tech-stack--architecture)
+[![Status](https://img.shields.io/badge/Status-Alpha-brightgreen.svg)]()
+[![Stack](https://img.shields.io/badge/Stack-Wails_v3_|Go_|Svelte_5-007ACC.svg)](#tech-stack--architecture)
 
 **LibreDental** is a fast, resilient, open-source dental practice management platform. Built natively for cross-platform desktop performance with local-first reliability, LibreDental™ gives practices total freedom, security, and ownership over their patient data.
 
