@@ -108,7 +108,7 @@ func (w *wailsWindowAdapter) OnResize(fn func()) {
 	})
 }
 func (w *wailsWindowAdapter) OnClose(fn func()) {
-	w.win.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+	w.win.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		fn()
 	})
 }
