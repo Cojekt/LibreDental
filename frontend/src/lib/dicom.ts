@@ -65,10 +65,10 @@ export function parseDicomToDataUrl(arrayBuffer: ArrayBuffer): string | null {
       const val = rawData[i];
       const norm = Math.max(0, Math.min(255, Math.floor(((val - min) / range) * 255)));
       const idx = i * 4;
-      data[idx] = norm;     // R
+      data[idx] = norm; // R
       data[idx + 1] = norm; // G
       data[idx + 2] = norm; // B
-      data[idx + 3] = 255;  // A
+      data[idx + 3] = 255; // A
     }
 
     ctx.putImageData(imgData, 0, 0);

@@ -256,7 +256,8 @@
 >
   <form onsubmit={handleUpload} class="space-y-4">
     <div class="flex flex-col gap-2">
-      <label for="doc-file" class="text-xs font-semibold text-slate-300">{m.doc_label_file()}</label>
+      <label for="doc-file" class="text-xs font-semibold text-slate-300">{m.doc_label_file()}</label
+      >
       <input
         id="doc-file"
         type="file"
