@@ -1,0 +1,319 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { DocumentService } from "@bindings/services/index.js";
+  import type { Document } from "@bindings/domain/models.js";
+  import { Dialogs } from "@wailsio/runtime";
+  import Modal from "../../components/ui/Modal.svelte";
+  import FormField from "../../components/ui/FormField.svelte";
+  import Input from "../../components/ui/Input.svelte";
+  import EmptyState from "../../components/ui/EmptyState.svelte";
+  import * as m from "../../paraglide/messages.js";
+
+  let documents = $state<Document[]>([]);
+  let isLoading = $state(true);
+  let exportSuccessMsg = $state("");
+
+  // Modal State
+  let showUploadModal = $state(false);
+  let docName = $state("");
+  let docDesc = $state("");
+  let selectedFile = $state<File | null>(null);
+  let isUploading = $state(false);
+  let uploadError = $state("");
+
+  async function loadDocuments() {
+    isLoading = true;
+    try {
+      documents = (await DocumentService.ListClinicDocuments()) || [];
+    } catch (err) {
+      console.error("Failed to load clinic documents:", err);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  onMount(() => {
+    loadDocuments();
+  });
+
+  function openUploadModal() {
+    docName = "";
+    docDesc = "";
+    selectedFile = null;
+    uploadError = "";
+    showUploadModal = true;
+  }
+
+  function handleFileSelect(e: Event) {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      selectedFile = target.files[0];
+      if (!docName) {
+        docName = selectedFile.name;
+      }
+    }
+  }
+
+  async function handleUpload(e: Event) {
+    e.preventDefault();
+    if (!selectedFile || !docName) return;
+
+    isUploading = true;
+    uploadError = "";
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const result = ev.target?.result as string;
+        // Result is data:application/pdf;base64,...
+        const base64Data = result.split(",")[1];
+        if (!base64Data) {
+          uploadError = m.doc_err_parse();
+          isUploading = false;
+          return;
+        }
+
+        try {
+          await DocumentService.SaveDocumentBase64(
+            "", // empty for clinic document
+            docName,
+            docDesc,
+            "clinic",
+            selectedFile?.type || "application/octet-stream",
+            base64Data
+          );
+          showUploadModal = false;
+          loadDocuments();
+        } catch (err: any) {
+          uploadError = err.message || m.doc_err_upload();
+        } finally {
+          isUploading = false;
+        }
+      };
+      reader.onerror = () => {
+        uploadError = m.doc_err_read();
+        isUploading = false;
+      };
+      reader.readAsDataURL(selectedFile);
+    } catch (err: any) {
+      uploadError = err.message || "Failed to start upload.";
+      isUploading = false;
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (confirm("Are you sure you want to delete this document?")) {
+      try {
+        await DocumentService.DeleteDocument(id);
+        loadDocuments();
+      } catch (err) {
+        console.error("Failed to delete document:", err);
+      }
+    }
+  }
+
+  async function handleOpen(doc: Document) {
+    try {
+      await DocumentService.OpenDocument(doc.id);
+    } catch (err) {
+      console.error("Failed to open document:", err);
+      alert(m.doc_err_open());
+    }
+  }
+
+  async function handleExport(doc: Document) {
+    try {
+      const suggestedName = doc.name || m.doc_default_export_name();
+      const path = await Dialogs.SaveFile({ Filename: suggestedName, Title: m.doc_export_title() });
+      if (path) {
+        await DocumentService.ExportDocumentToPath(doc.id, path);
+        exportSuccessMsg = m.doc_export_success({ path });
+        setTimeout(() => {
+          exportSuccessMsg = "";
+        }, 5000);
+      }
+    } catch (err) {
+      console.error("Failed to export document:", err);
+      alert(m.doc_err_export());
+    }
+  }
+
+  function formatSize(bytes: number): string {
+    if (!bytes) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  }
+</script>
+
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h3 class="text-lg font-bold text-slate-100">📄 Clinic Documents</h3>
+      <p class="text-xs text-slate-400 mt-0.5">
+        Manage licenses, policies, and other clinic-wide documents.
+      </p>
+    </div>
+    <button
+      type="button"
+      onclick={openUploadModal}
+      class="btn btn-primary shadow-md shadow-sky-500/20 text-xs flex items-center gap-1.5"
+    >
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Upload Document
+    </button>
+  </div>
+
+  {#if isLoading}
+    <div class="flex items-center justify-center py-12">
+      <div
+        class="h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent"
+      ></div>
+    </div>
+  {:else if documents.length === 0}
+    <EmptyState
+      title="No Documents"
+      subtitle="Upload clinic documents to securely store them here."
+      icon="📄"
+    />
+  {:else}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {#each documents as doc}
+        <div
+          class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-3 group hover:border-slate-700 transition-colors flex flex-col justify-between"
+        >
+          <div>
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3 overflow-hidden">
+                <div
+                  class="h-10 w-10 shrink-0 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center text-xl"
+                >
+                  {doc.content_type?.includes("pdf")
+                    ? "📕"
+                    : doc.content_type?.includes("image")
+                      ? "🖼️"
+                      : "📄"}
+                </div>
+                <div class="overflow-hidden">
+                  <h4 class="text-sm font-bold text-slate-100 truncate" title={doc.name}>
+                    {doc.name}
+                  </h4>
+                  <p class="text-xs text-slate-400 mt-0.5">{formatSize(doc.size_bytes)}</p>
+                </div>
+              </div>
+            </div>
+            {#if doc.description}
+              <p class="text-xs text-slate-400 mt-3 line-clamp-2">{doc.description}</p>
+            {/if}
+          </div>
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800/60 mt-3">
+            <button
+              type="button"
+              onclick={() => handleOpen(doc)}
+              class="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+            >
+              {m.doc_btn_open()}
+            </button>
+            <button
+              type="button"
+              onclick={() => handleExport(doc)}
+              class="text-xs font-semibold text-sky-400 hover:text-sky-300"
+            >
+              {m.doc_btn_export()}
+            </button>
+            <button
+              type="button"
+              onclick={() => handleDelete(doc.id)}
+              class="text-xs font-semibold text-rose-400 hover:text-rose-300"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>
+
+<Modal
+  bind:showModal={showUploadModal}
+  title="Upload Document"
+  subtitle="Add a new document to your clinic files."
+  icon="📤"
+  maxWidth="max-w-md"
+>
+  <form onsubmit={handleUpload} class="space-y-4">
+    <div class="flex flex-col gap-2">
+      <label for="doc-file" class="text-xs font-semibold text-slate-300">File</label>
+      <input
+        id="doc-file"
+        type="file"
+        required
+        onchange={handleFileSelect}
+        class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-sky-500/10 file:text-sky-400 hover:file:bg-sky-500/20 cursor-pointer"
+      />
+    </div>
+
+    <FormField label="Document Name" forId="doc-name" required>
+      <Input
+        id="doc-name"
+        type="text"
+        bind:value={docName}
+        required
+        placeholder="E.g. Clinic License 2026"
+      />
+    </FormField>
+
+    <FormField label="Description (Optional)" forId="doc-desc">
+      <textarea
+        id="doc-desc"
+        bind:value={docDesc}
+        class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none min-h-[80px]"
+        placeholder="Document description or notes..."></textarea>
+    </FormField>
+
+    {#if uploadError}
+      <div class="text-xs text-rose-400 bg-rose-400/10 border border-rose-400/20 p-2 rounded-lg">
+        {uploadError}
+      </div>
+    {/if}
+
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      <button
+        type="button"
+        onclick={() => (showUploadModal = false)}
+        disabled={isUploading}
+        class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer disabled:opacity-50"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        disabled={isUploading || !selectedFile}
+        class="btn btn-primary text-xs px-5 py-2 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+      >
+        {#if isUploading}
+          <div
+            class="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"
+          ></div>
+          Uploading...
+        {:else}
+          Upload
+        {/if}
+      </button>
+    </div>
+  </form>
+</Modal>
+
+{#if exportSuccessMsg}
+  <div
+    class="fixed bottom-4 right-4 bg-emerald-500/20 border border-emerald-500/50 text-emerald-100 px-4 py-3 rounded-xl shadow-lg shadow-emerald-500/10 z-50 backdrop-blur-md transition-opacity duration-500 flex items-center gap-2 max-w-md"
+  >
+    <span>✅</span>
+    <p class="text-sm font-medium truncate" title={exportSuccessMsg}>{exportSuccessMsg}</p>
+  </div>
+{/if}

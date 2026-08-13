@@ -4,8 +4,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"mime"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -67,16 +70,16 @@ func (s *DocumentService) SaveDocumentBase64(patientID, name, description, docTy
 		return nil, fmt.Errorf("failed to decode base64 data: %w", err)
 	}
 
-	return s.SaveDocumentBytes(patientID, name, description, docType, contentType, data)
+	return s.saveDocumentBytes(patientID, name, description, docType, contentType, data)
 }
 
-// SaveDocumentBytes saves a document from a byte array.
-func (s *DocumentService) SaveDocumentBytes(patientID, name, description, docType, contentType string, data []byte) (*domain.Document, error) {
+// saveDocumentBytes saves a document from a byte array.
+func (s *DocumentService) saveDocumentBytes(patientID, name, description, docType, contentType string, data []byte) (*domain.Document, error) {
 	docID := uuid.New().String()
-	
+
 	var targetDir string
 	var pID *string
-	
+
 	if patientID != "" {
 		targetDir = s.getPatientDocumentsPath(patientID)
 		pID = &patientID
@@ -94,7 +97,7 @@ func (s *DocumentService) SaveDocumentBytes(patientID, name, description, docTyp
 	if patientID == "" {
 		filePathRelative = filepath.Join("clinic", docID)
 	}
-	
+
 	fullPath := filepath.Join(s.getDocumentsBasePath(), filePathRelative)
 
 	if err := os.WriteFile(fullPath, data, 0o644); err != nil {
@@ -124,11 +127,6 @@ func (s *DocumentService) SaveDocumentBytes(patientID, name, description, docTyp
 	return doc, nil
 }
 
-// GetDocumentMeta retrieves document metadata.
-func (s *DocumentService) GetDocumentMeta(id string) (*domain.Document, error) {
-	return s.repo.GetByID(id)
-}
-
 // GetDocumentBase64 retrieves a document and returns its contents as a base64 encoded string.
 func (s *DocumentService) GetDocumentBase64(id string) (string, error) {
 	doc, err := s.repo.GetByID(id)
@@ -137,7 +135,7 @@ func (s *DocumentService) GetDocumentBase64(id string) (string, error) {
 	}
 
 	fullPath := filepath.Join(s.getDocumentsBasePath(), doc.FilePath)
-	
+
 	file, err := os.Open(fullPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open document file: %w", err)
@@ -152,9 +150,107 @@ func (s *DocumentService) GetDocumentBase64(id string) (string, error) {
 	return base64.StdEncoding.EncodeToString(data), nil
 }
 
-// ListPatientDocuments lists documents for a specific patient.
-func (s *DocumentService) ListPatientDocuments(patientID string) ([]domain.Document, error) {
-	return s.repo.ListByFilter(domain.DocumentFilter{PatientID: &patientID})
+// OpenDocument opens the document in the OS default application.
+func (s *DocumentService) OpenDocument(id string) error {
+	doc, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	fullPath := filepath.Join(s.getDocumentsBasePath(), doc.FilePath)
+
+	// Since the internal file might not have an extension, we copy it to a temp file with its original name
+	// to ensure the OS opens it with the correct application.
+	tempDir := os.TempDir()
+
+	// Clean the file name to prevent traversal issues
+	safeName := filepath.Base(doc.Name)
+	if safeName == "." || safeName == "/" || safeName == "\\" {
+		safeName = "document_" + id
+	}
+
+	// Ensure the file has a proper extension so the OS knows how to open it
+	ext := filepath.Ext(safeName)
+	if ext == "" && doc.ContentType != "" {
+		if exts, err := mime.ExtensionsByType(doc.ContentType); err == nil && len(exts) > 0 {
+			safeName += exts[0]
+		}
+	}
+
+	tempFilePath := filepath.Join(tempDir, "libredental_temp_"+id+"_"+safeName)
+
+	input, err := os.Open(fullPath)
+	if err != nil {
+		return fmt.Errorf("failed to open source document: %w", err)
+	}
+	defer input.Close()
+
+	output, err := os.Create(tempFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer output.Close()
+
+	if _, err := io.Copy(output, input); err != nil {
+		return fmt.Errorf("failed to copy to temp file: %w", err)
+	}
+
+	output.Close() // Ensure file is closed before opening
+
+	// Open the file with the default OS application
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	case "darwin":
+		cmd = "open"
+	default:
+		cmd = "xdg-open"
+	}
+	args = append(args, tempFilePath)
+
+	// #nosec G204 - cmd and args are controlled and safe
+	if err := exec.Command(cmd, args...).Start(); err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+
+	return nil
+}
+
+// ExportDocumentToPath exports a document to a specific file path.
+func (s *DocumentService) ExportDocumentToPath(id string, destPath string) error {
+	doc, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	fullPath := filepath.Join(s.getDocumentsBasePath(), doc.FilePath)
+
+	input, err := os.Open(fullPath)
+	if err != nil {
+		return fmt.Errorf("failed to open source document: %w", err)
+	}
+	defer input.Close()
+
+	output, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer output.Close()
+
+	if _, err := io.Copy(output, input); err != nil {
+		return fmt.Errorf("failed to write to destination file: %w", err)
+	}
+
+	return nil
+}
+
+// ListPatientDocuments lists documents for a specific patient using a filter.
+func (s *DocumentService) ListPatientDocuments(filter domain.DocumentFilter) ([]domain.Document, error) {
+	return s.repo.ListByFilter(filter)
 }
 
 // ListClinicDocuments lists clinic-wide documents.

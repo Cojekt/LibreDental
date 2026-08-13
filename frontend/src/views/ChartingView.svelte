@@ -12,6 +12,7 @@
   import OdontogramChart from "./charting/OdontogramChart.svelte";
   import ToothConditionModal from "./charting/ToothConditionModal.svelte";
   import ChartSummaryTable from "./charting/ChartSummaryTable.svelte";
+  import PatientXRaysModal from "./charting/PatientXRaysModal.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
 
@@ -66,6 +67,7 @@
   // Selected tooth & inspector state
   let selectedToothNumber = $state<number | null>(null);
   let showConditionModal = $state<boolean>(false);
+  let showXRaysModal = $state<boolean>(false);
   let isEditingCondition = $state<boolean>(false);
   let editingConditionId = $state<string>("");
 
@@ -432,6 +434,17 @@
             </span>
           {/if}
         {/if}
+
+        <button
+          type="button"
+          disabled={!selectedPatientId}
+          onclick={() => (showXRaysModal = true)}
+          class="ml-2 btn btn-primary text-xs shadow-md shadow-sky-500/20 px-3 py-1.5 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="View Patient X-Rays"
+        >
+          <span>🩻</span>
+          <span class="hidden sm:inline">X-Rays</span>
+        </button>
       </div>
     </div>
 
@@ -545,3 +558,5 @@
   {handleDeleteCondition}
   {formatCurrency}
 />
+
+<PatientXRaysModal bind:showModal={showXRaysModal} patientId={selectedPatientId} />

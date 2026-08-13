@@ -108,14 +108,14 @@ func TestDocumentService(t *testing.T) {
 		}
 
 		// Verify DB record is gone
-		_, err = service.GetDocumentMeta(doc.ID)
+		_, err = repo.GetByID(doc.ID)
 		if err == nil {
 			t.Errorf("Expected DB record to be deleted, but it exists")
 		}
 	})
 
 	t.Run("ListDocuments", func(t *testing.T) {
-		docs, err := service.ListPatientDocuments(patient.ID)
+		docs, err := service.ListPatientDocuments(domain.DocumentFilter{PatientID: &patient.ID})
 		if err != nil {
 			t.Fatalf("Failed to list patient docs: %v", err)
 		}

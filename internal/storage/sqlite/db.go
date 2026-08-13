@@ -59,4 +59,3 @@ func (db *DB) migrate() error {
 type rowScanner interface {
 	Scan(dest ...any) error
 }
-
