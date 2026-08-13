@@ -109,9 +109,9 @@ func cleanPatientID(patientID string) (string, error) {
 	}
 
 	cleanID := filepath.Join(cleanedSegments...)
-	if filepath.IsAbs(cleanID) || cleanID == "." || cleanID == ".." || strings.HasPrefix(cleanID, ".."+string(filepath.Separator)) || strings.HasPrefix(cleanID, "../") || strings.HasPrefix(cleanID, "..\\") {
-		return "", errors.New("invalid patient ID: path traversal detected")
-	}
+if filepath.IsAbs(cleanID) {
+	return "", errors.New("invalid patient ID: path traversal detected")
+}
 
 	return cleanID, nil
 }
