@@ -75,6 +75,47 @@ func (s *DocumentService) SaveDocumentBase64(patientID, name, description, docTy
 	return s.saveDocumentBytes(patientID, name, description, docType, contentType, data)
 }
 
+func cleanPatientID(patientID string) (string, error) {
+	if filepath.IsAbs(patientID) || strings.HasPrefix(patientID, "/") || strings.HasPrefix(patientID, "\\") || strings.Contains(patientID, ":") {
+		return "", errors.New("invalid patient ID: path traversal or absolute path detected")
+	}
+
+	rawSegments := strings.FieldsFunc(patientID, func(r rune) bool {
+		return r == '/' || r == '\\'
+	})
+
+	if len(rawSegments) == 0 {
+		return "", errors.New("invalid patient ID: empty")
+	}
+
+	var cleanedSegments []string
+	for _, seg := range rawSegments {
+		trimmed := strings.TrimRight(strings.TrimSpace(seg), " .")
+		if trimmed == "" {
+			if strings.Contains(seg, "..") {
+				return "", errors.New("invalid patient ID: path traversal detected")
+			}
+			// Single dot or dot/space equivalent to '.' -> skip
+			continue
+		}
+		if trimmed == "." || trimmed == ".." {
+			return "", errors.New("invalid patient ID: path traversal detected")
+		}
+		cleanedSegments = append(cleanedSegments, trimmed)
+	}
+
+	if len(cleanedSegments) == 0 {
+		return "", errors.New("invalid patient ID: path traversal detected")
+	}
+
+	cleanID := filepath.Join(cleanedSegments...)
+	if filepath.IsAbs(cleanID) || cleanID == "." || cleanID == ".." || strings.HasPrefix(cleanID, ".."+string(filepath.Separator)) || strings.HasPrefix(cleanID, "../") || strings.HasPrefix(cleanID, "..\\") {
+		return "", errors.New("invalid patient ID: path traversal detected")
+	}
+
+	return cleanID, nil
+}
+
 // saveDocumentBytes saves a document from a byte array.
 func (s *DocumentService) saveDocumentBytes(patientID, name, description, docType, contentType string, data []byte) (*domain.Document, error) {
 	docID := uuid.New().String()
@@ -84,18 +125,18 @@ func (s *DocumentService) saveDocumentBytes(patientID, name, description, docTyp
 	var pID *string
 
 	if patientID != "" {
-		cleanID := filepath.Clean(patientID)
-		if filepath.IsAbs(cleanID) || cleanID == ".." || strings.HasPrefix(cleanID, "../") || strings.HasPrefix(cleanID, "..\\") {
-			return nil, errors.New("invalid patient ID: path traversal or absolute path detected")
+		cleanID, err := cleanPatientID(patientID)
+		if err != nil {
+			return nil, err
 		}
 		basePath := s.getDocumentsBasePath()
 		targetDir = s.getPatientDocumentsPath(cleanID)
 		rel, err := filepath.Rel(basePath, targetDir)
-		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, "../") || strings.HasPrefix(rel, "..\\") {
+		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || strings.HasPrefix(rel, "../") || strings.HasPrefix(rel, "..\\") {
 			return nil, errors.New("invalid patient ID: path traversal detected")
 		}
 		relDir = cleanID
-		pID = &patientID
+		pID = &cleanID
 	} else {
 		relDir = "clinic"
 		targetDir = s.getClinicDocumentsPath()

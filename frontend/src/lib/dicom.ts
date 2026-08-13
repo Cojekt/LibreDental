@@ -79,9 +79,9 @@ export function parseDicomToDataUrl(
         const valR = rawData[valIndex];
         const valG = rawData[valIndex + 1];
         const valB = rawData[valIndex + 2];
-        data[idx] = Math.max(0, Math.min(255, Math.floor(((valR - min) / range) * 255)));
-        data[idx + 1] = Math.max(0, Math.min(255, Math.floor(((valG - min) / range) * 255)));
-        data[idx + 2] = Math.max(0, Math.min(255, Math.floor(((valB - min) / range) * 255)));
+        data[idx] = Math.max(0, Math.min(255, Math.floor(valR)));
+        data[idx + 1] = Math.max(0, Math.min(255, Math.floor(valG)));
+        data[idx + 2] = Math.max(0, Math.min(255, Math.floor(valB)));
       } else {
         const val = rawData[valIndex];
         const norm = Math.max(0, Math.min(255, Math.floor(((val - min) / range) * 255)));

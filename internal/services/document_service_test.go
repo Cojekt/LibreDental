@@ -213,6 +213,11 @@ func TestDocumentService(t *testing.T) {
 			"/tmp/malicious",
 			"pat/../../escaped",
 			"..",
+			".. ",
+			"pat/.. ",
+			"... ",
+			".. .",
+			". ",
 		}
 		b64 := base64.StdEncoding.EncodeToString([]byte("malicious content"))
 
@@ -221,6 +226,19 @@ func TestDocumentService(t *testing.T) {
 			if err == nil {
 				t.Errorf("Expected error when saving with invalid patient ID %q, but got nil", badID)
 			}
+		}
+	})
+
+	t.Run("SaveDocumentNormalizesPatientID", func(t *testing.T) {
+		content := "Normalized Patient ID test"
+		b64 := base64.StdEncoding.EncodeToString([]byte(content))
+
+		doc, err := service.SaveDocumentBase64(patient.ID+"/.", "Normalized Doc", "Desc", "other", "text/plain", b64)
+		if err != nil {
+			t.Fatalf("Failed to save document with raw patient ID: %v", err)
+		}
+		if *doc.PatientID != patient.ID {
+			t.Errorf("Expected normalized PatientID %q, got %q", patient.ID, *doc.PatientID)
 		}
 	})
 }
