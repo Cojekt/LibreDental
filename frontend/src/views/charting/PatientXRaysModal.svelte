@@ -67,7 +67,7 @@
     uploadError = "";
 
     try {
-      const isDcm = isDicomFile(selectedFile.name) || selectedFile.type.includes("dicom");
+      const isDcm = isDicomFile(selectedFile.name) || isDicomFile(selectedFile.type);
       const mime = isDcm ? "application/dicom" : selectedFile.type || "image/jpeg";
 
       const reader = new FileReader();
@@ -143,8 +143,10 @@
           if (pngUrl) {
             viewingImageBase64 = pngUrl;
             viewingImageName = doc.name;
-            return;
+          } else {
+            alert(m.doc_err_load_img());
           }
+          return;
         }
 
         viewingImageBase64 = `data:${doc.content_type || "image/jpeg"};base64,${base64}`;
@@ -159,8 +161,8 @@
 
 <Modal
   bind:showModal
-  title="Patient X-Rays & Imaging"
-  subtitle="Manage and view clinical imaging for this patient."
+  title={m.xray_title()}
+  subtitle={m.xray_subtitle()}
   icon="🩻"
   maxWidth="max-w-4xl"
 >
@@ -172,12 +174,13 @@
         onsubmit={handleUpload}
         class="space-y-3 bg-slate-900/50 p-4 rounded-xl border border-slate-800 shrink-0"
       >
-        <h4 class="text-sm font-bold text-slate-200">Upload New X-Ray</h4>
+        <h4 class="text-sm font-bold text-slate-200">{m.xray_upload_title()}</h4>
 
         <div class="flex flex-col gap-1.5">
           <label
             for="xray-file"
-            class="text-[10px] uppercase tracking-wider font-bold text-slate-400">File</label
+            class="text-[10px] uppercase tracking-wider font-bold text-slate-400"
+            >{m.doc_label_file()}</label
           >
           <input
             bind:this={fileInput}
@@ -193,14 +196,15 @@
         <div class="flex flex-col gap-1.5">
           <label
             for="xray-name"
-            class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Name</label
+            class="text-[10px] uppercase tracking-wider font-bold text-slate-400"
+            >{m.doc_label_name()}</label
           >
           <input
             id="xray-name"
             type="text"
             bind:value={docName}
             required
-            placeholder="e.g. Panorex 2026"
+            placeholder={m.xray_name_placeholder()}
             class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:border-sky-500 focus:outline-none"
           />
         </div>
@@ -220,9 +224,9 @@
             <div
               class="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"
             ></div>
-            Uploading...
+            {m.xray_btn_uploading()}
           {:else}
-            Upload Image
+            {m.xray_btn_upload()}
           {/if}
         </button>
       </form>
@@ -232,16 +236,16 @@
         <h4
           class="text-xs font-bold text-slate-400 uppercase tracking-wider sticky top-0 bg-slate-950 py-1"
         >
-          Saved Imaging
+          {m.xray_list_title()}
         </h4>
 
         {#if isLoading}
-          <div class="text-xs text-slate-500 p-2">Loading...</div>
+          <div class="text-xs text-slate-500 p-2">{m.common_loading()}</div>
         {:else if documents.length === 0}
           <div
             class="text-xs text-slate-500 p-2 text-center bg-slate-900/40 rounded-lg border border-dashed border-slate-700"
           >
-            No X-Rays found.
+            {m.xray_empty_list()}
           </div>
         {:else}
           {#each documents as doc}
@@ -264,7 +268,7 @@
                 type="button"
                 onclick={() => handleDelete(doc.id)}
                 class="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                title="Delete"
+                title={m.doc_btn_delete()}
               >
                 ✕
               </button>
@@ -290,7 +294,7 @@
       {:else}
         <div class="flex flex-col items-center text-slate-600 gap-3">
           <div class="text-5xl">🩻</div>
-          <p class="text-sm font-medium">Select an image to view</p>
+          <p class="text-sm font-medium">{m.xray_select_prompt()}</p>
         </div>
       {/if}
     </div>

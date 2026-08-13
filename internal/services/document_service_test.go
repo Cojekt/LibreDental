@@ -126,8 +126,9 @@ func TestDocumentService(t *testing.T) {
 
 		// Create a mock repo where GetByID returns doc, but Delete returns storage.ErrNotFound
 		mockRepo := &notFoundOnDeleteRepo{
-			realRepo: repo,
-			doc:      doc,
+			DocumentRepository: repo,
+			realRepo:           repo,
+			doc:                doc,
 		}
 		mockService := services.NewDocumentService(mockRepo, tempDir)
 
@@ -203,6 +204,23 @@ func TestDocumentService(t *testing.T) {
 		}
 		if string(fileContent) != content {
 			t.Errorf("Expected content %q, got %q", content, string(fileContent))
+		}
+	})
+
+	t.Run("SaveDocumentPathTraversalRejected", func(t *testing.T) {
+		invalidIDs := []string{
+			"../outside",
+			"/tmp/malicious",
+			"pat/../../escaped",
+			"..",
+		}
+		b64 := base64.StdEncoding.EncodeToString([]byte("malicious content"))
+
+		for _, badID := range invalidIDs {
+			_, err := service.SaveDocumentBase64(badID, "Bad Doc", "Desc", "other", "text/plain", b64)
+			if err == nil {
+				t.Errorf("Expected error when saving with invalid patient ID %q, but got nil", badID)
+			}
 		}
 	})
 }

@@ -3,7 +3,13 @@ import daikon from "daikon";
 
 export function isDicomFile(nameOrType: string, buffer?: ArrayBuffer): boolean {
   const lower = nameOrType.toLowerCase();
-  if (lower.endsWith(".dcm") || lower.includes("dicom")) {
+  if (
+    lower.endsWith(".dcm") ||
+    lower.endsWith(".dicom") ||
+    lower.includes("application/dicom") ||
+    lower.includes("image/dicom") ||
+    lower.includes("application/x-dicom")
+  ) {
     return true;
   }
   if (buffer && buffer.byteLength >= 132) {
@@ -22,7 +28,10 @@ export function isDicomFile(nameOrType: string, buffer?: ArrayBuffer): boolean {
   return false;
 }
 
-export function parseDicomToDataUrl(arrayBuffer: ArrayBuffer): string | null {
+export function parseDicomToDataUrl(
+  arrayBuffer: ArrayBuffer,
+  frameIndex: number = 0
+): string | null {
   try {
     const dataView = new DataView(arrayBuffer);
     const image = daikon.Series.parseImage(dataView);
@@ -39,7 +48,8 @@ export function parseDicomToDataUrl(arrayBuffer: ArrayBuffer): string | null {
     }
 
     const numPixels = width * height;
-    const rawData = image.getInterpretedData();
+    const samplesPerPixel = image.getNumberOfSamplesPerPixel() || 1;
+    const rawData = image.getInterpretedData(false, false, frameIndex);
     if (!rawData || rawData.length === 0) {
       return null;
     }
@@ -61,13 +71,24 @@ export function parseDicomToDataUrl(arrayBuffer: ArrayBuffer): string | null {
     const imgData = ctx.createImageData(width, height);
     const data = imgData.data;
 
+    const isRGB = samplesPerPixel >= 3;
     for (let i = 0; i < numPixels; i++) {
-      const val = rawData[i];
-      const norm = Math.max(0, Math.min(255, Math.floor(((val - min) / range) * 255)));
+      const valIndex = i * samplesPerPixel;
       const idx = i * 4;
-      data[idx] = norm; // R
-      data[idx + 1] = norm; // G
-      data[idx + 2] = norm; // B
+      if (isRGB) {
+        const valR = rawData[valIndex];
+        const valG = rawData[valIndex + 1];
+        const valB = rawData[valIndex + 2];
+        data[idx] = Math.max(0, Math.min(255, Math.floor(((valR - min) / range) * 255)));
+        data[idx + 1] = Math.max(0, Math.min(255, Math.floor(((valG - min) / range) * 255)));
+        data[idx + 2] = Math.max(0, Math.min(255, Math.floor(((valB - min) / range) * 255)));
+      } else {
+        const val = rawData[valIndex];
+        const norm = Math.max(0, Math.min(255, Math.floor(((val - min) / range) * 255)));
+        data[idx] = norm; // R
+        data[idx + 1] = norm; // G
+        data[idx + 2] = norm; // B
+      }
       data[idx + 3] = 255; // A
     }
 

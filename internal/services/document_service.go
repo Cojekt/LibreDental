@@ -80,16 +80,26 @@ func (s *DocumentService) saveDocumentBytes(patientID, name, description, docTyp
 	docID := uuid.New().String()
 
 	var relDir string
+	var targetDir string
 	var pID *string
 
 	if patientID != "" {
-		relDir = patientID
+		cleanID := filepath.Clean(patientID)
+		if filepath.IsAbs(cleanID) || cleanID == ".." || strings.HasPrefix(cleanID, "../") || strings.HasPrefix(cleanID, "..\\") {
+			return nil, errors.New("invalid patient ID: path traversal or absolute path detected")
+		}
+		basePath := s.getDocumentsBasePath()
+		targetDir = s.getPatientDocumentsPath(cleanID)
+		rel, err := filepath.Rel(basePath, targetDir)
+		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, "../") || strings.HasPrefix(rel, "..\\") {
+			return nil, errors.New("invalid patient ID: path traversal detected")
+		}
+		relDir = cleanID
 		pID = &patientID
 	} else {
 		relDir = "clinic"
+		targetDir = s.getClinicDocumentsPath()
 	}
-
-	targetDir := filepath.Join(s.getDocumentsBasePath(), relDir)
 
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create document directory: %w", err)

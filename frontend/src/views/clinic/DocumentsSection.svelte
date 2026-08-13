@@ -158,9 +158,9 @@
 <div class="space-y-6">
   <div class="flex items-center justify-between">
     <div>
-      <h3 class="text-lg font-bold text-slate-100">📄 Clinic Documents</h3>
+      <h3 class="text-lg font-bold text-slate-100">📄 {m.doc_title()}</h3>
       <p class="text-xs text-slate-400 mt-0.5">
-        Manage licenses, policies, and other clinic-wide documents.
+        {m.doc_subtitle()}
       </p>
     </div>
     <button
@@ -183,11 +183,7 @@
       ></div>
     </div>
   {:else if documents.length === 0}
-    <EmptyState
-      title={m.doc_empty_title()}
-      subtitle="Upload clinic documents to securely store them here."
-      icon="📄"
-    />
+    <EmptyState title={m.doc_empty_title()} subtitle={m.doc_empty_subtitle()} icon="📄" />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each documents as doc}
@@ -250,7 +246,7 @@
 <Modal
   bind:showModal={showUploadModal}
   title={m.doc_btn_upload()}
-  subtitle="Add a new document to your clinic files."
+  subtitle={m.doc_modal_subtitle()}
   icon="📤"
   maxWidth="max-w-md"
 >
@@ -273,16 +269,16 @@
         type="text"
         bind:value={docName}
         required
-        placeholder="E.g. Clinic License 2026"
+        placeholder={m.doc_placeholder_name()}
       />
     </FormField>
 
-    <FormField label="Description (Optional)" forId="doc-desc">
+    <FormField label={m.doc_label_desc()} forId="doc-desc">
       <textarea
         id="doc-desc"
         bind:value={docDesc}
         class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none min-h-[80px]"
-        placeholder="Document description or notes..."></textarea>
+        placeholder={m.doc_placeholder_desc()}></textarea>
     </FormField>
 
     {#if uploadError}
@@ -298,7 +294,7 @@
         disabled={isUploading}
         class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer disabled:opacity-50"
       >
-        Cancel
+        {m.common_cancel()}
       </button>
       <button
         type="submit"
@@ -309,9 +305,9 @@
           <div
             class="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"
           ></div>
-          Uploading...
+          {m.doc_btn_uploading()}
         {:else}
-          Upload
+          {m.doc_btn_submit()}
         {/if}
       </button>
     </div>
