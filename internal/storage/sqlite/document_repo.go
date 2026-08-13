@@ -2,10 +2,12 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/storage"
 )
 
 // DocumentRepository provides SQLite data access for Documents.
@@ -66,9 +68,6 @@ func (r *DocumentRepository) ListByFilter(filter domain.DocumentFilter) ([]domai
 	if filter.PatientID != nil {
 		query += " AND patient_id = ?"
 		args = append(args, *filter.PatientID)
-	} else if filter.PatientID == nil && filter.Type == "" {
-		// If we want just clinic documents, we'd explicitly check for patient_id IS NULL
-		// But let's allow it to be a general filter. If they really want clinic docs, maybe add a flag to filter.
 	}
 
 	if filter.Type != "" {
@@ -130,6 +129,9 @@ func (r *DocumentRepository) ListClinicDocuments() ([]domain.Document, error) {
 		}
 		docs = append(docs, *doc)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("document repo list clinic docs row error: %w", err)
+	}
 	return docs, nil
 }
 
@@ -144,7 +146,7 @@ func (r *DocumentRepository) Delete(id string) error {
 		return fmt.Errorf("document repo delete rows affected: %w", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("document not found")
+		return storage.ErrNotFound
 	}
 	return nil
 }
@@ -168,8 +170,8 @@ func scanDocument(row rowScanner) (*domain.Document, error) {
 		&updatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("document not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
 		}
 		return nil, fmt.Errorf("document scan error: %w", err)
 	}

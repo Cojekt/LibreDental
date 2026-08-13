@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { DocumentService } from "@bindings/services/index.js";
-  import type { Document } from "@bindings/domain/models.js";
+  import { DocumentType, type Document } from "@bindings/domain/models.js";
   import { Dialogs } from "@wailsio/runtime";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
@@ -74,12 +74,20 @@
         }
 
         try {
+          const mime = selectedFile?.type || "";
+          let docType = DocumentType.DocumentTypeOther;
+          if (mime.includes("pdf")) {
+            docType = DocumentType.DocumentTypePDF;
+          } else if (mime.startsWith("image/")) {
+            docType = DocumentType.DocumentTypeImage;
+          }
+
           await DocumentService.SaveDocumentBase64(
             "", // empty for clinic document
             docName,
             docDesc,
-            "clinic",
-            selectedFile?.type || "application/octet-stream",
+            docType,
+            mime || "application/octet-stream",
             base64Data
           );
           showUploadModal = false;
@@ -96,13 +104,13 @@
       };
       reader.readAsDataURL(selectedFile);
     } catch (err: any) {
-      uploadError = err.message || "Failed to start upload.";
+      uploadError = err.message || m.doc_err_start_upload();
       isUploading = false;
     }
   }
 
   async function handleDelete(id: string) {
-    if (confirm("Are you sure you want to delete this document?")) {
+    if (confirm(m.doc_confirm_delete())) {
       try {
         await DocumentService.DeleteDocument(id);
         loadDocuments();
@@ -164,7 +172,7 @@
         <line x1="12" y1="5" x2="12" y2="19" />
         <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
-      Upload Document
+      {m.doc_btn_upload()}
     </button>
   </div>
 
@@ -176,7 +184,7 @@
     </div>
   {:else if documents.length === 0}
     <EmptyState
-      title="No Documents"
+      title={m.doc_empty_title()}
       subtitle="Upload clinic documents to securely store them here."
       icon="📄"
     />
@@ -230,7 +238,7 @@
               onclick={() => handleDelete(doc.id)}
               class="text-xs font-semibold text-rose-400 hover:text-rose-300"
             >
-              Delete
+              {m.doc_btn_delete()}
             </button>
           </div>
         </div>
@@ -241,14 +249,14 @@
 
 <Modal
   bind:showModal={showUploadModal}
-  title="Upload Document"
+  title={m.doc_btn_upload()}
   subtitle="Add a new document to your clinic files."
   icon="📤"
   maxWidth="max-w-md"
 >
   <form onsubmit={handleUpload} class="space-y-4">
     <div class="flex flex-col gap-2">
-      <label for="doc-file" class="text-xs font-semibold text-slate-300">File</label>
+      <label for="doc-file" class="text-xs font-semibold text-slate-300">{m.doc_label_file()}</label>
       <input
         id="doc-file"
         type="file"
@@ -258,7 +266,7 @@
       />
     </div>
 
-    <FormField label="Document Name" forId="doc-name" required>
+    <FormField label={m.doc_label_name()} forId="doc-name" required>
       <Input
         id="doc-name"
         type="text"

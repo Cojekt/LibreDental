@@ -422,5 +422,11 @@
   "doc_default_export_name": "export",
   "doc_err_start_upload": "Failed to start upload.",
   "doc_err_load_img": "Failed to load image.",
-  "doc_confirm_delete_xray": "Are you sure you want to delete this X-Ray?"
+  "doc_confirm_delete_xray": "Are you sure you want to delete this X-Ray?",
+  "doc_confirm_delete": "Are you sure you want to delete this document?",
+  "doc_btn_upload": "Upload Document",
+  "doc_btn_delete": "Delete",
+  "doc_empty_title": "No Documents",
+  "doc_label_file": "File",
+  "doc_label_name": "Document Name"
 }

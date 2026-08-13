@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
@@ -159,8 +160,13 @@ func TestDocumentRepository(t *testing.T) {
 		}
 
 		_, err = repo.GetByID(doc.ID)
-		if err == nil {
-			t.Errorf("Expected error getting deleted document, got nil")
+		if err != storage.ErrNotFound {
+			t.Errorf("Expected storage.ErrNotFound getting deleted document, got %v", err)
+		}
+
+		err = repo.Delete("non_existent_id")
+		if err != storage.ErrNotFound {
+			t.Errorf("Expected storage.ErrNotFound deleting non-existent document, got %v", err)
 		}
 	})
 }

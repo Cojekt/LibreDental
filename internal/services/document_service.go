@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/google/uuid"
 )
 
@@ -77,27 +79,24 @@ func (s *DocumentService) SaveDocumentBase64(patientID, name, description, docTy
 func (s *DocumentService) saveDocumentBytes(patientID, name, description, docType, contentType string, data []byte) (*domain.Document, error) {
 	docID := uuid.New().String()
 
-	var targetDir string
+	var relDir string
 	var pID *string
 
 	if patientID != "" {
-		targetDir = s.getPatientDocumentsPath(patientID)
+		relDir = patientID
 		pID = &patientID
 	} else {
-		targetDir = s.getClinicDocumentsPath()
+		relDir = "clinic"
 	}
+
+	targetDir := filepath.Join(s.getDocumentsBasePath(), relDir)
 
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create document directory: %w", err)
 	}
 
-	// Assuming we keep the original extension from contentType or name if needed, but for now just use docID as filename without extension, or guess extension.
 	// For safety, let's store it purely as docID in the filesystem to prevent traversal attacks.
-	filePathRelative := filepath.Join(filepath.Base(targetDir), docID)
-	if patientID == "" {
-		filePathRelative = filepath.Join("clinic", docID)
-	}
-
+	filePathRelative := filepath.Join(relDir, docID)
 	fullPath := filepath.Join(s.getDocumentsBasePath(), filePathRelative)
 
 	if err := os.WriteFile(fullPath, data, 0o644); err != nil {
@@ -265,7 +264,7 @@ func (s *DocumentService) DeleteDocument(id string) error {
 		return err
 	}
 
-	if err := s.repo.Delete(id); err != nil {
+	if err := s.repo.Delete(id); err != nil && !errors.Is(err, storage.ErrNotFound) {
 		return err
 	}
 

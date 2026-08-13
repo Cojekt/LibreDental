@@ -9,6 +9,7 @@ import (
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/services"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
@@ -114,7 +115,45 @@ func TestDocumentService(t *testing.T) {
 		}
 	})
 
+	t.Run("DeleteDocumentWhenDBRowAlreadyDeleted", func(t *testing.T) {
+		b64Content := base64.StdEncoding.EncodeToString([]byte("delete me too"))
+		doc, err := service.SaveDocumentBase64(patient.ID, "Doc concurrent delete", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
+		if err != nil {
+			t.Fatalf("Failed to setup document: %v", err)
+		}
+
+		fullFilePath := filepath.Join(tempDir, "documents", doc.FilePath)
+
+		// Create a mock repo where GetByID returns doc, but Delete returns storage.ErrNotFound
+		mockRepo := &notFoundOnDeleteRepo{
+			realRepo: repo,
+			doc:      doc,
+		}
+		mockService := services.NewDocumentService(mockRepo, tempDir)
+
+		// Call service.DeleteDocument - should proceed to remove the file from disk without returning an error
+		err = mockService.DeleteDocument(doc.ID)
+		if err != nil {
+			t.Fatalf("Expected DeleteDocument to succeed even if repo.Delete returns ErrNotFound, got: %v", err)
+		}
+
+		// Verify file was removed from disk
+		_, err = os.Stat(fullFilePath)
+		if err == nil {
+			t.Errorf("Expected file to be deleted from disk, but it still exists")
+		} else if !os.IsNotExist(err) {
+			t.Fatalf("Unexpected error checking file existence: %v", err)
+		}
+	})
+
 	t.Run("ListDocuments", func(t *testing.T) {
+		// Patient document fixture
+		b64PatientContent := base64.StdEncoding.EncodeToString([]byte("patient doc"))
+		_, err := service.SaveDocumentBase64(patient.ID, "Patient Document", "", string(domain.DocumentTypePDF), "application/pdf", b64PatientContent)
+		if err != nil {
+			t.Fatalf("Failed to setup patient document: %v", err)
+		}
+
 		docs, err := service.ListPatientDocuments(domain.DocumentFilter{PatientID: &patient.ID})
 		if err != nil {
 			t.Fatalf("Failed to list patient docs: %v", err)
@@ -138,4 +177,47 @@ func TestDocumentService(t *testing.T) {
 			t.Errorf("Expected clinic documents, got 0")
 		}
 	})
+
+	t.Run("SaveDocumentWithNestedPatientID", func(t *testing.T) {
+		nestedPatientID := "dept/pat_sub_123"
+		nestedPatient := &domain.Patient{
+			ID:        nestedPatientID,
+			FirstName: "Nested",
+			LastName:  "Patient",
+		}
+		if err := patientRepo.Create(context.Background(), nestedPatient); err != nil {
+			t.Fatalf("Failed to create nested test patient: %v", err)
+		}
+
+		content := "Nested patient document content"
+		b64 := base64.StdEncoding.EncodeToString([]byte(content))
+
+		doc, err := service.SaveDocumentBase64(nestedPatientID, "Nested Doc", "Desc", "other", "text/plain", b64)
+		if err != nil {
+			t.Fatalf("Failed to save nested document: %v", err)
+		}
+
+		fileContent, err := os.ReadFile(filepath.Join(tempDir, "documents", doc.FilePath))
+		if err != nil {
+			t.Fatalf("Failed to read nested document file at %s: %v", doc.FilePath, err)
+		}
+		if string(fileContent) != content {
+			t.Errorf("Expected content %q, got %q", content, string(fileContent))
+		}
+	})
+}
+
+type notFoundOnDeleteRepo struct {
+	services.DocumentRepository
+	realRepo services.DocumentRepository
+	doc      *domain.Document
+}
+
+func (m *notFoundOnDeleteRepo) GetByID(id string) (*domain.Document, error) {
+	return m.doc, nil
+}
+
+func (m *notFoundOnDeleteRepo) Delete(id string) error {
+	_ = m.realRepo.Delete(id)
+	return storage.ErrNotFound
 }

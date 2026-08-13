@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { DocumentService } from "@bindings/services/index.js";
   import type { Document, DocumentFilter } from "@bindings/domain/models.js";
   import { DocumentType } from "@bindings/domain/models.js";
   import Modal from "../../components/ui/Modal.svelte";
-  import FormField from "../../components/ui/FormField.svelte";
-  import Input from "../../components/ui/Input.svelte";
   import * as m from "../../paraglide/messages.js";
+  import { isDicomFile, parseDicomToDataUrl } from "../../lib/dicom.js";
 
   let { showModal = $bindable(false), patientId = "" } = $props<{
     showModal: boolean;
@@ -21,6 +19,7 @@
   let uploadError = $state("");
   let docName = $state("");
   let selectedFile = $state<File | null>(null);
+  let fileInput = $state<HTMLInputElement | null>(null);
 
   // Viewing state
   let viewingImageBase64 = $state<string | null>(null);
@@ -35,7 +34,6 @@
         type: DocumentType.DocumentTypeXRay,
       };
       const allDocs = (await DocumentService.ListPatientDocuments(filter)) || [];
-      // Filter only xrays is no longer needed since backend does it, but we can keep assignment
       documents = allDocs;
     } catch (err) {
       console.error("Failed to load patient xrays:", err);
@@ -69,6 +67,9 @@
     uploadError = "";
 
     try {
+      const isDcm = isDicomFile(selectedFile.name) || selectedFile.type.includes("dicom");
+      const mime = isDcm ? "application/dicom" : selectedFile.type || "image/jpeg";
+
       const reader = new FileReader();
       reader.onload = async (ev) => {
         const result = ev.target?.result as string;
@@ -85,11 +86,14 @@
             docName,
             "Patient X-Ray / Imaging",
             "xray",
-            selectedFile?.type || "image/jpeg",
+            mime,
             base64Data
           );
           docName = "";
           selectedFile = null;
+          if (fileInput) {
+            fileInput.value = "";
+          }
           loadXRays();
         } catch (err: any) {
           uploadError = err.message || m.doc_err_upload();
@@ -126,6 +130,23 @@
     try {
       const base64 = await DocumentService.GetDocumentBase64(doc.id);
       if (base64) {
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const buffer = bytes.buffer;
+
+        if (isDicomFile(doc.name || doc.content_type || "", buffer)) {
+          const pngUrl = parseDicomToDataUrl(buffer);
+          if (pngUrl) {
+            viewingImageBase64 = pngUrl;
+            viewingImageName = doc.name;
+            return;
+          }
+        }
+
         viewingImageBase64 = `data:${doc.content_type || "image/jpeg"};base64,${base64}`;
         viewingImageName = doc.name;
       }
@@ -159,6 +180,7 @@
             class="text-[10px] uppercase tracking-wider font-bold text-slate-400">File</label
           >
           <input
+            bind:this={fileInput}
             id="xray-file"
             type="file"
             accept="image/*,application/dicom"
