@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE documents (
+CREATE TABLE IF NOT EXISTS documents (
     id TEXT PRIMARY KEY,
     patient_id TEXT,
     type TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE documents (
     FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_documents_patient_id ON documents (patient_id);
+CREATE INDEX IF NOT EXISTS idx_documents_patient_id ON documents (patient_id);
 -- +goose StatementEnd
 
 -- +goose Down

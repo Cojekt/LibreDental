@@ -135,9 +135,16 @@ func (r *DocumentRepository) ListClinicDocuments() ([]domain.Document, error) {
 
 // Delete removes a document record by ID.
 func (r *DocumentRepository) Delete(id string) error {
-	_, err := r.db.Exec("DELETE FROM documents WHERE id = ?", id)
+	res, err := r.db.Exec("DELETE FROM documents WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("document repo delete: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("document repo delete rows affected: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("document not found")
 	}
 	return nil
 }
