@@ -1,18 +1,15 @@
 <script lang="ts">
-  import type { CountryConfig } from "@bindings/domain/models.js";
   import NavigationTabs from "./NavigationTabs.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   let {
     activeTab = $bindable("clinic"),
-    countryMeta,
     onnewpatient,
     onnewappointment,
     onopensettings,
   } = $props<{
     activeTab: string;
-    countryMeta?: CountryConfig | null;
     onnewpatient: () => void;
     onnewappointment: () => void;
     onopensettings: () => void;

@@ -573,7 +573,6 @@
 >
   <Header
     bind:activeTab
-    {countryMeta}
     onnewpatient={openAddPatientModal}
     onnewappointment={openAddApptModal}
     onopensettings={() => (showSettingsModal = true)}
