@@ -19,12 +19,13 @@ type SeedSummary struct {
 	BundlesCount       int
 	ClaimsCount        int
 	PaymentsCount      int
+	DocumentsCount     int
 }
 
 // SeedDatabase populates the target SQLite database with sample practice configuration,
 // healthcare providers, operatory treatment rooms, patient records, scheduled appointments,
 // and dental charting conditions.
-func SeedDatabase(db *sqlite.DB) (*SeedSummary, error) {
+func SeedDatabase(db *sqlite.DB, appDir, demoDataDir string) (*SeedSummary, error) {
 	ctx := context.Background()
 	summary := &SeedSummary{}
 
@@ -88,6 +89,11 @@ func SeedDatabase(db *sqlite.DB) (*SeedSummary, error) {
 
 	// 10. Payments
 	if err := seedPayments(ctx, paymentRepo, now, summary); err != nil {
+		return nil, err
+	}
+
+	// 11. Documents
+	if err := seedDocuments(ctx, db, appDir, demoDataDir, now, summary); err != nil {
 		return nil, err
 	}
 

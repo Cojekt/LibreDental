@@ -13,7 +13,6 @@ libredental
 *.db
 *.db-wal
 *.db-shm
-libredental.db
 
 # Frontend Dependencies & Build Output
 frontend/node_modules/
@@ -49,3 +48,6 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Demo file outputs
+demo.zip

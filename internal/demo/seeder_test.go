@@ -20,7 +20,8 @@ func TestSeedDatabase(t *testing.T) {
 	}
 	defer db.Close()
 
-	summary, err := SeedDatabase(db)
+	appDir := t.TempDir()
+	summary, err := SeedDatabase(db, appDir, "./data")
 	if err != nil {
 		t.Fatalf("SeedDatabase failed: %v", err)
 	}

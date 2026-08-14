@@ -23,9 +23,9 @@ tasks:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   demo:
-    desc: Generates a standalone pre-populated database file (libredental.db)
+    desc: "Generates a standalone pre-populated save archive (demo.zip)"
     cmds:
-      - go run ./internal/demo/gen.go libredental.db
+      - go run ./internal/demo/gen.go demo.zip
 
   build:
     desc: Builds the application
