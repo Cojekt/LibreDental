@@ -100,7 +100,7 @@ All project build, development, and formatting tasks are managed through [Task](
 | `task format` | Formats Go backend files with `gofmt -w -s` and frontend code with Prettier. **Must be run before creating PRs.** |
 | `task build` | Builds the production desktop binary for your OS in `./bin/libredental`. |
 | `task build:server` | Compiles the headless HTTP server mode binary (`./bin/libredental-server`). |
-| `task demo` | Generates a pre-populated SQLite demo database (`libredental.db`) for testing. |
+| `task demo` | Generates a standalone pre-populated save archive (`demo.zip`) for testing. |
 | `task package` | Creates production OS installer packages (`.deb`, `.rpm`, `AppImage`, `.dmg`, `.exe`). |
 | `task run` | Executes the compiled application binary from `./bin/libredental`. |
 

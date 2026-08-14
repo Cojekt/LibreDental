@@ -81,7 +81,7 @@ func zipDirectory(sourceDir, targetZipFile string) error {
 	archive := zip.NewWriter(zipFile)
 	defer archive.Close()
 
-	filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -134,6 +134,13 @@ func zipDirectory(sourceDir, targetZipFile string) error {
 		_, err = io.Copy(writer, file)
 		return err
 	})
+	if err != nil {
+		return err
+	}
 
-	return nil
+	if err := archive.Close(); err != nil {
+		return err
+	}
+
+	return zipFile.Close()
 }

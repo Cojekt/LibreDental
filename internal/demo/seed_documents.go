@@ -19,7 +19,10 @@ func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir strin
 	patientRepo := sqlite.NewPatientRepository(db)
 
 	patients, _, err := patientRepo.List(ctx, domain.PatientFilter{Limit: 2})
-	if err != nil || len(patients) == 0 {
+	if err != nil {
+		return fmt.Errorf("failed to list patients for seeding documents: %w", err)
+	}
+	if len(patients) == 0 {
 		return nil // skip if no patients
 	}
 
@@ -34,9 +37,12 @@ func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir strin
 			return fmt.Errorf("failed to read %s: %w", path, err)
 		}
 		b64Data := base64.StdEncoding.EncodeToString(data)
-		_, err = docService.SaveDocumentBase64(patientID, name, desc, docType, mimeType, b64Data)
+		doc, err := docService.SaveDocumentBase64(patientID, name, desc, docType, mimeType, b64Data)
 		if err != nil {
 			return fmt.Errorf("failed to save doc %s: %w", name, err)
+		}
+		if _, err := db.ExecContext(ctx, "UPDATE documents SET created_at = ?, updated_at = ? WHERE id = ?", now, now, doc.ID); err != nil {
+			return fmt.Errorf("failed to update document timestamps for %s: %w", name, err)
 		}
 		summary.DocumentsCount++
 		return nil
@@ -49,14 +55,8 @@ func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir strin
 		return err
 	}
 
-	var secondPatientID string
-	if len(patients) > 1 {
-		secondPatientID = patients[1].ID
-	} else {
-		secondPatientID = patients[0].ID
-	}
-
-	if err := seedFile(secondPatientID, "Patient Consent Form", "Signed consent form for general dentistry", string(domain.DocumentTypeConsentForm), "application/pdf", pdfPath); err != nil {
+	// Seed clinic-wide document (patientID = "" stores patient_id = NULL in SQL)
+	if err := seedFile("", "Practice Privacy & Consent Form", "Standard practice operational policies and general consent documentation", string(domain.DocumentTypeConsentForm), "application/pdf", pdfPath); err != nil {
 		return err
 	}
 
