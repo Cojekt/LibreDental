@@ -180,7 +180,7 @@
       group_number: claimGroupNumber,
       status: claimStatus,
       notes: claimNotes,
-      line_items: claimLineItems.map(li => ({ ...li, fee: Math.round(li.fee * 100) })),
+      line_items: claimLineItems.map((li) => ({ ...li, fee: Math.round(li.fee * 100) })),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

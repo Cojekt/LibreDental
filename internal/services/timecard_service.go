@@ -174,10 +174,10 @@ func (s *TimecardService) CreateManualTimecard(providerID string, minutes int64,
 	}
 
 	t := &domain.Timecard{
-		ID:         fmt.Sprintf("tc_%d", time.Now().UnixNano()),
-		ProviderID: providerID,
-		ClockIn:    parsedDate,
-		ClockOut:   &parsedDate,
+		ID:           fmt.Sprintf("tc_%d", time.Now().UnixNano()),
+		ProviderID:   providerID,
+		ClockIn:      parsedDate,
+		ClockOut:     &parsedDate,
 		HourlyRate:   provider.HourlyRate,
 		TotalMinutes: minutes,
 		TotalPay:     (minutes*provider.HourlyRate + 30) / 60,

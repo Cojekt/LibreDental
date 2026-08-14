@@ -77,17 +77,17 @@ type Payment struct {
 
 // PatientBalance is a computed summary DTO for a patient's outstanding balance.
 type PatientBalance struct {
-	PatientID   string  `json:"patient_id"`
-	TotalBilled int64   `json:"total_billed"`
-	TotalPaid   int64   `json:"total_paid"`
-	Outstanding int64   `json:"outstanding"`
+	PatientID   string `json:"patient_id"`
+	TotalBilled int64  `json:"total_billed"`
+	TotalPaid   int64  `json:"total_paid"`
+	Outstanding int64  `json:"outstanding"`
 }
 
 // BundleItemTemplate is a CDT line item template stored inside a TreatmentBundle.
 type BundleItemTemplate struct {
-	ADACode     string  `json:"ada_code"`
-	Description string  `json:"description"`
-	DefaultFee  int64   `json:"default_fee"`
+	ADACode     string `json:"ada_code"`
+	Description string `json:"description"`
+	DefaultFee  int64  `json:"default_fee"`
 }
 
 // TreatmentBundle is a practice-wide reusable template of CDT procedures.
