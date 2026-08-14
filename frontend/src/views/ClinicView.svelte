@@ -227,6 +227,7 @@
   let provPhone = $state("");
   let provColor = $state("#3b82f6");
   let provIsActive = $state(true);
+  let provHourlyRate = $state(0.0);
 
   // Modal / Form state for Operatory
   let showOperatoryModal = $state(false);
@@ -336,6 +337,7 @@
     provPhone = "";
     provColor = "#3b82f6";
     provIsActive = true;
+    provHourlyRate = 0.0;
     showProviderModal = true;
   }
 
@@ -350,6 +352,7 @@
     provPhone = p.phone || "";
     provColor = p.color || "#3b82f6";
     provIsActive = p.is_active;
+    provHourlyRate = p.hourly_rate || 0.0;
     showProviderModal = true;
   }
 
@@ -368,6 +371,7 @@
         phone: provPhone,
         color: provColor,
         is_active: provIsActive,
+        hourly_rate: provHourlyRate,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -638,6 +642,7 @@
         bind:provPhone
         bind:provColor
         bind:provIsActive
+        bind:provHourlyRate
       />
     {:else if activeSubTab === "operatories"}
       <OperatoriesSection

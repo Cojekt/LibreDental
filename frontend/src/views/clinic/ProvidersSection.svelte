@@ -1,10 +1,13 @@
 <script lang="ts">
-  import type { Provider } from "@bindings/domain/models.js";
+  import type { Provider, Timecard } from "@bindings/domain/models.js";
+  import { TimecardService } from "@bindings/services/index.js";
+  import { onMount } from "svelte";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import TimecardsModal from "./TimecardsModal.svelte";
 
   let {
     providers = [],
@@ -22,6 +25,7 @@
     provPhone = $bindable(""),
     provColor = $bindable("#3b82f6"),
     provIsActive = $bindable(true),
+    provHourlyRate = $bindable(0.0),
   } = $props<{
     providers: Provider[];
     openAddProviderModal: () => void;
@@ -38,7 +42,66 @@
     provPhone: string;
     provColor: string;
     provIsActive: boolean;
+    provHourlyRate: number;
   }>();
+
+  let activeTimecards = $state<Record<string, Timecard | null>>({});
+  let totalOwed = $state<Record<string, number>>({});
+
+  let showTimecardsModal = $state(false);
+  let selectedProviderId = $state("");
+  let selectedProviderName = $state("");
+
+  onMount(async () => {
+    await loadProviderStates();
+  });
+
+  async function loadProviderStates() {
+    for (const p of providers) {
+      try {
+        const tc = await TimecardService.GetActiveTimecard(p.id);
+        activeTimecards[p.id] = tc;
+      } catch (e) {
+        activeTimecards[p.id] = null;
+      }
+      try {
+        const owed = await TimecardService.GetTotalOwed(p.id);
+        totalOwed[p.id] = owed;
+      } catch (e) {
+        totalOwed[p.id] = 0;
+      }
+    }
+  }
+
+  async function clockIn(pId: string) {
+    try {
+      const tc = await TimecardService.ClockIn(pId);
+      activeTimecards[pId] = tc;
+    } catch (e) {
+      console.error("Clock In failed", e);
+    }
+  }
+
+  async function clockOut(pId: string) {
+    try {
+      await TimecardService.ClockOut(pId);
+      activeTimecards[pId] = null;
+      await loadProviderStates();
+    } catch (e) {
+      console.error("Clock Out failed", e);
+    }
+  }
+
+  async function paySalary(pId: string) {
+    if (confirm("This is a record only, and does not actually link to a bank account. Proceed?")) {
+      try {
+        await TimecardService.PaySalary(pId);
+        await loadProviderStates();
+      } catch (e) {
+        console.error("Pay Salary failed", e);
+      }
+    }
+  }
 </script>
 
 <div class="space-y-6">
@@ -73,8 +136,13 @@
             </span>
           </div>
 
-          {#if p.license_number || p.email || p.phone}
+          {#if p.license_number || p.email || p.phone || p.hourly_rate}
             <div class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
+              {#if p.hourly_rate}
+                <div class="font-medium text-emerald-400">
+                  💵 Wage: ${p.hourly_rate.toFixed(2)}/hr
+                </div>
+              {/if}
               {#if p.license_number}
                 <div>
                   🪪 {m.prov_license_prefix()}
@@ -90,23 +158,72 @@
             </div>
           {/if}
 
-          <div
-            class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/60 text-xs"
-          >
-            <button
-              type="button"
-              onclick={() => openEditProviderModal(p)}
-              class="text-sky-400 hover:text-sky-300 font-semibold"
-            >
-              {m.patients_btn_edit()}
-            </button>
-            <button
-              type="button"
-              onclick={() => handleDeleteProvider(p.id)}
-              class="text-rose-400 hover:text-rose-300 font-semibold"
-            >
-              {m.patient_archive()}
-            </button>
+          <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
+            <div>
+              {#if activeTimecards[p.id]}
+                <button
+                  type="button"
+                  onclick={() => clockOut(p.id)}
+                  class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold hover:bg-rose-500/30 transition-colors"
+                >
+                  Clock Out
+                </button>
+              {:else}
+                <button
+                  type="button"
+                  onclick={() => clockIn(p.id)}
+                  class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold hover:bg-emerald-500/30 transition-colors"
+                >
+                  Clock In
+                </button>
+              {/if}
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                onclick={() => openEditProviderModal(p)}
+                class="text-sky-400 hover:text-sky-300 font-semibold"
+              >
+                {m.patients_btn_edit()}
+              </button>
+              <button
+                type="button"
+                onclick={() => handleDeleteProvider(p.id)}
+                class="text-rose-400 hover:text-rose-300 font-semibold"
+              >
+                {m.patient_archive()}
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-slate-800/40 rounded-lg p-3 mt-2 border border-slate-700/50">
+            <div class="flex items-center justify-between">
+              <div class="text-slate-300 text-xs font-semibold">
+                Total Owed: <span class="text-emerald-400 text-sm ml-1"
+                  >${(totalOwed[p.id] || 0).toFixed(2)}</span
+                >
+              </div>
+              <button
+                type="button"
+                onclick={() => paySalary(p.id)}
+                class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 rounded text-xs font-bold transition-colors border border-emerald-500/30"
+              >
+                Pay Salary
+              </button>
+            </div>
+            <div class="mt-3 flex justify-end">
+              <button
+                type="button"
+                onclick={() => {
+                  selectedProviderId = p.id;
+                  selectedProviderName = p.name;
+                  showTimecardsModal = true;
+                }}
+                class="text-sky-400 hover:text-sky-300 text-xs font-semibold flex items-center gap-1"
+              >
+                📋 View Timecards
+              </button>
+            </div>
           </div>
         </div>
       {/each}
@@ -181,6 +298,17 @@
       </FormField>
     </div>
 
+    <FormField label="Hourly Rate ($)" forId="prov-hourly">
+      <Input
+        id="prov-hourly"
+        type="number"
+        min="0"
+        step="0.01"
+        bind:value={provHourlyRate}
+        placeholder="e.g. 25.00"
+      />
+    </FormField>
+
     <div class="flex items-center justify-between pt-2">
       <div>
         <label for="prov-color" class="block text-xs font-semibold text-slate-300 mb-1"
@@ -216,3 +344,10 @@
     </div>
   </form>
 </Modal>
+
+<TimecardsModal
+  bind:showModal={showTimecardsModal}
+  providerId={selectedProviderId}
+  providerName={selectedProviderName}
+  onrefresh={loadProviderStates}
+/>

@@ -74,6 +74,7 @@ type Provider struct {
 	Phone         string       `json:"phone"`
 	Color         string       `json:"color"`
 	IsActive      bool         `json:"is_active"`
+	HourlyRate    float64      `json:"hourly_rate"`
 	CreatedAt     time.Time    `json:"created_at"`
 	UpdatedAt     time.Time    `json:"updated_at"`
 }
