@@ -20,7 +20,8 @@ func TestSeedDatabase(t *testing.T) {
 	}
 	defer db.Close()
 
-	summary, err := SeedDatabase(db)
+	appDir := t.TempDir()
+	summary, err := SeedDatabase(db, appDir, "./data")
 	if err != nil {
 		t.Fatalf("SeedDatabase failed: %v", err)
 	}
@@ -54,6 +55,9 @@ func TestSeedDatabase(t *testing.T) {
 	}
 	if summary.PaymentsCount != 2 {
 		t.Errorf("Expected 2 payments, got %d", summary.PaymentsCount)
+	}
+	if summary.DocumentsCount != 3 {
+		t.Errorf("Expected 3 documents, got %d", summary.DocumentsCount)
 	}
 
 	ctx := context.Background()
@@ -130,5 +134,23 @@ func TestSeedDatabase(t *testing.T) {
 	}
 	if len(chart.Conditions) != 2 {
 		t.Errorf("Expected 2 conditions for pat_101, got %d", len(chart.Conditions))
+	}
+
+	// Verify documents
+	docRepo := sqlite.NewDocumentRepository(db)
+	clinicDocs, err := docRepo.ListClinicDocuments()
+	if err != nil {
+		t.Fatalf("Failed to list clinic documents: %v", err)
+	}
+	if len(clinicDocs) != 1 {
+		t.Errorf("Expected 1 clinic document, got %d", len(clinicDocs))
+	}
+
+	patDocs, err := docRepo.ListByFilter(domain.DocumentFilter{PatientID: &patients[0].ID})
+	if err != nil {
+		t.Fatalf("Failed to list patient documents: %v", err)
+	}
+	if len(patDocs) != 2 {
+		t.Errorf("Expected 2 patient documents for pat_101, got %d", len(patDocs))
 	}
 }
