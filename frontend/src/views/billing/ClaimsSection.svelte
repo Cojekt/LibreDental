@@ -576,7 +576,9 @@
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             Total: <strong class="text-white text-sm font-mono"
-              >{fmt(Math.round(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0) * 100))}</strong
+              >{fmt(
+                Math.round(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0) * 100)
+              )}</strong
             >
           </div>
         </div>

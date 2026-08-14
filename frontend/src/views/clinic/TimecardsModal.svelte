@@ -29,9 +29,7 @@
 
   // Filter
   let filterEndDate = $state(getLocalDateString());
-  let filterStartDate = $state(
-    getLocalDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
-  );
+  let filterStartDate = $state(getLocalDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
 
   // Manual Entry Form
   let showManualEntry = $state(false);
