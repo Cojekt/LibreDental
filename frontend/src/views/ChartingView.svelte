@@ -310,7 +310,7 @@
     formADACode = cond.ada_code || "";
     formDescription = cond.description;
     formStatus = cond.status;
-    formFee = cond.fee || 0;
+    formFee = (cond.fee || 0) / 100;
     showConditionModal = true;
   }
 
@@ -341,7 +341,7 @@
       ada_code: formADACode,
       description: formDescription || "Tooth finding",
       status: formStatus,
-      fee: Number(formFee) || 0,
+      fee: Math.round(Number(formFee) * 100) || 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -376,9 +376,9 @@
       return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: currency,
-      }).format(amount);
+      }).format(amount / 100);
     } catch {
-      return `${amount.toFixed(2)}`;
+      return `${(amount / 100).toFixed(2)}`;
     }
   }
 </script>

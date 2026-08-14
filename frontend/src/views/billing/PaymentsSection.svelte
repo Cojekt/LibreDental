@@ -45,9 +45,9 @@
   function fmt(n: number) {
     const curr = countryMeta?.default_currency || "USD";
     try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n);
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
     } catch {
-      return `${n.toFixed(2)}`;
+      return `${(n / 100).toFixed(2)}`;
     }
   }
 
@@ -102,7 +102,7 @@
 
   async function savePayment(e: Event) {
     e.preventDefault();
-    const amount = parseFloat(payAmount);
+    const amount = Math.round(parseFloat(payAmount) * 100);
     if (!payPatientId || isNaN(amount) || amount <= 0 || !payDate) return;
 
     const payload: Payment = {

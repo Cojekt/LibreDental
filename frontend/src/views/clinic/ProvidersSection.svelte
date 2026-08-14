@@ -140,7 +140,7 @@
             <div class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
               {#if p.hourly_rate}
                 <div class="font-medium text-emerald-400">
-                  💵 Wage: ${p.hourly_rate.toFixed(2)}/hr
+                  💵 Wage: ${(p.hourly_rate / 100).toFixed(2)}/hr
                 </div>
               {/if}
               {#if p.license_number}
@@ -200,7 +200,7 @@
             <div class="flex items-center justify-between">
               <div class="text-slate-300 text-xs font-semibold">
                 Total Owed: <span class="text-emerald-400 text-sm ml-1"
-                  >${(totalOwed[p.id] || 0).toFixed(2)}</span
+                  >${((totalOwed[p.id] || 0) / 100).toFixed(2)}</span
                 >
               </div>
               <button

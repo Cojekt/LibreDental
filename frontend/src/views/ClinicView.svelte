@@ -352,7 +352,7 @@
     provPhone = p.phone || "";
     provColor = p.color || "#3b82f6";
     provIsActive = p.is_active;
-    provHourlyRate = p.hourly_rate || 0.0;
+    provHourlyRate = (p.hourly_rate || 0.0) / 100;
     showProviderModal = true;
   }
 
@@ -371,7 +371,7 @@
         phone: provPhone,
         color: provColor,
         is_active: provIsActive,
-        hourly_rate: provHourlyRate,
+        hourly_rate: Math.round(provHourlyRate * 100),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

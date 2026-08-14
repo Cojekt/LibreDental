@@ -20,7 +20,7 @@ func NewTimecardRepository(db *DB) *TimecardRepository {
 
 func (r *TimecardRepository) ListTimecards(ctx context.Context, providerID string, startDate *time.Time, endDate *time.Time) ([]*domain.Timecard, error) {
 	query := `
-	SELECT id, provider_id, clock_in, clock_out, hourly_rate, total_hours, total_pay, paid_at, is_manual, created_at, updated_at
+	SELECT id, provider_id, clock_in, clock_out, hourly_rate, total_minutes, total_pay, paid_at, is_manual, created_at, updated_at
 	FROM timecards
 	WHERE 1=1
 	`
@@ -53,14 +53,14 @@ func (r *TimecardRepository) ListTimecards(ctx context.Context, providerID strin
 	for rows.Next() {
 		var t domain.Timecard
 		var clockOut sql.NullTime
-		var totalHours sql.NullFloat64
-		var totalPay sql.NullFloat64
+		var totalMinutes sql.NullInt64
+		var totalPay sql.NullInt64
 		var paidAt sql.NullTime
 		var isManualInt int
 
 		err := rows.Scan(
 			&t.ID, &t.ProviderID, &t.ClockIn, &clockOut, &t.HourlyRate,
-			&totalHours, &totalPay, &paidAt, &isManualInt, &t.CreatedAt, &t.UpdatedAt,
+			&totalMinutes, &totalPay, &paidAt, &isManualInt, &t.CreatedAt, &t.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan timecard: %w", err)
@@ -69,11 +69,11 @@ func (r *TimecardRepository) ListTimecards(ctx context.Context, providerID strin
 		if clockOut.Valid {
 			t.ClockOut = &clockOut.Time
 		}
-		if totalHours.Valid {
-			t.TotalHours = totalHours.Float64
+		if totalMinutes.Valid {
+			t.TotalMinutes = totalMinutes.Int64
 		}
 		if totalPay.Valid {
-			t.TotalPay = totalPay.Float64
+			t.TotalPay = totalPay.Int64
 		}
 		if paidAt.Valid {
 			t.PaidAt = &paidAt.Time
@@ -92,7 +92,7 @@ func (r *TimecardRepository) ListTimecards(ctx context.Context, providerID strin
 
 func (r *TimecardRepository) GetActiveTimecard(ctx context.Context, providerID string) (*domain.Timecard, error) {
 	query := `
-	SELECT id, provider_id, clock_in, clock_out, hourly_rate, total_hours, total_pay, paid_at, is_manual, created_at, updated_at
+	SELECT id, provider_id, clock_in, clock_out, hourly_rate, total_minutes, total_pay, paid_at, is_manual, created_at, updated_at
 	FROM timecards
 	WHERE provider_id = ? AND clock_out IS NULL
 	ORDER BY clock_in DESC LIMIT 1
@@ -101,14 +101,14 @@ func (r *TimecardRepository) GetActiveTimecard(ctx context.Context, providerID s
 
 	var t domain.Timecard
 	var clockOut sql.NullTime
-	var totalHours sql.NullFloat64
-	var totalPay sql.NullFloat64
+	var totalMinutes sql.NullInt64
+	var totalPay sql.NullInt64
 	var paidAt sql.NullTime
 	var isManualInt int
 
 	err := row.Scan(
 		&t.ID, &t.ProviderID, &t.ClockIn, &clockOut, &t.HourlyRate,
-		&totalHours, &totalPay, &paidAt, &isManualInt, &t.CreatedAt, &t.UpdatedAt,
+		&totalMinutes, &totalPay, &paidAt, &isManualInt, &t.CreatedAt, &t.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -120,11 +120,11 @@ func (r *TimecardRepository) GetActiveTimecard(ctx context.Context, providerID s
 	if clockOut.Valid {
 		t.ClockOut = &clockOut.Time
 	}
-	if totalHours.Valid {
-		t.TotalHours = totalHours.Float64
+	if totalMinutes.Valid {
+		t.TotalMinutes = totalMinutes.Int64
 	}
 	if totalPay.Valid {
-		t.TotalPay = totalPay.Float64
+		t.TotalPay = totalPay.Int64
 	}
 	if paidAt.Valid {
 		t.PaidAt = &paidAt.Time
@@ -148,14 +148,14 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 
 	query := `
 	INSERT INTO timecards (
-		id, provider_id, clock_in, clock_out, hourly_rate, total_hours, total_pay, paid_at, is_manual, created_at, updated_at
+		id, provider_id, clock_in, clock_out, hourly_rate, total_minutes, total_pay, paid_at, is_manual, created_at, updated_at
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		provider_id = excluded.provider_id,
 		clock_in = excluded.clock_in,
 		clock_out = excluded.clock_out,
 		hourly_rate = excluded.hourly_rate,
-		total_hours = excluded.total_hours,
+		total_minutes = excluded.total_minutes,
 		total_pay = excluded.total_pay,
 		paid_at = excluded.paid_at,
 		is_manual = excluded.is_manual,
@@ -168,16 +168,16 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 		clockOut.Time = *t.ClockOut
 	}
 
-	var totalHours sql.NullFloat64
-	if t.TotalHours > 0 {
-		totalHours.Valid = true
-		totalHours.Float64 = t.TotalHours
+	var totalMinutes sql.NullInt64
+	if t.TotalMinutes > 0 {
+		totalMinutes.Valid = true
+		totalMinutes.Int64 = t.TotalMinutes
 	}
 
-	var totalPay sql.NullFloat64
+	var totalPay sql.NullInt64
 	if t.TotalPay > 0 {
 		totalPay.Valid = true
-		totalPay.Float64 = t.TotalPay
+		totalPay.Int64 = t.TotalPay
 	}
 
 	var paidAt sql.NullTime
@@ -189,7 +189,7 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 	_, err := r.db.ExecContext(
 		ctx, query,
 		t.ID, t.ProviderID, t.ClockIn, clockOut, t.HourlyRate,
-		totalHours, totalPay, paidAt, isManualInt, t.CreatedAt, t.UpdatedAt,
+		totalMinutes, totalPay, paidAt, isManualInt, t.CreatedAt, t.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save timecard: %w", err)
@@ -198,21 +198,21 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 	return nil
 }
 
-func (r *TimecardRepository) GetTotalOwed(ctx context.Context, providerID string) (float64, error) {
+func (r *TimecardRepository) GetTotalOwed(ctx context.Context, providerID string) (int64, error) {
 	query := `
 	SELECT SUM(total_pay) FROM timecards
 	WHERE provider_id = ? AND paid_at IS NULL AND (clock_out IS NOT NULL OR is_manual = 1)
 	`
-	var total sql.NullFloat64
+	var total sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query, providerID).Scan(&total)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, fmt.Errorf("failed to calculate total owed: %w", err)
 	}
 
 	if total.Valid {
-		return total.Float64, nil
+		return total.Int64, nil
 	}
-	return 0.0, nil
+	return 0, nil
 }
 
 func (r *TimecardRepository) MarkTimecardsPaid(ctx context.Context, providerID string) error {

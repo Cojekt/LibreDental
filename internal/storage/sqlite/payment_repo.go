@@ -119,10 +119,10 @@ func (r *PaymentRepository) List(ctx context.Context, patientID string) ([]*doma
 }
 
 // GetTotalPaid sums all payment amounts for a patient.
-func (r *PaymentRepository) GetTotalPaid(ctx context.Context, patientID string) (float64, error) {
-	var total float64
+func (r *PaymentRepository) GetTotalPaid(ctx context.Context, patientID string) (int64, error) {
+	var total int64
 	err := r.db.QueryRowContext(ctx,
-		"SELECT COALESCE(SUM(amount), 0.0) FROM payments WHERE patient_id = ?",
+		"SELECT COALESCE(SUM(amount), 0) FROM payments WHERE patient_id = ?",
 		patientID,
 	).Scan(&total)
 	if err != nil {

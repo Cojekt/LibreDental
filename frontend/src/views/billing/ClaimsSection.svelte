@@ -73,9 +73,9 @@
   function fmt(n: number) {
     const curr = countryMeta?.default_currency || "USD";
     try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n);
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
     } catch {
-      return `${n.toFixed(2)}`;
+      return `${(n / 100).toFixed(2)}`;
     }
   }
 
@@ -123,7 +123,7 @@
     claimGroupNumber = c.group_number ?? "";
     claimStatus = c.status;
     claimNotes = c.notes ?? "";
-    claimLineItems = (c.line_items ?? []).map((li) => ({ ...li }));
+    claimLineItems = (c.line_items ?? []).map((li) => ({ ...li, fee: (li.fee || 0) / 100 }));
     bundleLookupInput = "";
     bundleLookupError = "";
     showClaimModal = true;
@@ -152,7 +152,7 @@
           id: `li_${Date.now()}_${i}`,
           ada_code: item.ada_code,
           description: item.description,
-          fee: item.default_fee,
+          fee: (item.default_fee || 0) / 100,
         }));
         claimLineItems = [...claimLineItems, ...newItems];
         bundleLookupInput = "";
@@ -180,7 +180,7 @@
       group_number: claimGroupNumber,
       status: claimStatus,
       notes: claimNotes,
-      line_items: claimLineItems,
+      line_items: claimLineItems.map(li => ({ ...li, fee: Math.round(li.fee * 100) })),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -242,7 +242,7 @@
       surfaces: cond.surfaces,
       ada_code: cond.ada_code || "PROC",
       description: cond.description || `Tooth #${cond.tooth_number} procedure`,
-      fee: cond.fee || 0,
+      fee: (cond.fee || 0) / 100,
     }));
 
     claimLineItems = [...claimLineItems, ...newItems];

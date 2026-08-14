@@ -41,8 +41,8 @@ func TestProcedureRepository(t *testing.T) {
 	if foundD2391 == nil {
 		t.Fatalf("Expected D2391 in US codes")
 	}
-	if foundD2391.DefaultFee != 140.0 {
-		t.Errorf("Expected fee 140.0, got %f", foundD2391.DefaultFee)
+	if foundD2391.DefaultFee != 14000 {
+		t.Errorf("Expected fee 14000, got %d", foundD2391.DefaultFee)
 	}
 
 	// 2. Test initial effective fee (should equal default fee)
@@ -50,8 +50,8 @@ func TestProcedureRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get effective fee: %v", err)
 	}
-	if effFee != 140.0 {
-		t.Errorf("Expected effective fee 140.0, got %f", effFee)
+	if effFee != 14000 {
+		t.Errorf("Expected effective fee 14000, got %d", effFee)
 	}
 
 	// 3. Save a practice-wide custom fee schedule override
@@ -60,7 +60,7 @@ func TestProcedureRepository(t *testing.T) {
 		CountryCode: domain.CountryUS,
 		Code:        "D2391",
 		ProviderID:  "",
-		CustomFee:   175.50,
+		CustomFee:   17550,
 	}
 	if err := repo.Save(ctx, fs); err != nil {
 		t.Fatalf("Failed to save fee schedule: %v", err)
@@ -71,8 +71,8 @@ func TestProcedureRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get updated effective fee: %v", err)
 	}
-	if effFee != 175.50 {
-		t.Errorf("Expected effective fee 175.50, got %f", effFee)
+	if effFee != 17550 {
+		t.Errorf("Expected effective fee 17550, got %d", effFee)
 	}
 
 	// 4. Save a provider-specific custom fee override
@@ -81,7 +81,7 @@ func TestProcedureRepository(t *testing.T) {
 		CountryCode: domain.CountryUS,
 		Code:        "D2391",
 		ProviderID:  "prov_dr_smith",
-		CustomFee:   200.00,
+		CustomFee:   20000,
 	}
 	if err := repo.Save(ctx, fsProv); err != nil {
 		t.Fatalf("Failed to save provider fee schedule: %v", err)
@@ -91,7 +91,7 @@ func TestProcedureRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get provider effective fee: %v", err)
 	}
-	if effFeeProv != 200.00 {
-		t.Errorf("Expected provider effective fee 200.00, got %f", effFeeProv)
+	if effFeeProv != 20000 {
+		t.Errorf("Expected provider effective fee 20000, got %d", effFeeProv)
 	}
 }

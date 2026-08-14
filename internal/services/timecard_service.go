@@ -78,11 +78,11 @@ func (s *TimecardService) ClockOut(providerID string) (*domain.Timecard, error) 
 	now := time.Now()
 	active.ClockOut = &now
 
-	// Calculate total hours using 1-minute precision rounding
+	// Calculate total minutes using 1-minute precision rounding
 	duration := active.ClockOut.Sub(active.ClockIn)
-	minutes := math.Round(duration.Minutes())
-	active.TotalHours = minutes / 60.0
-	active.TotalPay = active.TotalHours * active.HourlyRate
+	minutes := int64(math.Round(duration.Minutes()))
+	active.TotalMinutes = minutes
+	active.TotalPay = (active.TotalMinutes*active.HourlyRate + 30) / 60
 
 	if err := s.timecardRepo.SaveTimecard(ctx, active); err != nil {
 		return nil, fmt.Errorf("failed to save timecard on clock out: %w", err)
@@ -125,8 +125,8 @@ func (s *TimecardService) ListTimecards(providerID string, startDateStr string, 
 	return s.timecardRepo.ListTimecards(ctx, providerID, startDate, endDate)
 }
 
-// EditTimecardHours allows manual overriding of a timecard's recorded hours.
-func (s *TimecardService) EditTimecardHours(timecardID string, providerID string, newHours float64) error {
+// EditTimecardHours allows manual overriding of a timecard's recorded minutes.
+func (s *TimecardService) EditTimecardHours(timecardID string, providerID string, newMinutes int64) error {
 	ctx := context.Background()
 	timecards, err := s.timecardRepo.ListTimecards(ctx, providerID, nil, nil)
 	if err != nil {
@@ -135,8 +135,8 @@ func (s *TimecardService) EditTimecardHours(timecardID string, providerID string
 
 	for _, t := range timecards {
 		if t.ID == timecardID {
-			t.TotalHours = newHours
-			t.TotalPay = newHours * t.HourlyRate
+			t.TotalMinutes = newMinutes
+			t.TotalPay = (newMinutes*t.HourlyRate + 30) / 60
 			t.IsManual = true
 			if err := s.timecardRepo.SaveTimecard(ctx, t); err != nil {
 				return fmt.Errorf("failed to save edited timecard: %w", err)
@@ -148,7 +148,7 @@ func (s *TimecardService) EditTimecardHours(timecardID string, providerID string
 }
 
 // CreateManualTimecard allows creating retroactive time entries.
-func (s *TimecardService) CreateManualTimecard(providerID string, hours float64, date string) error {
+func (s *TimecardService) CreateManualTimecard(providerID string, minutes int64, date string) error {
 	ctx := context.Background()
 
 	providers, err := s.practiceConfigRepo.ListProviders(ctx)
@@ -178,10 +178,10 @@ func (s *TimecardService) CreateManualTimecard(providerID string, hours float64,
 		ProviderID: providerID,
 		ClockIn:    parsedDate,
 		ClockOut:   &parsedDate,
-		HourlyRate: provider.HourlyRate,
-		TotalHours: hours,
-		TotalPay:   hours * provider.HourlyRate,
-		IsManual:   true,
+		HourlyRate:   provider.HourlyRate,
+		TotalMinutes: minutes,
+		TotalPay:     (minutes*provider.HourlyRate + 30) / 60,
+		IsManual:     true,
 	}
 
 	if err := s.timecardRepo.SaveTimecard(ctx, t); err != nil {
@@ -191,7 +191,7 @@ func (s *TimecardService) CreateManualTimecard(providerID string, hours float64,
 }
 
 // GetTotalOwed returns the total unpaid amount owed to a provider.
-func (s *TimecardService) GetTotalOwed(providerID string) (float64, error) {
+func (s *TimecardService) GetTotalOwed(providerID string) (int64, error) {
 	ctx := context.Background()
 	return s.timecardRepo.GetTotalOwed(ctx, providerID)
 }

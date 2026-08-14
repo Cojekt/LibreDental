@@ -59,7 +59,7 @@
     try {
       // Create date with time at noon to avoid timezone shift to prev day
       const d = new Date(manualDate + "T12:00:00Z").toISOString();
-      await TimecardService.CreateManualTimecard(providerId, manualHours, d);
+      await TimecardService.CreateManualTimecard(providerId, Math.round(manualHours * 60), d);
       showManualEntry = false;
       await loadTimecards();
       await onrefresh();
@@ -70,12 +70,12 @@
 
   function startEdit(t: Timecard) {
     editingId = t.id;
-    editHours = t.total_hours;
+    editHours = Number((t.total_minutes / 60).toFixed(2));
   }
 
   async function handleSaveEdit(t: Timecard) {
     try {
-      await TimecardService.EditTimecardHours(t.id, providerId, editHours);
+      await TimecardService.EditTimecardHours(t.id, providerId, Math.round(editHours * 60));
       editingId = null;
       await loadTimecards();
       await onrefresh();
@@ -227,11 +227,11 @@
                     class="w-20 rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs"
                   />
                 {:else}
-                  <span class="font-mono text-slate-300">{t.total_hours.toFixed(2)}h</span>
+                  <span class="font-mono text-slate-300">{(t.total_minutes / 60).toFixed(2)}h</span>
                 {/if}
               </td>
               <td class="py-2.5 font-mono text-emerald-400">
-                ${t.total_pay.toFixed(2)}
+                ${(t.total_pay / 100).toFixed(2)}
               </td>
               <td class="py-2.5">
                 {#if t.paid_at}
