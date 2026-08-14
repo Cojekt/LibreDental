@@ -55,11 +55,6 @@
               : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
           }`}
         >
-          <span
-            class={`transition-colors ${activeTab === tab.id ? "text-sky-400" : "text-slate-400 group-hover:text-slate-300"}`}
-          >
-            {@html tab.icon}
-          </span>
           <span>{tab.label}</span>
           {#if activeTab === tab.id}
             <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400"></div>
@@ -70,7 +65,6 @@
           class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed opacity-50 hover:opacity-75 transition-opacity"
           title={m.nav_billing_coming_soon()}
         >
-          <span>{@html tab.icon}</span>
           <span>{tab.label}</span>
         </div>
       {/if}

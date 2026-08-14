@@ -9,6 +9,10 @@
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import * as m from "../../paraglide/messages.js";
 
+  let { openUploadModal = $bindable() } = $props<{
+    openUploadModal?: () => void;
+  }>();
+
   let documents = $state<Document[]>([]);
   let isLoading = $state(true);
   let exportSuccessMsg = $state("");
@@ -36,13 +40,13 @@
     loadDocuments();
   });
 
-  function openUploadModal() {
+  openUploadModal = () => {
     docName = "";
     docDesc = "";
     selectedFile = null;
     uploadError = "";
     showUploadModal = true;
-  }
+  };
 
   function handleFileSelect(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -156,26 +160,6 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <div>
-      <h3 class="text-lg font-bold text-slate-100">📄 {m.doc_title()}</h3>
-      <p class="text-xs text-slate-400 mt-0.5">
-        {m.doc_subtitle()}
-      </p>
-    </div>
-    <button
-      type="button"
-      onclick={openUploadModal}
-      class="btn btn-primary shadow-md shadow-sky-500/20 text-xs flex items-center gap-1.5"
-    >
-      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      {m.doc_btn_upload()}
-    </button>
-  </div>
-
   {#if isLoading}
     <div class="flex items-center justify-center py-12">
       <div

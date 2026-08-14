@@ -42,26 +42,6 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <div>
-      <h3 class="text-lg font-bold text-slate-100">👨‍⚕️ {m.prov_title()}</h3>
-      <p class="text-xs text-slate-400 mt-0.5">
-        {m.prov_desc()}
-      </p>
-    </div>
-    <button
-      type="button"
-      onclick={openAddProviderModal}
-      class="btn btn-primary shadow-md shadow-sky-500/20 text-xs flex items-center gap-1.5"
-    >
-      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      {m.prov_add_btn()}
-    </button>
-  </div>
-
   {#if providers.length === 0}
     <EmptyState title={m.prov_empty_title()} subtitle={m.prov_empty_sub()} icon="👨‍⚕️" />
   {:else}

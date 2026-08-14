@@ -47,7 +47,9 @@
 <div class="space-y-6">
   <ViewHeader title={m.billing_title()} subtitle={m.billing_subtitle()} icon="💳" />
 
-  <TabNav {tabs} bind:activeTab={billingTab} />
+  <div class="border-b border-slate-800">
+    <TabNav {tabs} bind:activeTab={billingTab} />
+  </div>
 
   <div>
     {#if billingTab === "claims"}
