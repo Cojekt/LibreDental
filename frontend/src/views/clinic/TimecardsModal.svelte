@@ -20,15 +20,22 @@
   let loading = $state(false);
   let errorMsg = $state("");
 
+  function getLocalDateString(d: Date = new Date()): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
   // Filter
-  let filterEndDate = $state(new Date().toISOString().split("T")[0]);
+  let filterEndDate = $state(getLocalDateString());
   let filterStartDate = $state(
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    getLocalDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
   );
 
   // Manual Entry Form
   let showManualEntry = $state(false);
-  let manualDate = $state(new Date().toISOString().split("T")[0]);
+  let manualDate = $state(getLocalDateString());
   let manualHours = $state(0.0);
 
   // Edit Form

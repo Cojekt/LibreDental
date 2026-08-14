@@ -123,7 +123,12 @@
     claimGroupNumber = c.group_number ?? "";
     claimStatus = c.status;
     claimNotes = c.notes ?? "";
-    claimLineItems = (c.line_items ?? []).map((li) => ({ ...li, fee: (li.fee || 0) / 100 }));
+    claimLineItems = (c.line_items ?? []).map((li) => ({
+      ...li,
+      fee: (li.fee || 0) / 100,
+      insurance_allowed: li.insurance_allowed != null ? li.insurance_allowed / 100 : undefined,
+      patient_portion: li.patient_portion != null ? li.patient_portion / 100 : undefined,
+    }));
     bundleLookupInput = "";
     bundleLookupError = "";
     showClaimModal = true;
@@ -180,7 +185,14 @@
       group_number: claimGroupNumber,
       status: claimStatus,
       notes: claimNotes,
-      line_items: claimLineItems.map((li) => ({ ...li, fee: Math.round(li.fee * 100) })),
+      line_items: claimLineItems.map((li) => ({
+        ...li,
+        fee: Math.round((li.fee || 0) * 100),
+        insurance_allowed:
+          li.insurance_allowed != null ? Math.round(li.insurance_allowed * 100) : undefined,
+        patient_portion:
+          li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
+      })),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -564,7 +576,7 @@
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             Total: <strong class="text-white text-sm font-mono"
-              >{fmt(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0))}</strong
+              >{fmt(Math.round(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0) * 100))}</strong
             >
           </div>
         </div>

@@ -32,9 +32,9 @@
   function fmt(n: number) {
     const curr = countryMeta?.default_currency || "USD";
     try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n);
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
     } catch {
-      return `${n.toFixed(2)}`;
+      return `${(n / 100).toFixed(2)}`;
     }
   }
 
@@ -67,7 +67,10 @@
     bundleShortname = b.shortname;
     bundleName = b.name;
     bundleDescription = b.description ?? "";
-    bundleItems = (b.items ?? []).map((i) => ({ ...i }));
+    bundleItems = (b.items ?? []).map((i) => ({
+      ...i,
+      default_fee: (i.default_fee || 0) / 100,
+    }));
     shortnameError = "";
     showBundleModal = true;
   }
@@ -90,13 +93,18 @@
     const sn = bundleShortname.trim().toLowerCase();
     if (!sn || !bundleName.trim()) return;
 
+    const convertedItems = bundleItems.map((item) => ({
+      ...item,
+      default_fee: Math.round((item.default_fee || 0) * 100),
+    }));
+
     const payload: TreatmentBundle = {
       id: isEditingBundle ? editingBundleId : `bundle_${Date.now()}`,
       shortname: sn,
       name: bundleName.trim(),
       description: bundleDescription,
-      items: bundleItems,
-      total_fee: bundleTotalFee(),
+      items: convertedItems,
+      total_fee: Math.round(bundleTotalFee() * 100),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -348,7 +356,7 @@
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             Total Bundle Fee: <strong class="text-white text-sm font-mono"
-              >{fmt(bundleTotalFee())}</strong
+              >{fmt(Math.round(bundleTotalFee() * 100))}</strong
             >
           </div>
         </div>

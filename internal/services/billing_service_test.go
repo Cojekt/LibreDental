@@ -63,7 +63,7 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 		ADACode:     "D2392",
 		Description: "2-Surface Composite Resin",
 		Status:      domain.ToothStatusTreatmentPlanned,
-		Fee:         185.00,
+		Fee:         18500,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
@@ -80,7 +80,7 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	if claim == nil || len(claim.LineItems) != 1 {
 		t.Fatalf("Expected 1 line item in generated claim")
 	}
-	if claim.LineItems[0].ADACode != "D2392" || claim.LineItems[0].Fee != 185.00 {
+	if claim.LineItems[0].ADACode != "D2392" || claim.LineItems[0].Fee != 18500 {
 		t.Errorf("Unexpected line item values: %+v", claim.LineItems[0])
 	}
 

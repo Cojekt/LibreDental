@@ -43,7 +43,7 @@ func TestChartRepository_CRUD(t *testing.T) {
 		ADACode:     "D2392",
 		Description: "Posterior 2-Surface Composite Resin",
 		Status:      domain.ToothStatusTreatmentPlanned,
-		Fee:         175.0,
+		Fee:         17500,
 	}
 
 	if err := chartRepo.SaveCondition(ctx, cond1); err != nil {
@@ -59,7 +59,7 @@ func TestChartRepository_CRUD(t *testing.T) {
 		ADACode:     "D7140",
 		Description: "Extracted / Missing Tooth",
 		Status:      domain.ToothStatusMissing,
-		Fee:         0.0,
+		Fee:         0,
 	}
 
 	if err := chartRepo.SaveCondition(ctx, cond2); err != nil {

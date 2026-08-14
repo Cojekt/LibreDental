@@ -41,7 +41,7 @@ func TestChartService(t *testing.T) {
 		ADACode:     "D2391",
 		Description: "1-Surface Posterior Composite",
 		Status:      domain.ToothStatusTreatmentPlanned,
-		Fee:         120.0,
+		Fee:         12000,
 	})
 	if err != nil {
 		t.Fatalf("Failed to save condition: %v", err)

@@ -371,7 +371,7 @@
 
   function formatCurrency(amount: number): string {
     const currency = countryMeta?.default_currency || "";
-    if (!currency) return amount.toFixed(2);
+    if (!currency) return (amount / 100).toFixed(2);
     try {
       return new Intl.NumberFormat("en-US", {
         style: "currency",

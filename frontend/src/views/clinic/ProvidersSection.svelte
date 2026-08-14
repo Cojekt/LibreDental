@@ -47,7 +47,8 @@
 
   let activeTimecards = $state<Record<string, Timecard | null | undefined>>({});
   let totalOwed = $state<Record<string, number | undefined>>({});
-  let inFlight = $state<Record<string, boolean>>({});
+  let inFlightAction = $state<Record<string, "clockIn" | "clockOut" | null>>({});
+  let providerGen: Record<string, number> = {};
 
   let showTimecardsModal = $state(false);
   let selectedProviderId = $state("");
@@ -62,45 +63,61 @@
 
   async function loadProviderStates(provs: Provider[] = providers) {
     for (const p of provs) {
+      const gen = (providerGen[p.id] = (providerGen[p.id] || 0) + 1);
       try {
         const tc = await TimecardService.GetActiveTimecard(p.id);
-        activeTimecards[p.id] = tc;
+        if (providerGen[p.id] === gen) {
+          activeTimecards[p.id] = tc;
+        }
       } catch (e) {
-        activeTimecards[p.id] = undefined;
+        if (providerGen[p.id] === gen) {
+          activeTimecards[p.id] = undefined;
+        }
       }
       try {
         const owed = await TimecardService.GetTotalOwed(p.id);
-        totalOwed[p.id] = owed;
+        if (providerGen[p.id] === gen) {
+          totalOwed[p.id] = owed;
+        }
       } catch (e) {
-        totalOwed[p.id] = undefined;
+        if (providerGen[p.id] === gen) {
+          totalOwed[p.id] = undefined;
+        }
       }
     }
   }
 
   async function clockIn(pId: string) {
-    if (inFlight[pId]) return;
-    inFlight[pId] = true;
+    if (inFlightAction[pId]) return;
+    inFlightAction[pId] = "clockIn";
+    const gen = (providerGen[pId] = (providerGen[pId] || 0) + 1);
     try {
       const tc = await TimecardService.ClockIn(pId);
-      activeTimecards[pId] = tc;
+      if (providerGen[pId] === gen) {
+        activeTimecards[pId] = tc;
+      }
     } catch (e) {
       console.error("Clock In failed", e);
     } finally {
-      inFlight[pId] = false;
+      inFlightAction[pId] = null;
     }
   }
 
   async function clockOut(pId: string) {
-    if (inFlight[pId]) return;
-    inFlight[pId] = true;
+    if (inFlightAction[pId]) return;
+    inFlightAction[pId] = "clockOut";
+    const gen = (providerGen[pId] = (providerGen[pId] || 0) + 1);
     try {
       await TimecardService.ClockOut(pId);
-      activeTimecards[pId] = null;
-      await loadProviderStates();
+      if (providerGen[pId] === gen) {
+        activeTimecards[pId] = null;
+      }
+      const prov = providers.find((p: Provider) => p.id === pId);
+      await loadProviderStates(prov ? [prov] : providers);
     } catch (e) {
       console.error("Clock Out failed", e);
     } finally {
-      inFlight[pId] = false;
+      inFlightAction[pId] = null;
     }
   }
 
@@ -172,25 +189,39 @@
 
           <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
             <div>
-              {#if activeTimecards[p.id] === undefined}
+              {#if inFlightAction[p.id] === "clockOut"}
+                <button
+                  type="button"
+                  disabled
+                  class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clocking Out...
+                </button>
+              {:else if inFlightAction[p.id] === "clockIn"}
+                <button
+                  type="button"
+                  disabled
+                  class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clocking In...
+                </button>
+              {:else if activeTimecards[p.id] === undefined}
                 <span class="text-slate-500 font-semibold italic">Loading...</span>
               {:else if activeTimecards[p.id]}
                 <button
                   type="button"
-                  disabled={inFlight[p.id]}
                   onclick={() => clockOut(p.id)}
                   class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold hover:bg-rose-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {inFlight[p.id] ? "Clocking Out..." : "Clock Out"}
+                  Clock Out
                 </button>
               {:else}
                 <button
                   type="button"
-                  disabled={inFlight[p.id]}
                   onclick={() => clockIn(p.id)}
                   class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold hover:bg-emerald-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {inFlight[p.id] ? "Clocking In..." : "Clock In"}
+                  Clock In
                 </button>
               {/if}
             </div>
