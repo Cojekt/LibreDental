@@ -90,7 +90,7 @@ func main() {
 		BackgroundColour: application.NewRGB(15, 23, 42),
 		URL:              "/",
 	})
-	systemSettingsService.SetWindow(&wailsWindowAdapter{win: win})
+	services.AttachWindow(systemSettingsService, &wailsWindowAdapter{win: win})
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

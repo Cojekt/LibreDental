@@ -271,7 +271,7 @@ func TestSystemSettingsService_ApplyWindowSettings(t *testing.T) {
 	service := services.NewSystemSettingsService(tempDir)
 
 	win := &mockWindow{width: 1280, height: 800}
-	service.SetWindow(win)
+	services.AttachWindow(service, win)
 
 	if err := service.SetWindowMode("fullscreen"); err != nil {
 		t.Fatalf("SetWindowMode('fullscreen') failed: %v", err)
