@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Provider, Timecard } from "@bindings/domain/models.js";
   import { TimecardService } from "@bindings/services/index.js";
-  import { onMount } from "svelte";
+  import { untrack } from "svelte";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
@@ -45,50 +45,62 @@
     provHourlyRate: number;
   }>();
 
-  let activeTimecards = $state<Record<string, Timecard | null>>({});
-  let totalOwed = $state<Record<string, number>>({});
+  let activeTimecards = $state<Record<string, Timecard | null | undefined>>({});
+  let totalOwed = $state<Record<string, number | undefined>>({});
+  let inFlight = $state<Record<string, boolean>>({});
 
   let showTimecardsModal = $state(false);
   let selectedProviderId = $state("");
   let selectedProviderName = $state("");
 
-  onMount(async () => {
-    await loadProviderStates();
+  $effect(() => {
+    const currentProviders = providers;
+    untrack(() => {
+      loadProviderStates(currentProviders);
+    });
   });
 
-  async function loadProviderStates() {
-    for (const p of providers) {
+  async function loadProviderStates(provs: Provider[] = providers) {
+    for (const p of provs) {
       try {
         const tc = await TimecardService.GetActiveTimecard(p.id);
         activeTimecards[p.id] = tc;
       } catch (e) {
-        activeTimecards[p.id] = null;
+        activeTimecards[p.id] = undefined;
       }
       try {
         const owed = await TimecardService.GetTotalOwed(p.id);
         totalOwed[p.id] = owed;
       } catch (e) {
-        totalOwed[p.id] = 0;
+        totalOwed[p.id] = undefined;
       }
     }
   }
 
   async function clockIn(pId: string) {
+    if (inFlight[pId]) return;
+    inFlight[pId] = true;
     try {
       const tc = await TimecardService.ClockIn(pId);
       activeTimecards[pId] = tc;
     } catch (e) {
       console.error("Clock In failed", e);
+    } finally {
+      inFlight[pId] = false;
     }
   }
 
   async function clockOut(pId: string) {
+    if (inFlight[pId]) return;
+    inFlight[pId] = true;
     try {
       await TimecardService.ClockOut(pId);
       activeTimecards[pId] = null;
       await loadProviderStates();
     } catch (e) {
       console.error("Clock Out failed", e);
+    } finally {
+      inFlight[pId] = false;
     }
   }
 
@@ -160,21 +172,25 @@
 
           <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
             <div>
-              {#if activeTimecards[p.id]}
+              {#if activeTimecards[p.id] === undefined}
+                <span class="text-slate-500 font-semibold italic">Loading...</span>
+              {:else if activeTimecards[p.id]}
                 <button
                   type="button"
+                  disabled={inFlight[p.id]}
                   onclick={() => clockOut(p.id)}
-                  class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold hover:bg-rose-500/30 transition-colors"
+                  class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold hover:bg-rose-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Clock Out
+                  {inFlight[p.id] ? "Clocking Out..." : "Clock Out"}
                 </button>
               {:else}
                 <button
                   type="button"
+                  disabled={inFlight[p.id]}
                   onclick={() => clockIn(p.id)}
-                  class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold hover:bg-emerald-500/30 transition-colors"
+                  class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold hover:bg-emerald-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Clock In
+                  {inFlight[p.id] ? "Clocking In..." : "Clock In"}
                 </button>
               {/if}
             </div>
@@ -199,9 +215,14 @@
           <div class="bg-slate-800/40 rounded-lg p-3 mt-2 border border-slate-700/50">
             <div class="flex items-center justify-between">
               <div class="text-slate-300 text-xs font-semibold">
-                Total Owed: <span class="text-emerald-400 text-sm ml-1"
-                  >${((totalOwed[p.id] || 0) / 100).toFixed(2)}</span
-                >
+                Total Owed:
+                {#if totalOwed[p.id] === undefined}
+                  <span class="text-slate-500 text-sm ml-1">...</span>
+                {:else}
+                  <span class="text-emerald-400 text-sm ml-1"
+                    >${((totalOwed[p.id] || 0) / 100).toFixed(2)}</span
+                  >
+                {/if}
               </div>
               <button
                 type="button"

@@ -29,7 +29,10 @@ func (s *TimecardService) ClockIn(providerID string) (*domain.Timecard, error) {
 
 	// Check if already clocked in
 	active, err := s.timecardRepo.GetActiveTimecard(ctx, providerID)
-	if err == nil && active != nil {
+	if err != nil && err != storage.ErrNotFound {
+		return nil, fmt.Errorf("failed to check active timecard: %w", err)
+	}
+	if active != nil {
 		return nil, fmt.Errorf("provider is already clocked in (Timecard ID: %s)", active.ID)
 	}
 
@@ -110,16 +113,20 @@ func (s *TimecardService) ListTimecards(providerID string, startDateStr string, 
 
 	var startDate *time.Time
 	if startDateStr != "" {
-		if t, err := time.Parse(time.RFC3339, startDateStr); err == nil {
-			startDate = &t
+		t, err := time.Parse(time.RFC3339, startDateStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid start date: %w", err)
 		}
+		startDate = &t
 	}
 
 	var endDate *time.Time
 	if endDateStr != "" {
-		if t, err := time.Parse(time.RFC3339, endDateStr); err == nil {
-			endDate = &t
+		t, err := time.Parse(time.RFC3339, endDateStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end date: %w", err)
 		}
+		endDate = &t
 	}
 
 	return s.timecardRepo.ListTimecards(ctx, providerID, startDate, endDate)
@@ -151,6 +158,10 @@ func (s *TimecardService) EditTimecardHours(timecardID string, providerID string
 func (s *TimecardService) CreateManualTimecard(providerID string, minutes int64, date string) error {
 	ctx := context.Background()
 
+	if minutes <= 0 {
+		return fmt.Errorf("minutes must be greater than zero")
+	}
+
 	providers, err := s.practiceConfigRepo.ListProviders(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch providers: %w", err)
@@ -170,7 +181,7 @@ func (s *TimecardService) CreateManualTimecard(providerID string, minutes int64,
 
 	parsedDate, err := time.Parse(time.RFC3339, date)
 	if err != nil {
-		parsedDate = time.Now()
+		return fmt.Errorf("invalid date: %w", err)
 	}
 
 	t := &domain.Timecard{

@@ -49,7 +49,7 @@ func (r *TimecardRepository) ListTimecards(ctx context.Context, providerID strin
 	}
 	defer rows.Close()
 
-	var timecards []*domain.Timecard
+	timecards := []*domain.Timecard{}
 	for rows.Next() {
 		var t domain.Timecard
 		var clockOut sql.NullTime
@@ -230,9 +230,16 @@ func (r *TimecardRepository) MarkTimecardsPaid(ctx context.Context, providerID s
 
 func (r *TimecardRepository) DeleteTimecard(ctx context.Context, id string) error {
 	query := `DELETE FROM timecards WHERE id = ?`
-	_, err := r.db.ExecContext(ctx, query, id)
+	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete timecard: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check affected rows: %w", err)
+	}
+	if rows == 0 {
+		return storage.ErrNotFound
 	}
 	return nil
 }

@@ -34,6 +34,7 @@
   // Edit Form
   let editingId = $state<string | null>(null);
   let editHours = $state(0.0);
+  let requestGen = 0;
 
   $effect(() => {
     if (showModal && providerId) {
@@ -42,16 +43,30 @@
   });
 
   async function loadTimecards() {
+    const gen = ++requestGen;
     loading = true;
     errorMsg = "";
     try {
-      const start = filterStartDate ? filterStartDate + "T00:00:00Z" : "";
-      const end = filterEndDate ? filterEndDate + "T23:59:59Z" : "";
-      timecards = await TimecardService.ListTimecards(providerId, start, end);
+      let start = "";
+      if (filterStartDate) {
+        start = new Date(filterStartDate + "T00:00:00").toISOString();
+      }
+      let end = "";
+      if (filterEndDate) {
+        end = new Date(filterEndDate + "T23:59:59.999").toISOString();
+      }
+      const results = await TimecardService.ListTimecards(providerId, start, end);
+      if (gen === requestGen) {
+        timecards = results ? (results.filter(Boolean) as Timecard[]) : [];
+      }
     } catch (e: any) {
-      errorMsg = e.message || "Failed to load timecards";
+      if (gen === requestGen) {
+        errorMsg = e.message || "Failed to load timecards";
+      }
     } finally {
-      loading = false;
+      if (gen === requestGen) {
+        loading = false;
+      }
     }
   }
 
@@ -264,7 +279,7 @@
                   >
                     Delete
                   </button>
-                  {#if !t.paid_at}
+                  {#if !t.paid_at && t.clock_out}
                     <button
                       type="button"
                       onclick={() => startEdit(t)}

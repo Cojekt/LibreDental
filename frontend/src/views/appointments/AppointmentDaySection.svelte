@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import type { Appointment } from "@bindings/domain/models.js";
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
+  import { getLocalDateString } from "$lib/date.js";
 
   let {
     selectedDate = "",
@@ -56,7 +57,7 @@
     if (timer) clearInterval(timer);
   });
 
-  let isToday = $derived(selectedDate === new Date().toISOString().split("T")[0]);
+  let isToday = $derived(selectedDate === getLocalDateString(now));
 
   function getIndicatorTopPos(slotStr: string): number {
     if (!isToday) return -1;
