@@ -24,15 +24,6 @@
 </script>
 
 <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-6">
-  <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-    <div>
-      <h3 class="text-lg font-bold text-slate-100">⏰ {m.clinic_hours_title()}</h3>
-      <p class="text-xs text-slate-400 mt-0.5">
-        {m.clinic_hours_desc()}
-      </p>
-    </div>
-  </div>
-
   <div class="space-y-4">
     {#each businessHours as hour, idx}
       <div

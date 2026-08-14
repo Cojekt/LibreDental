@@ -237,6 +237,8 @@
   let opType = $state<string>("general");
   let opIsActive = $state(true);
 
+  let triggerUploadDocument = $state<(() => void) | undefined>();
+
   let isEditingProfile = $state(false);
   let toastTimeout: any = null;
 
@@ -454,7 +456,7 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 gap-4">
+  <div class="flex flex-wrap items-center justify-between border-b border-slate-800 gap-4">
     <TabNav {tabs} bind:activeTab={activeSubTab} />
 
     <div class="flex items-center gap-3">
@@ -528,6 +530,60 @@
             </button>
           {/if}
         </div>
+      {:else if activeSubTab === "providers"}
+        <button
+          type="button"
+          onclick={openAddProviderModal}
+          class="btn btn-primary text-xs shadow-md shadow-sky-500/20 flex items-center gap-1.5 px-4 py-2"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {m.prov_add_btn()}
+        </button>
+      {:else if activeSubTab === "operatories"}
+        <button
+          type="button"
+          onclick={openAddOperatoryModal}
+          class="btn btn-primary text-xs shadow-md shadow-sky-500/20 flex items-center gap-1.5 px-4 py-2"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {m.clinic_op_add_btn()}
+        </button>
+      {:else if activeSubTab === "documents"}
+        <button
+          type="button"
+          onclick={() => triggerUploadDocument && triggerUploadDocument()}
+          class="btn btn-primary text-xs shadow-md shadow-sky-500/20 flex items-center gap-1.5 px-4 py-2"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {m.doc_btn_upload()}
+        </button>
       {/if}
     </div>
   </div>
@@ -598,7 +654,7 @@
         bind:opIsActive
       />
     {:else if activeSubTab === "documents"}
-      <DocumentsSection />
+      <DocumentsSection bind:openUploadModal={triggerUploadDocument} />
     {/if}
   </div>
 </div>

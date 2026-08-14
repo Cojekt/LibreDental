@@ -24,7 +24,7 @@
   }
 </script>
 
-<div class="flex flex-wrap items-center border-b border-slate-800 gap-1">
+<div class="flex flex-wrap items-center gap-1">
   {#each tabs as tab}
     <button
       type="button"

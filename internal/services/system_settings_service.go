@@ -52,8 +52,9 @@ func NewSystemSettingsService(appDir string) *SystemSettingsService {
 	return s
 }
 
-// SetWindow attaches the main window reference and registers dynamic window resize listeners.
-func (s *SystemSettingsService) SetWindow(win Window) {
+// AttachWindow attaches the main window reference and registers dynamic window resize listeners.
+// We use a standalone function instead of an exported method to prevent Wails from generating frontend bindings and throwing a warning.
+func AttachWindow(s *SystemSettingsService, win Window) {
 	s.mu.Lock()
 	s.window = win
 	s.mu.Unlock()

@@ -50,7 +50,7 @@
       <h3
         class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
       >
-        🏢 {m.clinic_profile_title()}
+        {m.clinic_profile_title()}
       </h3>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -160,7 +160,7 @@
       <h3
         class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
       >
-        📍 {m.clinic_profile_address_title()}
+        {m.clinic_profile_address_title()}
       </h3>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -226,7 +226,7 @@
       <h3
         class="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3"
       >
-        🌐 {m.clinic_profile_regional_title()}
+        {m.clinic_profile_regional_title()}
       </h3>
 
       <div class="space-y-3">
@@ -235,7 +235,6 @@
             >{m.clinic_profile_country_label()}</span
           >
           <span class="text-sm font-medium text-slate-200 mt-0.5 flex items-center gap-2">
-            <span>{countryMeta?.flag || "📍"}</span>
             <span>{countryMeta?.name || countryCode} ({countryCode})</span>
           </span>
         </div>
