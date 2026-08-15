@@ -85,7 +85,7 @@ jobs:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path release_assets
-          Copy-Item bin/*.exe release_assets/ -ErrorAction SilentlyContinue
+          Copy-Item bin/*-installer.exe release_assets/ -ErrorAction SilentlyContinue
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
@@ -120,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: build-assets-demo
-          path: demo.zip
+          path: libredental-demo-data.zip
 
   release:
     name: Publish GitHub Release

@@ -122,12 +122,14 @@ tasks:
       - cp "{{.APP_BINARY}}" "{{.APP_NAME}}"
       - cp ../../appicon.png "{{.APP_NAME}}.png"
       - wails3 generate appimage -binary "{{.APP_NAME}}" -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/linux/appimage/build
+      - mv "{{.OUTPUT_DIR}}/{{.APP_NAME}}-*.AppImage" "{{.OUTPUT_DIR}}/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.AppImage"
     vars:
       APP_NAME: "{{.APP_NAME}}"
       APP_BINARY: "../../../bin/{{.APP_NAME}}"
       ICON: "{{.APP_NAME}}.png"
       DESKTOP_FILE: "../{{.APP_NAME}}.desktop"
       OUTPUT_DIR: "../../../bin"
+      TARGET_ARCH: '{{.ARCH | default ARCH}}'
 
   create:deb:
     summary: Creates a deb package
@@ -138,6 +140,9 @@ tasks:
       VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+      - mv "{{.ROOT_DIR}}/bin/{{.APP_NAME}}.deb" "{{.ROOT_DIR}}/bin/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.deb"
+    vars:
+      TARGET_ARCH: '{{.ARCH | default ARCH}}'
 
   create:rpm:
     summary: Creates a rpm package
@@ -148,6 +153,9 @@ tasks:
       VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+      - mv "{{.ROOT_DIR}}/bin/{{.APP_NAME}}.rpm" "{{.ROOT_DIR}}/bin/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.rpm"
+    vars:
+      TARGET_ARCH: '{{.ARCH | default ARCH}}'
 
   create:aur:
     summary: Creates a arch linux packager package
@@ -158,6 +166,9 @@ tasks:
       VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+      - mv "{{.ROOT_DIR}}/bin/{{.APP_NAME}}.pkg.tar.zst" "{{.ROOT_DIR}}/bin/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.pkg.tar.zst"
+    vars:
+      TARGET_ARCH: '{{.ARCH | default ARCH}}'
 
   generate:dotdesktop:
     summary: Generates a `.desktop` file
