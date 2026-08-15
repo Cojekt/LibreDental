@@ -41,6 +41,12 @@ jobs:
             pkg-config \
             build-essential
 
+      - name: Install System Dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install nsis --no-progress -y
+          echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
+
       - name: Setup Go
         uses: actions/setup-go@v7
         with:

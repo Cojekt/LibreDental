@@ -120,19 +120,23 @@ tasks:
     preconditions:
       - sh: '[ "{{.INSTALL_SCOPE}}" = "user" ] || [ "{{.INSTALL_SCOPE}}" = "machine" ]'
         msg: "INSTALL_SCOPE must be 'user' or 'machine', got '{{.INSTALL_SCOPE}}'"
+      - sh: 'command -v {{.MAKENSIS}} >/dev/null 2>&1 || [ -f {{.MAKENSIS}} ]'
+        msg: "makensis (NSIS installer compiler) is not installed or not in PATH. Please install NSIS (e.g. 'choco install nsis' on Windows, 'sudo apt install nsis' on Linux, or 'brew install nsis' on macOS)."
     cmds:
       # Create the Microsoft WebView2 bootstrapper if it doesn't exist
       - wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}/build/windows/nsis"
       - |
         {{if eq OS "windows"}}
-        makensis {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" project.nsi
+        {{.MAKENSIS}} {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" project.nsi
         {{else}}
-        makensis {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe" project.nsi
+        {{.MAKENSIS}} {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe" project.nsi
         {{end}}
     vars:
       ARCH: "{{.ARCH | default ARCH}}"
       ARG_FLAG: '{{if eq .ARCH "amd64"}}AMD64{{else}}ARM64{{end}}'
       INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
+      MAKENSIS:
+        sh: 'if command -v makensis >/dev/null 2>&1; then echo "makensis"; elif [ -f "C:/Program Files (x86)/NSIS/makensis.exe" ]; then echo "\"C:/Program Files (x86)/NSIS/makensis.exe\""; elif [ -f "C:/Program Files/NSIS/makensis.exe" ]; then echo "\"C:/Program Files/NSIS/makensis.exe\""; else echo "makensis"; fi'
 
   create:msix:package:
     summary: Creates an MSIX package
