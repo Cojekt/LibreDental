@@ -207,7 +207,7 @@ func scanClaim(row rowScanner) (*domain.Claim, error) {
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("%w", storage.ErrNotFound)
+		return nil, storage.ErrNotFound
 	}
 
 	c.Status = domain.ClaimStatus(statusStr)

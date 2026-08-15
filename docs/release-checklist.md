@@ -124,12 +124,9 @@ cd frontend && npm run check
 
 ---
 
-### 6. Build & Distribution Sanity
+### 6. Dependency Synchronization
 
-- Perform a clean production build and confirm zero errors or warnings
-- Verify the Wails binary bundles the latest compiled frontend (`dist/`) and paraglide output
 - Confirm `go.mod`/`go.sum` and `package-lock.json` are committed and in sync
-- Check `.gitignore` is not accidentally excluding files that need to ship (e.g. new migration files, generated bindings)
 
 ---
 
@@ -190,9 +187,8 @@ each release cleanup branch. Fill in any release-specific notes under each item.
 - [ ] `go test ./...` passes
 - [ ] `npm run check` passes
 
-## 6. Build & Distribution
-- [ ] Clean build succeeds
-- [ ] ...
+## 6. Dependency Synchronization
+- [ ] `go.mod`/`go.sum` and `package-lock.json` are committed and in sync
 
 ## 7. Accessibility & UX
 - [ ] ...
