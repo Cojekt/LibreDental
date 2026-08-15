@@ -7,6 +7,7 @@
     ProcedureCode,
     FeeSchedule,
   } from "@bindings/domain/index.js";
+  import { CountryCode } from "@bindings/domain/index.js";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
@@ -39,26 +40,40 @@
     }
   }
 
+  let requestGenCodes = 0;
   export async function loadProcedureCodes() {
+    const gen = ++requestGenCodes;
     const cc = countryMeta?.code || "US";
     try {
       const res = await BillingService.ListProcedureCodes(cc, feeFilterProvider);
-      procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+      if (gen === requestGenCodes) {
+        procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load procedure codes:", e);
+      if (gen === requestGenCodes) {
+        console.error("Failed to load procedure codes:", e);
+      }
     }
   }
 
+  let requestGenFees = 0;
   export async function loadFeeSchedules() {
+    const gen = ++requestGenFees;
     loadingFees = true;
     const cc = countryMeta?.code || "US";
     try {
       const res = await BillingService.ListFeeSchedules(cc, feeFilterProvider);
-      feeSchedules = (res?.filter(Boolean) as FeeSchedule[]) || [];
+      if (gen === requestGenFees) {
+        feeSchedules = (res?.filter(Boolean) as FeeSchedule[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load fee schedules:", e);
+      if (gen === requestGenFees) {
+        console.error("Failed to load fee schedules:", e);
+      }
     } finally {
-      loadingFees = false;
+      if (gen === requestGenFees) {
+        loadingFees = false;
+      }
     }
   }
 
@@ -72,16 +87,17 @@
   async function saveFeeSchedule(e: Event) {
     e.preventDefault();
     if (!editingFeeCode || editingFeeCustom < 0) return;
-    const cc = countryMeta?.code || "US";
+    const cc = (countryMeta?.code || "US") as CountryCode;
+    const payload: FeeSchedule = {
+      id: `fee_${Date.now()}`,
+      country_code: cc,
+      code: editingFeeCode,
+      provider_id: editingFeeProviderId,
+      custom_fee: Math.round(Number(editingFeeCustom) * 100),
+      updated_at: new Date().toISOString(),
+    };
     try {
-      await BillingService.SaveFeeSchedule({
-        id: `fee_${Date.now()}`,
-        country_code: cc as any,
-        code: editingFeeCode,
-        provider_id: editingFeeProviderId,
-        custom_fee: Math.round(Number(editingFeeCustom) * 100),
-        updated_at: new Date().toISOString(),
-      });
+      await BillingService.SaveFeeSchedule(payload);
       showFeeModal = false;
       await loadProcedureCodes();
       await loadFeeSchedules();

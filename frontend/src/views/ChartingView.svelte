@@ -199,13 +199,19 @@
   let isCreatingClaim = $state(false);
   let claimNoticeMsg = $state("");
 
+  let requestGenCodes = 0;
   async function loadProcedureCodes() {
+    const gen = ++requestGenCodes;
     const cc = countryMeta?.code || "US";
     try {
       const res = await BillingService.ListProcedureCodes(cc, "");
-      procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+      if (gen === requestGenCodes) {
+        procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load procedure codes for country:", cc, e);
+      if (gen === requestGenCodes) {
+        console.error("Failed to load procedure codes for country:", cc, e);
+      }
     }
   }
 
@@ -226,7 +232,7 @@
       (c) => c.status === "treatment_planned" || c.status === "completed"
     );
     if (billable.length === 0) {
-      alert("No treatment-planned or completed conditions found for billing.");
+      alert(m.charting_billing_no_conditions());
       return;
     }
 
@@ -241,37 +247,44 @@
       }
     } catch (e) {
       console.error("Failed to create claim from chart:", e);
-      alert("Failed to generate claim from chart.");
+      alert(m.charting_billing_err_claim());
     } finally {
       isCreatingClaim = false;
     }
   }
 
+  let requestGenChart = 0;
   async function loadChart(patientId: string) {
+    const gen = ++requestGenChart;
     if (!patientId) {
       currentChart = null;
+      loadingChart = false;
       return;
     }
     loadingChart = true;
     try {
       const chart = await ChartService.GetPatientChart(patientId);
-      currentChart = chart || {
-        patient_id: patientId,
-        conditions: [],
-        updated_at: "",
-      };
+      if (gen === requestGenChart) {
+        currentChart = chart || {
+          patient_id: patientId,
+          conditions: [],
+          updated_at: "",
+        };
+      }
     } catch (e) {
-      console.error("Failed to load patient chart:", e);
-      currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
+      if (gen === requestGenChart) {
+        console.error("Failed to load patient chart:", e);
+        currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
+      }
     } finally {
-      loadingChart = false;
+      if (gen === requestGenChart) {
+        loadingChart = false;
+      }
     }
   }
 
   $effect(() => {
-    if (selectedPatientId) {
-      loadChart(selectedPatientId);
-    }
+    loadChart(selectedPatientId);
   });
 
   function getConditionsForTooth(toothNum: number): ToothCondition[] {

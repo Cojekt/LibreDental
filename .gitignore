@@ -9,6 +9,21 @@ bin/
 *.app
 libredental
 
+# Package & Installer Artifacts
+*.deb
+*.rpm
+*.AppImage
+*.pkg.tar.zst
+*.msix
+release_assets/
+release_download/
+
+# Temporary Build Tooling Outputs
+build/linux/appimage/build/
+build/linux/appimage/libredental*
+build/linux/*.desktop
+build/windows/nsis/*.exe
+
 # SQLite Local Database Files
 *.db
 *.db-wal

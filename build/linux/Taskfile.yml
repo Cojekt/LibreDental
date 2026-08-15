@@ -4,6 +4,9 @@ includes:
   common: ../Taskfile.yml
 
 vars:
+  # Automatically resolve version from git tag (stripping leading 'v'), defaulting to 0.1.0
+  GIT_VERSION:
+    sh: 'git describe --tags --abbrev=0 2>/dev/null | sed "s/^v//" || echo "0.1.0"'
   # Signing configuration - edit these values for your project
   # PGP_KEY: "path/to/signing-key.asc"
   # SIGN_ROLE: "builder"  # Options: origin, maint, archive, builder
@@ -131,6 +134,8 @@ tasks:
     deps:
       - task: build
       - task: generate:dotdesktop
+    env:
+      VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
@@ -139,6 +144,8 @@ tasks:
     deps:
       - task: build
       - task: generate:dotdesktop
+    env:
+      VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 
@@ -147,6 +154,8 @@ tasks:
     deps:
       - task: build
       - task: generate:dotdesktop
+    env:
+      VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
       - wails3 tool package -name "{{.APP_NAME}}" -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
 

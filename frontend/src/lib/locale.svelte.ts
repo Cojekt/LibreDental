@@ -67,7 +67,8 @@ export async function setLanguagePreference(lang: string): Promise<void> {
   applyLocale(effective || "en");
 }
 
-/** Returns the currently active Paraglide locale tag (e.g. "en"). */
+/** Returns the currently active Paraglide locale tag (e.g. "en"). Reactive to locale changes. */
 export function currentLocale(): string {
+  getLocaleVersion();
   return getLocale() as string;
 }

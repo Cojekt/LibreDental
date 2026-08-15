@@ -1,9 +1,13 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
+  import { m } from "../../paraglide/messages.js";
   import type { Timecard } from "@bindings/domain/models.js";
   import { TimecardService } from "@bindings/services/index.js";
   import Modal from "../../components/ui/Modal.svelte";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
+  import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import { getLocalDateString } from "$lib/date.js";
+  import { handleError } from "$lib/error.js";
 
   let {
     showModal = $bindable(false),
@@ -43,7 +47,9 @@
 
   $effect(() => {
     if (showModal && providerId) {
-      loadTimecards();
+      untrack(() => {
+        loadTimecards();
+      });
     }
   });
 
@@ -66,7 +72,7 @@
       }
     } catch (e: any) {
       if (gen === requestGen) {
-        errorMsg = e.message || "Failed to load timecards";
+        errorMsg = handleError(e, m.timecard_err_load());
       }
     } finally {
       if (gen === requestGen) {
@@ -84,7 +90,7 @@
       await loadTimecards();
       await onrefresh();
     } catch (e: any) {
-      errorMsg = e.message || "Failed to add manual entry";
+      errorMsg = handleError(e, m.timecard_err_add());
     }
   }
 
@@ -100,31 +106,36 @@
       await loadTimecards();
       await onrefresh();
     } catch (e: any) {
-      errorMsg = e.message || "Failed to save edit";
+      errorMsg = handleError(e, m.timecard_err_save());
     }
   }
 
-  async function handleDelete(id: string) {
-    if (
-      confirm(
-        "Warning: Deleting a timecard record is permanent and will alter payroll calculations. Proceed?"
-      )
-    ) {
-      try {
-        await TimecardService.DeleteTimecard(id);
-        await loadTimecards();
-        await onrefresh();
-      } catch (e: any) {
-        errorMsg = e.message || "Failed to delete timecard";
-      }
+  let showConfirmDelete = $state(false);
+  let timecardToDelete = $state<string | null>(null);
+
+  function promptDelete(id: string) {
+    timecardToDelete = id;
+    showConfirmDelete = true;
+  }
+
+  async function executeDelete() {
+    if (!timecardToDelete) return;
+    try {
+      await TimecardService.DeleteTimecard(timecardToDelete);
+      await loadTimecards();
+      await onrefresh();
+    } catch (e: any) {
+      errorMsg = handleError(e, m.timecard_err_delete());
+    } finally {
+      timecardToDelete = null;
     }
   }
 </script>
 
 <Modal
   bind:showModal
-  title={`Timecards: ${providerName}`}
-  subtitle="View and edit recorded hours"
+  title={m.timecard_modal_title({ providerName })}
+  subtitle={m.timecard_modal_subtitle()}
   icon="⏱️"
   maxWidth="max-w-3xl"
 >
@@ -138,7 +149,7 @@
     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-2">
-          <label for="filter-start" class="text-xs text-slate-400">From:</label>
+          <label for="filter-start" class="text-xs text-slate-400">{m.timecard_from()}</label>
           <input
             id="filter-start"
             type="date"
@@ -148,7 +159,7 @@
           />
         </div>
         <div class="flex items-center gap-2">
-          <label for="filter-end" class="text-xs text-slate-400">To:</label>
+          <label for="filter-end" class="text-xs text-slate-400">{m.timecard_to()}</label>
           <input
             id="filter-end"
             type="date"
@@ -163,16 +174,18 @@
         onclick={() => (showManualEntry = !showManualEntry)}
         class="text-xs font-semibold px-3 py-1.5 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 rounded border border-sky-500/30"
       >
-        {showManualEntry ? "Cancel" : "+ Add Manual Entry"}
+        {showManualEntry ? m.timecard_cancel() : m.timecard_add_manual()}
       </button>
     </div>
 
     {#if showManualEntry}
       <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 space-y-3">
-        <h4 class="text-sm font-semibold text-slate-200">Add Manual Entry</h4>
+        <h4 class="text-sm font-semibold text-slate-200">{m.timecard_add_manual()}</h4>
         <div class="flex items-center gap-3">
           <div>
-            <label for="manual-date" class="block text-xs text-slate-400 mb-1">Date</label>
+            <label for="manual-date" class="block text-xs text-slate-400 mb-1"
+              >{m.timecard_label_date()}</label
+            >
             <input
               id="manual-date"
               type="date"
@@ -181,7 +194,9 @@
             />
           </div>
           <div>
-            <label for="manual-hours" class="block text-xs text-slate-400 mb-1">Hours</label>
+            <label for="manual-hours" class="block text-xs text-slate-400 mb-1"
+              >{m.timecard_label_hours()}</label
+            >
             <input
               id="manual-hours"
               type="number"
@@ -197,26 +212,26 @@
             onclick={handleAddManualEntry}
             class="mt-5 btn btn-primary text-xs px-4 py-1.5"
           >
-            Save Entry
+            {m.timecard_save_entry()}
           </button>
         </div>
       </div>
     {/if}
 
     {#if loading}
-      <div class="text-center py-8 text-slate-400 text-sm">Loading timecards...</div>
+      <div class="text-center py-8 text-slate-400 text-sm">{m.timecard_state_loading()}</div>
     {:else if timecards.length === 0}
-      <div class="text-center py-8 text-slate-500 text-sm">No timecards recorded yet.</div>
+      <div class="text-center py-8 text-slate-500 text-sm">{m.timecard_state_empty()}</div>
     {:else}
       <table class="w-full text-left text-sm">
         <thead>
           <tr class="border-b border-slate-800 text-slate-400">
-            <th class="py-2 font-medium">Date</th>
-            <th class="py-2 font-medium">Type</th>
-            <th class="py-2 font-medium">Hours</th>
-            <th class="py-2 font-medium">Pay</th>
-            <th class="py-2 font-medium">Status</th>
-            <th class="py-2 font-medium text-right">Actions</th>
+            <th class="py-2 font-medium">{m.timecard_th_date()}</th>
+            <th class="py-2 font-medium">{m.timecard_th_type()}</th>
+            <th class="py-2 font-medium">{m.timecard_th_hours()}</th>
+            <th class="py-2 font-medium">{m.timecard_th_pay()}</th>
+            <th class="py-2 font-medium">{m.timecard_th_status()}</th>
+            <th class="py-2 font-medium text-right">{m.timecard_th_actions()}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800/60">
@@ -227,14 +242,9 @@
               </td>
               <td class="py-2.5">
                 {#if t.is_manual}
-                  <span
-                    class="text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20"
-                    >Manual</span
-                  >
+                  <StatusBadge variant="manual" label={m.timecard_badge_manual()} size="sm" />
                 {:else}
-                  <span class="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded"
-                    >Punched</span
-                  >
+                  <StatusBadge variant="punched" label={m.timecard_badge_punched()} size="sm" />
                 {/if}
               </td>
               <td class="py-2.5">
@@ -255,9 +265,9 @@
               </td>
               <td class="py-2.5">
                 {#if t.paid_at}
-                  <span class="text-xs text-emerald-400">Paid</span>
+                  <StatusBadge variant="timecard_paid" label={m.timecard_badge_paid()} size="sm" />
                 {:else}
-                  <span class="text-xs text-rose-400">Unpaid</span>
+                  <StatusBadge variant="unpaid" label={m.timecard_badge_unpaid()} size="sm" />
                 {/if}
               </td>
               <td class="py-2.5 text-right">
@@ -279,7 +289,7 @@
                 {:else}
                   <button
                     type="button"
-                    onclick={() => handleDelete(t.id)}
+                    onclick={() => promptDelete(t.id)}
                     class="text-xs text-rose-400 hover:text-rose-300 font-semibold mr-2"
                   >
                     Delete
@@ -312,3 +322,11 @@
     </button>
   </div>
 </Modal>
+
+<ConfirmModal
+  bind:showModal={showConfirmDelete}
+  title={m.timecard_delete_title()}
+  message={m.timecard_confirm_delete()}
+  confirmText={m.timecard_delete_confirm()}
+  onConfirm={executeDelete}
+/>

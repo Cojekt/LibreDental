@@ -7,6 +7,7 @@
     CountryConfig,
   } from "@bindings/domain/index.js";
   import Modal from "../../components/ui/Modal.svelte";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
@@ -21,6 +22,7 @@
   let showBundleModal = $state(false);
   let isEditingBundle = $state(false);
   let editingBundleId = $state("");
+  let editingBundleCreatedAt = $state("");
 
   // Bundle form
   let bundleShortname = $state("");
@@ -38,21 +40,30 @@
     }
   }
 
+  let requestGenBundles = 0;
   export async function loadBundles() {
+    const gen = ++requestGenBundles;
     loadingBundles = true;
     try {
       const res = await BillingService.ListBundles();
-      bundles = (res?.filter(Boolean) as TreatmentBundle[]) || [];
+      if (gen === requestGenBundles) {
+        bundles = (res?.filter(Boolean) as TreatmentBundle[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load bundles:", e);
+      if (gen === requestGenBundles) {
+        console.error("Failed to load bundles:", e);
+      }
     } finally {
-      loadingBundles = false;
+      if (gen === requestGenBundles) {
+        loadingBundles = false;
+      }
     }
   }
 
   export function openNewBundle() {
     isEditingBundle = false;
     editingBundleId = "";
+    editingBundleCreatedAt = "";
     bundleShortname = "";
     bundleName = "";
     bundleDescription = "";
@@ -64,6 +75,7 @@
   function openEditBundle(b: TreatmentBundle) {
     isEditingBundle = true;
     editingBundleId = b.id;
+    editingBundleCreatedAt = b.created_at || "";
     bundleShortname = b.shortname;
     bundleName = b.name;
     bundleDescription = b.description ?? "";
@@ -105,15 +117,18 @@
       description: bundleDescription,
       items: convertedItems,
       total_fee: Math.round(bundleTotalFee() * 100),
-      created_at: new Date().toISOString(),
+      created_at:
+        isEditingBundle && editingBundleCreatedAt
+          ? editingBundleCreatedAt
+          : new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     try {
       if (isEditingBundle) {
-        await BillingService.UpdateBundle(payload as any);
+        await BillingService.UpdateBundle(payload);
       } else {
-        await BillingService.CreateBundle(payload as any);
+        await BillingService.CreateBundle(payload);
       }
       showBundleModal = false;
       await loadBundles();
@@ -127,13 +142,23 @@
     }
   }
 
-  async function deleteBundle(id: string) {
-    if (!confirm("Delete this procedure bundle?")) return;
+  let showConfirmDelete = $state(false);
+  let bundleToDelete = $state<string | null>(null);
+
+  function promptDelete(id: string) {
+    bundleToDelete = id;
+    showConfirmDelete = true;
+  }
+
+  async function executeDelete() {
+    if (!bundleToDelete) return;
     try {
-      await BillingService.DeleteBundle(id);
+      await BillingService.DeleteBundle(bundleToDelete);
       await loadBundles();
     } catch (e) {
       console.error("Failed to delete bundle:", e);
+    } finally {
+      bundleToDelete = null;
     }
   }
 
@@ -230,7 +255,7 @@
 
               <button
                 class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
-                onclick={() => deleteBundle(b.id)}
+                onclick={() => promptDelete(b.id)}
                 title={m.patient_archive()}
               >
                 <svg
@@ -315,7 +340,7 @@
           >
             <span class="col-span-3">{m.charting_th_code()}</span>
             <span class="col-span-6">{m.charting_th_desc()}</span>
-            <span class="col-span-2 text-right">Default Fee</span>
+            <span class="col-span-2 text-right">{m.billing_bundle_default_fee()}</span>
             <span class="col-span-1 text-center"></span>
           </div>
           {#each bundleItems as item, i}
@@ -383,3 +408,11 @@
     </div>
   </form>
 </Modal>
+
+<ConfirmModal
+  bind:showModal={showConfirmDelete}
+  title={m.billing_bundle_delete_title()}
+  message={m.billing_bundle_confirm_delete()}
+  confirmText={m.billing_bundle_delete_confirm()}
+  onConfirm={executeDelete}
+/>

@@ -3,6 +3,7 @@
   import type { Appointment } from "@bindings/domain/models.js";
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import { getLocalDateString } from "$lib/date.js";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     selectedDate = "",
@@ -18,11 +19,11 @@
     statusBadges,
     oneditappointment,
     onupdatestatus,
-    noApptsLabel = "No appointments scheduled for this slot",
-    confirmLabel = "Confirm",
-    arrivedLabel = "Arrived",
-    seatLabel = "Seat",
-    completeLabel = "Complete",
+    noApptsLabel = m.appts_no_appts_slot(),
+    confirmLabel = m.appts_action_confirm(),
+    arrivedLabel = m.appts_action_arrived(),
+    seatLabel = m.appts_action_seat(),
+    completeLabel = m.appts_action_complete(),
   } = $props<{
     selectedDate: string;
     timeSlots: string[];

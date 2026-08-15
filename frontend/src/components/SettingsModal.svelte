@@ -4,6 +4,7 @@
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion, setLanguagePreference } from "$lib/locale.svelte.js";
   import { locales } from "../paraglide/runtime.js";
+  import { handleError } from "$lib/error.js";
 
   export type ThemeMode = "dark" | "light" | "system";
   export type WindowMode = "window" | "fullscreen";
@@ -95,7 +96,7 @@
       await SystemSettingsService.OpenDataDir();
     } catch (err: any) {
       console.error("Failed to open data directory:", err);
-      openError = err?.message || "Could not open system file manager";
+      openError = handleError(err, "Could not open system file manager");
     } finally {
       isOpeningFolder = false;
     }

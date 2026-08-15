@@ -2,7 +2,9 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -207,7 +209,10 @@ func scanClaim(row rowScanner) (*domain.Claim, error) {
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("%w", storage.ErrNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to scan claim: %w", err)
 	}
 
 	c.Status = domain.ClaimStatus(statusStr)

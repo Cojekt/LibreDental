@@ -5,6 +5,7 @@
   import Modal from "../../components/ui/Modal.svelte";
   import * as m from "../../paraglide/messages.js";
   import { isDicomFile, parseDicomToDataUrl } from "../../lib/dicom.js";
+  import { handleError } from "../../lib/error.js";
 
   let { showModal = $bindable(false), patientId = "" } = $props<{
     showModal: boolean;
@@ -96,7 +97,7 @@
           }
           loadXRays();
         } catch (err: any) {
-          uploadError = err.message || m.doc_err_upload();
+          uploadError = handleError(err, m.doc_err_upload());
         } finally {
           isUploading = false;
         }
@@ -107,7 +108,7 @@
       };
       reader.readAsDataURL(selectedFile);
     } catch (err: any) {
-      uploadError = err.message || m.doc_err_start_upload();
+      uploadError = handleError(err, m.doc_err_start_upload());
       isUploading = false;
     }
   }

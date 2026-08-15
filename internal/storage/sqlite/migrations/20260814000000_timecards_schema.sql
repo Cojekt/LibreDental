@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS timecards (
     total_pay INTEGER,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
-    FOREIGN KEY (provider_id) REFERENCES providers (id) ON DELETE CASCADE
+    FOREIGN KEY (provider_id) REFERENCES providers (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_timecards_provider_clockin ON timecards (provider_id, clock_in);

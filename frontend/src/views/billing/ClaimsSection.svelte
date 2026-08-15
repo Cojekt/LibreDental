@@ -10,6 +10,7 @@
     ToothCondition,
   } from "@bindings/domain/index.js";
   import { ClaimStatus } from "@bindings/domain/index.js";
+  import { getTodayDateString } from "$lib/date.js";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
@@ -32,11 +33,12 @@
   let showClaimModal = $state(false);
   let isEditingClaim = $state(false);
   let editingClaimId = $state("");
+  let editingClaimCreatedAt = $state("");
 
   // Claim form fields
   let claimPatientId = $state("");
   let claimProviderId = $state("");
-  let claimDateOfService = $state(new Date().toISOString().split("T")[0]);
+  let claimDateOfService = $state(getTodayDateString());
   let claimInsuranceCarrier = $state("");
   let claimPolicyNumber = $state("");
   let claimGroupNumber = $state("");
@@ -83,24 +85,33 @@
     return (c.line_items ?? []).reduce((s, i) => s + i.fee, 0);
   }
 
+  let requestGenClaims = 0;
   export async function loadClaims() {
+    const gen = ++requestGenClaims;
     loadingClaims = true;
     try {
       const res = await BillingService.ListClaims(claimFilterPatient);
-      claims = (res?.filter(Boolean) as Claim[]) || [];
+      if (gen === requestGenClaims) {
+        claims = (res?.filter(Boolean) as Claim[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load claims:", e);
+      if (gen === requestGenClaims) {
+        console.error("Failed to load claims:", e);
+      }
     } finally {
-      loadingClaims = false;
+      if (gen === requestGenClaims) {
+        loadingClaims = false;
+      }
     }
   }
 
   export function openNewClaim() {
     isEditingClaim = false;
     editingClaimId = "";
+    editingClaimCreatedAt = "";
     claimPatientId = patients[0]?.id ?? "";
     claimProviderId = providers[0]?.id ?? "";
-    claimDateOfService = new Date().toISOString().split("T")[0];
+    claimDateOfService = getTodayDateString();
     claimInsuranceCarrier = "";
     claimPolicyNumber = "";
     claimGroupNumber = "";
@@ -115,6 +126,7 @@
   async function openEditClaim(c: Claim) {
     isEditingClaim = true;
     editingClaimId = c.id;
+    editingClaimCreatedAt = c.created_at || "";
     claimPatientId = c.patient_id;
     claimProviderId = c.provider_id;
     claimDateOfService = c.date_of_service;
@@ -193,15 +205,16 @@
         patient_portion:
           li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
       })),
-      created_at: new Date().toISOString(),
+      created_at:
+        isEditingClaim && editingClaimCreatedAt ? editingClaimCreatedAt : new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     try {
       if (isEditingClaim) {
-        await BillingService.UpdateClaim(payload as any);
+        await BillingService.UpdateClaim(payload);
       } else {
-        await BillingService.CreateClaim(payload as any);
+        await BillingService.CreateClaim(payload);
       }
       showClaimModal = false;
       await loadClaims();
@@ -222,7 +235,7 @@
 
   async function openChartImportModal() {
     if (!claimPatientId) {
-      alert("Please select a patient first.");
+      alert(m.billing_claim_err_patient());
       return;
     }
     loadingChartImport = true;
@@ -239,7 +252,7 @@
       showChartImportModal = true;
     } catch (e) {
       console.error("Failed to load chart conditions:", e);
-      alert("Failed to load patient chart conditions.");
+      alert(m.billing_claim_err_load_chart());
     } finally {
       loadingChartImport = false;
     }

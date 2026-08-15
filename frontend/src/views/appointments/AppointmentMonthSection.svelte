@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Appointment } from "@bindings/domain/models.js";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     monthGrid = [],
@@ -31,13 +32,13 @@
   <div
     class="grid grid-cols-7 border-b border-slate-800 bg-slate-800/80 text-center text-xs font-bold text-slate-400 py-2.5"
   >
-    <div>Sun</div>
-    <div>Mon</div>
-    <div>Tue</div>
-    <div>Wed</div>
-    <div>Thu</div>
-    <div>Fri</div>
-    <div>Sat</div>
+    <div>{m.appts_day_sun()}</div>
+    <div>{m.appts_day_mon()}</div>
+    <div>{m.appts_day_tue()}</div>
+    <div>{m.appts_day_wed()}</div>
+    <div>{m.appts_day_thu()}</div>
+    <div>{m.appts_day_fri()}</div>
+    <div>{m.appts_day_sat()}</div>
   </div>
 
   <!-- 42 Calendar Cells -->
@@ -103,7 +104,7 @@
               onclick={() => selectDateAndJumpToDay(cell.dateStr)}
               class="w-full text-center text-[10px] font-bold text-sky-400 hover:underline pt-0.5"
             >
-              +{cellAppts.length - 3} more
+              {m.appts_more_appts({ count: cellAppts.length - 3 })}
             </button>
           {/if}
         </div>

@@ -2,6 +2,8 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -56,7 +58,10 @@ func (r *PaymentRepository) GetByID(ctx context.Context, id string) (*domain.Pay
 		FROM payments WHERE id = ?`, id,
 	).Scan(&p.ID, &p.PatientID, &p.ClaimID, &p.Amount, &methodStr, &p.Date, &p.Notes, &p.CreatedAt)
 	if err != nil {
-		return nil, storage.ErrNotFound
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to scan payment: %w", err)
 	}
 
 	p.Method = domain.PaymentMethod(methodStr)

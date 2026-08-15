@@ -7,7 +7,7 @@
     SystemSettingsService,
   } from "@bindings/services/index.js";
   import { initLocale, getLocaleVersion } from "$lib/locale.svelte.js";
-  import { getLocalDateString } from "$lib/date.js";
+  import { getTodayDateString, getLocalDateString } from "$lib/date.js";
   import { m } from "./paraglide/messages.js";
   import type {
     Patient,
@@ -156,7 +156,7 @@
   let apptPatientId = $state("");
   let apptProviderId = $state("");
   let apptOperatoryId = $state("");
-  let apptStartDateStr = $state(new Date().toISOString().split("T")[0]);
+  let apptStartDateStr = $state(getTodayDateString());
   let apptStartTimeStr = $state("09:00");
   let apptEndTimeStr = $state("10:00");
   let apptStatus = $state("scheduled");
@@ -295,7 +295,7 @@
     email = p.email || "";
     phone = p.phone_primary || "";
     phoneSecondary = p.phone_secondary || "";
-    dob = p.date_of_birth ? new Date(p.date_of_birth).toISOString().split("T")[0] : "";
+    dob = p.date_of_birth ? getLocalDateString(p.date_of_birth) : "";
     nationalId = p.national_id || "";
     addressLine1 = p.address_line1 || "";
     addressLine2 = p.address_line2 || "";
@@ -339,7 +339,7 @@
           p.email = email;
           p.phone_primary = phone;
           p.phone_secondary = phoneSecondary;
-          p.date_of_birth = dob ? new Date(dob).toISOString() : "";
+          p.date_of_birth = dob ? new Date(dob + "T12:00:00").toISOString() : "";
           p.national_id = nationalId;
           p.national_id_type = countryMeta.national_id_type;
           p.address_line1 = addressLine1;
@@ -372,7 +372,7 @@
           last_name: lastName,
           middle_name: "",
           preferred_name: "",
-          date_of_birth: dob ? new Date(dob).toISOString() : "",
+          date_of_birth: dob ? new Date(dob + "T12:00:00").toISOString() : "",
           sex: sex,
           email: email,
           phone_primary: phone,
@@ -452,7 +452,7 @@
     apptOperatoryId = appt.operatory_id;
     if (appt.start_time) {
       const d = new Date(appt.start_time);
-      apptStartDateStr = d.toISOString().split("T")[0];
+      apptStartDateStr = getLocalDateString(d);
       apptStartTimeStr = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     }
     if (appt.end_time) {
