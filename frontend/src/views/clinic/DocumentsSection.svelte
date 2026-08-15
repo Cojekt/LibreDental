@@ -8,6 +8,7 @@
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import * as m from "../../paraglide/messages.js";
+  import { handleError } from "../../lib/error.js";
 
   let { openUploadModal = $bindable() } = $props<{
     openUploadModal?: () => void;
@@ -97,7 +98,7 @@
           showUploadModal = false;
           loadDocuments();
         } catch (err: any) {
-          uploadError = err.message || m.doc_err_upload();
+          uploadError = handleError(err, m.doc_err_upload());
         } finally {
           isUploading = false;
         }
@@ -108,7 +109,7 @@
       };
       reader.readAsDataURL(selectedFile);
     } catch (err: any) {
-      uploadError = err.message || m.doc_err_start_upload();
+      uploadError = handleError(err, m.doc_err_start_upload());
       isUploading = false;
     }
   }

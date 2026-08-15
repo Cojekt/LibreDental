@@ -5,7 +5,9 @@
   import { TimecardService } from "@bindings/services/index.js";
   import Modal from "../../components/ui/Modal.svelte";
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
+  import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import { getLocalDateString } from "$lib/date.js";
+  import { handleError } from "$lib/error.js";
 
   let {
     showModal = $bindable(false),
@@ -43,6 +45,69 @@
   let editHours = $state(0.0);
   let requestGen = 0;
 
+  $effect(() => {
+    if (showModal && providerId) {
+      loadTimecards();
+    }
+  });
+
+  async function loadTimecards() {
+    const gen = ++requestGen;
+    loading = true;
+    errorMsg = "";
+    try {
+      let start = "";
+      if (filterStartDate) {
+        start = new Date(filterStartDate + "T00:00:00").toISOString();
+      }
+      let end = "";
+      if (filterEndDate) {
+        end = new Date(filterEndDate + "T23:59:59.999").toISOString();
+      }
+      const results = await TimecardService.ListTimecards(providerId, start, end);
+      if (gen === requestGen) {
+        timecards = results ? (results.filter(Boolean) as Timecard[]) : [];
+      }
+    } catch (e: any) {
+      if (gen === requestGen) {
+        errorMsg = handleError(e, m.timecard_err_load());
+      }
+    } finally {
+      if (gen === requestGen) {
+        loading = false;
+      }
+    }
+  }
+
+  async function handleAddManualEntry() {
+    try {
+      // Create date with time at local noon to avoid timezone shift to prev/next day
+      const d = new Date(manualDate + "T12:00:00").toISOString();
+      await TimecardService.CreateManualTimecard(providerId, Math.round(manualHours * 60), d);
+      showManualEntry = false;
+      await loadTimecards();
+      await onrefresh();
+    } catch (e: any) {
+      errorMsg = handleError(e, m.timecard_err_add());
+    }
+  }
+
+  function startEdit(t: Timecard) {
+    editingId = t.id;
+    editHours = Number((t.total_minutes / 60).toFixed(2));
+  }
+
+  async function handleSaveEdit(t: Timecard) {
+    try {
+      await TimecardService.EditTimecardHours(t.id, providerId, Math.round(editHours * 60));
+      editingId = null;
+      await loadTimecards();
+      await onrefresh();
+    } catch (e: any) {
+      errorMsg = handleError(e, m.timecard_err_save());
+    }
+  }
+
   let showConfirmDelete = $state(false);
   let timecardToDelete = $state<string | null>(null);
 
@@ -58,7 +123,7 @@
       await loadTimecards();
       await onrefresh();
     } catch (e: any) {
-      errorMsg = e.message || m.timecard_err_delete();
+      errorMsg = handleError(e, m.timecard_err_delete());
     } finally {
       timecardToDelete = null;
     }
@@ -175,14 +240,9 @@
               </td>
               <td class="py-2.5">
                 {#if t.is_manual}
-                  <span
-                    class="text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20"
-                    >{m.timecard_badge_manual()}</span
-                  >
+                  <StatusBadge variant="manual" label={m.timecard_badge_manual()} size="sm" />
                 {:else}
-                  <span class="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded"
-                    >{m.timecard_badge_punched()}</span
-                  >
+                  <StatusBadge variant="punched" label={m.timecard_badge_punched()} size="sm" />
                 {/if}
               </td>
               <td class="py-2.5">
@@ -203,9 +263,9 @@
               </td>
               <td class="py-2.5">
                 {#if t.paid_at}
-                  <span class="text-xs text-emerald-400">{m.timecard_badge_paid()}</span>
+                  <StatusBadge variant="paid" label={m.timecard_badge_paid()} size="sm" />
                 {:else}
-                  <span class="text-xs text-rose-400">{m.timecard_badge_unpaid()}</span>
+                  <StatusBadge variant="unpaid" label={m.timecard_badge_unpaid()} size="sm" />
                 {/if}
               </td>
               <td class="py-2.5 text-right">

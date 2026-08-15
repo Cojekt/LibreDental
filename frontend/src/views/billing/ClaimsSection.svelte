@@ -184,7 +184,7 @@
     e.preventDefault();
     if (!claimPatientId || !claimDateOfService) return;
 
-    const payload: Claim = {
+    const payload = {
       id: isEditingClaim ? editingClaimId : `claim_${Date.now()}`,
       patient_id: claimPatientId,
       provider_id: claimProviderId,
@@ -202,7 +202,7 @@
         patient_portion:
           li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
       })),
-    };
+    } as Claim;
 
     try {
       if (isEditingClaim) {

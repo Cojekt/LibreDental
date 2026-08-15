@@ -121,7 +121,7 @@
     const amount = Math.round(parseFloat(payAmount) * 100);
     if (!payPatientId || isNaN(amount) || amount <= 0 || !payDate) return;
 
-    const payload: Payment = {
+    const payload = {
       id: `pay_${Date.now()}`,
       patient_id: payPatientId,
       claim_id: payClaimId,
@@ -129,7 +129,7 @@
       method: payMethod,
       date: payDate,
       notes: payNotes,
-    };
+    } as Payment;
 
     try {
       await BillingService.RecordPayment(payload as any);

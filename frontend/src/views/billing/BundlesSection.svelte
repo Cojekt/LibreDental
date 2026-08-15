@@ -107,14 +107,14 @@
       default_fee: Math.round((item.default_fee || 0) * 100),
     }));
 
-    const payload: TreatmentBundle = {
+    const payload = {
       id: isEditingBundle ? editingBundleId : `bundle_${Date.now()}`,
       shortname: sn,
       name: bundleName.trim(),
       description: bundleDescription,
       items: convertedItems,
       total_fee: Math.round(bundleTotalFee() * 100),
-    };
+    } as TreatmentBundle;
 
     try {
       if (isEditingBundle) {

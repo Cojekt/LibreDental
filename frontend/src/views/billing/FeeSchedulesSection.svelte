@@ -94,7 +94,7 @@
         code: editingFeeCode,
         provider_id: editingFeeProviderId,
         custom_fee: Math.round(Number(editingFeeCustom) * 100),
-      });
+      } as FeeSchedule);
       showFeeModal = false;
       await loadProcedureCodes();
       await loadFeeSchedules();
