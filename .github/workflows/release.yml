@@ -22,9 +22,6 @@ jobs:
           - os: ubuntu-latest
             artifact_name: libredental-linux-amd64
             platform: linux
-          - os: macos-latest
-            artifact_name: libredental-darwin-universal
-            platform: darwin
           - os: windows-latest
             artifact_name: libredental-windows-amd64.exe
             platform: windows
@@ -68,30 +65,22 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build Desktop Application
-        run: task build
+      - name: Package Application
+        run: task package
 
       - name: Prepare Artifacts (Linux)
         if: runner.os == 'Linux'
         run: |
           mkdir -p release_assets
-          cp bin/libredental release_assets/${{ matrix.artifact_name }}
-
-      - name: Prepare Artifacts (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          mkdir -p release_assets
-          cp bin/libredental release_assets/${{ matrix.artifact_name }}
-          if [ -d "bin/libredental.app" ]; then
-            cd bin && zip -r ../release_assets/libredental-darwin-app.zip libredental.app && cd ..
-          fi
+          cp bin/*.deb bin/*.rpm bin/*.AppImage bin/*.pkg.tar.zst release_assets/ 2>/dev/null || true
 
       - name: Prepare Artifacts (Windows)
         if: runner.os == 'Windows'
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path release_assets
-          Copy-Item bin/libredental.exe release_assets/${{ matrix.artifact_name }}
+          Copy-Item build/windows/nsis/*.exe release_assets/
+          Copy-Item bin/*.exe release_assets/ -ErrorAction SilentlyContinue
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
