@@ -10,6 +10,7 @@
     ToothCondition,
   } from "@bindings/domain/index.js";
   import { ClaimStatus } from "@bindings/domain/index.js";
+  import { getTodayDateString } from "$lib/date.js";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
@@ -36,7 +37,7 @@
   // Claim form fields
   let claimPatientId = $state("");
   let claimProviderId = $state("");
-  let claimDateOfService = $state(new Date().toISOString().split("T")[0]);
+  let claimDateOfService = $state(getTodayDateString());
   let claimInsuranceCarrier = $state("");
   let claimPolicyNumber = $state("");
   let claimGroupNumber = $state("");
@@ -83,15 +84,23 @@
     return (c.line_items ?? []).reduce((s, i) => s + i.fee, 0);
   }
 
+  let requestGenClaims = 0;
   export async function loadClaims() {
+    const gen = ++requestGenClaims;
     loadingClaims = true;
     try {
       const res = await BillingService.ListClaims(claimFilterPatient);
-      claims = (res?.filter(Boolean) as Claim[]) || [];
+      if (gen === requestGenClaims) {
+        claims = (res?.filter(Boolean) as Claim[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load claims:", e);
+      if (gen === requestGenClaims) {
+        console.error("Failed to load claims:", e);
+      }
     } finally {
-      loadingClaims = false;
+      if (gen === requestGenClaims) {
+        loadingClaims = false;
+      }
     }
   }
 
@@ -100,7 +109,7 @@
     editingClaimId = "";
     claimPatientId = patients[0]?.id ?? "";
     claimProviderId = providers[0]?.id ?? "";
-    claimDateOfService = new Date().toISOString().split("T")[0];
+    claimDateOfService = getTodayDateString();
     claimInsuranceCarrier = "";
     claimPolicyNumber = "";
     claimGroupNumber = "";
@@ -193,8 +202,6 @@
         patient_portion:
           li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
       })),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     try {

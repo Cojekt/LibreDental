@@ -7,6 +7,7 @@
   import AppointmentAgendaSection from "./appointments/AppointmentAgendaSection.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocalDateString, isSameDay, parseLocalDate } from "$lib/date.js";
+  import { currentLocale } from "$lib/locale.svelte.js";
 
   let {
     appointments = [],
@@ -205,8 +206,8 @@
       const d = new Date(sunday);
       d.setDate(sunday.getDate() + i);
       const dateStr = getLocalDateString(d);
-      const dayName = d.toLocaleDateString(undefined, { weekday: "short" });
-      const label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const dayName = d.toLocaleDateString(currentLocale(), { weekday: "short" });
+      const label = d.toLocaleDateString(currentLocale(), { month: "short", day: "numeric" });
 
       days.push({
         dateStr,
@@ -258,7 +259,7 @@
   let monthYearHeading = $derived.by(() => {
     try {
       const d = parseLocalDate(selectedDate);
-      return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+      return d.toLocaleDateString(currentLocale(), { month: "long", year: "numeric" });
     } catch {
       return selectedDate;
     }
@@ -315,7 +316,7 @@
   function formattedDateHeading(dateStr: string): string {
     try {
       const d = parseLocalDate(dateStr);
-      return d.toLocaleDateString(undefined, {
+      return d.toLocaleDateString(currentLocale(), {
         weekday: "long",
         year: "numeric",
         month: "long",
@@ -330,7 +331,7 @@
     if (!isoStr) return "";
     try {
       const d = new Date(isoStr);
-      return d.toLocaleDateString(undefined, {
+      return d.toLocaleDateString(currentLocale(), {
         weekday: "short",
         month: "short",
         day: "numeric",

@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS dental_conditions (
 	fee INTEGER DEFAULT 0,
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL,
-	FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+	FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_audit_patient ON audit_logs(patient_id);

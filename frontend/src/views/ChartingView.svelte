@@ -199,13 +199,19 @@
   let isCreatingClaim = $state(false);
   let claimNoticeMsg = $state("");
 
+  let requestGenCodes = 0;
   async function loadProcedureCodes() {
+    const gen = ++requestGenCodes;
     const cc = countryMeta?.code || "US";
     try {
       const res = await BillingService.ListProcedureCodes(cc, "");
-      procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+      if (gen === requestGenCodes) {
+        procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load procedure codes for country:", cc, e);
+      if (gen === requestGenCodes) {
+        console.error("Failed to load procedure codes for country:", cc, e);
+      }
     }
   }
 
@@ -247,24 +253,32 @@
     }
   }
 
+  let requestGenChart = 0;
   async function loadChart(patientId: string) {
     if (!patientId) {
       currentChart = null;
       return;
     }
+    const gen = ++requestGenChart;
     loadingChart = true;
     try {
       const chart = await ChartService.GetPatientChart(patientId);
-      currentChart = chart || {
-        patient_id: patientId,
-        conditions: [],
-        updated_at: "",
-      };
+      if (gen === requestGenChart) {
+        currentChart = chart || {
+          patient_id: patientId,
+          conditions: [],
+          updated_at: "",
+        };
+      }
     } catch (e) {
-      console.error("Failed to load patient chart:", e);
-      currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
+      if (gen === requestGenChart) {
+        console.error("Failed to load patient chart:", e);
+        currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
+      }
     } finally {
-      loadingChart = false;
+      if (gen === requestGenChart) {
+        loadingChart = false;
+      }
     }
   }
 

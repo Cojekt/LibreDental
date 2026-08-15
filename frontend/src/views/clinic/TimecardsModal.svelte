@@ -4,6 +4,7 @@
   import type { Timecard } from "@bindings/domain/models.js";
   import { TimecardService } from "@bindings/services/index.js";
   import Modal from "../../components/ui/Modal.svelte";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import { getLocalDateString } from "$lib/date.js";
 
   let {
@@ -42,78 +43,24 @@
   let editHours = $state(0.0);
   let requestGen = 0;
 
-  $effect(() => {
-    if (showModal && providerId) {
-      loadTimecards();
-    }
-  });
+  let showConfirmDelete = $state(false);
+  let timecardToDelete = $state<string | null>(null);
 
-  async function loadTimecards() {
-    const gen = ++requestGen;
-    loading = true;
-    errorMsg = "";
+  function promptDelete(id: string) {
+    timecardToDelete = id;
+    showConfirmDelete = true;
+  }
+
+  async function executeDelete() {
+    if (!timecardToDelete) return;
     try {
-      let start = "";
-      if (filterStartDate) {
-        start = new Date(filterStartDate + "T00:00:00").toISOString();
-      }
-      let end = "";
-      if (filterEndDate) {
-        end = new Date(filterEndDate + "T23:59:59.999").toISOString();
-      }
-      const results = await TimecardService.ListTimecards(providerId, start, end);
-      if (gen === requestGen) {
-        timecards = results ? (results.filter(Boolean) as Timecard[]) : [];
-      }
+      await TimecardService.DeleteTimecard(timecardToDelete);
+      await loadTimecards();
+      await onrefresh();
     } catch (e: any) {
-      if (gen === requestGen) {
-        errorMsg = e.message || m.timecard_err_load();
-      }
+      errorMsg = e.message || m.timecard_err_delete();
     } finally {
-      if (gen === requestGen) {
-        loading = false;
-      }
-    }
-  }
-
-  async function handleAddManualEntry() {
-    try {
-      // Create date with time at local noon to avoid timezone shift to prev/next day
-      const d = new Date(manualDate + "T12:00:00").toISOString();
-      await TimecardService.CreateManualTimecard(providerId, Math.round(manualHours * 60), d);
-      showManualEntry = false;
-      await loadTimecards();
-      await onrefresh();
-    } catch (e: any) {
-      errorMsg = e.message || m.timecard_err_add();
-    }
-  }
-
-  function startEdit(t: Timecard) {
-    editingId = t.id;
-    editHours = Number((t.total_minutes / 60).toFixed(2));
-  }
-
-  async function handleSaveEdit(t: Timecard) {
-    try {
-      await TimecardService.EditTimecardHours(t.id, providerId, Math.round(editHours * 60));
-      editingId = null;
-      await loadTimecards();
-      await onrefresh();
-    } catch (e: any) {
-      errorMsg = e.message || m.timecard_err_save();
-    }
-  }
-
-  async function handleDelete(id: string) {
-    if (confirm(m.timecard_confirm_delete())) {
-      try {
-        await TimecardService.DeleteTimecard(id);
-        await loadTimecards();
-        await onrefresh();
-      } catch (e: any) {
-        errorMsg = e.message || m.timecard_err_delete();
-      }
+      timecardToDelete = null;
     }
   }
 </script>
@@ -169,7 +116,9 @@
         <h4 class="text-sm font-semibold text-slate-200">{m.timecard_add_manual()}</h4>
         <div class="flex items-center gap-3">
           <div>
-            <label for="manual-date" class="block text-xs text-slate-400 mb-1">{m.timecard_label_date()}</label>
+            <label for="manual-date" class="block text-xs text-slate-400 mb-1"
+              >{m.timecard_label_date()}</label
+            >
             <input
               id="manual-date"
               type="date"
@@ -178,7 +127,9 @@
             />
           </div>
           <div>
-            <label for="manual-hours" class="block text-xs text-slate-400 mb-1">{m.timecard_label_hours()}</label>
+            <label for="manual-hours" class="block text-xs text-slate-400 mb-1"
+              >{m.timecard_label_hours()}</label
+            >
             <input
               id="manual-hours"
               type="number"
@@ -276,7 +227,7 @@
                 {:else}
                   <button
                     type="button"
-                    onclick={() => handleDelete(t.id)}
+                    onclick={() => promptDelete(t.id)}
                     class="text-xs text-rose-400 hover:text-rose-300 font-semibold mr-2"
                   >
                     Delete
@@ -309,3 +260,11 @@
     </button>
   </div>
 </Modal>
+
+<ConfirmModal
+  bind:showModal={showConfirmDelete}
+  title="Delete Timecard"
+  message={m.timecard_confirm_delete()}
+  confirmText="Delete"
+  onConfirm={executeDelete}
+/>

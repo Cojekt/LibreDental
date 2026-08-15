@@ -3,6 +3,7 @@
   import { TimecardService } from "@bindings/services/index.js";
   import { untrack } from "svelte";
   import Modal from "../../components/ui/Modal.svelte";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
@@ -123,14 +124,23 @@
     }
   }
 
-  async function paySalary(pId: string) {
-    if (confirm(m.prov_confirm_pay_salary())) {
-      try {
-        await TimecardService.PaySalary(pId);
-        await loadProviderStates();
-      } catch (e) {
-        console.error("Pay Salary failed", e);
-      }
+  let showConfirmPay = $state(false);
+  let providerToPay = $state<string | null>(null);
+
+  function promptPay(id: string) {
+    providerToPay = id;
+    showConfirmPay = true;
+  }
+
+  async function executePay() {
+    if (!providerToPay) return;
+    try {
+      await TimecardService.PaySalary(providerToPay);
+      await loadProviderStates();
+    } catch (e) {
+      console.error("Pay Salary failed", e);
+    } finally {
+      providerToPay = null;
     }
   }
 </script>
@@ -259,7 +269,7 @@
               </div>
               <button
                 type="button"
-                onclick={() => paySalary(p.id)}
+                onclick={() => promptPay(p.id)}
                 class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 rounded text-xs font-bold transition-colors border border-emerald-500/30"
               >
                 {m.prov_pay_salary()}
@@ -404,4 +414,12 @@
   providerId={selectedProviderId}
   providerName={selectedProviderName}
   onrefresh={loadProviderStates}
+/>
+
+<ConfirmModal
+  bind:showModal={showConfirmPay}
+  title="Pay Salary"
+  message={m.prov_confirm_pay_salary()}
+  confirmText="Record Payment"
+  onConfirm={executePay}
 />

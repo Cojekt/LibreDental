@@ -7,6 +7,7 @@
     CountryConfig,
   } from "@bindings/domain/index.js";
   import Modal from "../../components/ui/Modal.svelte";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
@@ -38,15 +39,23 @@
     }
   }
 
+  let requestGenBundles = 0;
   export async function loadBundles() {
+    const gen = ++requestGenBundles;
     loadingBundles = true;
     try {
       const res = await BillingService.ListBundles();
-      bundles = (res?.filter(Boolean) as TreatmentBundle[]) || [];
+      if (gen === requestGenBundles) {
+        bundles = (res?.filter(Boolean) as TreatmentBundle[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load bundles:", e);
+      if (gen === requestGenBundles) {
+        console.error("Failed to load bundles:", e);
+      }
     } finally {
-      loadingBundles = false;
+      if (gen === requestGenBundles) {
+        loadingBundles = false;
+      }
     }
   }
 
@@ -105,8 +114,6 @@
       description: bundleDescription,
       items: convertedItems,
       total_fee: Math.round(bundleTotalFee() * 100),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     try {
@@ -127,13 +134,23 @@
     }
   }
 
-  async function deleteBundle(id: string) {
-    if (!confirm(m.billing_bundle_confirm_delete())) return;
+  let showConfirmDelete = $state(false);
+  let bundleToDelete = $state<string | null>(null);
+
+  function promptDelete(id: string) {
+    bundleToDelete = id;
+    showConfirmDelete = true;
+  }
+
+  async function executeDelete() {
+    if (!bundleToDelete) return;
     try {
-      await BillingService.DeleteBundle(id);
+      await BillingService.DeleteBundle(bundleToDelete);
       await loadBundles();
     } catch (e) {
       console.error("Failed to delete bundle:", e);
+    } finally {
+      bundleToDelete = null;
     }
   }
 
@@ -230,7 +247,7 @@
 
               <button
                 class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
-                onclick={() => deleteBundle(b.id)}
+                onclick={() => promptDelete(b.id)}
                 title={m.patient_archive()}
               >
                 <svg
@@ -383,3 +400,11 @@
     </div>
   </form>
 </Modal>
+
+<ConfirmModal
+  bind:showModal={showConfirmDelete}
+  title="Delete Bundle"
+  message={m.billing_bundle_confirm_delete()}
+  confirmText="Delete"
+  onConfirm={executeDelete}
+/>

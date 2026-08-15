@@ -41,6 +41,8 @@
   "onboarding_submitting": "Configuring Practice...",
   "patient_archive": "Archive",
   "common_cancel": "Cancel",
+  "common_confirm": "Confirm",
+  "common_confirm_msg": "Are you sure you want to proceed?",
   "common_save": "Save",
   "common_loading": "Loading...",
   "alert_practice_country_required": "Practice country configuration is required before managing patient records.",

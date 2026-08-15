@@ -33,7 +33,7 @@ with the `m.key()` call, then recompile the paraglide output.
 After adding keys, recompile:
 
 ```bash
-cd frontend && npx @inlang/paraglide-js compile
+cd frontend && npm run build:i18n
 ```
 
 ---
@@ -119,7 +119,7 @@ Run the full suite before marking this category done:
 
 ```bash
 go test ./...
-cd frontend && npx svelte-check
+cd frontend && npm run check
 ```
 
 ---
@@ -188,7 +188,7 @@ each release cleanup branch. Fill in any release-specific notes under each item.
 ## 5. Test Coverage
 - [ ] ...
 - [ ] `go test ./...` passes
-- [ ] `npx svelte-check` passes
+- [ ] `npm run check` passes
 
 ## 6. Build & Distribution
 - [ ] Clean build succeeds

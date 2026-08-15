@@ -39,26 +39,40 @@
     }
   }
 
+  let requestGenCodes = 0;
   export async function loadProcedureCodes() {
+    const gen = ++requestGenCodes;
     const cc = countryMeta?.code || "US";
     try {
       const res = await BillingService.ListProcedureCodes(cc, feeFilterProvider);
-      procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+      if (gen === requestGenCodes) {
+        procedureCodes = (res?.filter(Boolean) as ProcedureCode[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load procedure codes:", e);
+      if (gen === requestGenCodes) {
+        console.error("Failed to load procedure codes:", e);
+      }
     }
   }
 
+  let requestGenFees = 0;
   export async function loadFeeSchedules() {
+    const gen = ++requestGenFees;
     loadingFees = true;
     const cc = countryMeta?.code || "US";
     try {
       const res = await BillingService.ListFeeSchedules(cc, feeFilterProvider);
-      feeSchedules = (res?.filter(Boolean) as FeeSchedule[]) || [];
+      if (gen === requestGenFees) {
+        feeSchedules = (res?.filter(Boolean) as FeeSchedule[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load fee schedules:", e);
+      if (gen === requestGenFees) {
+        console.error("Failed to load fee schedules:", e);
+      }
     } finally {
-      loadingFees = false;
+      if (gen === requestGenFees) {
+        loadingFees = false;
+      }
     }
   }
 
@@ -80,7 +94,6 @@
         code: editingFeeCode,
         provider_id: editingFeeProviderId,
         custom_fee: Math.round(Number(editingFeeCustom) * 100),
-        updated_at: new Date().toISOString(),
       });
       showFeeModal = false;
       await loadProcedureCodes();
