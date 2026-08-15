@@ -3,6 +3,7 @@
   import type { Timecard } from "@bindings/domain/models.js";
   import { TimecardService } from "@bindings/services/index.js";
   import Modal from "../../components/ui/Modal.svelte";
+  import { getLocalDateString } from "$lib/date.js";
 
   let {
     showModal = $bindable(false),
@@ -20,16 +21,15 @@
   let loading = $state(false);
   let errorMsg = $state("");
 
-  function getLocalDateString(d: Date = new Date()): string {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  function get30DaysAgo(): Date {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d;
   }
 
   // Filter
   let filterEndDate = $state(getLocalDateString());
-  let filterStartDate = $state(getLocalDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
+  let filterStartDate = $state(getLocalDateString(get30DaysAgo()));
 
   // Manual Entry Form
   let showManualEntry = $state(false);
@@ -77,8 +77,8 @@
 
   async function handleAddManualEntry() {
     try {
-      // Create date with time at noon to avoid timezone shift to prev day
-      const d = new Date(manualDate + "T12:00:00Z").toISOString();
+      // Create date with time at local noon to avoid timezone shift to prev/next day
+      const d = new Date(manualDate + "T12:00:00").toISOString();
       await TimecardService.CreateManualTimecard(providerId, Math.round(manualHours * 60), d);
       showManualEntry = false;
       await loadTimecards();

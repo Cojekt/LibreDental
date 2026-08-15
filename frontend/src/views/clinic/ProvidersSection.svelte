@@ -96,6 +96,8 @@
       if (providerGen[pId] === gen) {
         activeTimecards[pId] = tc;
       }
+      const prov = providers.find((p: Provider) => p.id === pId);
+      await loadProviderStates(prov ? [prov] : providers);
     } catch (e) {
       console.error("Clock In failed", e);
     } finally {
