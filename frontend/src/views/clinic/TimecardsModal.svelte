@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { m } from "../../paraglide/messages.js";
   import type { Timecard } from "@bindings/domain/models.js";
   import { TimecardService } from "@bindings/services/index.js";
@@ -47,7 +47,9 @@
 
   $effect(() => {
     if (showModal && providerId) {
-      loadTimecards();
+      untrack(() => {
+        loadTimecards();
+      });
     }
   });
 
@@ -263,7 +265,7 @@
               </td>
               <td class="py-2.5">
                 {#if t.paid_at}
-                  <StatusBadge variant="paid" label={m.timecard_badge_paid()} size="sm" />
+                  <StatusBadge variant="timecard_paid" label={m.timecard_badge_paid()} size="sm" />
                 {:else}
                   <StatusBadge variant="unpaid" label={m.timecard_badge_unpaid()} size="sm" />
                 {/if}
@@ -323,8 +325,8 @@
 
 <ConfirmModal
   bind:showModal={showConfirmDelete}
-  title="Delete Timecard"
+  title={m.timecard_delete_title()}
   message={m.timecard_confirm_delete()}
-  confirmText="Delete"
+  confirmText={m.timecard_delete_confirm()}
   onConfirm={executeDelete}
 />

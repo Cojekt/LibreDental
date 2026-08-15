@@ -184,7 +184,7 @@
     e.preventDefault();
     if (!claimPatientId || !claimDateOfService) return;
 
-    const payload = {
+    const payload: Claim = {
       id: isEditingClaim ? editingClaimId : `claim_${Date.now()}`,
       patient_id: claimPatientId,
       provider_id: claimProviderId,
@@ -202,13 +202,15 @@
         patient_portion:
           li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
       })),
-    } as Claim;
+      created_at: "",
+      updated_at: "",
+    };
 
     try {
       if (isEditingClaim) {
-        await BillingService.UpdateClaim(payload as any);
+        await BillingService.UpdateClaim(payload);
       } else {
-        await BillingService.CreateClaim(payload as any);
+        await BillingService.CreateClaim(payload);
       }
       showClaimModal = false;
       await loadClaims();

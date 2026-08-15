@@ -7,6 +7,7 @@
     subtitle,
     icon,
     maxWidth = "max-w-xl",
+    preventDismiss = false,
     children,
     footer,
   } = $props<{
@@ -15,15 +16,18 @@
     subtitle?: string;
     icon?: string;
     maxWidth?: string;
+    preventDismiss?: boolean;
     children?: Snippet;
     footer?: Snippet;
   }>();
 
   function handleBackdropClick() {
+    if (preventDismiss) return;
     showModal = false;
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    if (preventDismiss) return;
     if (e.key === "Escape") {
       showModal = false;
     }
@@ -65,8 +69,9 @@
           </div>
           <button
             type="button"
-            onclick={() => (showModal = false)}
-            class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent text-lg font-bold"
+            onclick={() => !preventDismiss && (showModal = false)}
+            disabled={preventDismiss}
+            class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Close modal"
           >
             ✕

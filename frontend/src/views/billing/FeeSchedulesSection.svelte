@@ -7,6 +7,7 @@
     ProcedureCode,
     FeeSchedule,
   } from "@bindings/domain/index.js";
+  import { CountryCode } from "@bindings/domain/index.js";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
@@ -86,15 +87,17 @@
   async function saveFeeSchedule(e: Event) {
     e.preventDefault();
     if (!editingFeeCode || editingFeeCustom < 0) return;
-    const cc = countryMeta?.code || "US";
+    const cc = (countryMeta?.code || "US") as CountryCode;
+    const payload: FeeSchedule = {
+      id: `fee_${Date.now()}`,
+      country_code: cc,
+      code: editingFeeCode,
+      provider_id: editingFeeProviderId,
+      custom_fee: Math.round(Number(editingFeeCustom) * 100),
+      updated_at: "",
+    };
     try {
-      await BillingService.SaveFeeSchedule({
-        id: `fee_${Date.now()}`,
-        country_code: cc as any,
-        code: editingFeeCode,
-        provider_id: editingFeeProviderId,
-        custom_fee: Math.round(Number(editingFeeCustom) * 100),
-      } as FeeSchedule);
+      await BillingService.SaveFeeSchedule(payload);
       showFeeModal = false;
       await loadProcedureCodes();
       await loadFeeSchedules();

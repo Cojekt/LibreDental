@@ -26,12 +26,13 @@
     submitted: "bg-blue-900/60 text-blue-300 border-blue-700/50",
     accepted: "bg-emerald-900/60 text-emerald-300 border-emerald-700/50",
     rejected: "bg-red-900/60 text-red-300 border-red-700/50",
-    paid: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    paid: "bg-teal-900/60 text-teal-300 border-teal-700/50",
 
     // Timecard Statuses
     manual: "bg-amber-500/15 text-amber-400 border-amber-500/30",
     punched: "bg-slate-500/15 text-slate-400 border-slate-500/30",
     unpaid: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+    timecard_paid: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
 
     // Tooth Condition Statuses
     missing: "bg-rose-950/80 text-rose-300 border-rose-800",

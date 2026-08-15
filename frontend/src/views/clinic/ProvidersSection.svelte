@@ -418,8 +418,8 @@
 
 <ConfirmModal
   bind:showModal={showConfirmPay}
-  title="Pay Salary"
+  title={m.prov_pay_salary()}
   message={m.prov_confirm_pay_salary()}
-  confirmText="Record Payment"
+  confirmText={m.billing_btn_record_payment()}
   onConfirm={executePay}
 />

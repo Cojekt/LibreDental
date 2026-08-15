@@ -255,11 +255,12 @@
 
   let requestGenChart = 0;
   async function loadChart(patientId: string) {
+    const gen = ++requestGenChart;
     if (!patientId) {
       currentChart = null;
+      loadingChart = false;
       return;
     }
-    const gen = ++requestGenChart;
     loadingChart = true;
     try {
       const chart = await ChartService.GetPatientChart(patientId);
@@ -283,9 +284,7 @@
   }
 
   $effect(() => {
-    if (selectedPatientId) {
-      loadChart(selectedPatientId);
-    }
+    loadChart(selectedPatientId);
   });
 
   function getConditionsForTooth(toothNum: number): ToothCondition[] {

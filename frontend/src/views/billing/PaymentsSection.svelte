@@ -82,11 +82,11 @@
 
   let requestGenBalance = 0;
   export async function loadBalance() {
+    const gen = ++requestGenBalance;
     if (!balancePatientId) {
       patientBalance = null;
       return;
     }
-    const gen = ++requestGenBalance;
     try {
       const bal = await BillingService.GetPatientBalance(balancePatientId);
       if (gen === requestGenBalance) {
@@ -121,7 +121,7 @@
     const amount = Math.round(parseFloat(payAmount) * 100);
     if (!payPatientId || isNaN(amount) || amount <= 0 || !payDate) return;
 
-    const payload = {
+    const payload: Payment = {
       id: `pay_${Date.now()}`,
       patient_id: payPatientId,
       claim_id: payClaimId,
@@ -129,10 +129,11 @@
       method: payMethod,
       date: payDate,
       notes: payNotes,
-    } as Payment;
+      created_at: "",
+    };
 
     try {
-      await BillingService.RecordPayment(payload as any);
+      await BillingService.RecordPayment(payload);
       showPaymentModal = false;
       balancePatientId = payPatientId;
       await loadPayments();

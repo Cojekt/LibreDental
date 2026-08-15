@@ -16,7 +16,7 @@
     message?: string;
     confirmText?: string;
     cancelText?: string;
-    onConfirm: () => void | Promise<void>;
+    onConfirm: () => void | boolean | Promise<void | boolean>;
   }>();
 
   let loading = $state(false);
@@ -24,15 +24,19 @@
   async function handleConfirm() {
     loading = true;
     try {
-      await onConfirm();
-      showModal = false;
+      const res = await onConfirm();
+      if (res !== false) {
+        showModal = false;
+      }
+    } catch {
+      // Keep modal open if onConfirm throws or fails
     } finally {
       loading = false;
     }
   }
 </script>
 
-<Modal bind:showModal {title} icon="⚠️" maxWidth="max-w-md">
+<Modal bind:showModal preventDismiss={loading} {title} icon="⚠️" maxWidth="max-w-md">
   <div class="py-4 text-slate-300 text-sm">
     {message}
   </div>

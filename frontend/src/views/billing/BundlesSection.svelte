@@ -107,20 +107,22 @@
       default_fee: Math.round((item.default_fee || 0) * 100),
     }));
 
-    const payload = {
+    const payload: TreatmentBundle = {
       id: isEditingBundle ? editingBundleId : `bundle_${Date.now()}`,
       shortname: sn,
       name: bundleName.trim(),
       description: bundleDescription,
       items: convertedItems,
       total_fee: Math.round(bundleTotalFee() * 100),
-    } as TreatmentBundle;
+      created_at: "",
+      updated_at: "",
+    };
 
     try {
       if (isEditingBundle) {
-        await BillingService.UpdateBundle(payload as any);
+        await BillingService.UpdateBundle(payload);
       } else {
-        await BillingService.CreateBundle(payload as any);
+        await BillingService.CreateBundle(payload);
       }
       showBundleModal = false;
       await loadBundles();
@@ -403,8 +405,8 @@
 
 <ConfirmModal
   bind:showModal={showConfirmDelete}
-  title="Delete Bundle"
+  title={m.billing_bundle_delete_title()}
   message={m.billing_bundle_confirm_delete()}
-  confirmText="Delete"
+  confirmText={m.billing_bundle_delete_confirm()}
   onConfirm={executeDelete}
 />

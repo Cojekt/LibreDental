@@ -465,5 +465,11 @@
   "charting_billing_no_conditions": "No treatment-planned or completed conditions found for billing.",
   "charting_billing_err_claim": "Failed to generate claim from chart.",
   "billing_claim_err_patient": "Please select a patient first.",
-  "billing_claim_err_load_chart": "Failed to load patient chart conditions."
+  "billing_claim_err_load_chart": "Failed to load patient chart conditions.",
+  "billing_bundle_delete_title": "Delete Bundle",
+  "billing_bundle_delete_confirm": "Delete",
+  "timecard_delete_title": "Delete Timecard",
+  "timecard_delete_confirm": "Delete",
+  "prov_pay_salary_title": "Pay Salary",
+  "prov_pay_salary_confirm": "Record Payment"
 }

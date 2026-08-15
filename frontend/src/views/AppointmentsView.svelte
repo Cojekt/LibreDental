@@ -7,7 +7,7 @@
   import AppointmentAgendaSection from "./appointments/AppointmentAgendaSection.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocalDateString, isSameDay, parseLocalDate } from "$lib/date.js";
-  import { currentLocale } from "$lib/locale.svelte.js";
+  import { currentLocale, getLocaleVersion } from "$lib/locale.svelte.js";
 
   let {
     appointments = [],
@@ -343,7 +343,7 @@
   }
 </script>
 
-<div class="space-y-6">
+<div class="space-y-6" data-locale={getLocaleVersion()}>
   <!-- Stats Summary -->
   <AppointmentStats appointments={filteredAppointments} />
 
