@@ -469,7 +469,5 @@
   "billing_bundle_delete_title": "Delete Bundle",
   "billing_bundle_delete_confirm": "Delete",
   "timecard_delete_title": "Delete Timecard",
-  "timecard_delete_confirm": "Delete",
-  "prov_pay_salary_title": "Pay Salary",
-  "prov_pay_salary_confirm": "Record Payment"
+  "timecard_delete_confirm": "Delete"
 }

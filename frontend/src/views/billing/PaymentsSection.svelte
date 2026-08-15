@@ -129,7 +129,7 @@
       method: payMethod,
       date: payDate,
       notes: payNotes,
-      created_at: "",
+      created_at: new Date().toISOString(),
     };
 
     try {

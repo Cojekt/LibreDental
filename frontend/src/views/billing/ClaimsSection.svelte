@@ -33,6 +33,7 @@
   let showClaimModal = $state(false);
   let isEditingClaim = $state(false);
   let editingClaimId = $state("");
+  let editingClaimCreatedAt = $state("");
 
   // Claim form fields
   let claimPatientId = $state("");
@@ -107,6 +108,7 @@
   export function openNewClaim() {
     isEditingClaim = false;
     editingClaimId = "";
+    editingClaimCreatedAt = "";
     claimPatientId = patients[0]?.id ?? "";
     claimProviderId = providers[0]?.id ?? "";
     claimDateOfService = getTodayDateString();
@@ -124,6 +126,7 @@
   async function openEditClaim(c: Claim) {
     isEditingClaim = true;
     editingClaimId = c.id;
+    editingClaimCreatedAt = c.created_at || "";
     claimPatientId = c.patient_id;
     claimProviderId = c.provider_id;
     claimDateOfService = c.date_of_service;
@@ -202,8 +205,9 @@
         patient_portion:
           li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
       })),
-      created_at: "",
-      updated_at: "",
+      created_at:
+        isEditingClaim && editingClaimCreatedAt ? editingClaimCreatedAt : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     try {

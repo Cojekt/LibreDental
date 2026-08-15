@@ -22,6 +22,7 @@
   let showBundleModal = $state(false);
   let isEditingBundle = $state(false);
   let editingBundleId = $state("");
+  let editingBundleCreatedAt = $state("");
 
   // Bundle form
   let bundleShortname = $state("");
@@ -62,6 +63,7 @@
   export function openNewBundle() {
     isEditingBundle = false;
     editingBundleId = "";
+    editingBundleCreatedAt = "";
     bundleShortname = "";
     bundleName = "";
     bundleDescription = "";
@@ -73,6 +75,7 @@
   function openEditBundle(b: TreatmentBundle) {
     isEditingBundle = true;
     editingBundleId = b.id;
+    editingBundleCreatedAt = b.created_at || "";
     bundleShortname = b.shortname;
     bundleName = b.name;
     bundleDescription = b.description ?? "";
@@ -114,8 +117,11 @@
       description: bundleDescription,
       items: convertedItems,
       total_fee: Math.round(bundleTotalFee() * 100),
-      created_at: "",
-      updated_at: "",
+      created_at:
+        isEditingBundle && editingBundleCreatedAt
+          ? editingBundleCreatedAt
+          : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     try {

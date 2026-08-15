@@ -94,7 +94,7 @@
       code: editingFeeCode,
       provider_id: editingFeeProviderId,
       custom_fee: Math.round(Number(editingFeeCustom) * 100),
-      updated_at: "",
+      updated_at: new Date().toISOString(),
     };
     try {
       await BillingService.SaveFeeSchedule(payload);
