@@ -124,7 +124,7 @@
   }
 
   async function paySalary(pId: string) {
-    if (confirm("This is a record only, and does not actually link to a bank account. Proceed?")) {
+    if (confirm(m.prov_confirm_pay_salary())) {
       try {
         await TimecardService.PaySalary(pId);
         await loadProviderStates();
@@ -197,7 +197,7 @@
                   disabled
                   class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Clocking Out...
+                  {m.prov_clocking_out()}
                 </button>
               {:else if inFlightAction[p.id] === "clockIn"}
                 <button
@@ -205,7 +205,7 @@
                   disabled
                   class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Clocking In...
+                  {m.prov_clocking_in()}
                 </button>
               {:else if activeTimecards[p.id] === undefined}
                 <span class="text-slate-500 font-semibold italic">Loading...</span>
@@ -215,7 +215,7 @@
                   onclick={() => clockOut(p.id)}
                   class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold hover:bg-rose-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Clock Out
+                  {m.prov_clock_out()}
                 </button>
               {:else}
                 <button
@@ -223,7 +223,7 @@
                   onclick={() => clockIn(p.id)}
                   class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold hover:bg-emerald-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Clock In
+                  {m.prov_clock_in()}
                 </button>
               {/if}
             </div>
@@ -248,7 +248,7 @@
           <div class="bg-slate-800/40 rounded-lg p-3 mt-2 border border-slate-700/50">
             <div class="flex items-center justify-between">
               <div class="text-slate-300 text-xs font-semibold">
-                Total Owed:
+                {m.prov_total_owed()}
                 {#if totalOwed[p.id] === undefined}
                   <span class="text-slate-500 text-sm ml-1">...</span>
                 {:else}
@@ -262,7 +262,7 @@
                 onclick={() => paySalary(p.id)}
                 class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 rounded text-xs font-bold transition-colors border border-emerald-500/30"
               >
-                Pay Salary
+                {m.prov_pay_salary()}
               </button>
             </div>
             <div class="mt-3 flex justify-end">
@@ -275,7 +275,7 @@
                 }}
                 class="text-sky-400 hover:text-sky-300 text-xs font-semibold flex items-center gap-1"
               >
-                📋 View Timecards
+                {m.prov_view_timecards()}
               </button>
             </div>
           </div>

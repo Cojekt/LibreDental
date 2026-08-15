@@ -222,7 +222,7 @@
 
   async function openChartImportModal() {
     if (!claimPatientId) {
-      alert("Please select a patient first.");
+      alert(m.billing_claim_err_patient());
       return;
     }
     loadingChartImport = true;
@@ -239,7 +239,7 @@
       showChartImportModal = true;
     } catch (e) {
       console.error("Failed to load chart conditions:", e);
-      alert("Failed to load patient chart conditions.");
+      alert(m.billing_claim_err_load_chart());
     } finally {
       loadingChartImport = false;
     }

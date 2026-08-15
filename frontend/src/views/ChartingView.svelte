@@ -226,7 +226,7 @@
       (c) => c.status === "treatment_planned" || c.status === "completed"
     );
     if (billable.length === 0) {
-      alert("No treatment-planned or completed conditions found for billing.");
+      alert(m.charting_billing_no_conditions());
       return;
     }
 
@@ -241,7 +241,7 @@
       }
     } catch (e) {
       console.error("Failed to create claim from chart:", e);
-      alert("Failed to generate claim from chart.");
+      alert(m.charting_billing_err_claim());
     } finally {
       isCreatingClaim = false;
     }

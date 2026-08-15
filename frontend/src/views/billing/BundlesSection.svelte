@@ -128,7 +128,7 @@
   }
 
   async function deleteBundle(id: string) {
-    if (!confirm("Delete this procedure bundle?")) return;
+    if (!confirm(m.billing_bundle_confirm_delete())) return;
     try {
       await BillingService.DeleteBundle(id);
       await loadBundles();
@@ -315,7 +315,7 @@
           >
             <span class="col-span-3">{m.charting_th_code()}</span>
             <span class="col-span-6">{m.charting_th_desc()}</span>
-            <span class="col-span-2 text-right">Default Fee</span>
+            <span class="col-span-2 text-right">{m.billing_bundle_default_fee()}</span>
             <span class="col-span-1 text-center"></span>
           </div>
           {#each bundleItems as item, i}
