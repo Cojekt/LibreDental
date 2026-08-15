@@ -79,7 +79,6 @@ jobs:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path release_assets
-          Copy-Item build/windows/nsis/*.exe release_assets/
           Copy-Item bin/*.exe release_assets/ -ErrorAction SilentlyContinue
 
       - name: Upload Artifacts
