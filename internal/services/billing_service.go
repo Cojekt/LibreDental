@@ -180,7 +180,7 @@ func (s *BillingService) CreateBundle(b *domain.TreatmentBundle) (*domain.Treatm
 	}
 
 	// Recompute total_fee from items
-	var total float64
+	var total int64
 	for _, item := range b.Items {
 		total += item.DefaultFee
 	}
@@ -224,7 +224,7 @@ func (s *BillingService) UpdateBundle(b *domain.TreatmentBundle) (*domain.Treatm
 	}
 	b.Shortname = strings.ToLower(strings.TrimSpace(b.Shortname))
 
-	var total float64
+	var total int64
 	for _, item := range b.Items {
 		total += item.DefaultFee
 	}

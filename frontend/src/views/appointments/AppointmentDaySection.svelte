@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import type { Appointment } from "@bindings/domain/models.js";
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
+  import { getLocalDateString } from "$lib/date.js";
 
   let {
+    selectedDate = "",
     timeSlots = [],
     filteredAppointments = [],
     getApptHour,
@@ -21,6 +24,7 @@
     seatLabel = "Seat",
     completeLabel = "Complete",
   } = $props<{
+    selectedDate: string;
     timeSlots: string[];
     filteredAppointments: Appointment[];
     getApptHour: (isoStr: string) => string;
@@ -39,6 +43,35 @@
     seatLabel?: string;
     completeLabel?: string;
   }>();
+
+  let now = $state(new Date());
+  let timer: any;
+
+  onMount(() => {
+    timer = setInterval(() => {
+      now = new Date();
+    }, 60000);
+  });
+
+  onDestroy(() => {
+    if (timer) clearInterval(timer);
+  });
+
+  let isToday = $derived(selectedDate === getLocalDateString(now));
+
+  function getIndicatorTopPos(slotStr: string): number {
+    if (!isToday) return -1;
+    try {
+      const [hStr] = slotStr.split(":");
+      const slotHour = parseInt(hStr, 10);
+      if (slotHour === now.getHours()) {
+        return (now.getMinutes() / 60) * 100;
+      }
+    } catch {
+      // ignore
+    }
+    return -1;
+  }
 </script>
 
 <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
@@ -47,7 +80,17 @@
       {@const slotAppts = filteredAppointments.filter(
         (a: Appointment) => getApptHour(a.start_time) === slot
       )}
-      <div class="flex min-h-[96px] group hover:bg-slate-800/30 transition-colors">
+      <div class="flex min-h-[96px] group hover:bg-slate-800/30 transition-colors relative">
+        {#if getIndicatorTopPos(slot) >= 0}
+          <div
+            class="absolute left-0 right-0 z-10 border-t-2 border-rose-500 pointer-events-none"
+            style="top: {getIndicatorTopPos(slot)}%;"
+          >
+            <div
+              class="absolute -top-1.5 left-[5.7rem] w-3 h-3 bg-rose-500 rounded-full shadow-md shadow-rose-500/50"
+            ></div>
+          </div>
+        {/if}
         <div
           class="w-24 flex-shrink-0 border-r border-slate-800 p-3 text-xs font-semibold text-slate-400 bg-slate-900/50"
         >

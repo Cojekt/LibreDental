@@ -33,9 +33,9 @@
   function fmt(n: number) {
     const curr = countryMeta?.default_currency || "USD";
     try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n);
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
     } catch {
-      return `${n.toFixed(2)}`;
+      return `${(n / 100).toFixed(2)}`;
     }
   }
 
@@ -64,7 +64,7 @@
 
   function openEditFeeModal(code: string, currentFee: number) {
     editingFeeCode = code;
-    editingFeeCustom = currentFee;
+    editingFeeCustom = currentFee / 100;
     editingFeeProviderId = feeFilterProvider;
     showFeeModal = true;
   }
@@ -79,7 +79,7 @@
         country_code: cc as any,
         code: editingFeeCode,
         provider_id: editingFeeProviderId,
-        custom_fee: Number(editingFeeCustom),
+        custom_fee: Math.round(Number(editingFeeCustom) * 100),
         updated_at: new Date().toISOString(),
       });
       showFeeModal = false;

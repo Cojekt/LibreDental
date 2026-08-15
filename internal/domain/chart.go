@@ -37,7 +37,7 @@ type ToothCondition struct {
 	ADACode     string         `json:"ada_code,omitempty"` // e.g., D2392 for 2-surface posterior composite
 	Description string         `json:"description"`
 	Status      ToothStatus    `json:"status"`
-	Fee         float64        `json:"fee,omitempty"`
+	Fee         int64          `json:"fee,omitempty"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 }

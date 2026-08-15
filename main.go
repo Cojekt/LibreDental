@@ -40,6 +40,9 @@ func main() {
 	practiceConfigRepo := sqlite.NewPracticeConfigRepository(db)
 	practiceConfigService := services.NewPracticeConfigService(practiceConfigRepo)
 
+	timecardRepo := sqlite.NewTimecardRepository(db)
+	timecardService := services.NewTimecardService(timecardRepo, practiceConfigRepo)
+
 	systemSettingsService := services.NewSystemSettingsService(appDir)
 
 	chartRepo := sqlite.NewChartRepository(db)
@@ -65,6 +68,7 @@ func main() {
 			application.NewService(chartService),
 			application.NewService(billingService),
 			application.NewService(documentService),
+			application.NewService(timecardService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

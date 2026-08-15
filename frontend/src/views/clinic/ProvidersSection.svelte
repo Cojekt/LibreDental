@@ -1,10 +1,13 @@
 <script lang="ts">
-  import type { Provider } from "@bindings/domain/models.js";
+  import type { Provider, Timecard } from "@bindings/domain/models.js";
+  import { TimecardService } from "@bindings/services/index.js";
+  import { untrack } from "svelte";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import TimecardsModal from "./TimecardsModal.svelte";
 
   let {
     providers = [],
@@ -22,6 +25,7 @@
     provPhone = $bindable(""),
     provColor = $bindable("#3b82f6"),
     provIsActive = $bindable(true),
+    provHourlyRate = $bindable(0.0),
   } = $props<{
     providers: Provider[];
     openAddProviderModal: () => void;
@@ -38,7 +42,97 @@
     provPhone: string;
     provColor: string;
     provIsActive: boolean;
+    provHourlyRate: number;
   }>();
+
+  let activeTimecards = $state<Record<string, Timecard | null | undefined>>({});
+  let totalOwed = $state<Record<string, number | undefined>>({});
+  let inFlightAction = $state<Record<string, "clockIn" | "clockOut" | null>>({});
+  let providerGen: Record<string, number> = {};
+
+  let showTimecardsModal = $state(false);
+  let selectedProviderId = $state("");
+  let selectedProviderName = $state("");
+
+  $effect(() => {
+    const currentProviders = providers;
+    untrack(() => {
+      loadProviderStates(currentProviders);
+    });
+  });
+
+  async function loadProviderStates(provs: Provider[] = providers) {
+    for (const p of provs) {
+      const gen = (providerGen[p.id] = (providerGen[p.id] || 0) + 1);
+      try {
+        const tc = await TimecardService.GetActiveTimecard(p.id);
+        if (providerGen[p.id] === gen) {
+          activeTimecards[p.id] = tc;
+        }
+      } catch (e) {
+        if (providerGen[p.id] === gen) {
+          activeTimecards[p.id] = undefined;
+        }
+      }
+      try {
+        const owed = await TimecardService.GetTotalOwed(p.id);
+        if (providerGen[p.id] === gen) {
+          totalOwed[p.id] = owed;
+        }
+      } catch (e) {
+        if (providerGen[p.id] === gen) {
+          totalOwed[p.id] = undefined;
+        }
+      }
+    }
+  }
+
+  async function clockIn(pId: string) {
+    if (inFlightAction[pId]) return;
+    inFlightAction[pId] = "clockIn";
+    const gen = (providerGen[pId] = (providerGen[pId] || 0) + 1);
+    try {
+      const tc = await TimecardService.ClockIn(pId);
+      if (providerGen[pId] === gen) {
+        activeTimecards[pId] = tc;
+      }
+      const prov = providers.find((p: Provider) => p.id === pId);
+      await loadProviderStates(prov ? [prov] : providers);
+    } catch (e) {
+      console.error("Clock In failed", e);
+    } finally {
+      inFlightAction[pId] = null;
+    }
+  }
+
+  async function clockOut(pId: string) {
+    if (inFlightAction[pId]) return;
+    inFlightAction[pId] = "clockOut";
+    const gen = (providerGen[pId] = (providerGen[pId] || 0) + 1);
+    try {
+      await TimecardService.ClockOut(pId);
+      if (providerGen[pId] === gen) {
+        activeTimecards[pId] = null;
+      }
+      const prov = providers.find((p: Provider) => p.id === pId);
+      await loadProviderStates(prov ? [prov] : providers);
+    } catch (e) {
+      console.error("Clock Out failed", e);
+    } finally {
+      inFlightAction[pId] = null;
+    }
+  }
+
+  async function paySalary(pId: string) {
+    if (confirm("This is a record only, and does not actually link to a bank account. Proceed?")) {
+      try {
+        await TimecardService.PaySalary(pId);
+        await loadProviderStates();
+      } catch (e) {
+        console.error("Pay Salary failed", e);
+      }
+    }
+  }
 </script>
 
 <div class="space-y-6">
@@ -73,8 +167,13 @@
             </span>
           </div>
 
-          {#if p.license_number || p.email || p.phone}
+          {#if p.license_number || p.email || p.phone || p.hourly_rate}
             <div class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
+              {#if p.hourly_rate}
+                <div class="font-medium text-emerald-400">
+                  💵 Wage: ${(p.hourly_rate / 100).toFixed(2)}/hr
+                </div>
+              {/if}
               {#if p.license_number}
                 <div>
                   🪪 {m.prov_license_prefix()}
@@ -90,23 +189,95 @@
             </div>
           {/if}
 
-          <div
-            class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/60 text-xs"
-          >
-            <button
-              type="button"
-              onclick={() => openEditProviderModal(p)}
-              class="text-sky-400 hover:text-sky-300 font-semibold"
-            >
-              {m.patients_btn_edit()}
-            </button>
-            <button
-              type="button"
-              onclick={() => handleDeleteProvider(p.id)}
-              class="text-rose-400 hover:text-rose-300 font-semibold"
-            >
-              {m.patient_archive()}
-            </button>
+          <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
+            <div>
+              {#if inFlightAction[p.id] === "clockOut"}
+                <button
+                  type="button"
+                  disabled
+                  class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clocking Out...
+                </button>
+              {:else if inFlightAction[p.id] === "clockIn"}
+                <button
+                  type="button"
+                  disabled
+                  class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clocking In...
+                </button>
+              {:else if activeTimecards[p.id] === undefined}
+                <span class="text-slate-500 font-semibold italic">Loading...</span>
+              {:else if activeTimecards[p.id]}
+                <button
+                  type="button"
+                  onclick={() => clockOut(p.id)}
+                  class="rounded bg-rose-500/20 text-rose-400 px-3 py-1 font-semibold hover:bg-rose-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clock Out
+                </button>
+              {:else}
+                <button
+                  type="button"
+                  onclick={() => clockIn(p.id)}
+                  class="rounded bg-emerald-500/20 text-emerald-400 px-3 py-1 font-semibold hover:bg-emerald-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clock In
+                </button>
+              {/if}
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                onclick={() => openEditProviderModal(p)}
+                class="text-sky-400 hover:text-sky-300 font-semibold"
+              >
+                {m.patients_btn_edit()}
+              </button>
+              <button
+                type="button"
+                onclick={() => handleDeleteProvider(p.id)}
+                class="text-rose-400 hover:text-rose-300 font-semibold"
+              >
+                {m.patient_archive()}
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-slate-800/40 rounded-lg p-3 mt-2 border border-slate-700/50">
+            <div class="flex items-center justify-between">
+              <div class="text-slate-300 text-xs font-semibold">
+                Total Owed:
+                {#if totalOwed[p.id] === undefined}
+                  <span class="text-slate-500 text-sm ml-1">...</span>
+                {:else}
+                  <span class="text-emerald-400 text-sm ml-1"
+                    >${((totalOwed[p.id] || 0) / 100).toFixed(2)}</span
+                  >
+                {/if}
+              </div>
+              <button
+                type="button"
+                onclick={() => paySalary(p.id)}
+                class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 rounded text-xs font-bold transition-colors border border-emerald-500/30"
+              >
+                Pay Salary
+              </button>
+            </div>
+            <div class="mt-3 flex justify-end">
+              <button
+                type="button"
+                onclick={() => {
+                  selectedProviderId = p.id;
+                  selectedProviderName = p.name;
+                  showTimecardsModal = true;
+                }}
+                class="text-sky-400 hover:text-sky-300 text-xs font-semibold flex items-center gap-1"
+              >
+                📋 View Timecards
+              </button>
+            </div>
           </div>
         </div>
       {/each}
@@ -181,6 +352,17 @@
       </FormField>
     </div>
 
+    <FormField label="Hourly Rate ($)" forId="prov-hourly">
+      <Input
+        id="prov-hourly"
+        type="number"
+        min="0"
+        step="0.01"
+        bind:value={provHourlyRate}
+        placeholder="e.g. 25.00"
+      />
+    </FormField>
+
     <div class="flex items-center justify-between pt-2">
       <div>
         <label for="prov-color" class="block text-xs font-semibold text-slate-300 mb-1"
@@ -216,3 +398,10 @@
     </div>
   </form>
 </Modal>
+
+<TimecardsModal
+  bind:showModal={showTimecardsModal}
+  providerId={selectedProviderId}
+  providerName={selectedProviderName}
+  onrefresh={loadProviderStates}
+/>

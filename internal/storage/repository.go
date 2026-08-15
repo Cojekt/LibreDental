@@ -70,7 +70,7 @@ type ClaimRepository interface {
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, patientID string) ([]*domain.Claim, error)
 	// GetTotalBilled returns the sum of all line item fees for a patient's claims.
-	GetTotalBilled(ctx context.Context, patientID string) (float64, error)
+	GetTotalBilled(ctx context.Context, patientID string) (int64, error)
 }
 
 // PaymentRepository defines storage operations for patient payment records.
@@ -80,7 +80,7 @@ type PaymentRepository interface {
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, patientID string) ([]*domain.Payment, error)
 	// GetTotalPaid returns the sum of all payments received for a patient.
-	GetTotalPaid(ctx context.Context, patientID string) (float64, error)
+	GetTotalPaid(ctx context.Context, patientID string) (int64, error)
 }
 
 // TreatmentBundleRepository defines storage operations for clinic-wide procedure bundle templates.
@@ -104,5 +104,5 @@ type FeeScheduleRepository interface {
 	Save(ctx context.Context, schedule *domain.FeeSchedule) error
 	Delete(ctx context.Context, id string) error
 	ListFeeSchedules(ctx context.Context, countryCode domain.CountryCode, providerID string) ([]*domain.FeeSchedule, error)
-	GetEffectiveFee(ctx context.Context, countryCode domain.CountryCode, code string, providerID string) (float64, error)
+	GetEffectiveFee(ctx context.Context, countryCode domain.CountryCode, code string, providerID string) (int64, error)
 }

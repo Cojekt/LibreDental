@@ -144,10 +144,10 @@ func (r *ProcedureRepository) ListFeeSchedules(ctx context.Context, countryCode 
 	return list, nil
 }
 
-func (r *ProcedureRepository) GetEffectiveFee(ctx context.Context, countryCode domain.CountryCode, code string, providerID string) (float64, error) {
+func (r *ProcedureRepository) GetEffectiveFee(ctx context.Context, countryCode domain.CountryCode, code string, providerID string) (int64, error) {
 	// 1. Check provider-specific fee override
 	if providerID != "" {
-		var fee float64
+		var fee int64
 		err := r.db.QueryRowContext(ctx, `
 			SELECT custom_fee FROM fee_schedules
 			WHERE country_code = ? AND code = ? AND provider_id = ?`,
@@ -159,7 +159,7 @@ func (r *ProcedureRepository) GetEffectiveFee(ctx context.Context, countryCode d
 	}
 
 	// 2. Check practice-wide custom fee override (provider_id = '')
-	var practiceFee float64
+	var practiceFee int64
 	err := r.db.QueryRowContext(ctx, `
 		SELECT custom_fee FROM fee_schedules
 		WHERE country_code = ? AND code = ? AND provider_id = ''`,
@@ -170,7 +170,7 @@ func (r *ProcedureRepository) GetEffectiveFee(ctx context.Context, countryCode d
 	}
 
 	// 3. Fallback to procedure_codes catalog default fee
-	var defaultFee float64
+	var defaultFee int64
 	err = r.db.QueryRowContext(ctx, `
 		SELECT default_fee FROM procedure_codes
 		WHERE country_code = ? AND code = ?`,
@@ -180,5 +180,5 @@ func (r *ProcedureRepository) GetEffectiveFee(ctx context.Context, countryCode d
 		return defaultFee, nil
 	}
 
-	return 0.0, nil
+	return 0, nil
 }

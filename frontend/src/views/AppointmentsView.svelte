@@ -546,6 +546,7 @@
   {:else if viewMode === "calendar" || viewMode === "grid"}
     {#if calendarView === "day"}
       <AppointmentDaySection
+        {selectedDate}
         {timeSlots}
         {filteredAppointments}
         {getApptHour}

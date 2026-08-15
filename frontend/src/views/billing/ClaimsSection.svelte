@@ -73,9 +73,9 @@
   function fmt(n: number) {
     const curr = countryMeta?.default_currency || "USD";
     try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n);
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
     } catch {
-      return `${n.toFixed(2)}`;
+      return `${(n / 100).toFixed(2)}`;
     }
   }
 
@@ -123,7 +123,12 @@
     claimGroupNumber = c.group_number ?? "";
     claimStatus = c.status;
     claimNotes = c.notes ?? "";
-    claimLineItems = (c.line_items ?? []).map((li) => ({ ...li }));
+    claimLineItems = (c.line_items ?? []).map((li) => ({
+      ...li,
+      fee: (li.fee || 0) / 100,
+      insurance_allowed: li.insurance_allowed != null ? li.insurance_allowed / 100 : undefined,
+      patient_portion: li.patient_portion != null ? li.patient_portion / 100 : undefined,
+    }));
     bundleLookupInput = "";
     bundleLookupError = "";
     showClaimModal = true;
@@ -152,7 +157,7 @@
           id: `li_${Date.now()}_${i}`,
           ada_code: item.ada_code,
           description: item.description,
-          fee: item.default_fee,
+          fee: (item.default_fee || 0) / 100,
         }));
         claimLineItems = [...claimLineItems, ...newItems];
         bundleLookupInput = "";
@@ -180,7 +185,14 @@
       group_number: claimGroupNumber,
       status: claimStatus,
       notes: claimNotes,
-      line_items: claimLineItems,
+      line_items: claimLineItems.map((li) => ({
+        ...li,
+        fee: Math.round((li.fee || 0) * 100),
+        insurance_allowed:
+          li.insurance_allowed != null ? Math.round(li.insurance_allowed * 100) : undefined,
+        patient_portion:
+          li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
+      })),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -242,7 +254,7 @@
       surfaces: cond.surfaces,
       ada_code: cond.ada_code || "PROC",
       description: cond.description || `Tooth #${cond.tooth_number} procedure`,
-      fee: cond.fee || 0,
+      fee: (cond.fee || 0) / 100,
     }));
 
     claimLineItems = [...claimLineItems, ...newItems];
@@ -564,7 +576,9 @@
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             Total: <strong class="text-white text-sm font-mono"
-              >{fmt(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0))}</strong
+              >{fmt(
+                Math.round(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0) * 100)
+              )}</strong
             >
           </div>
         </div>

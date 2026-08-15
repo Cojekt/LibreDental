@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS dental_conditions (
 	ada_code TEXT DEFAULT '',
 	description TEXT DEFAULT '',
 	status TEXT NOT NULL,
-	fee REAL DEFAULT 0.0,
+	fee INTEGER DEFAULT 0,
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL,
 	FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE

@@ -137,7 +137,7 @@ func (r *PracticeConfigRepository) Save(ctx context.Context, cfg *domain.Practic
 
 func (r *PracticeConfigRepository) ListProviders(ctx context.Context) ([]*domain.Provider, error) {
 	query := `
-	SELECT id, name, role, specialty, license_number, email, phone, color, is_active, created_at, updated_at
+	SELECT id, name, role, specialty, license_number, email, phone, color, is_active, hourly_rate, created_at, updated_at
 	FROM providers ORDER BY name ASC`
 
 	rows, err := r.db.QueryContext(ctx, query)
@@ -154,7 +154,7 @@ func (r *PracticeConfigRepository) ListProviders(ctx context.Context) ([]*domain
 
 		err := rows.Scan(
 			&p.ID, &p.Name, &roleStr, &p.Specialty, &p.LicenseNumber,
-			&p.Email, &p.Phone, &p.Color, &isActiveInt, &p.CreatedAt, &p.UpdatedAt,
+			&p.Email, &p.Phone, &p.Color, &isActiveInt, &p.HourlyRate, &p.CreatedAt, &p.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan provider: %w", err)
@@ -186,8 +186,8 @@ func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.P
 
 	query := `
 	INSERT INTO providers (
-		id, name, role, specialty, license_number, email, phone, color, is_active, created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		id, name, role, specialty, license_number, email, phone, color, is_active, hourly_rate, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		name = excluded.name,
 		role = excluded.role,
@@ -197,12 +197,13 @@ func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.P
 		phone = excluded.phone,
 		color = excluded.color,
 		is_active = excluded.is_active,
+		hourly_rate = excluded.hourly_rate,
 		updated_at = excluded.updated_at`
 
 	_, err := r.db.ExecContext(
 		ctx, query,
 		p.ID, p.Name, p.Role, p.Specialty, p.LicenseNumber,
-		p.Email, p.Phone, p.Color, isActiveInt, p.CreatedAt, p.UpdatedAt,
+		p.Email, p.Phone, p.Color, isActiveInt, p.HourlyRate, p.CreatedAt, p.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save provider: %w", err)
