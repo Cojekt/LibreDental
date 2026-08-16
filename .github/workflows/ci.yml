@@ -31,11 +31,13 @@ jobs:
             exit 1
           fi
 
+      # Use -tags server so go vet runs without requiring CGO desktop GUI headers (GTK4/WebKitGTK)
+      # imported by Wails' webview adapter in internal/app/window_adapter.go.
       - name: Go Vet
-        run: go vet ./internal/...
+        run: go vet -tags server ./internal/...
 
       - name: Go Unit Tests
-        run: go test -v ./internal/...
+        run: go test -tags server -v ./internal/...
 
   frontend-checks:
     name: Frontend Quality & Type Checks
