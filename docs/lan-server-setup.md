@@ -10,7 +10,7 @@ LibreDental offers two separate binaries for two distinct deployment models:
 - **Desktop App (`libredental`):** Standalone single-machine desktop application for solo practices operating on a single PC with zero networking.
 - **LAN Server (`libredental-server`):** Headless background service running on one central server PC that serves the web application over HTTP to browser clients.
 
-> **Note:** The desktop app and server binary are **not compatible**. You cannot point a desktop client app at a server binary; client workstations connect to the server using standard web browsers (Chrome, Edge, Firefox).
+> **Note:** Client workstations connect to the server using standard web browsers (Chrome, Edge, Firefox). Remote workstation desktop binaries cannot connect over the network to a server instance. However, running the desktop app locally on the server PC itself is fully supported alongside the server process (safely sharing `libredental.db` via SQLite WAL mode).
 
 ## 2. Server Requirements & OS Setup
 
@@ -118,5 +118,6 @@ Schedule via `crontab -e`: `0 23 * * * /opt/libredental/backup.sh`
 ## 5. Quick Reference & Troubleshooting
 
 - **Server Self-Access:** If the LAN network switch fails, the Server PC can still access the system at `http://localhost:4242`.
-- **Port Override:** Set environment variable `LIBREDENTAL_PORT=8080` (or `LIBREDENTAL_HOST=0.0.0.0`) to customize.
+- **Concurrent Server & Desktop Execution:** Running the Desktop App (`libredental`) alongside the LAN Server (`libredental-server`) on the server machine under the same OS user account is supported and safe. Because LibreDental uses SQLite WAL mode (`journal_mode=WAL` with `busy_timeout=5000`), both binaries safely share access to `libredental.db` without data corruption.
+- **Host & Port Customization:** The server binds to `0.0.0.0` (all interfaces) on port `4242` by default. Set `LIBREDENTAL_PORT=8080` or `LIBREDENTAL_HOST=127.0.0.1` (or a specific IP like `192.168.1.100`) to customize.
 - **Service Management (Linux):** `sudo systemctl [status|restart|stop] libredental`

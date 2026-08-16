@@ -49,6 +49,16 @@ tasks:
     cmds:
       - task: "{{.GOOS}}:run"
 
+  server:
+    desc: Builds and runs the application in server mode (HTTP server at http://localhost:4242)
+    cmds:
+      - task: common:run:server
+
+  run:server:
+    desc: Builds and runs the application in server mode (HTTP server at http://localhost:4242)
+    cmds:
+      - task: common:run:server
+
   format:
     desc: Formats Go code with gofmt and frontend code with prettier
     cmds:

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/LibreDental/libredental/internal/app"
 	"github.com/LibreDental/libredental/internal/services"
 )
 
@@ -288,5 +289,46 @@ func TestSystemSettingsService_ApplyWindowSettings(t *testing.T) {
 
 	if !win.fullscreen {
 		t.Errorf("Expected window to be fullscreen")
+	}
+}
+
+func TestSystemSettingsService_IsDesktopMode(t *testing.T) {
+	tempDir := t.TempDir()
+	service := services.NewSystemSettingsService(tempDir)
+
+	isDesktop, err := service.IsDesktopMode()
+	if err != nil {
+		t.Fatalf("IsDesktopMode failed: %v", err)
+	}
+	if isDesktop {
+		t.Errorf("Expected IsDesktopMode to be false before window attachment")
+	}
+
+	win := &mockWindow{width: 1280, height: 800}
+	services.AttachWindow(service, win)
+
+	isDesktop, err = service.IsDesktopMode()
+	if err != nil {
+		t.Fatalf("IsDesktopMode failed after attach: %v", err)
+	}
+	expected := !app.IsServerBuild()
+	if isDesktop != expected {
+		t.Errorf("Expected IsDesktopMode to be %v after window attachment (server tag build: %v)", expected, app.IsServerBuild())
+	}
+}
+
+func TestSystemSettingsService_GetEffectiveLocaleFromTag(t *testing.T) {
+	tempDir := t.TempDir()
+	service := services.NewSystemSettingsService(tempDir)
+	supported := []string{"en", "fr", "es"}
+
+	eff, err := service.GetEffectiveLocaleFromTag("fr", supported)
+	if err != nil || eff != "fr" {
+		t.Errorf("Expected 'fr', got %q (err: %v)", eff, err)
+	}
+
+	eff, err = service.GetEffectiveLocaleFromTag("es-MX", supported)
+	if err != nil || eff != "es" {
+		t.Errorf("Expected 'es' for 'es-MX', got %q (err: %v)", eff, err)
 	}
 }

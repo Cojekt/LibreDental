@@ -46,7 +46,22 @@ export function applyLocale(tag: string) {
 export async function initLocale(): Promise<void> {
   const reqId = ++_currentRequestId;
   try {
-    const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+    const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+    let effective = "";
+
+    if (!isDesktop) {
+      const localLang = localStorage.getItem("language");
+      if (localLang) {
+        effective = await SystemSettingsService.GetEffectiveLocaleFromTag(localLang, [
+          ...locales,
+        ] as string[]);
+      }
+    }
+
+    if (!effective) {
+      effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+    }
+
     if (reqId !== _currentRequestId) return;
     applyLocale(effective || "en");
   } catch {
@@ -61,8 +76,17 @@ export async function initLocale(): Promise<void> {
  */
 export async function setLanguagePreference(lang: string): Promise<void> {
   const reqId = ++_currentRequestId;
-  await SystemSettingsService.SetLanguage(lang);
-  const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+  localStorage.setItem("language", lang);
+
+  const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+  if (isDesktop) {
+    await SystemSettingsService.SetLanguage(lang);
+  }
+
+  const effective = isDesktop
+    ? await SystemSettingsService.GetEffectiveLocale([...locales] as string[])
+    : await SystemSettingsService.GetEffectiveLocaleFromTag(lang, [...locales] as string[]);
+
   if (reqId !== _currentRequestId) return;
   applyLocale(effective || "en");
 }
