@@ -1,15 +1,14 @@
 package app_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/LibreDental/libredental/internal/app"
 )
 
 func TestLoadServerConfig_Defaults(t *testing.T) {
-	os.Unsetenv("LIBREDENTAL_HOST")
-	os.Unsetenv("LIBREDENTAL_PORT")
+	t.Setenv("LIBREDENTAL_HOST", "")
+	t.Setenv("LIBREDENTAL_PORT", "")
 
 	cfg := app.LoadServerConfig()
 	if cfg.Host != "0.0.0.0" {

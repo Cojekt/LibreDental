@@ -50,12 +50,11 @@ export async function initLocale(): Promise<void> {
     let effective = "";
 
     if (!isDesktop) {
-      const localLang = localStorage.getItem("language");
-      if (localLang) {
-        effective = await SystemSettingsService.GetEffectiveLocaleFromTag(localLang, [
-          ...locales,
-        ] as string[]);
-      }
+      const localLang = localStorage.getItem("language") || "system";
+      const targetTag = localLang === "system" ? navigator.language || "en" : localLang;
+      effective = await SystemSettingsService.GetEffectiveLocaleFromTag(targetTag, [
+        ...locales,
+      ] as string[]);
     }
 
     if (!effective) {
@@ -76,19 +75,32 @@ export async function initLocale(): Promise<void> {
  */
 export async function setLanguagePreference(lang: string): Promise<void> {
   const reqId = ++_currentRequestId;
-  localStorage.setItem("language", lang);
+  const prevLocal = localStorage.getItem("language");
 
-  const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
-  if (isDesktop) {
-    await SystemSettingsService.SetLanguage(lang);
+  try {
+    const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+    if (isDesktop) {
+      await SystemSettingsService.SetLanguage(lang);
+    }
+
+    const targetTag = !isDesktop && lang === "system" ? navigator.language || "en" : lang;
+
+    const effective = isDesktop
+      ? await SystemSettingsService.GetEffectiveLocale([...locales] as string[])
+      : await SystemSettingsService.GetEffectiveLocaleFromTag(targetTag, [...locales] as string[]);
+
+    if (reqId !== _currentRequestId) return;
+
+    localStorage.setItem("language", lang);
+    applyLocale(effective || "en");
+  } catch (err) {
+    if (prevLocal !== null) {
+      localStorage.setItem("language", prevLocal);
+    } else {
+      localStorage.removeItem("language");
+    }
+    throw err;
   }
-
-  const effective = isDesktop
-    ? await SystemSettingsService.GetEffectiveLocale([...locales] as string[])
-    : await SystemSettingsService.GetEffectiveLocaleFromTag(lang, [...locales] as string[]);
-
-  if (reqId !== _currentRequestId) return;
-  applyLocale(effective || "en");
 }
 
 /** Returns the currently active Paraglide locale tag (e.g. "en"). Reactive to locale changes. */

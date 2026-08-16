@@ -40,7 +40,7 @@ runs:
     - name: Install Wails v3 CLI & Task CLI
       shell: bash
       run: |
-        go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.2
+        go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8
         go install github.com/go-task/task/v3/cmd/task@v3.41.0
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
@@ -48,4 +48,11 @@ runs:
       shell: bash
       working-directory: frontend
       run: npm ci
+
+    - name: Generate Wails Bindings & Build Frontend Assets
+      shell: bash
+      run: |
+        task common:generate:bindings
+        task common:build:frontend
+
 
