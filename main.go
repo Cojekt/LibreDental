@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/LibreDental/libredental/internal/services"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
@@ -57,9 +58,31 @@ func main() {
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir)
 
+	// Server mode configuration (used when built with: task build:server / go build -tags server).
+	// LIBREDENTAL_HOST defaults to 0.0.0.0 (all LAN interfaces).
+	// LIBREDENTAL_PORT defaults to 4242.
+	serveHost := os.Getenv("LIBREDENTAL_HOST")
+	if serveHost == "" {
+		serveHost = "0.0.0.0"
+	}
+	servePort := 4242
+	if portStr := os.Getenv("LIBREDENTAL_PORT"); portStr != "" {
+		if p, err := strconv.Atoi(portStr); err == nil && p > 0 && p < 65536 {
+			servePort = p
+		} else {
+			log.Printf("Warning: invalid LIBREDENTAL_PORT %q, using default %d", portStr, servePort)
+		}
+	}
+
 	app := application.New(application.Options{
 		Name:        "LibreDental",
 		Description: "Open-Source Dental Practice Management System",
+		// Server field is only active when built with -tags server.
+		// In desktop mode this field is ignored by Wails.
+		Server: application.ServerOptions{
+			Host: serveHost,
+			Port: servePort,
+		},
 		Services: []application.Service{
 			application.NewService(patientService),
 			application.NewService(appointmentService),
