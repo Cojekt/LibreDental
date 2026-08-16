@@ -15,12 +15,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version: "1.26.5"
-          cache: true
-          cache-dependency-path: go.sum
+      - name: Setup CI Environment
+        uses: ./.github/actions/setup-env
 
       - name: Check Go Code Formatting
         run: |
@@ -31,13 +27,11 @@ jobs:
             exit 1
           fi
 
-      # Use -tags server so go vet runs without requiring CGO desktop GUI headers (GTK4/WebKitGTK)
-      # imported by Wails' webview adapter in internal/app/window_adapter.go.
-      - name: Go Vet
-        run: go vet -tags server ./internal/...
+      - name: Go Vet (Entire Repository)
+        run: go vet ./...
 
       - name: Go Unit Tests
-        run: go test -tags server -v ./internal/...
+        run: go test -v ./internal/...
 
   frontend-checks:
     name: Frontend Quality & Type Checks
@@ -47,39 +41,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version: "1.26.5"
-          cache: true
-          cache-dependency-path: go.sum
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libwebkitgtk-6.0-dev \
-            libayatana-appindicator3-dev \
-            pkg-config \
-            build-essential
-
-      - name: Install Wails v3 CLI & Task CLI
-        run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.2
-          go install github.com/go-task/task/v3/cmd/task@v3.41.0
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
-      - name: Install Frontend Dependencies
-        working-directory: frontend
-        run: npm ci
+      - name: Setup CI Environment
+        uses: ./.github/actions/setup-env
 
       - name: Generate Wails Bindings
         run: task common:generate:bindings
@@ -101,42 +64,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libwebkitgtk-6.0-dev \
-            libayatana-appindicator3-dev \
-            pkg-config \
-            build-essential
-
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version: "1.26.5"
-          cache: true
-          cache-dependency-path: go.sum
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install Wails v3 CLI & Task CLI
-        run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.2
-          go install github.com/go-task/task/v3/cmd/task@v3.41.0
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
-      - name: Install Frontend Dependencies
-        working-directory: frontend
-        run: npm ci
+      - name: Setup CI Environment
+        uses: ./.github/actions/setup-env
 
       - name: Build Server Binary
         run: task build:server
 
       - name: Build Desktop Application
         run: task build
+
