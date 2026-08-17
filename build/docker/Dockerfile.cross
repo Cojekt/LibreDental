@@ -184,7 +184,7 @@ export CGO_ENABLED=1
 export CGO_CFLAGS="-w"
 
 # Build frontend if exists and not already built (host may have built it)
-if [ -d "frontend" ] && [ -f "frontend/package.json" ] && [ ! -d "frontend/dist" ]; then
+if [ -d "frontend" ] && [ -f "frontend/package.json" ] && [ ! -f "frontend/dist/index.html" ]; then
     (cd frontend && npm install --silent && npm run build --silent)
 fi
 

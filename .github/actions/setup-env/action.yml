@@ -49,4 +49,9 @@ runs:
       working-directory: frontend
       run: npm ci
 
+    - name: Ensure Frontend Dist Placeholder
+      shell: bash
+      run: mkdir -p frontend/dist && touch frontend/dist/.gitkeep
+
+
 
