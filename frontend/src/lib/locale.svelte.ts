@@ -46,7 +46,21 @@ export function applyLocale(tag: string) {
 export async function initLocale(): Promise<void> {
   const reqId = ++_currentRequestId;
   try {
-    const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+    const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+    let effective = "";
+
+    if (!isDesktop) {
+      const localLang = localStorage.getItem("language") || "system";
+      const targetTag = localLang === "system" ? navigator.language || "en" : localLang;
+      effective = await SystemSettingsService.GetEffectiveLocaleFromTag(targetTag, [
+        ...locales,
+      ] as string[]);
+    }
+
+    if (!effective) {
+      effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
+    }
+
     if (reqId !== _currentRequestId) return;
     applyLocale(effective || "en");
   } catch {
@@ -61,10 +75,33 @@ export async function initLocale(): Promise<void> {
  */
 export async function setLanguagePreference(lang: string): Promise<void> {
   const reqId = ++_currentRequestId;
-  await SystemSettingsService.SetLanguage(lang);
-  const effective = await SystemSettingsService.GetEffectiveLocale([...locales] as string[]);
-  if (reqId !== _currentRequestId) return;
-  applyLocale(effective || "en");
+  const prevLocal = localStorage.getItem("language");
+
+  try {
+    const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+    if (isDesktop) {
+      await SystemSettingsService.SetLanguage(lang);
+    }
+
+    const targetTag = !isDesktop && lang === "system" ? navigator.language || "en" : lang;
+
+    const effective = isDesktop
+      ? await SystemSettingsService.GetEffectiveLocale([...locales] as string[])
+      : await SystemSettingsService.GetEffectiveLocaleFromTag(targetTag, [...locales] as string[]);
+
+    if (reqId !== _currentRequestId) return;
+
+    localStorage.setItem("language", lang);
+    applyLocale(effective || "en");
+  } catch (err) {
+    if (reqId !== _currentRequestId) return;
+    if (prevLocal !== null) {
+      localStorage.setItem("language", prevLocal);
+    } else {
+      localStorage.removeItem("language");
+    }
+    throw err;
+  }
 }
 
 /** Returns the currently active Paraglide locale tag (e.g. "en"). Reactive to locale changes. */

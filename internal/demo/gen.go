@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	outputPath := "demo.zip"
+	outputPath := "libredental-demo-data.zip"
 	if len(os.Args) > 1 {
 		outputPath = os.Args[1]
 	}

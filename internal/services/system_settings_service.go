@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/LibreDental/libredental/internal/app"
 )
 
 // Window defines the interface required by SystemSettingsService to interact with the application window.
@@ -468,12 +470,28 @@ func (s *SystemSettingsService) GetSystemLocale() (string, error) {
 	return tag, nil
 }
 
+// IsDesktopMode returns true if the application is running as a desktop app with an attached window.
+func (s *SystemSettingsService) IsDesktopMode() (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if app.IsServerBuild() {
+		return false, nil
+	}
+	return s.window != nil, nil
+}
+
 // GetEffectiveLocale resolves the application's active UI locale.
 func (s *SystemSettingsService) GetEffectiveLocale(supportedLocales []string) (string, error) {
 	tag, err := s.GetLanguage()
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve effective locale: %w", err)
 	}
+	return s.GetEffectiveLocaleFromTag(tag, supportedLocales)
+}
+
+// GetEffectiveLocaleFromTag resolves a specific language tag (e.g. from client preference) against supported locales.
+func (s *SystemSettingsService) GetEffectiveLocaleFromTag(tag string, supportedLocales []string) (string, error) {
 	if tag == "system" || tag == "" {
 		sysTag, sysErr := s.GetSystemLocale()
 		if sysErr == nil && sysTag != "" {

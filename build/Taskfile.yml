@@ -217,7 +217,6 @@ tasks:
 
   run:server:
     summary: Builds and runs a development server (DEV=true)
-    internal: true
     deps:
       - task: build:server
         vars:
@@ -264,18 +263,17 @@ tasks:
     summary: Builds and runs the Docker image
     internal: true
     desc: |
-      Builds the Docker image and runs it, exposing port 8080.
-      Usage: task run:docker [TAG=myapp:latest] [PORT=8080]
-      Note: The internal container port is always 8080. The PORT variable
-      only changes the host port mapping. Ensure your app uses port 8080
-      or modify the Dockerfile to match your ServerOptions.Port setting.
+      Builds the Docker image and runs it, exposing port 4242.
+      Usage: task run:docker [TAG=myapp:latest] [PORT=4242]
+      Note: The internal container port is always 4242. The PORT variable
+      only changes the host port mapping.
     deps:
       - task: build:docker
         vars:
           TAG:
             ref: .TAG
     cmds:
-      - docker run --rm -p {{.PORT | default "8080"}}:8080 {{.TAG | default (printf "%s:latest" .APP_NAME)}}
+      - docker run --rm -p {{.PORT | default "4242"}}:4242 {{.TAG | default (printf "%s:latest" .APP_NAME)}}
     vars:
       TAG: "{{.TAG}}"
       PORT: "{{.PORT}}"

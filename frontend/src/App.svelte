@@ -69,18 +69,24 @@
     }
 
     try {
-      await SystemSettingsService.SetTheme(newTheme);
+      const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+      if (isDesktop) {
+        await SystemSettingsService.SetTheme(newTheme);
+      }
     } catch (e) {
-      console.warn("Failed to persist theme in SQLite:", e);
+      console.warn("Failed to persist theme in config:", e);
     }
   }
 
   async function loadTheme() {
     try {
-      const dbTheme = await SystemSettingsService.GetTheme();
-      if (dbTheme === "light" || dbTheme === "dark" || dbTheme === "system") {
-        await applyTheme(dbTheme as ThemeMode);
-        return;
+      const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+      if (isDesktop) {
+        const dbTheme = await SystemSettingsService.GetTheme();
+        if (dbTheme === "light" || dbTheme === "dark" || dbTheme === "system") {
+          await applyTheme(dbTheme as ThemeMode);
+          return;
+        }
       }
     } catch (e) {
       console.warn("Could not load theme from DB, fallback to localStorage:", e);

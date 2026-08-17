@@ -57,11 +57,11 @@ COPY --from=builder /app/server /server
 COPY --from=builder /app/frontend/dist /frontend/dist
 
 # Expose the default port
-EXPOSE 8080
+EXPOSE 4242
 
-# Bind to all interfaces (required for Docker)
-# Can be overridden at runtime with -e WAILS_SERVER_HOST=...
-ENV WAILS_SERVER_HOST=0.0.0.0
+# Bind to all interfaces (required for Docker) and set default port
+ENV LIBREDENTAL_HOST=0.0.0.0
+ENV LIBREDENTAL_PORT=4242
 
 # Run the server
 ENTRYPOINT ["/server"]

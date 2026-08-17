@@ -25,9 +25,9 @@ tasks:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   demo:
-    desc: "Generates a standalone pre-populated save archive (demo.zip)"
+    desc: "Generates a standalone pre-populated save archive (libredental-demo-data.zip)"
     cmds:
-      - go run ./internal/demo/gen.go demo.zip
+      - go run ./internal/demo/gen.go libredental-demo-data.zip
 
   build:
     desc: Builds the application
@@ -48,6 +48,11 @@ tasks:
     desc: Runs the application
     cmds:
       - task: "{{.GOOS}}:run"
+
+  server:
+    desc: Builds and runs the application in server mode (HTTP server at http://localhost:4242)
+    cmds:
+      - task: common:run:server
 
   format:
     desc: Formats Go code with gofmt and frontend code with prettier
