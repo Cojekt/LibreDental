@@ -49,10 +49,4 @@ runs:
       working-directory: frontend
       run: npm ci
 
-    - name: Generate Wails Bindings & Build Frontend Assets
-      shell: bash
-      run: |
-        task common:generate:bindings
-        task common:build:frontend
-
 

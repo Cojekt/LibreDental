@@ -44,6 +44,9 @@ jobs:
       - name: Setup CI Environment
         uses: ./.github/actions/setup-env
 
+      - name: Generate Wails Bindings
+        run: task common:generate:bindings
+
       - name: Check Frontend Formatting
         working-directory: frontend
         run: npm run format:check

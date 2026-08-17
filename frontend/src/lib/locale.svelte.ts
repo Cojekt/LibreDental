@@ -94,6 +94,7 @@ export async function setLanguagePreference(lang: string): Promise<void> {
     localStorage.setItem("language", lang);
     applyLocale(effective || "en");
   } catch (err) {
+    if (reqId !== _currentRequestId) return;
     if (prevLocal !== null) {
       localStorage.setItem("language", prevLocal);
     } else {
