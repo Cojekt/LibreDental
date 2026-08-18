@@ -146,9 +146,22 @@
       if (isDesktop) {
         await DocumentService.OpenDocument(doc.id);
       } else {
-        const url = await downloadAndCreateObjectURL(doc);
-        window.open(url, "_blank");
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        const win = window.open("", "_blank");
+        try {
+          const url = await downloadAndCreateObjectURL(doc);
+          if (win && !win.closed) {
+            win.location.href = url;
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+          } else {
+            window.location.href = url;
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+          }
+        } catch (err) {
+          if (win && !win.closed) {
+            win.close();
+          }
+          throw err;
+        }
       }
     } catch (err) {
       console.error("Failed to open document:", err);
@@ -158,22 +171,38 @@
 
   async function handleExport(doc: Document) {
     try {
-      const url = await downloadAndCreateObjectURL(doc);
+      const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
       const suggestedName = doc.name || m.doc_default_export_name();
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = suggestedName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      if (isDesktop) {
+        const path = await Dialogs.SaveFile({
+          Filename: suggestedName,
+          Title: m.doc_export_title(),
+        });
+        if (path) {
+          await DocumentService.ExportDocumentToPath(doc.id, path);
+          exportSuccessMsg = m.doc_export_success({ path });
+          setTimeout(() => {
+            exportSuccessMsg = "";
+          }, 5000);
+        }
+      } else {
+        const url = await downloadAndCreateObjectURL(doc);
 
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = suggestedName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-      exportSuccessMsg = m.doc_export_success({ path: suggestedName });
-      setTimeout(() => {
-        exportSuccessMsg = "";
-      }, 5000);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+
+        exportSuccessMsg = m.doc_export_success({ path: suggestedName });
+        setTimeout(() => {
+          exportSuccessMsg = "";
+        }, 5000);
+      }
     } catch (err) {
       console.error("Failed to export document:", err);
       alert(m.doc_err_export());
