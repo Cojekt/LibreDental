@@ -141,29 +141,34 @@
   }
 
   async function handleOpen(doc: Document) {
+    const win = window.open("", "_blank");
     try {
       const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
       if (isDesktop) {
+        if (win && !win.closed) {
+          win.close();
+        }
         await DocumentService.OpenDocument(doc.id);
       } else {
-        const win = window.open("", "_blank");
-        try {
-          const url = await downloadAndCreateObjectURL(doc);
-          if (win && !win.closed) {
-            win.location.href = url;
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
-          } else {
-            window.location.href = url;
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
-          }
-        } catch (err) {
-          if (win && !win.closed) {
-            win.close();
-          }
-          throw err;
+        const url = await downloadAndCreateObjectURL(doc);
+        if (win && !win.closed) {
+          win.location.href = url;
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } else {
+          const suggestedName = doc.name || m.doc_default_export_name();
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = suggestedName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
         }
       }
     } catch (err) {
+      if (win && !win.closed) {
+        win.close();
+      }
       console.error("Failed to open document:", err);
       alert(m.doc_err_open());
     }
