@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { DocumentService } from "@bindings/services/index.js";
+  import { DocumentService, SystemSettingsService } from "@bindings/services/index.js";
   import { DocumentType, type Document } from "@bindings/domain/models.js";
   import { Dialogs } from "@wailsio/runtime";
   import Modal from "../../components/ui/Modal.svelte";
@@ -125,9 +125,31 @@
     }
   }
 
+  async function downloadAndCreateObjectURL(doc: Document): Promise<string> {
+    const base64 = await DocumentService.GetDocumentBase64(doc.id);
+    if (!base64) {
+      throw new Error("Empty document");
+    }
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: doc.content_type || "application/octet-stream" });
+    return URL.createObjectURL(blob);
+  }
+
   async function handleOpen(doc: Document) {
     try {
-      await DocumentService.OpenDocument(doc.id);
+      const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+      if (isDesktop) {
+        await DocumentService.OpenDocument(doc.id);
+      } else {
+        const url = await downloadAndCreateObjectURL(doc);
+        window.open(url, "_blank");
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }
     } catch (err) {
       console.error("Failed to open document:", err);
       alert(m.doc_err_open());
@@ -136,15 +158,22 @@
 
   async function handleExport(doc: Document) {
     try {
+      const url = await downloadAndCreateObjectURL(doc);
       const suggestedName = doc.name || m.doc_default_export_name();
-      const path = await Dialogs.SaveFile({ Filename: suggestedName, Title: m.doc_export_title() });
-      if (path) {
-        await DocumentService.ExportDocumentToPath(doc.id, path);
-        exportSuccessMsg = m.doc_export_success({ path });
-        setTimeout(() => {
-          exportSuccessMsg = "";
-        }, 5000);
-      }
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = suggestedName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+
+      exportSuccessMsg = m.doc_export_success({ path: suggestedName });
+      setTimeout(() => {
+        exportSuccessMsg = "";
+      }, 5000);
     } catch (err) {
       console.error("Failed to export document:", err);
       alert(m.doc_err_export());
