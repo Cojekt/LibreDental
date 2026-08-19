@@ -10,8 +10,8 @@
     "build": "npm run build:i18n && vite build --mode production",
     "preview": "vite preview",
     "check": "npm run build:i18n && svelte-check --tsconfig ./tsconfig.json --tsgo",
-    "format:check": "prettier --check .",
-    "format": "prettier --write ."
+    "format:check": "prettier --check . ../.github",
+    "format": "prettier --write . ../.github"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -1,6 +1,24 @@
 name: "Setup LibreDental CI Environment"
 description: "Installs system dependencies (Linux/Windows), Go, Node.js, Wails CLI, Task CLI, and frontend dependencies"
 
+inputs:
+  setup-go:
+    description: "Whether to install and setup Go"
+    required: false
+    default: "true"
+  cache-go:
+    description: "Whether to cache Go dependencies"
+    required: false
+    default: "true"
+  setup-node:
+    description: "Whether to install Node.js and frontend dependencies"
+    required: false
+    default: "true"
+  cache-node:
+    description: "Whether to cache Node/npm dependencies"
+    required: false
+    default: "true"
+
 runs:
   using: "composite"
   steps:
@@ -24,27 +42,31 @@ runs:
         echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
 
     - name: Setup Go
+      if: inputs.setup-go == 'true'
       uses: actions/setup-go@v7
       with:
         go-version: "1.26.5"
-        cache: true
+        cache: ${{ inputs.cache-go == 'true' }}
         cache-dependency-path: go.sum
 
     - name: Setup Node.js
+      if: inputs.setup-node == 'true'
       uses: actions/setup-node@v7
       with:
         node-version: "22"
-        cache: "npm"
+        cache: ${{ inputs.cache-node == 'true' && 'npm' || '' }}
         cache-dependency-path: frontend/package-lock.json
 
     - name: Install Wails v3 CLI & Task CLI
+      if: inputs.setup-go == 'true'
       shell: bash
       run: |
-        go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8
+        go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.9
         go install github.com/go-task/task/v3/cmd/task@v3.41.0
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
     - name: Install Frontend Dependencies
+      if: inputs.setup-node == 'true'
       shell: bash
       working-directory: frontend
       run: npm ci
@@ -52,6 +74,3 @@ runs:
     - name: Ensure Frontend Dist Placeholder
       shell: bash
       run: mkdir -p frontend/dist && touch frontend/dist/.gitkeep
-
-
-
