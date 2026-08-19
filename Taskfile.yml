@@ -27,7 +27,7 @@ tasks:
   demo:
     desc: "Generates a standalone pre-populated save archive (libredental-demo-data.zip)"
     cmds:
-      - mkdir -p {{.BIN_DIR}}
+      - '{{if eq OS "windows"}}if not exist "{{.BIN_DIR}}" mkdir "{{.BIN_DIR}}"{{else}}mkdir -p "{{.BIN_DIR}}"{{end}}'
       - go run ./internal/demo/gen.go {{.BIN_DIR}}/libredental-demo-data.zip
 
   artifact:

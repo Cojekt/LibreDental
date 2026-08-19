@@ -36,6 +36,8 @@ tasks:
 
   demo:
     summary: Generates a standalone pre-populated save archive
+    dir: ..
+    cmds:
     cmds:
       - mkdir -p {{.BIN_DIR}}
       - go run ./internal/demo/gen.go {{.BIN_DIR}}/libredental-demo-data.zip
