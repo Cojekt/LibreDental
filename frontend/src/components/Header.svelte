@@ -20,23 +20,11 @@
   <!-- Top brand bar -->
   <div class="flex h-16 w-full items-center justify-between px-6 sm:px-8">
     <div class="flex items-center gap-3">
-      <div
-        class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-cyan-500/20"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="h-[22px] w-[22px]"
-        >
-          <path
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"
-          />
-        </svg>
-      </div>
+      <img
+        src="/sourceicon.svg"
+        alt="LibreDental Logo"
+        class="h-9 w-9 rounded-xl shadow-md shadow-purple-500/20 object-contain"
+      />
       <div class="flex items-center">
         <h1 class="m-0 text-xl font-bold tracking-tight text-slate-50">LibreDental</h1>
       </div>
