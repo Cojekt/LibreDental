@@ -65,6 +65,9 @@ jobs:
 
       - name: Setup CI Environment
         uses: ./.github/actions/setup-env
+        with:
+          setup-node: "false"
+          cache-node: "false"
 
       - name: Generate Demo Database
         run: task demo

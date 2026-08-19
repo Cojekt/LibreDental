@@ -17,6 +17,9 @@ jobs:
 
       - name: Setup CI Environment
         uses: ./.github/actions/setup-env
+        with:
+          setup-node: "false"
+          cache-node: "false"
 
       - name: Check Go Code Formatting
         run: |
@@ -43,6 +46,8 @@ jobs:
 
       - name: Setup CI Environment
         uses: ./.github/actions/setup-env
+        with:
+          cache-go: "false"
 
       - name: Generate Wails Bindings
         run: task common:generate:bindings
@@ -72,4 +77,3 @@ jobs:
 
       - name: Build Desktop Application
         run: task build
-
