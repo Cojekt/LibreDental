@@ -9,16 +9,18 @@ vars:
   exeExt: '{{if eq OS "windows"}}.exe{{end}}'
 
 tasks:
-  dev:desktop:
+  desktop:
     desc: Runs the desktop application in development mode
     env:
       FRONTEND_DEVSERVER_URL: "http://127.0.0.1:{{.VITE_PORT}}"
     cmds:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
-  dev:server:
+  server:
     desc: Builds and runs the application in server mode (HTTP server at http://localhost:4242)
     cmds:
+      - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config build/config.yml -dir build
+      - rm -rf build/darwin build/ios
       - wails3 generate bindings -ts -i
       - cd frontend && {{.PACKAGE_MANAGER}} run build
       - go build -tags server,dev -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
@@ -33,6 +35,8 @@ tasks:
   artifact:
     desc: Builds all local artifacts (desktop binary, server binary, and demo data)
     cmds:
+      - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config build/config.yml -dir build
+      - '{{if eq OS "windows"}}if exist "build\darwin" rmdir /s /q "build\darwin" & if exist "build\ios" rmdir /s /q "build\ios"{{else}}rm -rf build/darwin build/ios{{end}}'
       - wails3 generate bindings -ts -i
       - cd frontend && {{.PACKAGE_MANAGER}} run build
       - go build -tags dev -o {{.BIN_DIR}}/{{.APP_NAME}}{{exeExt}}
@@ -44,3 +48,4 @@ tasks:
     cmds:
       - gofmt -w -s .
       - cd frontend && {{.PACKAGE_MANAGER}} run format
+

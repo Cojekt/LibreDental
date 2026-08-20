@@ -159,7 +159,7 @@ tasks:
     generates:
       - "windows/icon.ico"
     cmds:
-      - wails3 generate icons -input appicon.png -windowsfilename windows/icon.ico
+      - 'wails3 generate icons -input appicon.png -windowsfilename windows/icon.ico -macfilename {{if eq OS "windows"}}NUL{{else}}/dev/null{{end}}'
 
   dev:frontend:
     summary: Runs the frontend in development mode

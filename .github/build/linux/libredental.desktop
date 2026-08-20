@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=libredental
+Exec=libredental
+Icon=libredental
+Categories=Development;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false
