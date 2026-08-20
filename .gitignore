@@ -1,5 +1,5 @@
 # Compiled Binaries & Outputs
-bin/
+dist/
 *.exe
 *.exe.manifest
 !build/windows/wails.exe.manifest

@@ -1,0 +1,42 @@
+version: "3"
+
+vars:
+  APP_NAME: "libredental"
+  BIN_DIR: "dist"
+  PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
+  VITE_PORT: "{{.WAILS_VITE_PORT | default 9245}}"
+  GOOS: "{{.GOOS | default OS}}"
+
+includes:
+  common:
+    taskfile: ../build/Taskfile.yml
+    dir: ..
+  windows:
+    taskfile: ../build/windows/Taskfile.yml
+    dir: ..
+  linux:
+    taskfile: ../build/linux/Taskfile.yml
+    dir: ..
+
+tasks:
+  build:
+    desc: Builds the application
+    cmds:
+      - task: "{{.GOOS}}:build"
+
+  package:
+    desc: Packages a production build of the application
+    cmds:
+      - task: "{{.GOOS}}:package"
+
+  build:server:
+    summary: Builds the application in server mode (no GUI, HTTP server only)
+    cmds:
+      - task: common:build:server
+
+  demo:
+    summary: Generates a standalone pre-populated save archive
+    dir: ..
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - go run ./internal/demo/gen.go {{.BIN_DIR}}/libredental-demo-data.zip

@@ -2,62 +2,45 @@ version: "3"
 
 vars:
   APP_NAME: "libredental"
-  BIN_DIR: "bin"
+  BIN_DIR: "dist"
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
   VITE_PORT: "{{.WAILS_VITE_PORT | default 9245}}"
-  # Target OS for build/package/run. Defaults to the host OS, and is overridden
-  # by `wails3 build GOOS=...` (or the GOOS env var) for cross-compilation. The
-  # tasks below dispatch to the matching platform Taskfile via this variable.
   GOOS: "{{.GOOS | default OS}}"
-
-includes:
-  common: ./build/Taskfile.yml
-  windows: ./build/windows/Taskfile.yml
-  darwin: ./build/darwin/Taskfile.yml
-  linux: ./build/linux/Taskfile.yml
+  exeExt: '{{if eq OS "windows"}}.exe{{end}}'
 
 tasks:
-  dev:
-    desc: Runs the application in development mode
+  dev:desktop:
+    desc: Runs the desktop application in development mode
     env:
       FRONTEND_DEVSERVER_URL: "http://127.0.0.1:{{.VITE_PORT}}"
     cmds:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
+  dev:server:
+    desc: Builds and runs the application in server mode (HTTP server at http://localhost:4242)
+    cmds:
+      - wails3 generate bindings -ts -i
+      - cd frontend && {{.PACKAGE_MANAGER}} run build
+      - go build -tags server,dev -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
+      - "{{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}"
+
   demo:
     desc: "Generates a standalone pre-populated save archive (libredental-demo-data.zip)"
     cmds:
-      - go run ./internal/demo/gen.go libredental-demo-data.zip
+      - '{{if eq OS "windows"}}if not exist "{{.BIN_DIR}}" mkdir "{{.BIN_DIR}}"{{else}}mkdir -p "{{.BIN_DIR}}"{{end}}'
+      - go run ./internal/demo/gen.go {{.BIN_DIR}}/libredental-demo-data.zip
 
-  build:
-    desc: Builds the application
+  artifact:
+    desc: Builds all local artifacts (desktop binary, server binary, and demo data)
     cmds:
-      - task: "{{.GOOS}}:build"
-
-  build:server:
-    summary: Builds the application in server mode (no GUI, HTTP server only)
-    cmds:
-      - task: common:build:server
-
-  package:
-    desc: Packages a production build of the application
-    cmds:
-      - task: "{{.GOOS}}:package"
-
-  run:
-    desc: Runs the application
-    cmds:
-      - task: "{{.GOOS}}:run"
-
-  server:
-    desc: Builds and runs the application in server mode (HTTP server at http://localhost:4242)
-    cmds:
-      - task: common:run:server
+      - wails3 generate bindings -ts -i
+      - cd frontend && {{.PACKAGE_MANAGER}} run build
+      - go build -tags dev -o {{.BIN_DIR}}/{{.APP_NAME}}{{exeExt}}
+      - go build -tags server,dev -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
+      - task: demo
 
   format:
     desc: Formats Go code with gofmt and frontend code with prettier
     cmds:
       - gofmt -w -s .
-      - task: common:frontend:run
-        vars:
-          SCRIPT: "format"
+      - cd frontend && {{.PACKAGE_MANAGER}} run format

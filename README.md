@@ -2,9 +2,10 @@
 
 > **Open-Source Modern Dental Practice Management System**
 
+[![Code Review & Build (CI)](https://github.com/Cojekt/libredental/actions/workflows/ci.yml/badge.svg)](https://github.com/Cojekt/libredental/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Cojekt/libredental?include_prereleases)](https://github.com/Cojekt/libredental/releases)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/Cojekt/libredental)](https://github.com/Cojekt/libredental)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Alpha-brightgreen.svg)]()
-[![Stack](https://img.shields.io/badge/Stack-Wails_v3_|Go_|Svelte_5-007ACC.svg)](#tech-stack--architecture)
 
 **LibreDental** is a fast, resilient, open-source dental practice management platform. Built natively for cross-platform desktop performance with local-first reliability, LibreDental gives practices total freedom, security, and ownership over their patient data.
 
@@ -62,7 +63,7 @@ LibreDental™ is built as a **[Wails v3](https://v3.wails.io)** application com
 1. **Fork & Clone**: Fork the repository and clone it to your local machine:
 
    ```bash
-   git clone https://github.com/LibreDental/libredental.git && cd libredental
+   git clone https://github.com/Cojekt/libredental.git && cd libredental
    ```
 
 2. **Install Dependencies**:
@@ -96,13 +97,11 @@ All project build, development, and formatting tasks are managed through [Task](
 
 | Command | Description |
 | :--- | :--- |
-| `task dev` | **Primary Development Command.** Starts Wails v3 live-reload mode with Vite hot-module replacement and Go hot-rebuilding. |
-| `task format` | Formats Go backend files with `gofmt -w -s` and frontend code with Prettier. **Must be run before creating PRs.** |
-| `task build` | Builds the production desktop binary for your OS in `./bin/libredental`. |
-| `task build:server` | Compiles the headless HTTP server mode binary (`./bin/libredental-server`). |
+| `task dev:desktop` | Starts Wails v3 live-reload mode for the desktop application. |
+| `task dev:server` | Builds and runs the application in server mode (HTTP server at <http://localhost:4242>). |
+| `task artifact` | Builds all local artifacts (desktop binary, server binary, and demo data). |
 | `task demo` | Generates a standalone pre-populated save archive (`libredental-demo-data.zip`) for testing. |
-| `task package` | Creates production OS installer packages (`.deb`, `.rpm`, `AppImage`, `.dmg`, `.exe`). |
-| `task run` | Executes the compiled application binary from `./bin/libredental`. |
+| `task format` | Formats Go backend files with `gofmt -w -s` and frontend code with Prettier. **Must be run before creating PRs.** |
 
 ## License
 

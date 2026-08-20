@@ -88,11 +88,11 @@ tasks:
           Docker image '{{.CROSS_IMAGE}}' not found.
           Build it first: wails3 task setup:docker
     cmds:
-      - docker run --rm -v "{{.ROOT_DIR}}:/app" {{.DOCKER_MOUNTS}} -e APP_NAME="{{.APP_NAME}}" {{if .EXTRA_TAGS}}-e EXTRA_TAGS="{{.EXTRA_TAGS}}"{{end}} {{if eq .OBFUSCATED "true"}}-e OBFUSCATED=true{{end}} {{if .GARBLE_ARGS}}-e GARBLE_ARGS="{{.GARBLE_ARGS}}"{{end}} "{{.CROSS_IMAGE}}" linux {{.DOCKER_ARCH}}
-      - cmd: docker run --rm -v "{{.ROOT_DIR}}:/app" alpine chown -R $(id -u):$(id -g) /app/bin
+      - docker run --rm -v "{{.ROOT_DIR}}:/app" -v "{{.ROOT_DIR}}/{{.BIN_DIR}}:/app/bin" {{.DOCKER_MOUNTS}} -e APP_NAME="{{.APP_NAME}}" {{if .EXTRA_TAGS}}-e EXTRA_TAGS="{{.EXTRA_TAGS}}"{{end}} {{if eq .OBFUSCATED "true"}}-e OBFUSCATED=true{{end}} {{if .GARBLE_ARGS}}-e GARBLE_ARGS="{{.GARBLE_ARGS}}"{{end}} "{{.CROSS_IMAGE}}" linux {{.DOCKER_ARCH}}
+      - cmd: docker run --rm -v "{{.ROOT_DIR}}:/app" -v "{{.ROOT_DIR}}/{{.BIN_DIR}}:/app/bin" alpine chown -R $(id -u):$(id -g) /app/bin
         platforms: [linux, darwin]
       - mkdir -p {{.BIN_DIR}}
-      - mv "bin/{{.APP_NAME}}-linux-{{.DOCKER_ARCH}}" "{{.OUTPUT}}"
+      - mv "{{.BIN_DIR}}/{{.APP_NAME}}-linux-{{.DOCKER_ARCH}}" "{{.OUTPUT}}"
     vars:
       DOCKER_ARCH: '{{.ARCH | default "amd64"}}'
       DEFAULT_OUTPUT: "{{.BIN_DIR}}/{{.APP_NAME}}"
@@ -111,6 +111,7 @@ tasks:
       - task: create:deb
       - task: create:rpm
       - task: create:aur
+      - task: common:build:server
 
   create:appimage:
     summary: Creates an AppImage
@@ -125,10 +126,10 @@ tasks:
       - mv "{{.OUTPUT_DIR}}/{{.APP_NAME}}-*.AppImage" "{{.OUTPUT_DIR}}/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.AppImage"
     vars:
       APP_NAME: "{{.APP_NAME}}"
-      APP_BINARY: "../../../bin/{{.APP_NAME}}"
+      APP_BINARY: "../../../{{.BIN_DIR}}/{{.APP_NAME}}"
       ICON: "{{.APP_NAME}}.png"
       DESKTOP_FILE: "../{{.APP_NAME}}.desktop"
-      OUTPUT_DIR: "../../../bin"
+      OUTPUT_DIR: "../../../{{.BIN_DIR}}"
       TARGET_ARCH: '{{.ARCH | default ARCH}}'
 
   create:deb:
@@ -139,8 +140,8 @@ tasks:
     env:
       VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
-      - wails3 tool package -name "{{.APP_NAME}}" -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
-      - mv "{{.ROOT_DIR}}/bin/{{.APP_NAME}}.deb" "{{.ROOT_DIR}}/bin/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.deb"
+      - wails3 tool package -name "{{.APP_NAME}}" -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/{{.BIN_DIR}}
+      - mv "{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.deb" "{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.deb"
     vars:
       TARGET_ARCH: '{{.ARCH | default ARCH}}'
 
@@ -152,8 +153,8 @@ tasks:
     env:
       VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
-      - wails3 tool package -name "{{.APP_NAME}}" -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
-      - mv "{{.ROOT_DIR}}/bin/{{.APP_NAME}}.rpm" "{{.ROOT_DIR}}/bin/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.rpm"
+      - wails3 tool package -name "{{.APP_NAME}}" -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/{{.BIN_DIR}}
+      - mv "{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.rpm" "{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.rpm"
     vars:
       TARGET_ARCH: '{{.ARCH | default ARCH}}'
 
@@ -165,8 +166,8 @@ tasks:
     env:
       VERSION: '{{.VERSION | default .GIT_VERSION}}'
     cmds:
-      - wails3 tool package -name "{{.APP_NAME}}" -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
-      - mv "{{.ROOT_DIR}}/bin/{{.APP_NAME}}.pkg.tar.zst" "{{.ROOT_DIR}}/bin/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.pkg.tar.zst"
+      - wails3 tool package -name "{{.APP_NAME}}" -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/{{.BIN_DIR}}
+      - mv "{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.pkg.tar.zst" "{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.pkg.tar.zst"
     vars:
       TARGET_ARCH: '{{.ARCH | default ARCH}}'
 

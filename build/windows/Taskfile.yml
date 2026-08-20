@@ -83,8 +83,8 @@ tasks:
       - task: generate:syso
         vars:
           ARCH: "{{.ARCH}}"
-      - docker run --rm -v "{{.ROOT_DIR}}:/app" {{.DOCKER_MOUNTS}} -e APP_NAME="{{.APP_NAME}}" {{if .EXTRA_TAGS}}-e EXTRA_TAGS="{{.EXTRA_TAGS}}"{{end}} {{if eq .OBFUSCATED "true"}}-e OBFUSCATED=true{{end}} {{if .GARBLE_ARGS}}-e GARBLE_ARGS="{{.GARBLE_ARGS}}"{{end}} {{.CROSS_IMAGE}} windows {{.DOCKER_ARCH}}
-      - cmd: docker run --rm -v "{{.ROOT_DIR}}:/app" alpine chown -R $(id -u):$(id -g) /app/bin
+      - docker run --rm -v "{{.ROOT_DIR}}:/app" -v "{{.ROOT_DIR}}/{{.BIN_DIR}}:/app/bin" {{.DOCKER_MOUNTS}} -e APP_NAME="{{.APP_NAME}}" {{if .EXTRA_TAGS}}-e EXTRA_TAGS="{{.EXTRA_TAGS}}"{{end}} {{if eq .OBFUSCATED "true"}}-e OBFUSCATED=true{{end}} {{if .GARBLE_ARGS}}-e GARBLE_ARGS="{{.GARBLE_ARGS}}"{{end}} {{.CROSS_IMAGE}} windows {{.DOCKER_ARCH}}
+      - cmd: docker run --rm -v "{{.ROOT_DIR}}:/app" -v "{{.ROOT_DIR}}/{{.BIN_DIR}}:/app/bin" alpine chown -R $(id -u):$(id -g) /app/bin
         platforms: [linux, darwin]
       - rm -f *.syso
     vars:
@@ -100,6 +100,7 @@ tasks:
       - task: '{{if eq (.FORMAT | default "nsis") "msix"}}create:msix:package{{else}}create:nsis:installer{{end}}'
         vars:
           INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
+      - task: common:build:server
     vars:
       FORMAT: '{{.FORMAT | default "nsis"}}'
       INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
