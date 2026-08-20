@@ -79,7 +79,7 @@ LibreDental™ is built as a **[Wails v3](https://v3.wails.io)** application com
    git checkout -b feature/your-feature-name
    ```
 
-4. **Development**: Always use **`task dev`** for active development. It handles live-reloading for frontend assets, automatic Go binding generation, and Wails runtime synchronization.
+4. **Development**: Always use **`task desktop`** for active development. It handles live-reloading for frontend assets, automatic Go binding generation, and Wails runtime synchronization.
 5. **Code Formatting**: Before opening a Pull Request, run:
 
    ```bash
@@ -97,8 +97,8 @@ All project build, development, and formatting tasks are managed through [Task](
 
 | Command | Description |
 | :--- | :--- |
-| `task dev:desktop` | Starts Wails v3 live-reload mode for the desktop application. |
-| `task dev:server` | Builds and runs the application in server mode (HTTP server at <http://localhost:4242>). |
+| `task desktop` | Starts Wails v3 live-reload mode for the desktop application. |
+| `task server` | Builds and runs the application in server mode (HTTP server at <http://localhost:4242>). |
 | `task artifact` | Builds all local artifacts (desktop binary, server binary, and demo data). |
 | `task demo` | Generates a standalone pre-populated save archive (`libredental-demo-data.zip`) for testing. |
 | `task format` | Formats Go backend files with `gofmt -w -s` and frontend code with Prettier. **Must be run before creating PRs.** |

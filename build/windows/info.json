@@ -1,15 +1,15 @@
 {
-  "fixed": {
-    "file_version": "0.1.0"
-  },
-  "info": {
-    "0000": {
-      "ProductVersion": "0.1.0",
-      "CompanyName": "Cojekt",
-      "FileDescription": "LibreDental — Open-Source Dental Practice Management",
-      "LegalCopyright": "© 2026, Cojekt",
-      "ProductName": "LibreDental",
-      "Comments": "https://github.com/LibreDental/libredental"
-    }
-  }
+	"fixed": {
+		"file_version": "0.1.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.1.0",
+			"CompanyName": "Cojekt",
+			"FileDescription": "LibreDental — Open-Source Dental Practice Management",
+			"LegalCopyright": "© 2026, Cojekt",
+			"ProductName": "LibreDental",
+			"Comments": "https://github.com/LibreDental/libredental"
+		}
+	}
 }

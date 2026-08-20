@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
-Name=My Product
-Comment=A LibreDental application
+Name=LibreDental
+Comment=LibreDental — Open-Source Dental Practice Management
 # The Exec line includes %u to pass the URL to the application
 Exec=/usr/local/bin/libredental %u
 Terminal=false

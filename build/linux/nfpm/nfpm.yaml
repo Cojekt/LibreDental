@@ -6,11 +6,11 @@
 name: "libredental"
 arch: ${GOARCH}
 platform: "linux"
-version: "${VERSION}"
+version: "0.1.0"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "A LibreDental application"
+description: "LibreDental — Open-Source Dental Practice Management"
 vendor: "Cojekt"
 homepage: "https://wails.io"
 license: "MIT"

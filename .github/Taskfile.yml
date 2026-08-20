@@ -29,6 +29,11 @@ tasks:
     cmds:
       - task: "{{.GOOS}}:package"
 
+  run:
+    summary: Runs the application
+    cmds:
+      - task: "{{.GOOS}}:run"
+
   build:server:
     summary: Builds the application in server mode (no GUI, HTTP server only)
     cmds:
