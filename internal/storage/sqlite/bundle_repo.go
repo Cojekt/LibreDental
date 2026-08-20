@@ -2,7 +2,9 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -159,7 +161,10 @@ func scanBundle(row rowScanner) (*domain.TreatmentBundle, error) {
 		&b.CreatedAt, &b.UpdatedAt,
 	)
 	if err != nil {
-		return nil, storage.ErrNotFound
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to scan treatment bundle: %w", err)
 	}
 
 	if err := json.Unmarshal([]byte(itemsJSON), &b.Items); err != nil {

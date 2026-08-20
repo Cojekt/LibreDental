@@ -38,3 +38,10 @@ export function parseLocalDate(dateStr: string): Date {
   if (parts.length < 3 || parts.some(isNaN)) return new Date();
   return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
 }
+
+/**
+ * Returns today's local date as a 'YYYY-MM-DD' string.
+ */
+export function getTodayDateString(): string {
+  return getLocalDateString(new Date());
+}

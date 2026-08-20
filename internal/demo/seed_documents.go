@@ -2,20 +2,18 @@ package demo
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
-	"github.com/LibreDental/libredental/internal/services"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
+	"github.com/google/uuid"
 )
 
 func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir string, now time.Time, summary *SeedSummary) error {
 	docRepo := sqlite.NewDocumentRepository(db)
-	docService := services.NewDocumentService(docRepo, appDir)
 	patientRepo := sqlite.NewPatientRepository(db)
 
 	patients, _, err := patientRepo.List(ctx, domain.PatientFilter{Limit: 2})
@@ -36,14 +34,48 @@ func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir strin
 		if err != nil {
 			return fmt.Errorf("failed to read %s: %w", path, err)
 		}
-		b64Data := base64.StdEncoding.EncodeToString(data)
-		doc, err := docService.SaveDocumentBase64(patientID, name, desc, docType, mimeType, b64Data)
-		if err != nil {
-			return fmt.Errorf("failed to save doc %s: %w", name, err)
+
+		docID := uuid.New().String()
+		var relDir string
+		var pID *string
+
+		if patientID != "" {
+			relDir = patientID
+			pID = &patientID
+		} else {
+			relDir = "clinic"
 		}
-		if _, err := db.ExecContext(ctx, "UPDATE documents SET created_at = ?, updated_at = ? WHERE id = ?", now, now, doc.ID); err != nil {
-			return fmt.Errorf("failed to update document timestamps for %s: %w", name, err)
+
+		targetDir := filepath.Join(appDir, "documents", relDir)
+		if err := os.MkdirAll(targetDir, 0o755); err != nil {
+			return fmt.Errorf("failed to create document directory: %w", err)
 		}
+
+		filePathRelative := filepath.Join(relDir, docID)
+		fullPath := filepath.Join(appDir, "documents", filePathRelative)
+
+		if err := os.WriteFile(fullPath, data, 0o644); err != nil {
+			return fmt.Errorf("failed to write document file: %w", err)
+		}
+
+		doc := &domain.Document{
+			ID:          docID,
+			PatientID:   pID,
+			Type:        domain.DocumentType(docType),
+			Name:        name,
+			Description: desc,
+			FilePath:    filePathRelative,
+			SizeBytes:   int64(len(data)),
+			ContentType: mimeType,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+
+		if err := docRepo.Create(doc); err != nil {
+			_ = os.Remove(fullPath)
+			return fmt.Errorf("failed to save document record: %w", err)
+		}
+
 		summary.DocumentsCount++
 		return nil
 	}

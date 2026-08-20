@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { DocumentService } from "@bindings/services/index.js";
+  import { DocumentService, SystemSettingsService } from "@bindings/services/index.js";
   import { DocumentType, type Document } from "@bindings/domain/models.js";
   import { Dialogs } from "@wailsio/runtime";
   import Modal from "../../components/ui/Modal.svelte";
@@ -8,6 +8,7 @@
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import * as m from "../../paraglide/messages.js";
+  import { handleError } from "../../lib/error.js";
 
   let { openUploadModal = $bindable() } = $props<{
     openUploadModal?: () => void;
@@ -97,7 +98,7 @@
           showUploadModal = false;
           loadDocuments();
         } catch (err: any) {
-          uploadError = err.message || m.doc_err_upload();
+          uploadError = handleError(err, m.doc_err_upload());
         } finally {
           isUploading = false;
         }
@@ -108,7 +109,7 @@
       };
       reader.readAsDataURL(selectedFile);
     } catch (err: any) {
-      uploadError = err.message || m.doc_err_start_upload();
+      uploadError = handleError(err, m.doc_err_start_upload());
       isUploading = false;
     }
   }
@@ -124,10 +125,50 @@
     }
   }
 
+  async function downloadAndCreateObjectURL(doc: Document): Promise<string> {
+    const base64 = await DocumentService.GetDocumentBase64(doc.id);
+    if (!base64) {
+      throw new Error("Empty document");
+    }
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: doc.content_type || "application/octet-stream" });
+    return URL.createObjectURL(blob);
+  }
+
   async function handleOpen(doc: Document) {
+    const win = window.open("", "_blank");
     try {
-      await DocumentService.OpenDocument(doc.id);
+      const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
+      if (isDesktop) {
+        if (win && !win.closed) {
+          win.close();
+        }
+        await DocumentService.OpenDocument(doc.id);
+      } else {
+        const url = await downloadAndCreateObjectURL(doc);
+        if (win && !win.closed) {
+          win.location.href = url;
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } else {
+          const suggestedName = doc.name || m.doc_default_export_name();
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = suggestedName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        }
+      }
     } catch (err) {
+      if (win && !win.closed) {
+        win.close();
+      }
       console.error("Failed to open document:", err);
       alert(m.doc_err_open());
     }
@@ -135,11 +176,34 @@
 
   async function handleExport(doc: Document) {
     try {
+      const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
       const suggestedName = doc.name || m.doc_default_export_name();
-      const path = await Dialogs.SaveFile({ Filename: suggestedName, Title: m.doc_export_title() });
-      if (path) {
-        await DocumentService.ExportDocumentToPath(doc.id, path);
-        exportSuccessMsg = m.doc_export_success({ path });
+
+      if (isDesktop) {
+        const path = await Dialogs.SaveFile({
+          Filename: suggestedName,
+          Title: m.doc_export_title(),
+        });
+        if (path) {
+          await DocumentService.ExportDocumentToPath(doc.id, path);
+          exportSuccessMsg = m.doc_export_success({ path });
+          setTimeout(() => {
+            exportSuccessMsg = "";
+          }, 5000);
+        }
+      } else {
+        const url = await downloadAndCreateObjectURL(doc);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = suggestedName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+
+        exportSuccessMsg = m.doc_export_success({ path: suggestedName });
         setTimeout(() => {
           exportSuccessMsg = "";
         }, 5000);

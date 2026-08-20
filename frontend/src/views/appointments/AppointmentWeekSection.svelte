@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Appointment } from "@bindings/domain/models.js";
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     weekDays = [],
@@ -63,7 +64,7 @@
           <span
             class="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30"
           >
-            Today
+            {m.appts_today_badge()}
           </span>
         {/if}
       </button>
@@ -74,7 +75,7 @@
           <div
             class="h-full flex items-center justify-center text-center text-xs text-slate-600 italic py-6"
           >
-            No appointments
+            {m.appts_no_appts()}
           </div>
         {:else}
           {#each dayAppts as appt}

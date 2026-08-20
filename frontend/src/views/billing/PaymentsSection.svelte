@@ -8,6 +8,7 @@
     CountryConfig,
   } from "@bindings/domain/index.js";
   import { PaymentMethod } from "@bindings/domain/index.js";
+  import { getTodayDateString } from "$lib/date.js";
   import Modal from "../../components/ui/Modal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
@@ -32,7 +33,7 @@
   let payClaimId = $state("");
   let payAmount = $state("");
   let payMethod = $state<PaymentMethod>(PaymentMethod.PaymentMethodCash);
-  let payDate = $state(new Date().toISOString().split("T")[0]);
+  let payDate = $state(getTodayDateString());
   let payNotes = $state("");
 
   const PAYMENT_METHODS = ["cash", "check", "credit_card", "insurance", "write_off"];
@@ -55,31 +56,46 @@
     return (c.line_items ?? []).reduce((s, i) => s + i.fee, 0);
   }
 
+  let requestGenPayments = 0;
   export async function loadPayments() {
+    const gen = ++requestGenPayments;
     loadingPayments = true;
     try {
       const res = await BillingService.ListPayments(balancePatientId);
-      payments = (res?.filter(Boolean) as Payment[]) || [];
+      if (gen === requestGenPayments) {
+        payments = (res?.filter(Boolean) as Payment[]) || [];
+      }
       const claimRes = await BillingService.ListClaims(balancePatientId);
-      claims = (claimRes?.filter(Boolean) as Claim[]) || [];
+      if (gen === requestGenPayments) {
+        claims = (claimRes?.filter(Boolean) as Claim[]) || [];
+      }
     } catch (e) {
-      console.error("Failed to load payments/claims:", e);
+      if (gen === requestGenPayments) {
+        console.error("Failed to load payments/claims:", e);
+      }
     } finally {
-      loadingPayments = false;
+      if (gen === requestGenPayments) {
+        loadingPayments = false;
+      }
     }
   }
 
+  let requestGenBalance = 0;
   export async function loadBalance() {
+    const gen = ++requestGenBalance;
     if (!balancePatientId) {
       patientBalance = null;
       return;
     }
     try {
-      patientBalance = (await BillingService.GetPatientBalance(
-        balancePatientId
-      )) as PatientBalance | null;
+      const bal = await BillingService.GetPatientBalance(balancePatientId);
+      if (gen === requestGenBalance) {
+        patientBalance = bal as PatientBalance | null;
+      }
     } catch (e) {
-      console.error("Failed to load balance:", e);
+      if (gen === requestGenBalance) {
+        console.error("Failed to load balance:", e);
+      }
     }
   }
 
@@ -95,7 +111,7 @@
     payClaimId = "";
     payAmount = "";
     payMethod = PaymentMethod.PaymentMethodCash;
-    payDate = new Date().toISOString().split("T")[0];
+    payDate = getTodayDateString();
     payNotes = "";
     showPaymentModal = true;
   }
@@ -117,7 +133,7 @@
     };
 
     try {
-      await BillingService.RecordPayment(payload as any);
+      await BillingService.RecordPayment(payload);
       showPaymentModal = false;
       balancePatientId = payPatientId;
       await loadPayments();

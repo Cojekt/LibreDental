@@ -4,6 +4,7 @@
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion, setLanguagePreference } from "$lib/locale.svelte.js";
   import { locales } from "../paraglide/runtime.js";
+  import { handleError } from "$lib/error.js";
 
   export type ThemeMode = "dark" | "light" | "system";
   export type WindowMode = "window" | "fullscreen";
@@ -24,6 +25,15 @@
   let selectedLanguage = $state("system");
 
   let windowMode = $state<WindowMode>("window");
+  let isDesktop = $state(false);
+
+  async function checkDesktopMode() {
+    try {
+      isDesktop = await SystemSettingsService.IsDesktopMode();
+    } catch {
+      isDesktop = false;
+    }
+  }
 
   async function loadDataDir() {
     try {
@@ -39,14 +49,19 @@
 
   async function loadLanguage() {
     try {
-      const lang = await SystemSettingsService.GetLanguage();
-      selectedLanguage = lang || "system";
+      if (isDesktop) {
+        const lang = await SystemSettingsService.GetLanguage();
+        selectedLanguage = lang || "system";
+      } else {
+        selectedLanguage = localStorage.getItem("language") || "system";
+      }
     } catch (err) {
       console.error("Failed to get language setting:", err);
     }
   }
 
   async function loadWindowSettings() {
+    if (!isDesktop) return;
     try {
       const mode = await SystemSettingsService.GetWindowMode();
       if (mode === "window" || mode === "fullscreen") {
@@ -55,6 +70,11 @@
     } catch (err) {
       console.error("Failed to load window settings:", err);
     }
+  }
+
+  async function loadAllSettings() {
+    await checkDesktopMode();
+    await Promise.all([loadDataDir(), loadLanguage(), loadWindowSettings()]);
   }
 
   async function handleSelectLanguage(lang: string) {
@@ -69,6 +89,7 @@
   }
 
   async function handleSelectWindowMode(mode: WindowMode) {
+    if (!isDesktop) return;
     const previousMode = windowMode;
     windowMode = mode;
     try {
@@ -89,13 +110,14 @@
   }
 
   async function handleOpenFolder() {
+    if (!isDesktop) return;
     isOpeningFolder = true;
     openError = null;
     try {
       await SystemSettingsService.OpenDataDir();
     } catch (err: any) {
       console.error("Failed to open data directory:", err);
-      openError = err?.message || "Could not open system file manager";
+      openError = handleError(err, "Could not open system file manager");
     } finally {
       isOpeningFolder = false;
     }
@@ -108,16 +130,12 @@
 
   $effect(() => {
     if (showModal) {
-      loadDataDir();
-      loadLanguage();
-      loadWindowSettings();
+      loadAllSettings();
     }
   });
 
   onMount(() => {
-    loadDataDir();
-    loadLanguage();
-    loadWindowSettings();
+    loadAllSettings();
   });
 </script>
 
@@ -250,43 +268,45 @@
           </div>
         </div>
 
-        <!-- Display & Window Mode Section -->
-        <div>
-          <span
-            class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-          >
-            {m.settings_section_display()}
-          </span>
-          <div
-            class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-3"
-          >
-            <div class="flex flex-col">
-              <span class="text-xs font-semibold text-slate-200">
-                {windowMode === "fullscreen"
-                  ? m.settings_window_mode_fullscreen()
-                  : m.settings_window_mode_window()}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              role="switch"
-              aria-label="Toggle fullscreen display mode"
-              aria-checked={windowMode === "fullscreen"}
-              onclick={() =>
-                handleSelectWindowMode(windowMode === "fullscreen" ? "window" : "fullscreen")}
-              class={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
-                windowMode === "fullscreen" ? "bg-sky-500" : "bg-slate-800"
-              }`}
+        <!-- Display & Window Mode Section (Desktop Mode Only) -->
+        {#if isDesktop}
+          <div>
+            <span
+              class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
             >
-              <span
-                class={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  windowMode === "fullscreen" ? "translate-x-5" : "translate-x-0"
+              {m.settings_section_display()}
+            </span>
+            <div
+              class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-3"
+            >
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold text-slate-200">
+                  {windowMode === "fullscreen"
+                    ? m.settings_window_mode_fullscreen()
+                    : m.settings_window_mode_window()}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-label="Toggle fullscreen display mode"
+                aria-checked={windowMode === "fullscreen"}
+                onclick={() =>
+                  handleSelectWindowMode(windowMode === "fullscreen" ? "window" : "fullscreen")}
+                class={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                  windowMode === "fullscreen" ? "bg-sky-500" : "bg-slate-800"
                 }`}
-              ></span>
-            </button>
+              >
+                <span
+                  class={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    windowMode === "fullscreen" ? "translate-x-5" : "translate-x-0"
+                  }`}
+                ></span>
+              </button>
+            </div>
           </div>
-        </div>
+        {/if}
 
         <!-- Language Section -->
         <div>
@@ -308,54 +328,58 @@
           </select>
         </div>
 
-        <!-- Ultra-compact Data Storage Directory Section -->
-        <div>
-          <span
-            class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-          >
-            {m.settings_section_storage()}
-          </span>
-
-          <div
-            class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5"
-          >
-            <div class="flex items-center gap-2.5 min-w-0 overflow-hidden">
-              <span class="text-slate-400 text-sm shrink-0">📁</span>
-              <span class="font-mono text-xs text-slate-300 truncate select-all">{dataDir}</span>
-            </div>
-
-            <button
-              type="button"
-              onclick={handleOpenFolder}
-              disabled={isOpeningFolder}
-              class="btn btn-secondary btn-sm shrink-0 text-xs py-1 px-3 gap-1.5 cursor-pointer"
-              title="Open Storage Folder"
+        <!-- Ultra-compact Data Storage Directory Section (Desktop Mode Only) -->
+        {#if isDesktop}
+          <div>
+            <span
+              class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                class="h-3.5 w-3.5"
-              >
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-              <span
-                >{isOpeningFolder ? m.settings_storage_opening() : m.settings_storage_open()}</span
-              >
-            </button>
-          </div>
+              {m.settings_section_storage()}
+            </span>
 
-          {#if openError}
             <div
-              class="mt-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-lg"
+              class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5"
             >
-              ⚠️ {openError}
+              <div class="flex items-center gap-2.5 min-w-0 overflow-hidden">
+                <span class="text-slate-400 text-sm shrink-0">📁</span>
+                <span class="font-mono text-xs text-slate-300 truncate select-all">{dataDir}</span>
+              </div>
+
+              <button
+                type="button"
+                onclick={handleOpenFolder}
+                disabled={isOpeningFolder}
+                class="btn btn-secondary btn-sm shrink-0 text-xs py-1 px-3 gap-1.5 cursor-pointer"
+                title="Open Storage Folder"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="h-3.5 w-3.5"
+                >
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span
+                  >{isOpeningFolder
+                    ? m.settings_storage_opening()
+                    : m.settings_storage_open()}</span
+                >
+              </button>
             </div>
-          {/if}
-        </div>
+
+            {#if openError}
+              <div
+                class="mt-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-lg"
+              >
+                ⚠️ {openError}
+              </div>
+            {/if}
+          </div>
+        {/if}
       </div>
 
       <!-- Footer -->
