@@ -8,13 +8,13 @@ vars:
   GOOS: "{{.GOOS | default OS}}"
 
 includes:
-  common: 
+  common:
     taskfile: ../build/Taskfile.yml
     dir: ..
-  windows: 
+  windows:
     taskfile: ../build/windows/Taskfile.yml
     dir: ..
-  linux: 
+  linux:
     taskfile: ../build/linux/Taskfile.yml
     dir: ..
 
@@ -40,4 +40,3 @@ tasks:
     cmds:
       - mkdir -p {{.BIN_DIR}}
       - go run ./internal/demo/gen.go {{.BIN_DIR}}/libredental-demo-data.zip
-
