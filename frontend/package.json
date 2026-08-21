@@ -16,7 +16,6 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@wailsio/runtime": "latest",
-    "daikon": "^1.2.46",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

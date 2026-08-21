@@ -200,6 +200,64 @@ func (s *DocumentService) GetDocumentBase64(id string) (string, error) {
 	return base64.StdEncoding.EncodeToString(data), nil
 }
 
+// GetDocumentImagesBase64 retrieves an image document and returns a slice of data URLs.
+// For DICOM files, it extracts all frames. For regular images, it returns a single data URL.
+func (s *DocumentService) GetDocumentImagesBase64(id string) ([]string, error) {
+	doc, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	fullPath := filepath.Join(s.getDocumentsBasePath(), doc.FilePath)
+
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open document file: %w", err)
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read document file: %w", err)
+	}
+
+	lowerName := strings.ToLower(doc.Name)
+	isDicom := strings.HasSuffix(lowerName, ".dcm") ||
+		strings.HasSuffix(lowerName, ".dicom") ||
+		strings.Contains(strings.ToLower(doc.ContentType), "dicom")
+
+	if !isDicom && len(data) >= 132 {
+		// Magic bytes check for DICOM
+		if string(data[128:132]) == "DICM" {
+			isDicom = true
+		}
+	}
+
+	if isDicom {
+		images, err := ParseDicomImages(data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse DICOM frames: %w", err)
+		}
+
+		dataURLs, err := ImagesToBase64DataURLs(images)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode DICOM frames: %w", err)
+		}
+
+		return dataURLs, nil
+	}
+
+	// For standard images, return a single data URL
+	b64 := base64.StdEncoding.EncodeToString(data)
+	contentType := doc.ContentType
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+
+	dataURL := fmt.Sprintf("data:%s;base64,%s", contentType, b64)
+	return []string{dataURL}, nil
+}
+
 // OpenDocument opens the document in the OS default application.
 func (s *DocumentService) OpenDocument(id string) error {
 	doc, err := s.repo.GetByID(id)
