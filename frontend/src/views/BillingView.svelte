@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Patient, Provider, CountryConfig } from "@bindings/domain/index.js";
-  import ViewHeader from "../components/ui/ViewHeader.svelte";
+
   import TabNav from "../components/ui/TabNav.svelte";
   import ClaimsSection from "./billing/ClaimsSection.svelte";
   import PaymentsSection from "./billing/PaymentsSection.svelte";
@@ -45,7 +45,6 @@
 </script>
 
 <div class="space-y-6">
-  <ViewHeader title={m.billing_title()} subtitle={m.billing_subtitle()} icon="💳" />
 
   <div class="border-b border-slate-800">
     <TabNav {tabs} bind:activeTab={billingTab} />

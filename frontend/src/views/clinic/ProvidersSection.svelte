@@ -15,6 +15,7 @@
     openAddProviderModal,
     openEditProviderModal,
     handleDeleteProvider,
+    handleRestoreProvider,
     handleSaveProvider,
     showProviderModal = $bindable(false),
     isEditingProvider = false,
@@ -32,6 +33,7 @@
     openAddProviderModal: () => void;
     openEditProviderModal: (p: Provider) => void;
     handleDeleteProvider: (id: string) => void;
+    handleRestoreProvider: (id: string) => void;
     handleSaveProvider: (e: Event) => void;
     showProviderModal: boolean;
     isEditingProvider: boolean;
@@ -55,8 +57,16 @@
   let selectedProviderId = $state("");
   let selectedProviderName = $state("");
 
+  let statusFilter = $state("active");
+  let filteredProviders = $derived(
+    providers.filter((p) => {
+      const pStatus = p.status || "active";
+      return pStatus === statusFilter;
+    })
+  );
+
   $effect(() => {
-    const currentProviders = providers;
+    const currentProviders = filteredProviders;
     untrack(() => {
       loadProviderStates(currentProviders);
     });
@@ -146,11 +156,41 @@
 </script>
 
 <div class="space-y-6">
-  {#if providers.length === 0}
+  <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+    <h3 class="text-lg font-bold text-slate-100">{m.prov_add_btn().split('/')[0].trim()}s & Staff</h3>
+    <div
+      class="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 shadow-sm select-none"
+    >
+      <button
+        type="button"
+        onclick={() => (statusFilter = "active")}
+        class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+          statusFilter === "active"
+            ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm"
+            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+        }`}
+      >
+        {m.patients_filter_active()}
+      </button>
+      <button
+        type="button"
+        onclick={() => (statusFilter = "archived")}
+        class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+          statusFilter === "archived"
+            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm"
+            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+        }`}
+      >
+        {m.patients_filter_archived()}
+      </button>
+    </div>
+  </div>
+
+  {#if filteredProviders.length === 0}
     <EmptyState title={m.prov_empty_title()} subtitle={m.prov_empty_sub()} icon="👨‍⚕️" />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {#each providers as p}
+      {#each filteredProviders as p}
         <div
           class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-3 relative group hover:border-slate-700 transition-colors"
         >
@@ -247,10 +287,10 @@
               </button>
               <button
                 type="button"
-                onclick={() => handleDeleteProvider(p.id)}
+                onclick={() => statusFilter === 'archived' ? handleRestoreProvider(p.id) : handleDeleteProvider(p.id)}
                 class="text-rose-400 hover:text-rose-300 font-semibold"
               >
-                {m.patient_archive()}
+                {statusFilter === 'archived' ? 'Restore' : m.patient_archive()}
               </button>
             </div>
           </div>

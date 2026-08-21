@@ -402,20 +402,6 @@
     class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg"
   >
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-      <div class="flex items-center gap-3">
-        <div
-          class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 text-white shadow-md shadow-sky-500/20 text-lg"
-        >
-          🦷
-        </div>
-        <div>
-          <h2 class="text-lg font-bold text-slate-100 m-0">
-            {m.charting_title()}
-          </h2>
-          <p class="text-xs text-slate-400 m-0">{m.charting_subtitle()}</p>
-        </div>
-      </div>
-
       <!-- Patient Select Dropdown -->
       <div class="flex items-center gap-2">
         <label for="chart-patient-select" class="text-xs font-medium text-slate-400">Patient:</label
@@ -455,7 +441,6 @@
           class="ml-2 btn btn-primary text-xs shadow-md shadow-sky-500/20 px-3 py-1.5 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           title="View Patient X-Rays"
         >
-          <span>🩻</span>
           <span class="hidden sm:inline">X-Rays</span>
         </button>
       </div>
@@ -466,9 +451,7 @@
       <div
         class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-sky-500/30 bg-sky-950/40 text-sky-300 text-xs font-semibold"
       >
-        <span>📍</span>
         <span>
-          {countryMeta?.name || "Global"}:
           {#if currentToothSystem === ToothSystem.ToothSystemFDI}
             <strong class="text-sky-200">FDI (ISO 3950) Notation</strong>
           {:else if currentToothSystem === ToothSystem.ToothSystemPalmer}

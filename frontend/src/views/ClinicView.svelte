@@ -395,6 +395,15 @@
     }
   }
 
+  async function handleRestoreProvider(id: string) {
+    try {
+      await PracticeConfigService.RestoreProvider(id);
+      await onrefresh();
+    } catch (err) {
+      console.error("Failed to restore provider:", err);
+    }
+  }
+
   // Operatory Handlers
   function openAddOperatoryModal() {
     isEditingOperatory = false;
@@ -631,6 +640,7 @@
         {openAddProviderModal}
         {openEditProviderModal}
         {handleDeleteProvider}
+        {handleRestoreProvider}
         {handleSaveProvider}
         bind:showProviderModal
         {isEditingProvider}
