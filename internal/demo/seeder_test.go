@@ -56,8 +56,8 @@ func TestSeedDatabase(t *testing.T) {
 	if summary.PaymentsCount != 2 {
 		t.Errorf("Expected 2 payments, got %d", summary.PaymentsCount)
 	}
-	if summary.DocumentsCount != 3 {
-		t.Errorf("Expected 3 documents, got %d", summary.DocumentsCount)
+	if summary.DocumentsCount != 11 {
+		t.Errorf("Expected 11 documents, got %d", summary.DocumentsCount)
 	}
 
 	ctx := context.Background()
@@ -146,11 +146,12 @@ func TestSeedDatabase(t *testing.T) {
 		t.Errorf("Expected 1 clinic document, got %d", len(clinicDocs))
 	}
 
-	patDocs, err := docRepo.ListByFilter(domain.DocumentFilter{PatientID: &patients[0].ID})
+	pat101ID := "pat_101"
+	patDocs, err := docRepo.ListByFilter(domain.DocumentFilter{PatientID: &pat101ID})
 	if err != nil {
 		t.Fatalf("Failed to list patient documents: %v", err)
 	}
-	if len(patDocs) != 2 {
-		t.Errorf("Expected 2 patient documents for pat_101, got %d", len(patDocs))
+	if len(patDocs) != 6 {
+		t.Errorf("Expected 6 patient documents for pat_101, got %d", len(patDocs))
 	}
 }

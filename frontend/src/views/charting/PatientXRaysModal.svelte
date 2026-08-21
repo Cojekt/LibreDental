@@ -4,7 +4,6 @@
   import { DocumentType } from "@bindings/domain/models.js";
   import Modal from "../../components/ui/Modal.svelte";
   import * as m from "../../paraglide/messages.js";
-  import { isDicomFile, parseDicomToDataUrl } from "../../lib/dicom.js";
   import { handleError } from "../../lib/error.js";
 
   let { showModal = $bindable(false), patientId = "" } = $props<{
@@ -23,8 +22,10 @@
   let fileInput = $state<HTMLInputElement | null>(null);
 
   // Viewing state
-  let viewingImageBase64 = $state<string | null>(null);
+  let viewingImages = $state<string[]>([]);
+  let currentFrameIndex = $state(0);
   let viewingImageName = $state<string>("");
+  let viewingDocId = $state<string | null>(null);
 
   async function loadXRays() {
     if (!patientId) return;
@@ -46,7 +47,8 @@
   $effect(() => {
     if (showModal && patientId) {
       loadXRays();
-      viewingImageBase64 = null;
+      viewingImages = [];
+      viewingDocId = null;
     }
   });
 
@@ -68,7 +70,10 @@
     uploadError = "";
 
     try {
-      const isDcm = isDicomFile(selectedFile.name) || isDicomFile(selectedFile.type);
+      const lowerName = selectedFile.name.toLowerCase();
+      const lowerType = selectedFile.type.toLowerCase();
+      const isDcm =
+        lowerName.endsWith(".dcm") || lowerName.endsWith(".dicom") || lowerType.includes("dicom");
       const mime = isDcm ? "application/dicom" : selectedFile.type || "image/jpeg";
 
       const reader = new FileReader();
@@ -118,8 +123,9 @@
       try {
         await DocumentService.DeleteDocument(id);
         loadXRays();
-        if (viewingImageBase64) {
-          viewingImageBase64 = null;
+        if (viewingDocId === id) {
+          viewingImages = [];
+          viewingDocId = null;
         }
       } catch (err) {
         console.error("Failed to delete X-Ray:", err);
@@ -129,33 +135,45 @@
 
   async function handleView(doc: Document) {
     try {
-      const base64 = await DocumentService.GetDocumentBase64(doc.id);
-      if (base64) {
-        const binaryString = atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const buffer = bytes.buffer;
-
-        if (isDicomFile(doc.name || doc.content_type || "", buffer)) {
-          const pngUrl = parseDicomToDataUrl(buffer);
-          if (pngUrl) {
-            viewingImageBase64 = pngUrl;
-            viewingImageName = doc.name;
-          } else {
-            alert(m.doc_err_load_img());
-          }
-          return;
-        }
-
-        viewingImageBase64 = `data:${doc.content_type || "image/jpeg"};base64,${base64}`;
+      const images = await DocumentService.GetDocumentImagesBase64(doc.id);
+      if (images && images.length > 0) {
+        viewingImages = images;
         viewingImageName = doc.name;
+        currentFrameIndex = 0;
+        viewingDocId = doc.id;
       }
     } catch (err) {
       console.error("Failed to fetch image data:", err);
       alert(m.doc_err_load_img());
+    }
+  }
+
+  async function handleDownload(id: string, name: string) {
+    try {
+      const base64 = await DocumentService.GetDocumentBase64(id);
+      if (base64) {
+        const doc = documents.find((d) => d.id === id);
+        const mimeType = doc?.content_type || "application/octet-stream";
+
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mimeType });
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch (err) {
+      console.error("Failed to download document:", err);
     }
   }
 </script>
@@ -281,19 +299,53 @@
 
     <!-- Main Content: View Area -->
     <div
-      class="col-span-2 flex flex-col items-center justify-center bg-black/40 rounded-xl border border-slate-800 overflow-hidden relative"
+      class="col-span-2 flex flex-col bg-black/40 rounded-xl border border-slate-800 overflow-hidden relative"
     >
-      {#if viewingImageBase64}
-        <div class="absolute top-0 w-full bg-gradient-to-b from-black/80 to-transparent p-4 z-10">
+      {#if viewingImages.length > 0}
+        <div
+          class="absolute top-0 w-full bg-gradient-to-b from-black/80 to-transparent p-4 z-10 flex items-start justify-between"
+        >
           <h3 class="text-white font-bold drop-shadow-md">{viewingImageName}</h3>
+          <button
+            type="button"
+            class="btn btn-primary text-xs py-1 px-3 shadow-md"
+            onclick={() => handleDownload(viewingDocId!, viewingImageName)}
+          >
+            {m.xray_btn_download()}
+          </button>
         </div>
-        <img
-          src={viewingImageBase64}
-          alt={viewingImageName}
-          class="max-w-full max-h-full object-contain"
-        />
+
+        <div class="flex-1 flex items-center justify-center overflow-hidden p-2">
+          <img
+            src={viewingImages[currentFrameIndex]}
+            alt={viewingImageName}
+            class="max-w-full max-h-full object-contain"
+          />
+        </div>
+
+        {#if viewingImages.length > 1}
+          <div
+            class="w-full bg-slate-900/80 border-t border-slate-800 p-3 flex flex-col gap-2 z-10 shrink-0"
+          >
+            <div class="flex justify-between items-center text-xs text-slate-400 font-medium px-1">
+              <span
+                >{m.xray_frame_info({
+                  current: currentFrameIndex + 1,
+                  total: viewingImages.length,
+                })}</span
+              >
+            </div>
+            <input
+              type="range"
+              min="0"
+              max={viewingImages.length - 1}
+              bind:value={currentFrameIndex}
+              class="w-full accent-sky-500 cursor-pointer"
+            />
+          </div>
+        {/if}
       {:else}
-        <div class="flex flex-col items-center text-slate-600 gap-3">
+        <div class="flex-1 flex flex-col items-center justify-center text-slate-600 gap-3">
           <div class="text-5xl">🩻</div>
           <p class="text-sm font-medium">{m.xray_select_prompt()}</p>
         </div>
