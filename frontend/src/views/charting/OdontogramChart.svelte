@@ -36,6 +36,16 @@
     getToothLabel: (num: number, system: ToothSystem) => string;
     openAddConditionForTooth: (num: number) => void;
   }>();
+
+  function getSurfaceFill(conds: ToothCondition[], s1: ToothSurface, s2?: ToothSurface) {
+    const match = conds.find(
+      (c: ToothCondition) => c.surfaces?.includes(s1) || (s2 && c.surfaces?.includes(s2))
+    );
+    if (!match) return "fill-slate-800 hover:fill-slate-700/80";
+    if (match.status === "completed") return "fill-emerald-500 hover:fill-emerald-400";
+    if (match.status === "treatment_planned") return "fill-amber-500 hover:fill-amber-400";
+    return "fill-blue-500 hover:fill-blue-400";
+  }
 </script>
 
 <div class="flex flex-col gap-6">
@@ -200,97 +210,37 @@
           ✕
         </div>
       {:else}
-        <div
-          class="w-7 h-7 border border-slate-700 grid grid-cols-3 grid-rows-3 bg-slate-900 rounded-md overflow-hidden p-0.5"
-        >
-          <div
-            class={`col-span-3 h-1.5 transition-colors ${
-              conds.some((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceFacial))
-                ? conds.find((c: ToothCondition) =>
-                    c.surfaces?.includes(ToothSurface.SurfaceFacial)
-                  )?.status === "completed"
-                  ? "bg-emerald-500"
-                  : conds.find((c: ToothCondition) =>
-                        c.surfaces?.includes(ToothSurface.SurfaceFacial)
-                      )?.status === "treatment_planned"
-                    ? "bg-amber-500"
-                    : "bg-blue-500"
-                : "bg-slate-800"
-            }`}
-          ></div>
-
-          <div
-            class={`w-1.5 h-full transition-colors ${
-              conds.some((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceMesial))
-                ? conds.find((c: ToothCondition) =>
-                    c.surfaces?.includes(ToothSurface.SurfaceMesial)
-                  )?.status === "completed"
-                  ? "bg-emerald-500"
-                  : conds.find((c: ToothCondition) =>
-                        c.surfaces?.includes(ToothSurface.SurfaceMesial)
-                      )?.status === "treatment_planned"
-                    ? "bg-amber-500"
-                    : "bg-blue-500"
-                : "bg-slate-800"
-            }`}
-          ></div>
-
-          <div
-            class={`flex-1 h-full transition-colors ${
-              conds.some(
-                (c: ToothCondition) =>
-                  c.surfaces?.includes(ToothSurface.SurfaceOcclusal) ||
-                  c.surfaces?.includes(ToothSurface.SurfaceIncisal)
-              )
-                ? conds.find(
-                    (c: ToothCondition) =>
-                      c.surfaces?.includes(ToothSurface.SurfaceOcclusal) ||
-                      c.surfaces?.includes(ToothSurface.SurfaceIncisal)
-                  )?.status === "completed"
-                  ? "bg-emerald-500"
-                  : conds.find(
-                        (c: ToothCondition) =>
-                          c.surfaces?.includes(ToothSurface.SurfaceOcclusal) ||
-                          c.surfaces?.includes(ToothSurface.SurfaceIncisal)
-                      )?.status === "treatment_planned"
-                    ? "bg-amber-500"
-                    : "bg-blue-500"
-                : "bg-slate-800"
-            }`}
-          ></div>
-
-          <div
-            class={`w-1.5 h-full transition-colors ${
-              conds.some((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceDistal))
-                ? conds.find((c: ToothCondition) =>
-                    c.surfaces?.includes(ToothSurface.SurfaceDistal)
-                  )?.status === "completed"
-                  ? "bg-emerald-500"
-                  : conds.find((c: ToothCondition) =>
-                        c.surfaces?.includes(ToothSurface.SurfaceDistal)
-                      )?.status === "treatment_planned"
-                    ? "bg-amber-500"
-                    : "bg-blue-500"
-                : "bg-slate-800"
-            }`}
-          ></div>
-
-          <div
-            class={`col-span-3 h-1.5 transition-colors ${
-              conds.some((c: ToothCondition) => c.surfaces?.includes(ToothSurface.SurfaceLingual))
-                ? conds.find((c: ToothCondition) =>
-                    c.surfaces?.includes(ToothSurface.SurfaceLingual)
-                  )?.status === "completed"
-                  ? "bg-emerald-500"
-                  : conds.find((c: ToothCondition) =>
-                        c.surfaces?.includes(ToothSurface.SurfaceLingual)
-                      )?.status === "treatment_planned"
-                    ? "bg-amber-500"
-                    : "bg-blue-500"
-                : "bg-slate-800"
-            }`}
-          ></div>
-        </div>
+        <svg viewBox="0 0 100 100" class="w-8 h-8 drop-shadow-sm">
+          <g stroke="#1e293b" stroke-width="4" stroke-linejoin="round">
+            <!-- Facial -->
+            <path
+              d="M 14.64 14.64 A 50 50 0 0 1 85.35 14.64 L 70.71 29.29 A 29 29 0 0 0 29.29 29.29 Z"
+              class={`transition-colors ${getSurfaceFill(conds, ToothSurface.SurfaceFacial)}`}
+            />
+            <!-- Mesial -->
+            <path
+              d="M 14.64 85.35 A 50 50 0 0 1 14.64 14.64 L 29.29 29.29 A 29 29 0 0 0 29.29 70.71 Z"
+              class={`transition-colors ${getSurfaceFill(conds, ToothSurface.SurfaceMesial)}`}
+            />
+            <!-- Distal -->
+            <path
+              d="M 85.35 14.64 A 50 50 0 0 1 85.35 85.35 L 70.71 70.71 A 29 29 0 0 0 70.71 29.29 Z"
+              class={`transition-colors ${getSurfaceFill(conds, ToothSurface.SurfaceDistal)}`}
+            />
+            <!-- Lingual -->
+            <path
+              d="M 85.35 85.35 A 50 50 0 0 1 14.64 85.35 L 29.29 70.71 A 29 29 0 0 0 70.71 70.71 Z"
+              class={`transition-colors ${getSurfaceFill(conds, ToothSurface.SurfaceLingual)}`}
+            />
+            <!-- Occlusal / Incisal -->
+            <circle
+              cx="50"
+              cy="50"
+              r="29"
+              class={`transition-colors ${getSurfaceFill(conds, ToothSurface.SurfaceOcclusal, ToothSurface.SurfaceIncisal)}`}
+            />
+          </g>
+        </svg>
       {/if}
     </div>
 
