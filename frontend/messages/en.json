@@ -469,5 +469,7 @@
   "billing_bundle_delete_title": "Delete Bundle",
   "billing_bundle_delete_confirm": "Delete",
   "timecard_delete_title": "Delete Timecard",
-  "timecard_delete_confirm": "Delete"
+  "timecard_delete_confirm": "Delete",
+  "xray_btn_download": "Download",
+  "xray_frame_info": "Frame: {current} / {total}"
 }

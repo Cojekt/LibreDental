@@ -5,16 +5,15 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"image"
 	"image/png"
 
 	"github.com/suyashkumar/dicom"
 	"github.com/suyashkumar/dicom/pkg/tag"
 )
 
-// ParseDicomImages parses a DICOM file from bytes and extracts all image frames.
-// It returns a slice of image.Image objects.
-func ParseDicomImages(data []byte) ([]image.Image, error) {
+// ParseDicomDataURLs parses a DICOM file from bytes, extracts image frames (up to a limit),
+// and encodes them directly to data URLs to limit memory usage.
+func ParseDicomDataURLs(data []byte) ([]string, error) {
 	// Parse the DICOM dataset from bytes
 	dataset, err := dicom.Parse(bytes.NewReader(data), int64(len(data)), nil)
 	if err != nil {
@@ -38,36 +37,42 @@ func ParseDicomImages(data []byte) ([]image.Image, error) {
 		return nil, errors.New("no image frames found in DICOM pixel data")
 	}
 
-	var images []image.Image
-	for _, frame := range pixelDataInfo.Frames {
-		// GetImage extracts the image.Image from the frame
+	var dataURLs []string
+	const maxFrames = 50
+
+	for i, frame := range pixelDataInfo.Frames {
+		if i >= maxFrames {
+			break
+		}
+
+		// Try to get the image
 		img, err := frame.GetImage()
-		if err != nil {
+		if err == nil {
+			var buf bytes.Buffer
+			if err := png.Encode(&buf, img); err == nil {
+				b64 := base64.StdEncoding.EncodeToString(buf.Bytes())
+				dataURLs = append(dataURLs, fmt.Sprintf("data:image/png;base64,%s", b64))
+				continue
+			}
+		}
+
+		// Fall back to encapsulated data
+		if frame.IsEncapsulated() {
+			encFrame, encErr := frame.GetEncapsulatedFrame()
+			if encErr == nil && encFrame != nil && len(encFrame.Data) > 0 {
+				b64 := base64.StdEncoding.EncodeToString(encFrame.Data)
+				dataURLs = append(dataURLs, fmt.Sprintf("data:image/jpeg;base64,%s", b64))
+				continue
+			}
+		}
+
+		if len(dataURLs) == 0 {
 			return nil, fmt.Errorf("failed to get image from frame: %w", err)
 		}
-		images = append(images, img)
 	}
 
-	if len(images) == 0 {
+	if len(dataURLs) == 0 {
 		return nil, errors.New("could not extract any images from frames")
-	}
-
-	return images, nil
-}
-
-// ImagesToBase64DataURLs converts a slice of image.Image to a slice of PNG data URLs.
-func ImagesToBase64DataURLs(images []image.Image) ([]string, error) {
-	var dataURLs []string
-
-	for _, img := range images {
-		var buf bytes.Buffer
-		if err := png.Encode(&buf, img); err != nil {
-			return nil, fmt.Errorf("failed to encode image to PNG: %w", err)
-		}
-
-		b64 := base64.StdEncoding.EncodeToString(buf.Bytes())
-		dataURL := fmt.Sprintf("data:image/png;base64,%s", b64)
-		dataURLs = append(dataURLs, dataURL)
 	}
 
 	return dataURLs, nil

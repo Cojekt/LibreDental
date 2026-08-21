@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -234,14 +235,9 @@ func (s *DocumentService) GetDocumentImagesBase64(id string) ([]string, error) {
 	}
 
 	if isDicom {
-		images, err := ParseDicomImages(data)
+		dataURLs, err := ParseDicomDataURLs(data)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse DICOM frames: %w", err)
-		}
-
-		dataURLs, err := ImagesToBase64DataURLs(images)
-		if err != nil {
-			return nil, fmt.Errorf("failed to encode DICOM frames: %w", err)
 		}
 
 		return dataURLs, nil
@@ -251,7 +247,7 @@ func (s *DocumentService) GetDocumentImagesBase64(id string) ([]string, error) {
 	b64 := base64.StdEncoding.EncodeToString(data)
 	contentType := doc.ContentType
 	if contentType == "" {
-		contentType = "image/jpeg"
+		contentType = http.DetectContentType(data)
 	}
 
 	dataURL := fmt.Sprintf("data:%s;base64,%s", contentType, b64)

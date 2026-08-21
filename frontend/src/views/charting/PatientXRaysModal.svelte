@@ -152,14 +152,25 @@
     try {
       const base64 = await DocumentService.GetDocumentBase64(id);
       if (base64) {
-        // Just extract the content type from document if known, or default to octet-stream
-        // Since we are creating a download link, it's ok if it just downloads
+        const doc = documents.find((d) => d.id === id);
+        const mimeType = doc?.content_type || "application/octet-stream";
+
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mimeType });
+
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = `data:application/octet-stream;base64,${base64}`;
+        link.href = url;
         link.download = name;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
       }
     } catch (err) {
       console.error("Failed to download document:", err);
@@ -300,7 +311,7 @@
             class="btn btn-primary text-xs py-1 px-3 shadow-md"
             onclick={() => handleDownload(viewingDocId!, viewingImageName)}
           >
-            Download
+            {m.xray_btn_download()}
           </button>
         </div>
 
@@ -317,7 +328,12 @@
             class="w-full bg-slate-900/80 border-t border-slate-800 p-3 flex flex-col gap-2 z-10 shrink-0"
           >
             <div class="flex justify-between items-center text-xs text-slate-400 font-medium px-1">
-              <span>Frame: {currentFrameIndex + 1} / {viewingImages.length}</span>
+              <span
+                >{m.xray_frame_info({
+                  current: currentFrameIndex + 1,
+                  total: viewingImages.length,
+                })}</span
+              >
             </div>
             <input
               type="range"
