@@ -146,7 +146,8 @@ func TestSeedDatabase(t *testing.T) {
 		t.Errorf("Expected 1 clinic document, got %d", len(clinicDocs))
 	}
 
-	patDocs, err := docRepo.ListByFilter(domain.DocumentFilter{PatientID: &patients[0].ID})
+	pat101ID := "pat_101"
+	patDocs, err := docRepo.ListByFilter(domain.DocumentFilter{PatientID: &pat101ID})
 	if err != nil {
 		t.Fatalf("Failed to list patient documents: %v", err)
 	}
