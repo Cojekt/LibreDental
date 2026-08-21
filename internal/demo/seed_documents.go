@@ -14,15 +14,6 @@ import (
 
 func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir string, now time.Time, summary *SeedSummary) error {
 	docRepo := sqlite.NewDocumentRepository(db)
-	patientRepo := sqlite.NewPatientRepository(db)
-
-	patients, _, err := patientRepo.List(ctx, domain.PatientFilter{Limit: 2})
-	if err != nil {
-		return fmt.Errorf("failed to list patients for seeding documents: %w", err)
-	}
-	if len(patients) == 0 {
-		return nil // skip if no patients
-	}
 
 	// Setup sample definitions to seed
 	seedFile := func(patientID, name, desc, docType, mimeType, path string) error {
@@ -77,37 +68,37 @@ func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir strin
 	}
 
 	type seedDef struct {
-		name     string
-		desc     string
-		docType  string
-		mimeType string
-		path     string
-		isClinic bool
+		name      string
+		desc      string
+		docType   string
+		mimeType  string
+		path      string
+		isClinic  bool
+		patientID string
 	}
 
 	seeds := []seedDef{
-		{"DICOM Multi-frame Volume", "A single large DICOM file containing multiple frames.", string(domain.DocumentTypeXRay), "application/dicom", "dicom-multiframe-test-volume.dcm", false},
-		{"Embedded Images Test PDF", "A document with embedded images to test media extraction.", string(domain.DocumentTypePDF), "application/pdf", "document-embedded-images-test.pdf", false},
-		{"LibreOffice Writer Test PDF", "A PDF generated natively by LibreOffice Writer.", string(domain.DocumentTypePDF), "application/pdf", "document-libreoffice-writer-test.pdf", false},
-		{"Minimal Test PDF", "A basic, standard 1-page PDF.", string(domain.DocumentTypeConsentForm), "application/pdf", "document-minimal-test.pdf", true},
-		{"Multipage Test PDF", "A multi-page document to test pagination parsing.", string(domain.DocumentTypePDF), "application/pdf", "document-multipage-test.pdf", false},
-		{"Password Protected Test PDF", "A password-protected PDF (edge case).", string(domain.DocumentTypePDF), "application/pdf", "document-password-protected-test.pdf", false},
-		{"Geometry Test PNG", "A PNG file with drawn geometry.", string(domain.DocumentTypeXRay), "image/png", "image-geometry-test.png", false},
-		{"Lossless Test TIFF", "A lossless TIFF image.", string(domain.DocumentTypeXRay), "image/tiff", "image-lossless-test.tiff", false},
-		{"Modern Format Test WebP", "A modern WebP image.", string(domain.DocumentTypeXRay), "image/webp", "image-modern-format-test.webp", false},
-		{"Photo Test JPEG", "A standard compressed JPEG photograph.", string(domain.DocumentTypeXRay), "image/jpeg", "image-photo-test.jpeg", false},
-		{"Static Test GIF", "A static GIF file.", string(domain.DocumentTypeXRay), "image/gif", "image-static-test.gif", false},
+		{"DICOM Multi-frame Volume", "A single large DICOM file containing multiple frames.", string(domain.DocumentTypeXRay), "application/dicom", "dicom-multiframe-test-volume.dcm", false, "pat_101"},
+		{"Embedded Images Test PDF", "A document with embedded images to test media extraction.", string(domain.DocumentTypePDF), "application/pdf", "document-embedded-images-test.pdf", false, "pat_101"},
+		{"LibreOffice Writer Test PDF", "A PDF generated natively by LibreOffice Writer.", string(domain.DocumentTypePDF), "application/pdf", "document-libreoffice-writer-test.pdf", false, "pat_101"},
+		{"Minimal Test PDF", "A basic, standard 1-page PDF.", string(domain.DocumentTypeConsentForm), "application/pdf", "document-minimal-test.pdf", true, ""},
+		{"Multipage Test PDF", "A multi-page document to test pagination parsing.", string(domain.DocumentTypePDF), "application/pdf", "document-multipage-test.pdf", false, "pat_101"},
+		{"Password Protected Test PDF", "A password-protected PDF (edge case).", string(domain.DocumentTypePDF), "application/pdf", "document-password-protected-test.pdf", false, "pat_101"},
+		{"Geometry Test PNG", "A PNG file with drawn geometry.", string(domain.DocumentTypeXRay), "image/png", "image-geometry-test.png", false, "pat_101"},
+		{"Lossless Test TIFF", "A lossless TIFF image.", string(domain.DocumentTypeXRay), "image/tiff", "image-lossless-test.tiff", false, "pat_102"},
+		{"Modern Format Test WebP", "A modern WebP image.", string(domain.DocumentTypeXRay), "image/webp", "image-modern-format-test.webp", false, "pat_102"},
+		{"Photo Test JPEG", "A standard compressed JPEG photograph.", string(domain.DocumentTypeXRay), "image/jpeg", "image-photo-test.jpeg", false, "pat_102"},
+		{"Static Test GIF", "A static GIF file.", string(domain.DocumentTypeXRay), "image/gif", "image-static-test.gif", false, "pat_102"},
 	}
 
-	for i, s := range seeds {
+	for _, s := range seeds {
 		fullPath := filepath.Join(demoDataDir, s.path)
 
-		// If the file doesn't exist locally, skip to avoid breaking seeder
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			continue
+			return fmt.Errorf("demo document asset missing: %w", err)
 		}
 
-		pID := patients[i%len(patients)].ID
+		pID := s.patientID
 		if s.isClinic {
 			pID = "" // clinic-wide document
 		}
