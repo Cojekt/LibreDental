@@ -15,7 +15,6 @@
     openAddProviderModal,
     openEditProviderModal,
     handleDeleteProvider,
-    handleRestoreProvider,
     handleSaveProvider,
     showProviderModal = $bindable(false),
     isEditingProvider = false,
@@ -33,7 +32,6 @@
     openAddProviderModal: () => void;
     openEditProviderModal: (p: Provider) => void;
     handleDeleteProvider: (id: string) => void;
-    handleRestoreProvider: (id: string) => void;
     handleSaveProvider: (e: Event) => void;
     showProviderModal: boolean;
     isEditingProvider: boolean;
@@ -57,11 +55,24 @@
   let selectedProviderId = $state("");
   let selectedProviderName = $state("");
 
-  let statusFilter = $state("active");
+  let searchQuery = $state("");
+  let statusFilter = $state("all"); // 'all', 'active', 'inactive'
+
   let filteredProviders = $derived(
     providers.filter((p) => {
-      const pStatus = p.status || "active";
-      return pStatus === statusFilter;
+      if (statusFilter === "active" && !p.is_active) return false;
+      if (statusFilter === "inactive" && p.is_active) return false;
+
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return (
+          p.name.toLowerCase().includes(q) ||
+          (p.role || "").toLowerCase().includes(q) ||
+          (p.email || "").toLowerCase().includes(q) ||
+          (p.phone || "").toLowerCase().includes(q)
+        );
+      }
+      return true;
     })
   );
 
@@ -156,33 +167,18 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-    <h3 class="text-lg font-bold text-slate-100">{m.prov_add_btn().split('/')[0].trim()}s & Staff</h3>
-    <div
-      class="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 shadow-sm select-none"
-    >
-      <button
-        type="button"
-        onclick={() => (statusFilter = "active")}
-        class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-          statusFilter === "active"
-            ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm"
-            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
-        }`}
-      >
-        {m.patients_filter_active()}
-      </button>
-      <button
-        type="button"
-        onclick={() => (statusFilter = "archived")}
-        class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-          statusFilter === "archived"
-            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm"
-            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
-        }`}
-      >
-        {m.patients_filter_archived()}
-      </button>
+  <div class="flex items-center gap-3 pb-2 border-b border-slate-800">
+    <div class="relative w-full max-w-[480px] flex-1">
+      <svg class="absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 pointer-events-none z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input type="text" placeholder="Search staff..." class="box-border w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none shadow-sm transition-all" style="padding-left: 2.75rem; padding-right: 0.75rem;" bind:value={searchQuery} />
+    </div>
+    <div class="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 shadow-sm select-none">
+      <button type="button" onclick={() => statusFilter = 'all'} class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === 'all' ? 'bg-slate-700 text-slate-200' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'}`}>All</button>
+      <button type="button" onclick={() => statusFilter = 'active'} class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === 'active' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'}`}>Active</button>
+      <button type="button" onclick={() => statusFilter = 'inactive'} class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === 'inactive' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'}`}>Disabled</button>
     </div>
   </div>
 
@@ -287,10 +283,10 @@
               </button>
               <button
                 type="button"
-                onclick={() => statusFilter === 'archived' ? handleRestoreProvider(p.id) : handleDeleteProvider(p.id)}
+                onclick={() => handleDeleteProvider(p.id)}
                 class="text-rose-400 hover:text-rose-300 font-semibold"
               >
-                {statusFilter === 'archived' ? 'Restore' : m.patient_archive()}
+                Disable
               </button>
             </div>
           </div>

@@ -213,8 +213,8 @@ func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.P
 }
 
 func (r *PracticeConfigRepository) DeleteProvider(ctx context.Context, id string) error {
-	query := `DELETE FROM providers WHERE id = ?`
-	res, err := r.db.ExecContext(ctx, query, id)
+	query := `UPDATE providers SET is_active = 0, updated_at = ? WHERE id = ?`
+	res, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete provider: %w", err)
 	}
@@ -299,8 +299,8 @@ func (r *PracticeConfigRepository) SaveOperatory(ctx context.Context, op *domain
 }
 
 func (r *PracticeConfigRepository) DeleteOperatory(ctx context.Context, id string) error {
-	query := `DELETE FROM operatories WHERE id = ?`
-	res, err := r.db.ExecContext(ctx, query, id)
+	query := `UPDATE operatories SET is_active = 0, updated_at = ? WHERE id = ?`
+	res, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete operatory: %w", err)
 	}
