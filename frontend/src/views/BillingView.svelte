@@ -45,7 +45,6 @@
 </script>
 
 <div class="space-y-6">
-
   <div class="border-b border-slate-800">
     <TabNav {tabs} bind:activeTab={billingTab} />
   </div>

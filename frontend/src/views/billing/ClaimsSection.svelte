@@ -449,11 +449,16 @@
           id="cl-policy"
           type="text"
           bind:value={claimPolicyNumber}
-          placeholder="Policy number"
+          placeholder={m.billing_claim_policy_placeholder()}
         />
       </FormField>
       <FormField label={m.patient_insurance_group()} forId="cl-group">
-        <Input id="cl-group" type="text" bind:value={claimGroupNumber} placeholder="Group number" />
+        <Input
+          id="cl-group"
+          type="text"
+          bind:value={claimGroupNumber}
+          placeholder={m.billing_claim_group_placeholder()}
+        />
       </FormField>
     </div>
 
@@ -497,7 +502,7 @@
               type="text"
               class="w-36 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
               bind:value={bundleLookupInput}
-              placeholder="Bundle (crwn)"
+              placeholder={m.billing_claim_bundle_placeholder()}
               onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), applyBundleLookup())}
             />
             <button
@@ -526,7 +531,7 @@
           >
             <span class="col-span-2">{m.charting_th_code()}</span>
             <span class="col-span-3">{m.charting_th_desc()}</span>
-            <span class="col-span-1 text-center">Tooth</span>
+            <span class="col-span-1 text-center">{m.billing_claim_tooth_label()}</span>
             <span class="col-span-2 text-right">{m.charting_th_fee()}</span>
             <span class="col-span-2 text-right">Ins. Allowed</span>
             <span class="col-span-1 text-center"></span>
@@ -536,7 +541,7 @@
               <div class="col-span-2">
                 <Input
                   bind:value={li.ada_code}
-                  placeholder="D0120"
+                  placeholder={m.billing_claim_code_placeholder()}
                   class="font-mono text-xs py-1.5 px-2"
                 />
               </div>

@@ -178,18 +178,12 @@
   }
 </script>
 
-<Modal
-  bind:showModal
-  maxWidth="max-w-4xl"
->
+<Modal bind:showModal maxWidth="max-w-4xl">
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[60vh] max-h-[600px] min-h-[400px]">
     <!-- Sidebar: Upload & List -->
     <div class="col-span-1 flex flex-col gap-6 overflow-y-auto">
       <!-- Upload Form -->
-      <form
-        onsubmit={handleUpload}
-        class="space-y-3 shrink-0"
-      >
+      <form onsubmit={handleUpload} class="space-y-3 shrink-0">
         <h4 class="text-sm font-bold text-slate-200">{m.xray_upload_title()}</h4>
 
         <div class="flex flex-col gap-1.5">

@@ -123,8 +123,8 @@ func TestPracticeConfigService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list providers after delete: %v", err)
 	}
-	if len(providersAfterDelete) != 0 {
-		t.Errorf("Expected 0 providers after deletion, got %d", len(providersAfterDelete))
+	if len(providersAfterDelete) != 1 || providersAfterDelete[0].IsActive {
+		t.Errorf("Expected provider to be inactive after deletion, got active or wrong count: %d", len(providersAfterDelete))
 	}
 
 	// 7. Operatory Management Flow
@@ -161,7 +161,7 @@ func TestPracticeConfigService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list operatories after delete: %v", err)
 	}
-	if len(opsAfterDelete) != 0 {
-		t.Errorf("Expected 0 operatories after deletion, got %d", len(opsAfterDelete))
+	if len(opsAfterDelete) != 1 || opsAfterDelete[0].IsActive {
+		t.Errorf("Expected operatory to be inactive after deletion, got active or wrong count: %d", len(opsAfterDelete))
 	}
 }

@@ -413,7 +413,7 @@
         >
           <option value="">{m.charting_select_patient_prompt()}</option>
           {#if patients.length === 0}
-            <option value="" disabled>No active patients found</option>
+            <option value="" disabled>{m.charting_no_active_patients()}</option>
           {/if}
           {#each patients as p}
             <option value={p.id}>
