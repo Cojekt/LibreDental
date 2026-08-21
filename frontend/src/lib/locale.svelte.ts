@@ -109,3 +109,13 @@ export function currentLocale(): string {
   getLocaleVersion();
   return getLocale() as string;
 }
+
+/** Helper to get human readable name for a locale */
+export function getLanguageName(locale: string): string {
+  try {
+    const name = new Intl.DisplayNames([locale], { type: "language" }).of(locale);
+    return name ? name.charAt(0).toUpperCase() + name.slice(1) : locale.toUpperCase();
+  } catch {
+    return locale.toUpperCase();
+  }
+}
