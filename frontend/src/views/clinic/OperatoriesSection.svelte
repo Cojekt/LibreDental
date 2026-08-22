@@ -36,7 +36,7 @@
   let statusFilter = $state("all"); // 'all', 'active', 'inactive'
 
   let filteredOperatories = $derived(
-    operatories.filter((op) => {
+    operatories.filter((op: Operatory) => {
       if (statusFilter === "active" && !op.is_active) return false;
       if (statusFilter === "inactive" && op.is_active) return false;
 

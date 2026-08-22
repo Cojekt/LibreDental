@@ -50,6 +50,18 @@
       aria-modal="true"
       tabindex="-1"
     >
+      {#snippet closeButton()}
+        <button
+          type="button"
+          onclick={() => !preventDismiss && (showModal = false)}
+          disabled={preventDismiss}
+          class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Close modal"
+        >
+          ✕
+        </button>
+      {/snippet}
+
       {#if title || icon}
         <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
           <div class="flex items-center gap-3">
@@ -69,27 +81,11 @@
               {/if}
             </div>
           </div>
-          <button
-            type="button"
-            onclick={() => !preventDismiss && (showModal = false)}
-            disabled={preventDismiss}
-            class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
+          {@render closeButton()}
         </div>
       {:else}
         <div class="flex justify-end mb-2">
-          <button
-            type="button"
-            onclick={() => !preventDismiss && (showModal = false)}
-            disabled={preventDismiss}
-            class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
+          {@render closeButton()}
         </div>
       {/if}
 

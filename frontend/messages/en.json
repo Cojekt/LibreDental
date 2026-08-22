@@ -491,5 +491,7 @@
   "patient_placeholder_guar_name": "Responsible Party Name",
   "patient_placeholder_guar_rel": "Self / Parent / Guardian",
   "patient_placeholder_ins_policy": "Policy / Subscriber ID",
-  "patient_placeholder_ins_group": "Group Number"
+  "patient_placeholder_ins_group": "Group Number",
+  "prov_no_results_title": "No providers found",
+  "prov_no_results_desc": "No providers match your current filters."
 }

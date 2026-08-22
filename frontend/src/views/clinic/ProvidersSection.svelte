@@ -59,7 +59,7 @@
   let statusFilter = $state("all"); // 'all', 'active', 'inactive'
 
   let filteredProviders = $derived(
-    providers.filter((p) => {
+    providers.filter((p: Provider) => {
       if (statusFilter === "active" && !p.is_active) return false;
       if (statusFilter === "inactive" && p.is_active) return false;
 
@@ -69,7 +69,9 @@
           p.name.toLowerCase().includes(q) ||
           (p.role || "").toLowerCase().includes(q) ||
           (p.email || "").toLowerCase().includes(q) ||
-          (p.phone || "").toLowerCase().includes(q)
+          (p.phone || "").toLowerCase().includes(q) ||
+          (p.specialty || "").toLowerCase().includes(q) ||
+          (p.license_number || "").toLowerCase().includes(q)
         );
       }
       return true;
@@ -77,7 +79,7 @@
   );
 
   $effect(() => {
-    const currentProviders = filteredProviders;
+    const currentProviders = providers;
     untrack(() => {
       loadProviderStates(currentProviders);
     });
@@ -211,8 +213,10 @@
     </div>
   </div>
 
-  {#if filteredProviders.length === 0}
+  {#if providers.length === 0}
     <EmptyState title={m.prov_empty_title()} subtitle={m.prov_empty_sub()} icon="👨‍⚕️" />
+  {:else if filteredProviders.length === 0}
+    <EmptyState title={m.prov_no_results_title()} subtitle={m.prov_no_results_desc()} icon="🔍" />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each filteredProviders as p}

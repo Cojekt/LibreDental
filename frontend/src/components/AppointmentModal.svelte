@@ -121,7 +121,9 @@
             <option value="">{m.appt_no_providers()}</option>
           {:else}
             {#each configuredProviders as prov}
-              <option value={prov.id}>{prov.name} ({prov.role})</option>
+              {#if prov.is_active || prov.id === providerId}
+                <option value={prov.id}>{prov.name} ({prov.role})</option>
+              {/if}
             {/each}
           {/if}
         </select>
@@ -138,7 +140,9 @@
             <option value="">{m.appt_no_operatories()}</option>
           {:else}
             {#each configuredOperatories as op}
-              <option value={op.id}>{op.name} ({op.type})</option>
+              {#if op.is_active || op.id === operatoryId}
+                <option value={op.id}>{op.name} ({op.type})</option>
+              {/if}
             {/each}
           {/if}
         </select>
