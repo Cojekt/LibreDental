@@ -55,6 +55,29 @@
   let selectedProviderId = $state("");
   let selectedProviderName = $state("");
 
+  let searchQuery = $state("");
+  let statusFilter = $state("all"); // 'all', 'active', 'inactive'
+
+  let filteredProviders = $derived(
+    providers.filter((p: Provider) => {
+      if (statusFilter === "active" && !p.is_active) return false;
+      if (statusFilter === "inactive" && p.is_active) return false;
+
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return (
+          p.name.toLowerCase().includes(q) ||
+          (p.role || "").toLowerCase().includes(q) ||
+          (p.email || "").toLowerCase().includes(q) ||
+          (p.phone || "").toLowerCase().includes(q) ||
+          (p.specialty || "").toLowerCase().includes(q) ||
+          (p.license_number || "").toLowerCase().includes(q)
+        );
+      }
+      return true;
+    })
+  );
+
   $effect(() => {
     const currentProviders = providers;
     untrack(() => {
@@ -146,11 +169,57 @@
 </script>
 
 <div class="space-y-6">
+  <div class="flex items-center gap-3 pb-2 border-b border-slate-800">
+    <div class="relative w-full max-w-[480px] flex-1">
+      <svg
+        class="absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 pointer-events-none z-10"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input
+        type="text"
+        placeholder={m.prov_search_placeholder()}
+        class="box-border w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none shadow-sm transition-all"
+        style="padding-left: 2.75rem; padding-right: 0.75rem;"
+        bind:value={searchQuery}
+      />
+    </div>
+    <div
+      class="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 shadow-sm select-none"
+    >
+      <button
+        type="button"
+        onclick={() => (statusFilter = "all")}
+        class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "all" ? "bg-slate-700 text-slate-200" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
+        >{m.common_all()}</button
+      >
+      <button
+        type="button"
+        onclick={() => (statusFilter = "active")}
+        class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "active" ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
+        >{m.common_active()}</button
+      >
+      <button
+        type="button"
+        onclick={() => (statusFilter = "inactive")}
+        class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "inactive" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
+        >{m.common_disabled()}</button
+      >
+    </div>
+  </div>
+
   {#if providers.length === 0}
     <EmptyState title={m.prov_empty_title()} subtitle={m.prov_empty_sub()} icon="👨‍⚕️" />
+  {:else if filteredProviders.length === 0}
+    <EmptyState title={m.prov_no_results_title()} subtitle={m.prov_no_results_desc()} icon="🔍" />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {#each providers as p}
+      {#each filteredProviders as p}
         <div
           class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-3 relative group hover:border-slate-700 transition-colors"
         >
@@ -173,7 +242,7 @@
             <span
               class={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${p.is_active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-slate-800 text-slate-500"}`}
             >
-              {p.is_active ? "Active" : "Inactive"}
+              {p.is_active ? m.common_active() : m.common_inactive()}
             </span>
           </div>
 
@@ -181,7 +250,7 @@
             <div class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
               {#if p.hourly_rate}
                 <div class="font-medium text-emerald-400">
-                  💵 Wage: ${(p.hourly_rate / 100).toFixed(2)}/hr
+                  {m.prov_wage_prefix()} ${(p.hourly_rate / 100).toFixed(2)}{m.prov_wage_suffix()}
                 </div>
               {/if}
               {#if p.license_number}
@@ -218,7 +287,7 @@
                   {m.prov_clocking_in()}
                 </button>
               {:else if activeTimecards[p.id] === undefined}
-                <span class="text-slate-500 font-semibold italic">Loading...</span>
+                <span class="text-slate-500 font-semibold italic">{m.common_loading()}</span>
               {:else if activeTimecards[p.id]}
                 <button
                   type="button"
@@ -250,7 +319,7 @@
                 onclick={() => handleDeleteProvider(p.id)}
                 class="text-rose-400 hover:text-rose-300 font-semibold"
               >
-                {m.patient_archive()}
+                {m.common_disable()}
               </button>
             </div>
           </div>
@@ -362,14 +431,14 @@
       </FormField>
     </div>
 
-    <FormField label="Hourly Rate ($)" forId="prov-hourly">
+    <FormField label={m.prov_hourly_rate_label()} forId="prov-hourly">
       <Input
         id="prov-hourly"
         type="number"
         min="0"
         step="0.01"
         bind:value={provHourlyRate}
-        placeholder="e.g. 25.00"
+        placeholder={m.prov_hourly_rate_placeholder()}
       />
     </FormField>
 

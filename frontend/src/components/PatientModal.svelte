@@ -110,11 +110,23 @@
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
       >
         <FormField label={m.patient_first_name()} forId="fname" required>
-          <Input id="fname" type="text" required bind:value={firstName} placeholder="Jane" />
+          <Input
+            id="fname"
+            type="text"
+            required
+            bind:value={firstName}
+            placeholder={m.patient_placeholder_fname()}
+          />
         </FormField>
 
         <FormField label={m.patient_last_name()} forId="lname" required>
-          <Input id="lname" type="text" required bind:value={lastName} placeholder="Smith" />
+          <Input
+            id="lname"
+            type="text"
+            required
+            bind:value={lastName}
+            placeholder={m.patient_placeholder_lname()}
+          />
         </FormField>
 
         <FormField label={m.patient_sex()} forId="sex">
@@ -198,11 +210,21 @@
         </div>
 
         <FormField label={m.patient_address_line2()} forId="addr2">
-          <Input id="addr2" type="text" bind:value={addressLine2} placeholder="Apt 4B" />
+          <Input
+            id="addr2"
+            type="text"
+            bind:value={addressLine2}
+            placeholder={m.patient_placeholder_addr2()}
+          />
         </FormField>
 
         <FormField label={m.patient_city()} forId="city">
-          <Input id="city" type="text" bind:value={city} placeholder="San Francisco" />
+          <Input
+            id="city"
+            type="text"
+            bind:value={city}
+            placeholder={m.patient_placeholder_city()}
+          />
         </FormField>
 
         <FormField label={stateLabel} forId="state-province">
@@ -240,7 +262,7 @@
             id="emerg-name"
             type="text"
             bind:value={emergencyName}
-            placeholder="Emergency Contact Name"
+            placeholder={m.patient_placeholder_emer_name()}
           />
         </FormField>
         <FormField label={m.patient_emergency_rel()} forId="emerg-rel">
@@ -265,7 +287,7 @@
             id="guar-name"
             type="text"
             bind:value={guarantorName}
-            placeholder="Responsible Party Name"
+            placeholder={m.patient_placeholder_guar_name()}
           />
         </FormField>
         <FormField label={m.patient_guarantor_rel()} forId="guar-rel">
@@ -273,7 +295,7 @@
             id="guar-rel"
             type="text"
             bind:value={guarantorRel}
-            placeholder="Self / Parent / Guardian"
+            placeholder={m.patient_placeholder_guar_rel()}
           />
         </FormField>
         <FormField label={m.patient_guarantor_phone()} forId="guar-phone">
@@ -310,7 +332,7 @@
             id="ins-policy"
             type="text"
             bind:value={insurancePolicy}
-            placeholder="Policy / Subscriber ID"
+            placeholder={m.patient_placeholder_ins_policy()}
           />
         </FormField>
         <FormField label={m.patient_insurance_group()} forId="ins-group">
@@ -318,7 +340,7 @@
             id="ins-group"
             type="text"
             bind:value={insuranceGroup}
-            placeholder="Group Number"
+            placeholder={m.patient_placeholder_ins_group()}
           />
         </FormField>
 

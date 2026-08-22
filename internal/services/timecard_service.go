@@ -53,6 +53,9 @@ func (s *TimecardService) ClockIn(providerID string) (*domain.Timecard, error) {
 	if provider == nil {
 		return nil, fmt.Errorf("provider not found")
 	}
+	if !provider.IsActive {
+		return nil, fmt.Errorf("provider is inactive")
+	}
 
 	// Create new timecard
 	t := &domain.Timecard{

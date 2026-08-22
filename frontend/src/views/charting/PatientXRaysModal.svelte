@@ -178,21 +178,12 @@
   }
 </script>
 
-<Modal
-  bind:showModal
-  title={m.xray_title()}
-  subtitle={m.xray_subtitle()}
-  icon="🩻"
-  maxWidth="max-w-4xl"
->
+<Modal bind:showModal maxWidth="max-w-4xl">
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[60vh] max-h-[600px] min-h-[400px]">
     <!-- Sidebar: Upload & List -->
-    <div class="col-span-1 border-r border-slate-800 pr-4 flex flex-col gap-4 overflow-y-auto">
+    <div class="col-span-1 flex flex-col gap-6 overflow-y-auto">
       <!-- Upload Form -->
-      <form
-        onsubmit={handleUpload}
-        class="space-y-3 bg-slate-900/50 p-4 rounded-xl border border-slate-800 shrink-0"
-      >
+      <form onsubmit={handleUpload} class="space-y-3 shrink-0">
         <h4 class="text-sm font-bold text-slate-200">{m.xray_upload_title()}</h4>
 
         <div class="flex flex-col gap-1.5">
@@ -252,9 +243,7 @@
 
       <!-- List -->
       <div class="flex-1 overflow-y-auto space-y-2">
-        <h4
-          class="text-xs font-bold text-slate-400 uppercase tracking-wider sticky top-0 bg-slate-950 py-1"
-        >
+        <h4 class="text-sm font-bold text-slate-200 mb-3">
           {m.xray_list_title()}
         </h4>
 
@@ -346,7 +335,6 @@
         {/if}
       {:else}
         <div class="flex-1 flex flex-col items-center justify-center text-slate-600 gap-3">
-          <div class="text-5xl">🩻</div>
           <p class="text-sm font-medium">{m.xray_select_prompt()}</p>
         </div>
       {/if}

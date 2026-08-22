@@ -170,7 +170,7 @@ func TestPracticeConfigRepository_ProvidersAndOperatories(t *testing.T) {
 		t.Fatalf("Failed to delete provider: %v", err)
 	}
 	providersAfterDelete, _ := repo.ListProviders(ctx)
-	if len(providersAfterDelete) != 0 {
-		t.Errorf("Expected 0 providers after delete, got %d", len(providersAfterDelete))
+	if len(providersAfterDelete) != 1 || providersAfterDelete[0].IsActive {
+		t.Errorf("Expected provider to be inactive after delete, got active or wrong count: %d", len(providersAfterDelete))
 	}
 }

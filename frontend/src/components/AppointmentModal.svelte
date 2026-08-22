@@ -117,11 +117,13 @@
           required
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
         >
-          {#if configuredProviders.length === 0}
+          {#if configuredProviders.filter((prov: Provider) => prov.is_active || prov.id === providerId).length === 0}
             <option value="">{m.appt_no_providers()}</option>
           {:else}
             {#each configuredProviders as prov}
-              <option value={prov.id}>{prov.name} ({prov.role})</option>
+              {#if prov.is_active || prov.id === providerId}
+                <option value={prov.id}>{prov.name} ({prov.role})</option>
+              {/if}
             {/each}
           {/if}
         </select>
@@ -134,11 +136,13 @@
           required
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
         >
-          {#if configuredOperatories.length === 0}
+          {#if configuredOperatories.filter((op: Operatory) => op.is_active || op.id === operatoryId).length === 0}
             <option value="">{m.appt_no_operatories()}</option>
           {:else}
             {#each configuredOperatories as op}
-              <option value={op.id}>{op.name} ({op.type})</option>
+              {#if op.is_active || op.id === operatoryId}
+                <option value={op.id}>{op.name} ({op.type})</option>
+              {/if}
             {/each}
           {/if}
         </select>

@@ -348,7 +348,7 @@
               <div class="col-span-3">
                 <Input
                   bind:value={item.ada_code}
-                  placeholder="D0120"
+                  placeholder={m.billing_claim_code_placeholder()}
                   class="font-mono text-xs py-1.5 px-2"
                 />
               </div>

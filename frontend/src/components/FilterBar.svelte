@@ -18,7 +18,7 @@
   });
 </script>
 
-<div class="mb-4 flex items-center gap-3">
+<div class="flex items-center gap-3">
   <div class="relative w-full max-w-[480px] flex-1">
     <svg
       class="absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 pointer-events-none z-10"
