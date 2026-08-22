@@ -109,3 +109,40 @@ export function currentLocale(): string {
   getLocaleVersion();
   return getLocale() as string;
 }
+
+/** Helper to get human readable name for a locale */
+export function getLanguageName(locale: string): string {
+  try {
+    const name = new Intl.DisplayNames([locale], { type: "language" }).of(locale);
+    return name ? name.charAt(0).toUpperCase() + name.slice(1) : locale.toUpperCase();
+  } catch {
+    return locale.toUpperCase();
+  }
+}
+
+/** Composable for managing language selection state and logic */
+export function useLanguageState() {
+  let selectedLanguage = $state(currentLocale());
+
+  $effect(() => {
+    selectedLanguage = currentLocale();
+  });
+
+  async function handleSelectLanguage(e: Event) {
+    const lang = (e.target as HTMLSelectElement).value;
+    selectedLanguage = lang;
+    try {
+      await setLanguagePreference(lang);
+    } catch (err) {
+      console.warn("Failed to set language preference:", err);
+      selectedLanguage = currentLocale();
+    }
+  }
+
+  return {
+    get selectedLanguage() {
+      return selectedLanguage;
+    },
+    handleSelectLanguage,
+  };
+}

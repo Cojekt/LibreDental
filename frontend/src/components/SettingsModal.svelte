@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { SystemSettingsService } from "@bindings/services/index.js";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion, setLanguagePreference } from "$lib/locale.svelte.js";
+  import { getLocaleVersion, getLanguageName, useLanguageState } from "$lib/locale.svelte.js";
   import { locales } from "../paraglide/runtime.js";
   import { handleError } from "$lib/error.js";
 
@@ -19,10 +19,10 @@
     onchangetheme: (newTheme: ThemeMode) => void;
   }>();
 
-  let dataDir = $state("Loading storage path...");
+  let dataDir = $state("");
+  let dataDirError = $state(false);
   let isOpeningFolder = $state(false);
   let openError = $state<string | null>(null);
-  let selectedLanguage = $state("system");
 
   let windowMode = $state<WindowMode>("window");
   let isDesktop = $state(false);
@@ -40,23 +40,12 @@
       const dir = await SystemSettingsService.GetDataDir();
       if (dir) {
         dataDir = dir;
+        dataDirError = false;
       }
     } catch (err) {
       console.error("Failed to get data directory path:", err);
-      dataDir = "Unable to resolve storage path";
-    }
-  }
-
-  async function loadLanguage() {
-    try {
-      if (isDesktop) {
-        const lang = await SystemSettingsService.GetLanguage();
-        selectedLanguage = lang || "system";
-      } else {
-        selectedLanguage = localStorage.getItem("language") || "system";
-      }
-    } catch (err) {
-      console.error("Failed to get language setting:", err);
+      dataDir = "";
+      dataDirError = true;
     }
   }
 
@@ -74,19 +63,10 @@
 
   async function loadAllSettings() {
     await checkDesktopMode();
-    await Promise.all([loadDataDir(), loadLanguage(), loadWindowSettings()]);
+    await Promise.all([loadDataDir(), loadWindowSettings()]);
   }
 
-  async function handleSelectLanguage(lang: string) {
-    const previousLanguage = selectedLanguage;
-    selectedLanguage = lang;
-    try {
-      await setLanguagePreference(lang);
-    } catch (err) {
-      console.warn("Failed to set language preference:", err);
-      selectedLanguage = previousLanguage;
-    }
-  }
+  const langState = useLanguageState();
 
   async function handleSelectWindowMode(mode: WindowMode) {
     if (!isDesktop) return;
@@ -117,7 +97,7 @@
       await SystemSettingsService.OpenDataDir();
     } catch (err: any) {
       console.error("Failed to open data directory:", err);
-      openError = handleError(err, "Could not open system file manager");
+      openError = handleError(err, m.settings_storage_open_error());
     } finally {
       isOpeningFolder = false;
     }
@@ -177,10 +157,9 @@
             </svg>
           </div>
           <div>
-            <h2 id="settings-title" class="m-0 text-base font-semibold text-white tracking-tight">
+            <h2 id="settings-title" class="m-0 text-lg font-bold text-white tracking-tight">
               {(getLocaleVersion(), m.settings_title())}
             </h2>
-            <p class="m-0 text-xs text-slate-400">{m.settings_subtitle()}</p>
           </div>
         </div>
         <button
@@ -221,12 +200,9 @@
                   : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
               }`}
             >
-              <div class="text-xl mb-1">💻</div>
-              <div class="text-xs font-semibold">
+              <div class="text-2xl mb-1.5">💻</div>
+              <div class="text-sm font-semibold">
                 {m.settings_theme_system()}
-              </div>
-              <div class="text-[10px] text-slate-400 mt-0.5">
-                {m.settings_theme_system_sub()}
               </div>
             </button>
 
@@ -240,11 +216,8 @@
                   : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
               }`}
             >
-              <div class="text-xl mb-1">🌙</div>
-              <div class="text-xs font-semibold">{m.settings_theme_dark()}</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">
-                {m.settings_theme_dark_sub()}
-              </div>
+              <div class="text-2xl mb-1.5">🌙</div>
+              <div class="text-sm font-semibold">{m.settings_theme_dark()}</div>
             </button>
 
             <!-- Light Mode -->
@@ -257,12 +230,9 @@
                   : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
               }`}
             >
-              <div class="text-xl mb-1">☀️</div>
-              <div class="text-xs font-semibold">
+              <div class="text-2xl mb-1.5">☀️</div>
+              <div class="text-sm font-semibold">
                 {m.settings_theme_light()}
-              </div>
-              <div class="text-[10px] text-slate-400 mt-0.5">
-                {m.settings_theme_light_sub()}
               </div>
             </button>
           </div>
@@ -317,13 +287,12 @@
           </span>
           <select
             id="language-select"
-            value={selectedLanguage}
-            onchange={(e) => handleSelectLanguage((e.target as HTMLSelectElement).value)}
+            value={langState.selectedLanguage}
+            onchange={langState.handleSelectLanguage}
             class="w-full rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5 text-sm text-slate-200 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-all cursor-pointer"
           >
-            <option value="system">🌐 {m.settings_language_system()}</option>
             {#each locales as locale}
-              <option value={locale}>🗣 {locale.toUpperCase()}</option>
+              <option value={locale}>{getLanguageName(locale)}</option>
             {/each}
           </select>
         </div>
@@ -341,8 +310,27 @@
               class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5"
             >
               <div class="flex items-center gap-2.5 min-w-0 overflow-hidden">
-                <span class="text-slate-400 text-sm shrink-0">📁</span>
-                <span class="font-mono text-xs text-slate-300 truncate select-all">{dataDir}</span>
+                <svg
+                  class="w-4 h-4 text-slate-400 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  ><path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                  ></path></svg
+                >
+                <span class="font-mono text-xs text-slate-300 truncate select-all">
+                  {#if dataDirError}
+                    {m.settings_storage_error()}
+                  {:else if dataDir}
+                    {dataDir}
+                  {:else}
+                    {m.settings_storage_loading()}
+                  {/if}
+                </span>
               </div>
 
               <button
@@ -350,7 +338,7 @@
                 onclick={handleOpenFolder}
                 disabled={isOpeningFolder}
                 class="btn btn-secondary btn-sm shrink-0 text-xs py-1 px-3 gap-1.5 cursor-pointer"
-                title="Open Storage Folder"
+                title={m.settings_storage_open_title()}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -373,9 +361,21 @@
 
             {#if openError}
               <div
-                class="mt-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-lg"
+                class="mt-2 flex items-start gap-1.5 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-lg"
               >
-                ⚠️ {openError}
+                <svg
+                  class="w-4 h-4 text-rose-400 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  ><path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  ></path></svg
+                >
+                <span>{openError}</span>
               </div>
             {/if}
           </div>
