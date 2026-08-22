@@ -49,3 +49,8 @@ tasks:
       - gofmt -w -s .
       - cd frontend && {{.PACKAGE_MANAGER}} run format
 
+  test:
+    desc: Runs go test and npm run check on the repo
+    cmds:
+      - go test ./...
+      - cd frontend && {{.PACKAGE_MANAGER}} run check
