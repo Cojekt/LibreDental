@@ -33,7 +33,8 @@
   type="button"
   {id}
   onclick={() => (showModal = true)}
-  class={buttonClass || "flex items-center justify-between w-full p-4 bg-slate-950 border border-slate-700 hover:border-slate-600 rounded-lg text-slate-100 transition-colors"}
+  class={buttonClass ||
+    "flex items-center justify-between w-full p-4 bg-slate-950 border border-slate-700 hover:border-slate-600 rounded-lg text-slate-100 transition-colors"}
 >
   {#if selectedOption && buttonContent}
     {@render buttonContent(selectedOption)}

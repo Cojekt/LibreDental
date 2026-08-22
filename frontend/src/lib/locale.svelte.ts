@@ -119,3 +119,30 @@ export function getLanguageName(locale: string): string {
     return locale.toUpperCase();
   }
 }
+
+/** Composable for managing language selection state and logic */
+export function useLanguageState() {
+  let selectedLanguage = $state(currentLocale());
+
+  $effect(() => {
+    selectedLanguage = currentLocale();
+  });
+
+  async function handleSelectLanguage(e: Event) {
+    const lang = (e.target as HTMLSelectElement).value;
+    selectedLanguage = lang;
+    try {
+      await setLanguagePreference(lang);
+    } catch (err) {
+      console.warn("Failed to set language preference:", err);
+      selectedLanguage = currentLocale();
+    }
+  }
+
+  return {
+    get selectedLanguage() {
+      return selectedLanguage;
+    },
+    handleSelectLanguage,
+  };
+}

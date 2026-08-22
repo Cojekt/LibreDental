@@ -1,12 +1,7 @@
 <script lang="ts">
   import type { CountryConfig } from "@bindings/domain/models.js";
   import { m } from "../paraglide/messages.js";
-  import {
-    getLocaleVersion,
-    setLanguagePreference,
-    getLanguageName,
-    currentLocale,
-  } from "$lib/locale.svelte.js";
+  import { getLocaleVersion, getLanguageName, useLanguageState } from "$lib/locale.svelte.js";
   import { locales } from "../paraglide/runtime.js";
   import ModalGridSelect from "./ui/ModalGridSelect.svelte";
 
@@ -23,22 +18,7 @@
   let selectedCountry = $state("US");
   let isSubmitting = $state(false);
 
-  let selectedLanguage = $state(currentLocale());
-
-  $effect(() => {
-    selectedLanguage = currentLocale();
-  });
-
-  async function handleSelectLanguage(e: Event) {
-    const lang = (e.target as HTMLSelectElement).value;
-    selectedLanguage = lang;
-    try {
-      await setLanguagePreference(lang);
-    } catch (err) {
-      console.warn("Failed to set language preference:", err);
-      selectedLanguage = currentLocale();
-    }
-  }
+  const langState = useLanguageState();
 
   function getFlagEmoji(countryCode: string) {
     if (!countryCode) return "🌐";
@@ -91,8 +71,8 @@
           </label>
           <select
             id="onboard-language"
-            value={selectedLanguage}
-            onchange={handleSelectLanguage}
+            value={langState.selectedLanguage}
+            onchange={langState.handleSelectLanguage}
             class="w-full max-w-xs rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-base text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
           >
             {#each locales as locale}
