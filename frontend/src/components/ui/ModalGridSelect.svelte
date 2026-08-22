@@ -11,6 +11,7 @@
     optionContent,
     buttonClass = "",
     hideChevron = false,
+    id,
   } = $props<{
     value: T | undefined;
     options: any[];
@@ -20,17 +21,19 @@
     optionContent?: Snippet<[any]>;
     buttonClass?: string;
     hideChevron?: boolean;
+    id?: string;
   }>();
 
   let showModal = $state(false);
 
-  let selectedOption = $derived(options.find((o) => o.value === value));
+  let selectedOption = $derived(options.find((o: any) => o.value === value));
 </script>
 
 <button
   type="button"
+  {id}
   onclick={() => (showModal = true)}
-  class="flex items-center justify-between w-full p-4 bg-slate-950 border border-slate-700 hover:border-slate-600 rounded-lg text-slate-100 transition-colors {buttonClass}"
+  class={buttonClass || "flex items-center justify-between w-full p-4 bg-slate-950 border border-slate-700 hover:border-slate-600 rounded-lg text-slate-100 transition-colors"}
 >
   {#if selectedOption && buttonContent}
     {@render buttonContent(selectedOption)}
@@ -55,6 +58,7 @@
     {#each options as option}
       <button
         type="button"
+        aria-pressed={value === option.value}
         onclick={() => {
           value = option.value;
           showModal = false;
@@ -66,6 +70,8 @@
       >
         {#if optionContent}
           {@render optionContent(option)}
+        {:else}
+          <span class="font-medium text-sm text-center">{option.label || option.value}</span>
         {/if}
       </button>
     {/each}

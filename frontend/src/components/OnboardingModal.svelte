@@ -23,11 +23,20 @@
   let selectedCountry = $state("US");
   let isSubmitting = $state(false);
 
-  async function handleSelectLanguage(lang: string) {
+  let selectedLanguage = $state(currentLocale());
+
+  $effect(() => {
+    selectedLanguage = currentLocale();
+  });
+
+  async function handleSelectLanguage(e: Event) {
+    const lang = (e.target as HTMLSelectElement).value;
+    selectedLanguage = lang;
     try {
       await setLanguagePreference(lang);
     } catch (err) {
       console.warn("Failed to set language preference:", err);
+      selectedLanguage = currentLocale();
     }
   }
 
@@ -49,6 +58,7 @@
 </script>
 
 {#if showOnboarding}
+  {@const _ = getLocaleVersion()}
   <div
     class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4 overflow-y-auto"
   >
@@ -81,8 +91,8 @@
           </label>
           <select
             id="onboard-language"
-            value={currentLocale()}
-            onchange={(e) => handleSelectLanguage((e.target as HTMLSelectElement).value)}
+            value={selectedLanguage}
+            onchange={handleSelectLanguage}
             class="w-full max-w-xs rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-base text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
           >
             {#each locales as locale}
@@ -102,15 +112,16 @@
             </label>
 
             <ModalGridSelect
+              id="country-select-btn"
               bind:value={selectedCountry}
-              options={supportedCountries.map((c) => ({
+              options={supportedCountries.map((c: CountryConfig) => ({
                 value: c.code,
                 label: c.name,
                 code: c.code,
               }))}
-              placeholder="Select a country..."
-              modalTitle="Select Practice Country"
-              buttonClass="flex-col justify-center items-center h-32 border-2 border-dashed border-slate-700 hover:border-blue-500 bg-slate-900/50 hover:bg-slate-800/80"
+              placeholder={m.onboarding_country_placeholder()}
+              modalTitle={m.onboarding_country_modal_title()}
+              buttonClass="flex flex-col items-center justify-center w-full p-4 h-32 border-2 border-dashed border-slate-700 hover:border-blue-500 bg-slate-900/50 hover:bg-slate-800/80 rounded-lg text-slate-100 transition-colors"
               hideChevron={true}
             >
               {#snippet buttonContent(selected)}
@@ -118,7 +129,7 @@
                   <span class="text-4xl leading-none">{getFlagEmoji(selected.code)}</span>
                   <span class="font-bold text-lg">{selected.label}</span>
                   <span class="text-xs text-blue-400 font-semibold uppercase tracking-wider"
-                    >Change Region</span
+                    >{m.onboarding_change_region()}</span
                   >
                 </div>
               {/snippet}

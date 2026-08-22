@@ -71,11 +71,20 @@
     await Promise.all([loadDataDir(), loadWindowSettings()]);
   }
 
-  async function handleSelectLanguage(lang: string) {
+  let selectedLanguage = $state(currentLocale());
+
+  $effect(() => {
+    selectedLanguage = currentLocale();
+  });
+
+  async function handleSelectLanguage(e: Event) {
+    const lang = (e.target as HTMLSelectElement).value;
+    selectedLanguage = lang;
     try {
       await setLanguagePreference(lang);
     } catch (err) {
       console.warn("Failed to set language preference:", err);
+      selectedLanguage = currentLocale();
     }
   }
 
@@ -298,8 +307,8 @@
           </span>
           <select
             id="language-select"
-            value={currentLocale()}
-            onchange={(e) => handleSelectLanguage((e.target as HTMLSelectElement).value)}
+            value={selectedLanguage}
+            onchange={handleSelectLanguage}
             class="w-full rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5 text-sm text-slate-200 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-all cursor-pointer"
           >
             {#each locales as locale}
