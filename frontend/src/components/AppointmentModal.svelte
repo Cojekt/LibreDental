@@ -117,7 +117,7 @@
           required
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
         >
-          {#if configuredProviders.length === 0}
+          {#if configuredProviders.filter((prov) => prov.is_active || prov.id === providerId).length === 0}
             <option value="">{m.appt_no_providers()}</option>
           {:else}
             {#each configuredProviders as prov}
@@ -136,7 +136,7 @@
           required
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
         >
-          {#if configuredOperatories.length === 0}
+          {#if configuredOperatories.filter((op) => op.is_active || op.id === operatoryId).length === 0}
             <option value="">{m.appt_no_operatories()}</option>
           {:else}
             {#each configuredOperatories as op}

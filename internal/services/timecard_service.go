@@ -181,9 +181,6 @@ func (s *TimecardService) CreateManualTimecard(providerID string, minutes int64,
 	if provider == nil {
 		return fmt.Errorf("provider not found")
 	}
-	if !provider.IsActive {
-		return fmt.Errorf("provider is inactive")
-	}
 
 	parsedDate, err := time.Parse(time.RFC3339, date)
 	if err != nil {
