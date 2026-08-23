@@ -495,8 +495,5 @@
   "patient_placeholder_ins_policy": "Policy / Subscriber ID",
   "patient_placeholder_ins_group": "Group Number",
   "prov_no_results_title": "No providers found",
-  "prov_no_results_desc": "No providers match your current filters.",
-  "validation_email_invalid": "Invalid email address format.",
-  "validation_ssn_length": "National ID must be the correct length.",
-  "validation_phone_min_length": "Phone number must meet minimum length requirements."
+  "prov_no_results_desc": "No providers match your current filters."
 }

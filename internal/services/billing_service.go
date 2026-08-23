@@ -170,7 +170,7 @@ func (s *BillingService) SubmitClaimToProvider(claimID string, providerName stri
 		return nil, fmt.Errorf("claim cannot be submitted in status: %s", claim.Status)
 	}
 
-	config, err := s.secrets.GetProviderConfig(providerName)
+	config, err := s.secrets.getRawProviderConfig(providerName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve config for provider %q: %w", providerName, err)
 	}
@@ -190,12 +190,13 @@ func (s *BillingService) SubmitClaimToProvider(claimID string, providerName stri
 	// Update claim status based on result
 	if result.Status != "" {
 		latestClaim, err := s.GetClaim(claimID)
-		if err == nil {
-			latestClaim.Status = result.Status
-			if _, err := s.UpdateClaim(latestClaim); err != nil {
-				// Log this error in a real app, since the submission succeeded but local update failed
-				return result, fmt.Errorf("claim submitted but failed to update local status: %w", err)
-			}
+		if err != nil {
+			return result, fmt.Errorf("claim submitted but failed to fetch latest claim for status update: %w", err)
+		}
+		latestClaim.Status = result.Status
+		if _, err := s.UpdateClaim(latestClaim); err != nil {
+			// Log this error in a real app, since the submission succeeded but local update failed
+			return result, fmt.Errorf("claim submitted but failed to update local status: %w", err)
 		}
 	}
 

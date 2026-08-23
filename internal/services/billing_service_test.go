@@ -159,7 +159,10 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	}
 
 	// Verify the claim status in the database was updated
-	updatedClaim, _ := claimRepo.GetByID(ctx, "claim_test_1")
+	updatedClaim, err := claimRepo.GetByID(ctx, "claim_test_1")
+	if err != nil {
+		t.Fatalf("Failed to get updated claim: %v", err)
+	}
 	if updatedClaim.Status != domain.ClaimStatusSubmitted {
 		t.Errorf("Expected claim status in DB to be submitted, got %v", updatedClaim.Status)
 	}
@@ -177,7 +180,9 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 		Status:        domain.ClaimStatusDraft,
 		DateOfService: "2026-08-23",
 	}
-	claimRepo.Create(ctx, claim2)
+	if err := claimRepo.Create(ctx, claim2); err != nil {
+		t.Fatalf("Failed to create claim2: %v", err)
+	}
 	testProv.submitFunc = func() (*domain.ClaimSubmissionResult, error) {
 		return nil, nil // Return nil intentionally
 	}

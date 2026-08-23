@@ -30,6 +30,7 @@
   let isSavingConfig = $state(false);
   let providerConfigError = $state(false);
   let providerFullConfig = $state<Record<string, string>>({});
+  let isLoadingConfig = $state(false);
 
   let windowMode = $state<WindowMode>("window");
   let isDesktop = $state(false);
@@ -80,10 +81,12 @@
   async function loadProviderConfig() {
     providerConfigError = false;
     providerFullConfig = {};
+    providerApiKey = "";
     if (!selectedProvider) {
-      providerApiKey = "";
+      isLoadingConfig = false;
       return;
     }
+    isLoadingConfig = true;
     const reqProvider = selectedProvider;
     try {
       const config = await BillingService.GetProviderConfig(reqProvider);
@@ -98,6 +101,10 @@
       if (reqProvider !== selectedProvider) return;
       console.error("Failed to load provider config:", e);
       providerConfigError = true;
+    } finally {
+      if (reqProvider === selectedProvider) {
+        isLoadingConfig = false;
+      }
     }
   }
 
@@ -484,7 +491,7 @@
               <button
                 type="button"
                 class="btn btn-secondary btn-sm bg-slate-800 text-white border-slate-700 hover:bg-slate-700 px-4 py-1 rounded-md text-xs cursor-pointer"
-                disabled={!selectedProvider || isSavingConfig || providerConfigError}
+                disabled={!selectedProvider || isSavingConfig || isLoadingConfig || providerConfigError}
                 onclick={saveProviderConfig}
               >
                 {isSavingConfig ? "Saving..." : "Save Credentials"}

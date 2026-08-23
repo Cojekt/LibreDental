@@ -49,11 +49,10 @@ func (s *SecretsService) SetProviderConfig(providerName string, config map[strin
 	// If the frontend sent back the redacted string, restore the real API key
 	if config["api_key"] == "********" {
 		oldConfig, err := s.getRawProviderConfig(providerName)
-		if err == nil {
-			config["api_key"] = oldConfig["api_key"]
-		} else {
-			delete(config, "api_key") // don't save the asterisks if we can't find old
+		if err != nil {
+			return fmt.Errorf("failed to retrieve existing config to restore api_key: %w", err)
 		}
+		config["api_key"] = oldConfig["api_key"]
 	}
 
 	bytes, err := json.Marshal(config)
@@ -61,10 +60,16 @@ func (s *SecretsService) SetProviderConfig(providerName string, config map[strin
 		return fmt.Errorf("failed to marshal secret config: %w", err)
 	}
 
+	// Get existing secret first to restore if needed
+	existingSecret, existingErr := keyring.Get(keyringServiceName, key)
+
 	// Delete existing before set to avoid creating duplicate entries on Linux
 	_ = keyring.Delete(keyringServiceName, key)
 
 	if err := keyring.Set(keyringServiceName, key, string(bytes)); err != nil {
+		if existingErr == nil {
+			_ = keyring.Set(keyringServiceName, key, existingSecret)
+		}
 		return fmt.Errorf("failed to store secret in keychain: %w", err)
 	}
 
