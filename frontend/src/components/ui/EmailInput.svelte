@@ -36,8 +36,8 @@
   {...restProps}
   type="email"
   bind:value
-  pattern={emailRegex.source}
-  title={m.validation_email_invalid()}
+  pattern={hasError ? emailRegex.source : undefined}
+  title={hasError ? m.validation_email_invalid() : undefined}
   {placeholder}
   error={hasError}
   oninput={handleInput}

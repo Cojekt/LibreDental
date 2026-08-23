@@ -29,7 +29,7 @@
   const isValid = $derived(!isDirty || value === "" || !isSSN || digitsOnly.length === 9);
   const hasError = $derived(error || !isValid);
 
-  const idPattern = "^[0-9]{3}-[0-9]{2}-[0-9]{4}$";
+  const idPattern = "^([0-9]{3}-[0-9]{2}-[0-9]{4}|[0-9]{9})$";
 
   function handleInput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     isDirty = true;

@@ -24,8 +24,6 @@
   const isValid = $derived(!isDirty || value === "" || digitsOnly.length >= 10);
   const hasError = $derived(error || !isValid);
 
-  const phonePattern = "^[0-9]{3}-[0-9]{3}-[0-9]{4,}$";
-
   function handleInput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     isDirty = true;
 
@@ -48,13 +46,4 @@
   }
 </script>
 
-<Input
-  {...restProps}
-  type="tel"
-  bind:value
-  pattern={phonePattern}
-  title={m.validation_phone_min_length()}
-  {placeholder}
-  error={hasError}
-  oninput={handleInput}
-/>
+<Input {...restProps} type="tel" bind:value {placeholder} error={hasError} oninput={handleInput} />
