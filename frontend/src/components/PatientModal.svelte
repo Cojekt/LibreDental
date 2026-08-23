@@ -190,11 +190,11 @@
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
       >
         <FormField label={m.patient_phone()} forId="phone" required>
-          <PhoneInput id="phone" required bind:value={phone} placeholder="(555) 019-2834" />
+          <PhoneInput id="phone" required bind:value={phone} placeholder="555-019-2834" />
         </FormField>
 
         <FormField label={m.patient_phone_secondary()} forId="phone-sec">
-          <PhoneInput id="phone-sec" bind:value={phoneSecondary} placeholder="(555) 019-9988" />
+          <PhoneInput id="phone-sec" bind:value={phoneSecondary} placeholder="555-019-9988" />
         </FormField>
 
         <FormField label={m.patient_email()} forId="email">
@@ -277,7 +277,7 @@
           />
         </FormField>
         <FormField label={m.patient_emergency_phone()} forId="emerg-phone">
-          <PhoneInput id="emerg-phone" bind:value={emergencyPhone} placeholder="(555) 999-8877" />
+          <PhoneInput id="emerg-phone" bind:value={emergencyPhone} placeholder="555-999-8877" />
         </FormField>
 
         <FormField label={m.patient_guarantor_name()} forId="guar-name">
@@ -297,7 +297,7 @@
           />
         </FormField>
         <FormField label={m.patient_guarantor_phone()} forId="guar-phone">
-          <PhoneInput id="guar-phone" bind:value={guarantorPhone} placeholder="(555) 333-2211" />
+          <PhoneInput id="guar-phone" bind:value={guarantorPhone} placeholder="555-333-2211" />
         </FormField>
       </div>
     </div>

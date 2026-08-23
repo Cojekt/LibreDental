@@ -1,6 +1,7 @@
 <script lang="ts">
   import Input from "./Input.svelte";
   import type { HTMLInputAttributes } from "svelte/elements";
+  import { m } from "../../paraglide/messages.js";
 
   interface Props extends HTMLInputAttributes {
     value?: string;
@@ -23,12 +24,14 @@
   const isValid = $derived(!isDirty || value === "" || digitsOnly.length >= 10);
   const hasError = $derived(error || !isValid);
 
+  const phonePattern = "^[0-9]{3}-[0-9]{3}-[0-9]{4,}$";
+
   function handleInput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     isDirty = true;
 
     // Get cursor position to attempt keeping it roughly in place, though Svelte bind can reset it
     const target = e.target as HTMLInputElement;
-    let input = target.value.replace(/\D/g, "").substring(0, 10);
+    let input = target.value.replace(/\D/g, "");
 
     let formatted = input;
     if (input.length > 6) {
@@ -45,4 +48,13 @@
   }
 </script>
 
-<Input type="tel" bind:value {placeholder} error={hasError} oninput={handleInput} {...restProps} />
+<Input
+  {...restProps}
+  type="tel"
+  bind:value
+  pattern={phonePattern}
+  title={m.validation_phone_min_length()}
+  {placeholder}
+  error={hasError}
+  oninput={handleInput}
+/>

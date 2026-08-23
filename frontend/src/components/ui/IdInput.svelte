@@ -2,6 +2,7 @@
   import Input from "./Input.svelte";
   import type { HTMLInputAttributes } from "svelte/elements";
   import type { CountryConfig } from "@bindings/domain/models.js";
+  import { m } from "../../paraglide/messages.js";
 
   interface Props extends HTMLInputAttributes {
     value?: string;
@@ -27,6 +28,8 @@
   const digitsOnly = $derived(value.replace(/\D/g, ""));
   const isValid = $derived(!isDirty || value === "" || !isSSN || digitsOnly.length === 9);
   const hasError = $derived(error || !isValid);
+
+  const idPattern = "^[0-9]{3}-[0-9]{2}-[0-9]{4}$";
 
   function handleInput(e: Event & { currentTarget: EventTarget & HTMLInputElement }) {
     isDirty = true;
@@ -54,4 +57,13 @@
   }
 </script>
 
-<Input type="text" bind:value {placeholder} error={hasError} oninput={handleInput} {...restProps} />
+<Input
+  {...restProps}
+  type="text"
+  bind:value
+  pattern={isSSN ? idPattern : undefined}
+  title={isSSN ? m.validation_ssn_length() : undefined}
+  {placeholder}
+  error={hasError}
+  oninput={handleInput}
+/>

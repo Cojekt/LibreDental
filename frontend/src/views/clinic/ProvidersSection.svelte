@@ -428,7 +428,7 @@
       </FormField>
 
       <FormField label={m.prov_phone_label()} forId="prov-phone">
-        <PhoneInput id="prov-phone" bind:value={provPhone} placeholder="(555) 019-2834" />
+        <PhoneInput id="prov-phone" bind:value={provPhone} placeholder="555-019-2834" />
       </FormField>
     </div>
 

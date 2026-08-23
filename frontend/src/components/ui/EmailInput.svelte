@@ -1,6 +1,7 @@
 <script lang="ts">
   import Input from "./Input.svelte";
   import type { HTMLInputAttributes } from "svelte/elements";
+  import { m } from "../../paraglide/messages.js";
 
   interface Props extends HTMLInputAttributes {
     value?: string;
@@ -32,10 +33,12 @@
 </script>
 
 <Input
+  {...restProps}
   type="email"
   bind:value
+  pattern={emailRegex.source}
+  title={m.validation_email_invalid()}
   {placeholder}
   error={hasError}
   oninput={handleInput}
-  {...restProps}
 />
