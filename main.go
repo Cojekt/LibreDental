@@ -8,6 +8,7 @@ import (
 
 	"github.com/LibreDental/libredental/internal/app"
 	"github.com/LibreDental/libredental/internal/services"
+	"github.com/LibreDental/libredental/internal/services/claims"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -52,7 +53,10 @@ func main() {
 	paymentRepo := sqlite.NewPaymentRepository(db)
 	bundleRepo := sqlite.NewBundleRepository(db)
 	procedureRepo := sqlite.NewProcedureRepository(db)
-	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo)
+	
+	secretsService := services.NewSecretsService()
+	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, secretsService)
+	billingService.RegisterProvider(claims.NewMockProvider())
 
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir)

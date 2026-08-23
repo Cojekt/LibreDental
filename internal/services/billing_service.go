@@ -18,6 +18,8 @@ type BillingService struct {
 	procRepo   storage.ProcedureCodeRepository
 	feeRepo    storage.FeeScheduleRepository
 	chartRepo  storage.ChartRepository
+	secrets    *SecretsService
+	providers  map[string]domain.ClaimProvider
 }
 
 func NewBillingService(
@@ -27,6 +29,7 @@ func NewBillingService(
 	procRepo storage.ProcedureCodeRepository,
 	feeRepo storage.FeeScheduleRepository,
 	chartRepo storage.ChartRepository,
+	secrets *SecretsService,
 ) *BillingService {
 	return &BillingService{
 		claimRepo:  claimRepo,
@@ -35,7 +38,43 @@ func NewBillingService(
 		procRepo:   procRepo,
 		feeRepo:    feeRepo,
 		chartRepo:  chartRepo,
+		secrets:    secrets,
+		providers:  make(map[string]domain.ClaimProvider),
 	}
+}
+
+// ─── Provider Registry ───────────────────────────────────────────────────────
+
+// RegisterProvider registers a new claim provider for use.
+func (s *BillingService) RegisterProvider(p domain.ClaimProvider) {
+	if p != nil {
+		s.providers[p.Name()] = p
+	}
+}
+
+// ListProviders returns a list of registered provider names.
+func (s *BillingService) ListProviders() []string {
+	var names []string
+	for name := range s.providers {
+		names = append(names, name)
+	}
+	return names
+}
+
+// GetProviderConfig retrieves configuration for a specific provider.
+func (s *BillingService) GetProviderConfig(providerName string) (map[string]string, error) {
+	if providerName == "" {
+		return nil, fmt.Errorf("provider name is required")
+	}
+	return s.secrets.GetProviderConfig(providerName)
+}
+
+// SetProviderConfig saves configuration for a specific provider.
+func (s *BillingService) SetProviderConfig(providerName string, config map[string]string) error {
+	if providerName == "" {
+		return fmt.Errorf("provider name is required")
+	}
+	return s.secrets.SetProviderConfig(providerName, config)
 }
 
 // ─── Claims ──────────────────────────────────────────────────────────────────
@@ -104,6 +143,50 @@ func (s *BillingService) DeleteClaim(id string) error {
 		return fmt.Errorf("%w: claim ID is required", storage.ErrInvalidInput)
 	}
 	return s.claimRepo.Delete(context.Background(), id)
+}
+
+// SubmitClaimToProvider sends a claim to the specified external provider.
+func (s *BillingService) SubmitClaimToProvider(claimID string, providerName string) (*domain.ClaimSubmissionResult, error) {
+	if claimID == "" {
+		return nil, fmt.Errorf("%w: claim ID is required", storage.ErrInvalidInput)
+	}
+	if providerName == "" {
+		return nil, fmt.Errorf("%w: provider name is required", storage.ErrInvalidInput)
+	}
+
+	provider, ok := s.providers[providerName]
+	if !ok {
+		return nil, fmt.Errorf("provider %q not registered", providerName)
+	}
+
+	claim, err := s.GetClaim(claimID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get claim for submission: %w", err)
+	}
+
+	config, err := s.secrets.GetProviderConfig(providerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve config for provider %q: %w", providerName, err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := provider.SubmitClaim(ctx, claim, config)
+	if err != nil {
+		return nil, fmt.Errorf("provider %q failed to submit claim: %w", providerName, err)
+	}
+
+	// Update claim status based on result
+	if result.Status != "" {
+		claim.Status = result.Status
+		if _, err := s.UpdateClaim(claim); err != nil {
+			// Log this error in a real app, since the submission succeeded but local update failed
+			return result, fmt.Errorf("claim submitted but failed to update local status: %w", err)
+		}
+	}
+
+	return result, nil
 }
 
 // ─── Payments ────────────────────────────────────────────────────────────────

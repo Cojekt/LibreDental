@@ -28,7 +28,8 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	bundleRepo := sqlite.NewBundleRepository(db)
 	procRepo := sqlite.NewProcedureRepository(db)
 
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo)
+	secretsSvc := NewSecretsService()
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, secretsSvc)
 
 	// Create test patient
 	patient := &domain.Patient{
