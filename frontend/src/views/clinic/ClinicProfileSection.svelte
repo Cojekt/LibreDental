@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { PracticeConfig, CountryConfig } from "@bindings/domain/models.js";
   import { m } from "../../paraglide/messages.js";
+  import PhoneInput from "../../components/ui/PhoneInput.svelte";
+  import EmailInput from "../../components/ui/EmailInput.svelte";
 
   let {
     practiceConfig = null,
@@ -115,12 +117,10 @@
           <label for="clinic-phone" class="block text-xs font-semibold text-slate-400 mb-1"
             >{m.clinic_profile_phone_label()}</label
           >
-          <input
+          <PhoneInput
             id="clinic-phone"
-            type="text"
             bind:value={phone}
             disabled={!isEditingProfile}
-            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
             placeholder={m.clinic_profile_phone_placeholder()}
           />
         </div>
@@ -129,12 +129,10 @@
           <label for="clinic-email" class="block text-xs font-semibold text-slate-400 mb-1"
             >{m.clinic_profile_email_label()}</label
           >
-          <input
+          <EmailInput
             id="clinic-email"
-            type="email"
             bind:value={email}
             disabled={!isEditingProfile}
-            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
             placeholder={m.clinic_profile_email_placeholder()}
           />
         </div>
