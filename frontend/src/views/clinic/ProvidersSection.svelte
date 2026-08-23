@@ -6,6 +6,8 @@
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
+  import EmailInput from "../../components/ui/EmailInput.svelte";
+  import PhoneInput from "../../components/ui/PhoneInput.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
   import TimecardsModal from "./TimecardsModal.svelte";
@@ -418,16 +420,15 @@
 
     <div class="grid grid-cols-2 gap-3">
       <FormField label={m.prov_email_label()} forId="prov-email">
-        <Input
+        <EmailInput
           id="prov-email"
-          type="email"
           bind:value={provEmail}
           placeholder={m.prov_email_placeholder()}
         />
       </FormField>
 
       <FormField label={m.prov_phone_label()} forId="prov-phone">
-        <Input id="prov-phone" type="tel" bind:value={provPhone} placeholder="(555) 019-2834" />
+        <PhoneInput id="prov-phone" bind:value={provPhone} placeholder="555-019-2834" />
       </FormField>
     </div>
 
