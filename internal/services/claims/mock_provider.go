@@ -22,12 +22,16 @@ func (p *MockProvider) Name() string {
 
 func (p *MockProvider) SupportedCountries() []domain.CountryCode {
 	// Supports any country for testing
-	return []domain.CountryCode{domain.CountryUS, domain.CountryCA, domain.CountryGB}
+	return []domain.CountryCode{domain.CountryUS, domain.CountryCA, domain.CountryGB, domain.CountryAU, domain.CountryDE, domain.CountryFR}
 }
 
 func (p *MockProvider) SubmitClaim(ctx context.Context, claim *domain.Claim, config map[string]string) (*domain.ClaimSubmissionResult, error) {
 	// Simulate network delay
-	time.Sleep(1 * time.Second)
+	select {
+	case <-time.After(1 * time.Second):
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 
 	// We can use a simple rule for the mock:
 	// If the claim has no line items, reject it.

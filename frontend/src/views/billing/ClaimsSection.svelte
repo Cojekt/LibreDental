@@ -60,6 +60,8 @@
   let selectedImportConditionIds = $state<string[]>([]);
   let loadingChartImport = $state(false);
 
+  let submittingClaims = $state<Record<string, boolean>>({});
+
   const CLAIM_STATUSES = ["draft", "submitted", "accepted", "rejected", "paid"];
 
   function patientName(id: string) {
@@ -224,41 +226,52 @@
   }
 
   async function deleteClaim(id: string) {
-		if (!confirm(m.billing_claims_confirm_delete())) return;
-		try {
-			await BillingService.DeleteClaim(id);
-			await loadClaims();
-		} catch (e) {
-			console.error("Failed to delete claim:", e);
-		}
-	}
+    if (!confirm(m.billing_claims_confirm_delete())) return;
+    try {
+      await BillingService.DeleteClaim(id);
+      await loadClaims();
+    } catch (e) {
+      console.error("Failed to delete claim:", e);
+    }
+  }
 
-	async function submitClaim(id: string) {
-		if (!confirm("Are you sure you want to submit this claim to the clearinghouse?")) return;
-		
-		try {
-			const providers = await BillingService.ListProviders();
-			if (!providers || providers.length === 0) {
-				alert("No claim providers registered. Check system configuration.");
-				return;
-			}
-			
-			let providerToUse = providers[0];
-			if (providers.length > 1) {
-				const choice = prompt(`Available providers: ${providers.join(", ")}\nEnter provider to use:`, providers[0]);
-				if (!choice) return;
-				providerToUse = choice;
-			}
+  async function submitClaim(id: string) {
+    if (submittingClaims[id]) return;
+    if (!confirm("Are you sure you want to submit this claim to the clearinghouse?")) return;
 
-			await BillingService.SubmitClaimToProvider(id, providerToUse);
-			await loadClaims();
-		} catch (e) {
-			console.error("Failed to submit claim:", e);
-			alert("Failed to submit claim. Check console for details.");
-		}
-	}
+    try {
+      submittingClaims[id] = true;
+      const providersList = await BillingService.ListProviders();
+      if (!providersList || providersList.length === 0) {
+        alert("No claim providers registered. Check system configuration.");
+        return;
+      }
 
-	async function openChartImportModal() {
+      let providerToUse = providersList[0];
+      if (providersList.length > 1) {
+        const choice = prompt(
+          `Available providers: ${providersList.join(", ")}\nEnter provider to use:`,
+          providersList[0]
+        );
+        if (!choice) return;
+        if (!providersList.includes(choice)) {
+          alert("Invalid provider selected.");
+          return;
+        }
+        providerToUse = choice;
+      }
+
+      await BillingService.SubmitClaimToProvider(id, providerToUse);
+      await loadClaims();
+    } catch (e) {
+      console.error("Failed to submit claim:", e);
+      alert("Failed to submit claim. Check console for details.");
+    } finally {
+      submittingClaims[id] = false;
+    }
+  }
+
+  async function openChartImportModal() {
     if (!claimPatientId) {
       alert(m.billing_claim_err_patient());
       return;
@@ -374,24 +387,31 @@
                 <StatusBadge variant={c.status} />
               </td>
               <td class="px-4 py-3 text-right">
-								<div class="flex items-center justify-end gap-1">
-									{#if c.status === "draft"}
-										<button
-											class="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors"
-											onclick={() => submitClaim(c.id)}
-											title="Submit Claim"
-										>
-											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-												<line x1="22" y1="2" x2="11" y2="13"></line>
-												<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-											</svg>
-										</button>
-									{/if}
-									<button
-										class="p-1.5 text-slate-400 hover:text-sky-300 rounded-lg hover:bg-slate-800 transition-colors"
-										onclick={() => openEditClaim(c)}
-										title={m.patients_btn_edit()}
-									>
+                <div class="flex items-center justify-end gap-1">
+                  {#if c.status === "draft"}
+                    <button
+                      class="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onclick={() => submitClaim(c.id)}
+                      title="Submit Claim"
+                      disabled={submittingClaims[c.id]}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="h-4 w-4"
+                      >
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                      </svg>
+                    </button>
+                  {/if}
+                  <button
+                    class="p-1.5 text-slate-400 hover:text-sky-300 rounded-lg hover:bg-slate-800 transition-colors"
+                    onclick={() => openEditClaim(c)}
+                    title={m.patients_btn_edit()}
+                  >
                     <svg
                       viewBox="0 0 24 24"
                       fill="none"

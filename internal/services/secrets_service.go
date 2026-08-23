@@ -24,7 +24,7 @@ func (s *SecretsService) GetProviderConfig(providerName string) (map[string]stri
 	secretJSON, err := keyring.Get(keyringServiceName, key)
 	if err != nil {
 		if err == keyring.ErrNotFound {
-			return make(map[string]string), nil // Return empty config if not found
+			return make(map[string]string), nil
 		}
 		return nil, fmt.Errorf("failed to get secret from keychain: %w", err)
 	}
@@ -34,6 +34,11 @@ func (s *SecretsService) GetProviderConfig(providerName string) (map[string]stri
 		return nil, fmt.Errorf("failed to parse secret config: %w", err)
 	}
 
+	// Redact the API key for the frontend
+	if apiKey, ok := config["api_key"]; ok && apiKey != "" {
+		config["api_key"] = "********"
+	}
+
 	return config, nil
 }
 
@@ -41,16 +46,48 @@ func (s *SecretsService) GetProviderConfig(providerName string) (map[string]stri
 func (s *SecretsService) SetProviderConfig(providerName string, config map[string]string) error {
 	key := fmt.Sprintf("provider_config_%s", providerName)
 
+	// If the frontend sent back the redacted string, restore the real API key
+	if config["api_key"] == "********" {
+		oldConfig, err := s.getRawProviderConfig(providerName)
+		if err == nil {
+			config["api_key"] = oldConfig["api_key"]
+		} else {
+			delete(config, "api_key") // don't save the asterisks if we can't find old
+		}
+	}
+
 	bytes, err := json.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("failed to marshal secret config: %w", err)
 	}
+
+	// Delete existing before set to avoid creating duplicate entries on Linux
+	_ = keyring.Delete(keyringServiceName, key)
 
 	if err := keyring.Set(keyringServiceName, key, string(bytes)); err != nil {
 		return fmt.Errorf("failed to store secret in keychain: %w", err)
 	}
 
 	return nil
+}
+
+// getRawProviderConfig gets the unredacted config for internal use
+func (s *SecretsService) getRawProviderConfig(providerName string) (map[string]string, error) {
+	key := fmt.Sprintf("provider_config_%s", providerName)
+
+	secretJSON, err := keyring.Get(keyringServiceName, key)
+	if err != nil {
+		if err == keyring.ErrNotFound {
+			return make(map[string]string), nil
+		}
+		return nil, err
+	}
+
+	var config map[string]string
+	if err := json.Unmarshal([]byte(secretJSON), &config); err != nil {
+		return nil, err
+	}
+	return config, nil
 }
 
 // DeleteProviderConfig removes a provider's configuration from the keychain.

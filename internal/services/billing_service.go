@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -58,6 +59,7 @@ func (s *BillingService) ListProviders() []string {
 	for name := range s.providers {
 		names = append(names, name)
 	}
+	sort.Strings(names)
 	return names
 }
 
@@ -164,6 +166,10 @@ func (s *BillingService) SubmitClaimToProvider(claimID string, providerName stri
 		return nil, fmt.Errorf("failed to get claim for submission: %w", err)
 	}
 
+	if claim.Status != domain.ClaimStatusDraft && claim.Status != domain.ClaimStatusRejected {
+		return nil, fmt.Errorf("claim cannot be submitted in status: %s", claim.Status)
+	}
+
 	config, err := s.secrets.GetProviderConfig(providerName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve config for provider %q: %w", providerName, err)
@@ -177,12 +183,19 @@ func (s *BillingService) SubmitClaimToProvider(claimID string, providerName stri
 		return nil, fmt.Errorf("provider %q failed to submit claim: %w", providerName, err)
 	}
 
+	if result == nil {
+		return nil, fmt.Errorf("provider %q returned nil result", providerName)
+	}
+
 	// Update claim status based on result
 	if result.Status != "" {
-		claim.Status = result.Status
-		if _, err := s.UpdateClaim(claim); err != nil {
-			// Log this error in a real app, since the submission succeeded but local update failed
-			return result, fmt.Errorf("claim submitted but failed to update local status: %w", err)
+		latestClaim, err := s.GetClaim(claimID)
+		if err == nil {
+			latestClaim.Status = result.Status
+			if _, err := s.UpdateClaim(latestClaim); err != nil {
+				// Log this error in a real app, since the submission succeeded but local update failed
+				return result, fmt.Errorf("claim submitted but failed to update local status: %w", err)
+			}
 		}
 	}
 

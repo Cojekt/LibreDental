@@ -13,8 +13,8 @@
 # the builder and runtime libc compatible (a glibc builder -> a glibc runtime).
 # The Taskfile passes these through: task build:docker CGO_ENABLED=1 GO_IMAGE=... RUNTIME_IMAGE=...
 
-ARG GO_IMAGE=golang:alpine
-ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian12
+ARG GO_IMAGE=golang:bookworm
+ARG RUNTIME_IMAGE=debian:bookworm-slim
 ARG CGO_ENABLED=0
 
 # Build stage
@@ -50,6 +50,13 @@ RUN CGO_ENABLED=${CGO_ENABLED} go build -tags server,production -trimpath -build
 # Runtime stage - minimal image
 FROM ${RUNTIME_IMAGE}
 
+# Install D-Bus and GNOME Keyring
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dbus \
+    dbus-x11 \
+    gnome-keyring \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy the binary
 COPY --from=builder /app/server /server
 
@@ -63,5 +70,15 @@ EXPOSE 4242
 ENV LIBREDENTAL_HOST=0.0.0.0
 ENV LIBREDENTAL_PORT=4242
 
-# Run the server
-ENTRYPOINT ["/server"]
+# Create a wrapper script to start dbus and the server
+RUN echo '#!/bin/sh\n\
+# Create machine-id if missing (dbus requires it)\n\
+if [ ! -f /var/lib/dbus/machine-id ]; then\n\
+    dbus-uuidgen > /var/lib/dbus/machine-id\n\
+fi\n\
+# Start dbus session and launch server\n\
+exec dbus-run-session -- /server "$@"\n\
+' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+# Run the server via the entrypoint wrapper
+ENTRYPOINT ["/entrypoint.sh"]

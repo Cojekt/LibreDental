@@ -28,6 +28,8 @@
   let selectedProvider = $state("");
   let providerApiKey = $state("");
   let isSavingConfig = $state(false);
+  let providerConfigError = $state(false);
+  let providerFullConfig = $state<Record<string, string>>({});
 
   let windowMode = $state<WindowMode>("window");
   let isDesktop = $state(false);
@@ -76,23 +78,37 @@
   }
 
   async function loadProviderConfig() {
-    providerApiKey = "";
-    if (!selectedProvider) return;
+    providerConfigError = false;
+    providerFullConfig = {};
+    if (!selectedProvider) {
+      providerApiKey = "";
+      return;
+    }
+    const reqProvider = selectedProvider;
     try {
-      const config = await BillingService.GetProviderConfig(selectedProvider);
+      const config = await BillingService.GetProviderConfig(reqProvider);
+      if (reqProvider !== selectedProvider) return;
+      providerFullConfig = (config as Record<string, string>) || {};
       if (config && config["api_key"]) {
         providerApiKey = config["api_key"];
+      } else {
+        providerApiKey = "";
       }
     } catch (e) {
+      if (reqProvider !== selectedProvider) return;
       console.error("Failed to load provider config:", e);
+      providerConfigError = true;
     }
   }
 
   async function saveProviderConfig() {
-    if (!selectedProvider) return;
+    if (!selectedProvider || providerConfigError) return;
     isSavingConfig = true;
     try {
-      await BillingService.SetProviderConfig(selectedProvider, { "api_key": providerApiKey });
+      await BillingService.SetProviderConfig(selectedProvider, {
+        ...providerFullConfig,
+        api_key: providerApiKey,
+      });
       alert("Credentials saved successfully.");
     } catch (e) {
       console.error("Failed to save provider config:", e);
@@ -433,7 +449,9 @@
           <div class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="provider-select" class="block text-xs text-slate-400 mb-1">Provider</label>
+                <label for="provider-select" class="block text-xs text-slate-400 mb-1"
+                  >Provider</label
+                >
                 <select
                   id="provider-select"
                   bind:value={selectedProvider}
@@ -448,7 +466,9 @@
               </div>
 
               <div>
-                <label for="provider-api-key" class="block text-xs text-slate-400 mb-1">API Key</label>
+                <label for="provider-api-key" class="block text-xs text-slate-400 mb-1"
+                  >API Key</label
+                >
                 <input
                   type="password"
                   id="provider-api-key"
@@ -461,13 +481,13 @@
             </div>
 
             <div class="flex justify-end">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="btn btn-secondary btn-sm bg-slate-800 text-white border-slate-700 hover:bg-slate-700 px-4 py-1 rounded-md text-xs cursor-pointer"
-                disabled={!selectedProvider || isSavingConfig}
+                disabled={!selectedProvider || isSavingConfig || providerConfigError}
                 onclick={saveProviderConfig}
               >
-                {isSavingConfig ? 'Saving...' : 'Save Credentials'}
+                {isSavingConfig ? "Saving..." : "Save Credentials"}
               </button>
             </div>
           </div>

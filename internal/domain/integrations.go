@@ -4,10 +4,10 @@ import "context"
 
 // ClaimSubmissionResult represents the response from an external clearinghouse.
 type ClaimSubmissionResult struct {
-	ExternalClaimID string
-	Status          ClaimStatus
-	Messages        []string
-	RawResponse     []byte // Kept for audit purposes
+	ExternalClaimID string      `json:"external_claim_id"`
+	Status          ClaimStatus `json:"status"`
+	Messages        []string    `json:"messages"`
+	RawResponse     []byte      `json:"raw_response"` // Kept for audit purposes
 }
 
 // ClaimProvider defines the contract for any external insurance integration.
