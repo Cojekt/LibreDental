@@ -60,6 +60,8 @@ dev_mode:
       type: blocking
     - cmd: task -t .github/Taskfile.yml common:dev:frontend
       type: background
+    - cmd: sleep 3
+      type: blocking
     - cmd: task -t .github/Taskfile.yml run
       type: primary
 

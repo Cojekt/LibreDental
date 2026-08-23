@@ -3,6 +3,9 @@
   import Modal from "./ui/Modal.svelte";
   import FormField from "./ui/FormField.svelte";
   import Input from "./ui/Input.svelte";
+  import EmailInput from "./ui/EmailInput.svelte";
+  import PhoneInput from "./ui/PhoneInput.svelte";
+  import IdInput from "./ui/IdInput.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
 
@@ -153,7 +156,12 @@
         </FormField>
 
         <FormField label={idLabel} forId="national-id">
-          <Input id="national-id" type="text" bind:value={nationalId} placeholder={idPlaceholder} />
+          <IdInput
+            id="national-id"
+            bind:value={nationalId}
+            placeholder={idPlaceholder}
+            {countryMeta}
+          />
         </FormField>
 
         <FormField label={m.patient_pref_provider()} forId="pref-provider">
@@ -182,20 +190,15 @@
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
       >
         <FormField label={m.patient_phone()} forId="phone" required>
-          <Input id="phone" type="tel" required bind:value={phone} placeholder="(555) 019-2834" />
+          <PhoneInput id="phone" required bind:value={phone} placeholder="(555) 019-2834" />
         </FormField>
 
         <FormField label={m.patient_phone_secondary()} forId="phone-sec">
-          <Input
-            id="phone-sec"
-            type="tel"
-            bind:value={phoneSecondary}
-            placeholder="(555) 019-9988"
-          />
+          <PhoneInput id="phone-sec" bind:value={phoneSecondary} placeholder="(555) 019-9988" />
         </FormField>
 
         <FormField label={m.patient_email()} forId="email">
-          <Input id="email" type="email" bind:value={email} placeholder="jane.smith@example.com" />
+          <EmailInput id="email" bind:value={email} placeholder="jane.smith@example.com" />
         </FormField>
 
         <div class="sm:col-span-2">
@@ -274,12 +277,7 @@
           />
         </FormField>
         <FormField label={m.patient_emergency_phone()} forId="emerg-phone">
-          <Input
-            id="emerg-phone"
-            type="tel"
-            bind:value={emergencyPhone}
-            placeholder="(555) 999-8877"
-          />
+          <PhoneInput id="emerg-phone" bind:value={emergencyPhone} placeholder="(555) 999-8877" />
         </FormField>
 
         <FormField label={m.patient_guarantor_name()} forId="guar-name">
@@ -299,12 +297,7 @@
           />
         </FormField>
         <FormField label={m.patient_guarantor_phone()} forId="guar-phone">
-          <Input
-            id="guar-phone"
-            type="tel"
-            bind:value={guarantorPhone}
-            placeholder="(555) 333-2211"
-          />
+          <PhoneInput id="guar-phone" bind:value={guarantorPhone} placeholder="(555) 333-2211" />
         </FormField>
       </div>
     </div>
