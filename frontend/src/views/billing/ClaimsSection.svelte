@@ -61,6 +61,7 @@
   let loadingChartImport = $state(false);
 
   let submittingClaims = $state<Record<string, boolean>>({});
+  let integrationProviders = $state<string[]>([]);
 
   const CLAIM_STATUSES = ["draft", "submitted", "accepted", "rejected", "paid"];
 
@@ -125,7 +126,10 @@
     showClaimModal = true;
   }
 
-  async function openEditClaim(c: Claim) {
+  async function openEditClaim(id: string) {
+    const c = claims.find((x) => x.id === id);
+    if (!c) return;
+
     isEditingClaim = true;
     editingClaimId = c.id;
     editingClaimCreatedAt = c.created_at || "";
@@ -313,6 +317,7 @@
   }
 
   onMount(async () => {
+    integrationProviders = (await BillingService.ListProviders()) || [];
     await loadClaims();
   });
 </script>
@@ -390,17 +395,20 @@
                 <div class="flex items-center justify-end gap-1">
                   {#if c.status === "draft"}
                     <button
+                      type="button"
                       class="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       onclick={() => submitClaim(c.id)}
-                      title="Submit Claim"
-                      disabled={submittingClaims[c.id]}
+                      title={integrationProviders.length === 0
+                        ? m.billing_claim_submit_disabled_tooltip()
+                        : m.billing_btn_submit_claim()}
+                      disabled={submittingClaims[c.id] || integrationProviders.length === 0}
                     >
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         stroke-width="2"
-                        class="h-4 w-4"
+                        class="h-4 w-4 pointer-events-none"
                       >
                         <line x1="22" y1="2" x2="11" y2="13"></line>
                         <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -408,8 +416,9 @@
                     </button>
                   {/if}
                   <button
+                    type="button"
                     class="p-1.5 text-slate-400 hover:text-sky-300 rounded-lg hover:bg-slate-800 transition-colors"
-                    onclick={() => openEditClaim(c)}
+                    onclick={() => openEditClaim(c.id)}
                     title={m.patients_btn_edit()}
                   >
                     <svg
@@ -417,7 +426,7 @@
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2"
-                      class="h-4 w-4"
+                      class="h-4 w-4 pointer-events-none"
                     >
                       <path
                         d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
@@ -425,6 +434,7 @@
                     </svg>
                   </button>
                   <button
+                    type="button"
                     class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                     onclick={() => deleteClaim(c.id)}
                     title={m.patient_archive()}

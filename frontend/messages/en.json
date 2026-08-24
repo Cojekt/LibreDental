@@ -189,6 +189,8 @@
   "billing_tab_bundles": "Bundles",
   "billing_tab_fees": "Fee Schedules",
   "billing_btn_new_claim": "New Claim",
+  "billing_btn_submit_claim": "Submit Claim",
+  "billing_claim_submit_disabled_tooltip": "Add an integration connection before auto-submitting claims.",
   "billing_btn_record_payment": "Record Payment",
   "billing_btn_import_chart": "Import Chart Procedures",
   "billing_btn_bill_charted": "Bill Charted Procedures",

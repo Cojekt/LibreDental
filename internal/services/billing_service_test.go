@@ -121,7 +121,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 
 	// Register the test provider
 	testProv := &dummyTestProvider{}
-	billingSvc.RegisterProvider(testProv)
+	billingSvc.registerProvider(testProv)
 
 	patientRepo := sqlite.NewPatientRepository(db)
 	patient := &domain.Patient{

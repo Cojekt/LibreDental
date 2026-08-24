@@ -46,8 +46,14 @@ func NewBillingService(
 
 // ─── Provider Registry ───────────────────────────────────────────────────────
 
-// RegisterProvider registers a new claim provider for use.
-func (s *BillingService) RegisterProvider(p domain.ClaimProvider) {
+// RegisterClaimProvider registers a new claim provider for use.
+// Exposed as a function rather than a method so Wails does not bind it.
+func RegisterClaimProvider(s *BillingService, p domain.ClaimProvider) {
+	s.registerProvider(p)
+}
+
+// registerProvider registers a new claim provider for use.
+func (s *BillingService) registerProvider(p domain.ClaimProvider) {
 	if p != nil {
 		s.providers[p.Name()] = p
 	}
