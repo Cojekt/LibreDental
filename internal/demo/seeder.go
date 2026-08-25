@@ -2,10 +2,8 @@ package demo
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/LibreDental/libredental/internal/services"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
@@ -97,15 +95,6 @@ func SeedDatabase(db *sqlite.DB, appDir, demoDataDir string) (*SeedSummary, erro
 	// 11. Documents
 	if err := seedDocuments(ctx, db, appDir, demoDataDir, now, summary); err != nil {
 		return nil, err
-	}
-
-	// 12. Provider Secrets (Mock configuration)
-	// We don't have real API keys, so we just use dummy ones to prepare for testing the external API system.
-	secretsService := services.NewSecretsService()
-	if err := secretsService.SetProviderConfig("mock", map[string]string{
-		"api_key": "dummy_mock_api_key_for_testing",
-	}); err != nil {
-		return nil, fmt.Errorf("failed to configure mock provider secrets: %w", err)
 	}
 
 	return summary, nil

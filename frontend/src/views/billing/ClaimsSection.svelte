@@ -62,6 +62,7 @@
 
   let submittingClaims = $state<Record<string, boolean>>({});
   let integrationProviders = $state<string[]>([]);
+  let hasConfiguredProvider = $state(false);
 
   const CLAIM_STATUSES = ["draft", "submitted", "accepted", "rejected", "paid"];
 
@@ -317,7 +318,22 @@
   }
 
   onMount(async () => {
-    integrationProviders = (await BillingService.ListProviders()) || [];
+    try {
+      integrationProviders = (await BillingService.ListProviders()) || [];
+      for (const provider of integrationProviders) {
+        try {
+          const config = (await BillingService.GetProviderConfig(provider)) as Record<string, any>;
+          if (config && config["api_key"]) {
+            hasConfiguredProvider = true;
+            break;
+          }
+        } catch (e) {
+          // Ignore individual provider config load errors
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load providers:", e);
+    }
     await loadClaims();
   });
 </script>
@@ -398,10 +414,10 @@
                       type="button"
                       class="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       onclick={() => submitClaim(c.id)}
-                      title={integrationProviders.length === 0
+                      title={!hasConfiguredProvider
                         ? m.billing_claim_submit_disabled_tooltip()
                         : m.billing_btn_submit_claim()}
-                      disabled={submittingClaims[c.id] || integrationProviders.length === 0}
+                      disabled={submittingClaims[c.id] || !hasConfiguredProvider}
                     >
                       <svg
                         viewBox="0 0 24 24"
