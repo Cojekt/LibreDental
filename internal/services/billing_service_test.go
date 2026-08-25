@@ -6,9 +6,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zalando/go-keyring"
+
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
+
+func init() {
+	keyring.MockInit()
+}
 
 func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	tmpDir := t.TempDir()
