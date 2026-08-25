@@ -52,7 +52,9 @@ func main() {
 	paymentRepo := sqlite.NewPaymentRepository(db)
 	bundleRepo := sqlite.NewBundleRepository(db)
 	procedureRepo := sqlite.NewProcedureRepository(db)
-	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo)
+
+	secretsService := services.NewSecretsService()
+	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, secretsService)
 
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir)

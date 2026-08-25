@@ -50,8 +50,8 @@ func TestSeedDatabase(t *testing.T) {
 	if summary.BundlesCount != 2 {
 		t.Errorf("Expected 2 treatment bundles, got %d", summary.BundlesCount)
 	}
-	if summary.ClaimsCount != 2 {
-		t.Errorf("Expected 2 claims, got %d", summary.ClaimsCount)
+	if summary.ClaimsCount != 3 {
+		t.Errorf("Expected 3 claims, got %d", summary.ClaimsCount)
 	}
 	if summary.PaymentsCount != 2 {
 		t.Errorf("Expected 2 payments, got %d", summary.PaymentsCount)

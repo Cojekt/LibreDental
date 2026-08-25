@@ -7,12 +7,14 @@ require (
 	github.com/pressly/goose/v3 v3.27.3
 	github.com/suyashkumar/dicom v1.1.0
 	github.com/wailsapp/wails/v3 v3.0.0-beta.9
+	github.com/zalando/go-keyring v0.2.8
 	modernc.org/sqlite v1.57.0
 )
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/coder/websocket v1.8.15 // indirect
+	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect

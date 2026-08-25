@@ -14,6 +14,7 @@
   import ProvidersSection from "./clinic/ProvidersSection.svelte";
   import OperatoriesSection from "./clinic/OperatoriesSection.svelte";
   import DocumentsSection from "./clinic/DocumentsSection.svelte";
+  import IntegrationsSection from "./clinic/IntegrationsSection.svelte";
   import { m } from "../paraglide/messages.js";
 
   let {
@@ -32,9 +33,9 @@
     onrefresh: () => Promise<void>;
   }>();
 
-  let activeSubTab = $state<"profile" | "hours" | "providers" | "operatories" | "documents">(
-    "profile"
-  );
+  let activeSubTab = $state<
+    "profile" | "hours" | "providers" | "operatories" | "documents" | "integrations"
+  >("profile");
   let savingProfile = $state(false);
   let profileMessage = $state<{
     text: string;
@@ -456,6 +457,7 @@
     { id: "providers", label: "Providers & Staff", count: providers.length },
     { id: "operatories", label: "Operatories & Chairs", count: operatories.length },
     { id: "documents", label: "Clinic Documents" },
+    { id: "integrations", label: "Integrations" },
   ]);
 </script>
 
@@ -660,6 +662,8 @@
       />
     {:else if activeSubTab === "documents"}
       <DocumentsSection bind:openUploadModal={triggerUploadDocument} />
+    {:else if activeSubTab === "integrations"}
+      <IntegrationsSection />
     {/if}
   </div>
 </div>
