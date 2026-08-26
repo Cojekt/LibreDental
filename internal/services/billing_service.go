@@ -267,6 +267,15 @@ func (s *BillingService) GetPatientBalance(patientID string) (*domain.PatientBal
 	}, nil
 }
 
+// GetRevenueStats returns payments for a specific date range, for analytics.
+func (s *BillingService) GetRevenueStats(startDate, endDate string) ([]*domain.Payment, error) {
+	if startDate == "" || endDate == "" {
+		return nil, fmt.Errorf("start and end date are required for revenue stats")
+	}
+	return s.payRepo.ListByDateRange(context.Background(), startDate, endDate)
+}
+
+
 // ─── Treatment Bundles ────────────────────────────────────────────────────────
 
 // CreateBundle creates a new clinic-wide treatment bundle template.

@@ -135,3 +135,39 @@ func (r *PaymentRepository) GetTotalPaid(ctx context.Context, patientID string) 
 	}
 	return total, nil
 }
+
+// ListByDateRange returns payments within a specific date range (inclusive).
+func (r *PaymentRepository) ListByDateRange(ctx context.Context, startDate, endDate string) ([]*domain.Payment, error) {
+	query := `
+		SELECT id, patient_id, claim_id, amount, method, date, notes, created_at
+		FROM payments
+		WHERE date >= ? AND date <= ?
+		ORDER BY date DESC, created_at DESC`
+
+	rows, err := r.db.QueryContext(ctx, query, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list payments by date range: %w", err)
+	}
+	defer rows.Close()
+
+	var payments []*domain.Payment
+	for rows.Next() {
+		var p domain.Payment
+		var methodStr string
+		if err := rows.Scan(
+			&p.ID, &p.PatientID, &p.ClaimID, &p.Amount,
+			&methodStr, &p.Date, &p.Notes, &p.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		p.Method = domain.PaymentMethod(methodStr)
+		payments = append(payments, &p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if payments == nil {
+		payments = []*domain.Payment{}
+	}
+	return payments, nil
+}

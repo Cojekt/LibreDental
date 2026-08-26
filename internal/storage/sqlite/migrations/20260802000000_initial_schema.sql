@@ -113,19 +113,6 @@ CREATE TABLE IF NOT EXISTS appointments (
 CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time, end_time);
 
-CREATE TABLE IF NOT EXISTS audit_logs (
-	id TEXT PRIMARY KEY,
-	timestamp DATETIME NOT NULL,
-	user_id TEXT NOT NULL,
-	user_name TEXT NOT NULL,
-	patient_id TEXT DEFAULT '',
-	action TEXT NOT NULL,
-	resource TEXT NOT NULL,
-	resource_id TEXT DEFAULT '',
-	details TEXT DEFAULT '',
-	ip_address TEXT DEFAULT ''
-);
-
 CREATE TABLE IF NOT EXISTS dental_conditions (
 	id TEXT PRIMARY KEY,
 	patient_id TEXT NOT NULL,
@@ -140,8 +127,7 @@ CREATE TABLE IF NOT EXISTS dental_conditions (
 	FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_audit_patient ON audit_logs(patient_id);
-CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
+
 CREATE INDEX IF NOT EXISTS idx_dental_conditions_patient ON dental_conditions(patient_id);
 CREATE INDEX IF NOT EXISTS idx_dental_conditions_tooth ON dental_conditions(patient_id, tooth_number);
 
@@ -174,7 +160,6 @@ DROP TABLE IF EXISTS country_configs;
 DROP TABLE IF EXISTS dental_conditions;
 DROP TABLE IF EXISTS operatories;
 DROP TABLE IF EXISTS providers;
-DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS patients;
 DROP TABLE IF EXISTS practice_config;

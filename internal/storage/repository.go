@@ -79,6 +79,7 @@ type PaymentRepository interface {
 	GetByID(ctx context.Context, id string) (*domain.Payment, error)
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, patientID string) ([]*domain.Payment, error)
+	ListByDateRange(ctx context.Context, startDate, endDate string) ([]*domain.Payment, error)
 	// GetTotalPaid returns the sum of all payments received for a patient.
 	GetTotalPaid(ctx context.Context, patientID string) (int64, error)
 }
