@@ -34,6 +34,11 @@
       label: (getLocaleVersion(), m.nav_billing()),
       enabled: true,
     },
+    {
+      id: "audit",
+      label: (getLocaleVersion(), m.nav_audit()),
+      enabled: true,
+    },
   ]);
 </script>
 

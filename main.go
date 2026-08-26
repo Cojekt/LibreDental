@@ -31,6 +31,13 @@ func main() {
 	}
 	defer db.Close()
 
+	auditDbPath := filepath.Join(appDir, "audit.db")
+	auditDb, err := sqlite.OpenAudit(auditDbPath)
+	if err != nil {
+		log.Fatalf("Failed to initialize SQLite audit database: %v", err)
+	}
+	defer auditDb.Close()
+
 	patientRepo := sqlite.NewPatientRepository(db)
 	patientService := services.NewPatientService(patientRepo)
 
@@ -56,6 +63,9 @@ func main() {
 	secretsService := services.NewSecretsService()
 	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, secretsService)
 
+	auditRepo := sqlite.NewAuditRepository(auditDb)
+	auditService := services.NewAuditService(auditRepo)
+
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir)
 
@@ -79,6 +89,7 @@ func main() {
 			application.NewService(billingService),
 			application.NewService(documentService),
 			application.NewService(timecardService),
+			application.NewService(auditService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
