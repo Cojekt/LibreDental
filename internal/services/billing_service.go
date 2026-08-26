@@ -275,7 +275,6 @@ func (s *BillingService) GetRevenueStats(startDate, endDate string) ([]*domain.P
 	return s.payRepo.ListByDateRange(context.Background(), startDate, endDate)
 }
 
-
 // ─── Treatment Bundles ────────────────────────────────────────────────────────
 
 // CreateBundle creates a new clinic-wide treatment bundle template.

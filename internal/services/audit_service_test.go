@@ -71,13 +71,13 @@ func TestAuditService(t *testing.T) {
 	// 4. Test Pagination
 	// Insert a second event
 	entry2 := &domain.AuditLogEntry{
-		ID:         "audit_2",
-		Timestamp:  time.Now().UTC(),
-		UserID:     "user_101",
-		UserName:   "Dr. Smith",
-		PatientID:  "pat_123",
-		Action:     domain.AuditActionUpdate,
-		Resource:   "patient_demographics",
+		ID:        "audit_2",
+		Timestamp: time.Now().UTC(),
+		UserID:    "user_101",
+		UserName:  "Dr. Smith",
+		PatientID: "pat_123",
+		Action:    domain.AuditActionUpdate,
+		Resource:  "patient_demographics",
 	}
 	err = service.LogEvent(entry2)
 	if err != nil {

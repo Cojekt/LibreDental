@@ -15,7 +15,7 @@
   let limit = $state(50);
 
   function getPatientName(id: string): string {
-    const p = patients.find((p) => p.id === id);
+    const p = patients.find((p: Patient) => p.id === id);
     return p ? `${p.last_name}, ${p.first_name}` : id;
   }
 
@@ -23,7 +23,7 @@
     loading = true;
     try {
       const res = await AuditService.GetAuditLogs(selectedPatient, limit, page * limit);
-      logs = res || [];
+      logs = (res?.filter(Boolean) as AuditLogEntry[]) || [];
     } catch (e) {
       console.error("Failed to fetch audit logs", e);
       logs = [];
@@ -62,7 +62,7 @@
   <div class="mb-4 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <h2 class="text-lg font-bold text-slate-100">{m.audit_tab_auditing()}</h2>
-      
+
       <select
         bind:value={selectedPatient}
         class="input input-sm w-64 bg-slate-800 text-slate-200 border-slate-700"
@@ -75,18 +75,18 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <button 
-        class="btn btn-secondary btn-sm"
-        onclick={fetchLogs}
-        title="Refresh"
-      >
+      <button class="btn btn-secondary btn-sm" onclick={fetchLogs} title="Refresh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l5.67-5.67"/>
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l5.67-5.67" />
         </svg>
       </button>
-      <button class="btn btn-secondary btn-sm" onclick={handlePrev} disabled={page === 0}>Prev</button>
+      <button class="btn btn-secondary btn-sm" onclick={handlePrev} disabled={page === 0}
+        >Prev</button
+      >
       <span class="text-sm text-slate-400">Page {page + 1}</span>
-      <button class="btn btn-secondary btn-sm" onclick={handleNext} disabled={logs.length < limit}>Next</button>
+      <button class="btn btn-secondary btn-sm" onclick={handleNext} disabled={logs.length < limit}
+        >Next</button
+      >
     </div>
   </div>
 
@@ -115,16 +115,22 @@
         {:else}
           {#each logs as log}
             <tr class="hover:bg-slate-800/40">
-              <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">{new Date(log.timestamp).toLocaleString()}</td>
-              <td class="px-4 py-3">{log.user_name} <span class="text-xs text-slate-500">({log.user_id})</span></td>
-              <td class="px-4 py-3">{log.patient_id ? getPatientName(log.patient_id) : '-'}</td>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-xs"
+                >{new Date(log.timestamp).toLocaleString()}</td
+              >
+              <td class="px-4 py-3"
+                >{log.user_name} <span class="text-xs text-slate-500">({log.user_id})</span></td
+              >
+              <td class="px-4 py-3">{log.patient_id ? getPatientName(log.patient_id) : "-"}</td>
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                <span
+                  class="inline-flex rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-300"
+                >
                   {log.action}
                 </span>
               </td>
               <td class="px-4 py-3">{log.resource}</td>
-              <td class="px-4 py-3 text-xs text-slate-400">{log.details || '-'}</td>
+              <td class="px-4 py-3 text-xs text-slate-400">{log.details || "-"}</td>
             </tr>
           {/each}
         {/if}

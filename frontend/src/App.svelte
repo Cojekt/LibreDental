@@ -31,7 +31,6 @@
   import BillingView from "./views/BillingView.svelte";
   import AuditView from "./views/AuditView.svelte";
 
-
   // App Navigation (Default to "clinic" landing tab on far left)
   let activeTab = $state("clinic");
 
@@ -631,7 +630,6 @@
       <AuditView {patients} />
     {/if}
   </main>
-
 </div>
 
 <SettingsModal bind:showModal={showSettingsModal} bind:theme onchangetheme={applyTheme} />

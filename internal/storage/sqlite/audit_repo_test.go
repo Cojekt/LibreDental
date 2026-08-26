@@ -14,10 +14,11 @@ func TestAuditRepository_LogAndQuery(t *testing.T) {
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test_audit.db")
 
-	db, err := sqlite.Open(dbPath)
+	db, err := sqlite.OpenAudit(dbPath)
 	if err != nil {
-		t.Fatalf("Failed to open sqlite db: %v", err)
+		t.Fatalf("Failed to open sqlite audit db: %v", err)
 	}
+
 	defer db.Close()
 
 	repo := sqlite.NewAuditRepository(db)

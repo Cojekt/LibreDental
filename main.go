@@ -41,7 +41,6 @@ func main() {
 	patientRepo := sqlite.NewPatientRepository(db)
 	patientService := services.NewPatientService(patientRepo)
 
-
 	appointmentRepo := sqlite.NewAppointmentRepository(db)
 	appointmentService := services.NewAppointmentService(appointmentRepo)
 

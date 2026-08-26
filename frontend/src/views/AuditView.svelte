@@ -12,9 +12,8 @@
 
   const subtabs = [
     { id: "analytics", label: m.audit_tab_analytics() },
-    { id: "auditing", label: m.audit_tab_auditing() }
+    { id: "auditing", label: m.audit_tab_auditing() },
   ];
-
 </script>
 
 <div class="flex h-full w-full flex-col gap-6">
@@ -36,7 +35,9 @@
   </div>
 
   <!-- Content Area -->
-  <div class="flex-1 overflow-auto rounded-xl border border-slate-800/50 bg-slate-900/40 p-6 shadow-sm">
+  <div
+    class="flex-1 overflow-auto rounded-xl border border-slate-800/50 bg-slate-900/40 p-6 shadow-sm"
+  >
     {#if activeSubtab === "auditing"}
       <AuditingSubtab {patients} />
     {:else if activeSubtab === "analytics"}
