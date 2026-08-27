@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS audit_logs (
 	id TEXT PRIMARY KEY,
 	timestamp DATETIME NOT NULL,
@@ -15,9 +13,3 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 CREATE INDEX IF NOT EXISTS idx_audit_patient ON audit_logs(patient_id);
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
--- +goose StatementEnd
-
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS audit_logs;
--- +goose StatementEnd
