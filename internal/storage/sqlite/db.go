@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 
+	"github.com/LibreDental/libredental/internal/storage/seed"
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
@@ -53,6 +54,10 @@ func (db *DB) migrate() error {
 
 	if err := goose.Up(db.DB, "migrations"); err != nil {
 		return fmt.Errorf("failed to apply migrations: %w", err)
+	}
+
+	if err := seed.Run(db.DB); err != nil {
+		return fmt.Errorf("failed to run seeds: %w", err)
 	}
 
 	return nil
