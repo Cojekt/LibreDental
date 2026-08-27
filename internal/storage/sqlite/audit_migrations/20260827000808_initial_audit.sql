@@ -1,7 +1,7 @@
 -- +goose Up
 -- create "audit_logs" table
 CREATE TABLE `audit_logs` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `timestamp` datetime NOT NULL,
   `user_id` text NOT NULL,
   `user_name` text NOT NULL,

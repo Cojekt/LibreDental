@@ -116,9 +116,26 @@ INSERT OR IGNORE INTO procedure_codes (country_code, code, category, description
 
 // Run executes the default seed data for the application.
 func Run(db *sql.DB) error {
-	_, err := db.Exec(seedData)
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM country_configs").Scan(&count)
+	if err == nil && count > 0 {
+		return nil
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(seedData)
 	if err != nil {
 		return fmt.Errorf("failed to insert seed data: %w", err)
 	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
 	return nil
 }

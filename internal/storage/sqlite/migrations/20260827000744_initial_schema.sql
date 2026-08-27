@@ -1,7 +1,7 @@
 -- +goose Up
 -- create "claims" table
 CREATE TABLE `claims` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `patient_id` text NOT NULL,
   `provider_id` text NOT NULL DEFAULT '',
   `appointment_id` text NULL DEFAULT '',
@@ -25,7 +25,7 @@ CREATE INDEX `idx_claims_status` ON `claims` (`status`);
 CREATE INDEX `idx_claims_date` ON `claims` (`date_of_service`);
 -- create "payments" table
 CREATE TABLE `payments` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `patient_id` text NOT NULL,
   `claim_id` text NULL DEFAULT '',
   `amount` integer NOT NULL,
@@ -44,7 +44,7 @@ CREATE INDEX `idx_payments_claim` ON `payments` (`claim_id`);
 CREATE INDEX `idx_payments_date` ON `payments` (`date`);
 -- create "treatment_bundles" table
 CREATE TABLE `treatment_bundles` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `shortname` text NOT NULL,
   `name` text NOT NULL,
   `description` text NULL DEFAULT '',
@@ -54,8 +54,7 @@ CREATE TABLE `treatment_bundles` (
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`)
 );
--- create index "treatment_bundles_shortname" to table: "treatment_bundles"
-CREATE UNIQUE INDEX `treatment_bundles_shortname` ON `treatment_bundles` (`shortname`);
+
 -- create index "idx_bundles_shortname" to table: "treatment_bundles"
 CREATE UNIQUE INDEX `idx_bundles_shortname` ON `treatment_bundles` (`shortname`);
 -- create "procedure_codes" table
@@ -74,7 +73,7 @@ CREATE INDEX `idx_procedure_codes_country` ON `procedure_codes` (`country_code`)
 CREATE INDEX `idx_procedure_codes_category` ON `procedure_codes` (`country_code`, `category`);
 -- create "fee_schedules" table
 CREATE TABLE `fee_schedules` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `country_code` text NOT NULL,
   `code` text NOT NULL,
   `provider_id` text NULL DEFAULT '',
@@ -84,11 +83,10 @@ CREATE TABLE `fee_schedules` (
 );
 -- create index "fee_schedules_country_code_code_provider_id" to table: "fee_schedules"
 CREATE UNIQUE INDEX `fee_schedules_country_code_code_provider_id` ON `fee_schedules` (`country_code`, `code`, `provider_id`);
--- create index "idx_fee_schedules_lookup" to table: "fee_schedules"
-CREATE INDEX `idx_fee_schedules_lookup` ON `fee_schedules` (`country_code`, `code`, `provider_id`);
+
 -- create "appointments" table
 CREATE TABLE `appointments` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `patient_id` text NOT NULL,
   `provider_id` text NOT NULL,
   `operatory_id` text NOT NULL,
@@ -110,7 +108,7 @@ CREATE INDEX `idx_appointments_patient` ON `appointments` (`patient_id`);
 CREATE INDEX `idx_appointments_date` ON `appointments` (`start_time`, `end_time`);
 -- create "dental_conditions" table
 CREATE TABLE `dental_conditions` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `patient_id` text NOT NULL,
   `tooth_number` integer NOT NULL,
   `surfaces` text NULL DEFAULT '[]',
@@ -129,7 +127,7 @@ CREATE INDEX `idx_dental_conditions_patient` ON `dental_conditions` (`patient_id
 CREATE INDEX `idx_dental_conditions_tooth` ON `dental_conditions` (`patient_id`, `tooth_number`);
 -- create "practice_config" table
 CREATE TABLE `practice_config` (
-  `id` integer NULL,
+  `id` integer NOT NULL,
   `clinic_name` text NOT NULL DEFAULT 'My Dental Clinic',
   `tagline` text NULL DEFAULT '',
   `tax_id` text NULL DEFAULT '',
@@ -154,7 +152,7 @@ CREATE TABLE `practice_config` (
 );
 -- create "operatories" table
 CREATE TABLE `operatories` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `name` text NOT NULL,
   `room_code` text NULL DEFAULT '',
   `type` text NOT NULL DEFAULT 'general',
@@ -165,7 +163,7 @@ CREATE TABLE `operatories` (
 );
 -- create "country_configs" table
 CREATE TABLE `country_configs` (
-  `code` text NULL,
+  `code` text NOT NULL,
   `name` text NOT NULL,
   `national_id_name` text NOT NULL,
   `national_id_type` text NOT NULL,
@@ -180,7 +178,7 @@ CREATE TABLE `country_configs` (
 );
 -- create "patients" table
 CREATE TABLE `patients` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `first_name` text NOT NULL,
   `last_name` text NOT NULL,
   `middle_name` text NULL DEFAULT '',
@@ -227,7 +225,7 @@ CREATE INDEX `idx_patients_name` ON `patients` (`last_name`, `first_name`);
 CREATE INDEX `idx_patients_dob` ON `patients` (`date_of_birth`);
 -- create "documents" table
 CREATE TABLE `documents` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `patient_id` text NULL,
   `type` text NOT NULL,
   `name` text NOT NULL,
@@ -244,7 +242,7 @@ CREATE TABLE `documents` (
 CREATE INDEX `idx_documents_patient_id` ON `documents` (`patient_id`);
 -- create "providers" table
 CREATE TABLE `providers` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `name` text NOT NULL,
   `role` text NOT NULL DEFAULT 'dentist',
   `specialty` text NULL DEFAULT '',
@@ -260,7 +258,7 @@ CREATE TABLE `providers` (
 );
 -- create "timecards" table
 CREATE TABLE `timecards` (
-  `id` text NULL,
+  `id` text NOT NULL,
   `provider_id` text NOT NULL,
   `clock_in` datetime NOT NULL,
   `clock_out` datetime NULL,
@@ -316,8 +314,7 @@ DROP INDEX `idx_appointments_date`;
 DROP INDEX `idx_appointments_patient`;
 -- reverse: create "appointments" table
 DROP TABLE `appointments`;
--- reverse: create index "idx_fee_schedules_lookup" to table: "fee_schedules"
-DROP INDEX `idx_fee_schedules_lookup`;
+
 -- reverse: create index "fee_schedules_country_code_code_provider_id" to table: "fee_schedules"
 DROP INDEX `fee_schedules_country_code_code_provider_id`;
 -- reverse: create "fee_schedules" table
@@ -330,8 +327,7 @@ DROP INDEX `idx_procedure_codes_country`;
 DROP TABLE `procedure_codes`;
 -- reverse: create index "idx_bundles_shortname" to table: "treatment_bundles"
 DROP INDEX `idx_bundles_shortname`;
--- reverse: create index "treatment_bundles_shortname" to table: "treatment_bundles"
-DROP INDEX `treatment_bundles_shortname`;
+
 -- reverse: create "treatment_bundles" table
 DROP TABLE `treatment_bundles`;
 -- reverse: create index "idx_payments_date" to table: "payments"

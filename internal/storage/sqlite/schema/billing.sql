@@ -37,7 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(date);
 
 CREATE TABLE IF NOT EXISTS treatment_bundles (
     id TEXT PRIMARY KEY,
-    shortname TEXT UNIQUE NOT NULL,
+    shortname TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT DEFAULT '',
     items TEXT DEFAULT '[]',
@@ -70,8 +70,6 @@ CREATE TABLE IF NOT EXISTS fee_schedules (
 	updated_at DATETIME NOT NULL,
 	UNIQUE (country_code, code, provider_id)
 );
-
-CREATE INDEX IF NOT EXISTS idx_fee_schedules_lookup ON fee_schedules(country_code, code, provider_id);
 
 -- Seed US (CDT Codes)
 INSERT OR IGNORE INTO procedure_codes (country_code, code, category, description, default_fee) VALUES
