@@ -8,12 +8,16 @@
     onnewpatient,
     onnewappointment,
     onopensettings,
+    onopenstafflogin,
   } = $props<{
     activeTab: string;
     onnewpatient: () => void;
     onnewappointment: () => void;
     onopensettings: () => void;
+    onopenstafflogin: () => void;
   }>();
+
+  import { auth } from "../stores/auth.svelte.js";
 </script>
 
 <header class="w-full border-b border-slate-800 bg-slate-900 shadow-sm">
@@ -60,6 +64,20 @@
           {(getLocaleVersion(), m.header_new_appointment())}
         </button>
       {/if}
+
+      <button
+        type="button"
+        onclick={onopenstafflogin}
+        class="flex items-center justify-center rounded-xl border px-4 py-2 transition-all shadow-sm cursor-pointer min-w-[140px] font-bold text-sm {auth.currentStaffId
+          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+          : 'border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20'}"
+      >
+        {#if auth.currentStaffId}
+          {auth.currentStaff?.name || m.common_loading()}
+        {:else}
+          {m.header_staff_not_logged_in()}
+        {/if}
+      </button>
 
       <button
         type="button"

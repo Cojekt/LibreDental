@@ -24,6 +24,7 @@
   import PatientModal from "./components/PatientModal.svelte";
   import AppointmentModal from "./components/AppointmentModal.svelte";
   import SettingsModal from "./components/SettingsModal.svelte";
+  import StaffLoginModal from "./components/StaffLoginModal.svelte";
   import ClinicView from "./views/ClinicView.svelte";
   import PatientsView from "./views/PatientsView.svelte";
   import AppointmentsView from "./views/AppointmentsView.svelte";
@@ -37,6 +38,7 @@
   // Settings & Theme
   type ThemeMode = "dark" | "light" | "system";
   let showSettingsModal = $state(false);
+  let showStaffLoginModal = $state(false);
   let theme = $state<ThemeMode>("system");
 
   async function getSystemOSTheme(): Promise<"dark" | "light"> {
@@ -583,6 +585,7 @@
     onnewpatient={openAddPatientModal}
     onnewappointment={openAddApptModal}
     onopensettings={() => (showSettingsModal = true)}
+    onopenstafflogin={() => (showStaffLoginModal = true)}
   />
 
   <main class="w-full p-6 sm:p-8 box-border flex-1">
@@ -633,6 +636,8 @@
 </div>
 
 <SettingsModal bind:showModal={showSettingsModal} bind:theme onchangetheme={applyTheme} />
+
+<StaffLoginModal bind:showModal={showStaffLoginModal} {providers} />
 
 <OnboardingModal bind:showOnboarding {supportedCountries} oncomplete={handleOnboardingComplete} />
 
