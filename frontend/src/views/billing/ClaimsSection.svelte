@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { BillingService, ChartService } from "@bindings/services/index.js";
+  import { auth } from "../../stores/auth.svelte.js";
   import type {
     Patient,
     Provider,
@@ -42,7 +43,7 @@
   let claimInsuranceCarrier = $state("");
   let claimPolicyNumber = $state("");
   let claimGroupNumber = $state("");
-  let claimStatus = $state<ClaimStatus>(ClaimStatus.ClaimStatusDraft);
+  let claimStatus = $state<any>(ClaimStatus.ClaimStatusDraft);
   let claimNotes = $state("");
   let claimLineItems = $state<ClaimLineItem[]>([]);
 
@@ -156,7 +157,7 @@
   function addLineItem() {
     claimLineItems = [
       ...claimLineItems,
-      { id: `li_${Date.now()}`, ada_code: "", description: "", fee: 0 },
+      { id: `li_${Date.now()}`, ada_code: "", description: "", fee: 0 } as any as ClaimLineItem,
     ];
   }
 
@@ -172,12 +173,15 @@
     try {
       const b = await BillingService.GetBundleByShortname(sn);
       if (b) {
-        const newItems: ClaimLineItem[] = (b.items ?? []).map((item, i) => ({
-          id: `li_${Date.now()}_${i}`,
-          ada_code: item.ada_code,
-          description: item.description,
-          fee: (item.default_fee || 0) / 100,
-        }));
+        const newItems: ClaimLineItem[] = (b.items ?? []).map(
+          (item, i) =>
+            ({
+              id: `li_${Date.now()}_${i}`,
+              ada_code: item.ada_code,
+              description: item.description,
+              fee: (item.default_fee || 0) / 100,
+            }) as any as ClaimLineItem
+        );
         claimLineItems = [...claimLineItems, ...newItems];
         bundleLookupInput = "";
       } else {
@@ -198,6 +202,7 @@
       id: isEditingClaim ? editingClaimId : `claim_${Date.now()}`,
       patient_id: claimPatientId,
       provider_id: claimProviderId,
+      appointment_id: undefined,
       date_of_service: claimDateOfService,
       insurance_carrier: claimInsuranceCarrier,
       policy_number: claimPolicyNumber,
@@ -215,7 +220,7 @@
       created_at:
         isEditingClaim && editingClaimCreatedAt ? editingClaimCreatedAt : new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    };
+    } as any as Claim;
 
     try {
       if (isEditingClaim) {
@@ -284,7 +289,7 @@
     loadingChartImport = true;
     selectedImportConditionIds = [];
     try {
-      const chart = await ChartService.GetPatientChart(claimPatientId);
+      const chart = await ChartService.GetPatientChart(auth.token, claimPatientId);
       chartImportConditions = (chart?.conditions || []).filter(
         (c) => c.status === "treatment_planned" || c.status === "completed"
       );
@@ -303,15 +308,18 @@
 
   function applyChartImport() {
     const toImport = chartImportConditions.filter((c) => selectedImportConditionIds.includes(c.id));
-    const newItems: ClaimLineItem[] = toImport.map((cond, i) => ({
-      id: `li_${Date.now()}_${i}`,
-      tooth_condition_id: cond.id,
-      tooth_number: cond.tooth_number,
-      surfaces: cond.surfaces,
-      ada_code: cond.ada_code || "PROC",
-      description: cond.description || `Tooth #${cond.tooth_number} procedure`,
-      fee: (cond.fee || 0) / 100,
-    }));
+    const newItems: ClaimLineItem[] = toImport.map(
+      (cond, i) =>
+        ({
+          id: `li_${Date.now()}_${i}`,
+          tooth_condition_id: cond.id,
+          tooth_number: cond.tooth_number,
+          surfaces: cond.surfaces,
+          ada_code: cond.ada_code || "PROC",
+          description: cond.description || `Tooth #${cond.tooth_number} procedure`,
+          fee: (cond.fee || 0) / 100,
+        }) as any as ClaimLineItem
+    );
 
     claimLineItems = [...claimLineItems, ...newItems];
     showChartImportModal = false;

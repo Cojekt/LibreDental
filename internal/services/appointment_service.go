@@ -10,14 +10,18 @@ import (
 )
 
 type AppointmentService struct {
-	repo storage.AppointmentRepository
+	repo         storage.AppointmentRepository
+	auditService *AuditService
 }
 
-func NewAppointmentService(repo storage.AppointmentRepository) *AppointmentService {
-	return &AppointmentService{repo: repo}
+func NewAppointmentService(repo storage.AppointmentRepository, auditService *AuditService) *AppointmentService {
+	return &AppointmentService{repo: repo, auditService: auditService}
 }
 
-func (s *AppointmentService) ListAppointments(filter domain.AppointmentFilter) ([]*domain.Appointment, error) {
+func (s *AppointmentService) ListAppointments(token string, filter domain.AppointmentFilter) ([]*domain.Appointment, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	appts, err := s.repo.List(context.Background(), filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list appointments: %w", err)
@@ -28,15 +32,22 @@ func (s *AppointmentService) ListAppointments(filter domain.AppointmentFilter) (
 	return appts, nil
 }
 
-func (s *AppointmentService) GetAppointment(id string) (*domain.Appointment, error) {
+func (s *AppointmentService) GetAppointment(token string, id string) (*domain.Appointment, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	appt, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get appointment: %w", err)
 	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, appt.PatientID, "appointment", "Viewed appointment")
 	return appt, nil
 }
 
-func (s *AppointmentService) CreateAppointment(a *domain.Appointment) (*domain.Appointment, error) {
+func (s *AppointmentService) CreateAppointment(token string, a *domain.Appointment) (*domain.Appointment, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if a == nil {
 		return nil, fmt.Errorf("%w: appointment cannot be nil", storage.ErrInvalidInput)
 	}
@@ -47,10 +58,14 @@ func (s *AppointmentService) CreateAppointment(a *domain.Appointment) (*domain.A
 	if err != nil {
 		return nil, fmt.Errorf("failed to create appointment: %w", err)
 	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, a.PatientID, "appointment", "Created appointment")
 	return a, nil
 }
 
-func (s *AppointmentService) UpdateAppointment(a *domain.Appointment) (*domain.Appointment, error) {
+func (s *AppointmentService) UpdateAppointment(token string, a *domain.Appointment) (*domain.Appointment, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if a == nil {
 		return nil, fmt.Errorf("%w: appointment cannot be nil", storage.ErrInvalidInput)
 	}
@@ -58,22 +73,28 @@ func (s *AppointmentService) UpdateAppointment(a *domain.Appointment) (*domain.A
 	if err != nil {
 		return nil, fmt.Errorf("failed to update appointment: %w", err)
 	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, a.PatientID, "appointment", "Updated appointment")
 	return a, nil
 }
 
-func (s *AppointmentService) DeleteAppointment(id string) error {
-	err := s.repo.Delete(context.Background(), id)
+func (s *AppointmentService) DeleteAppointment(token string, id string) error {
+	appt, err := s.GetAppointment(token, id)
+	if err != nil {
+		return err
+	}
+	err = s.repo.Delete(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete appointment: %w", err)
 	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, appt.PatientID, "appointment", "Deleted appointment")
 	return nil
 }
 
-func (s *AppointmentService) UpdateAppointmentStatus(id string, status string) (*domain.Appointment, error) {
-	appt, err := s.GetAppointment(id)
+func (s *AppointmentService) UpdateAppointmentStatus(token string, id string, status string) (*domain.Appointment, error) {
+	appt, err := s.GetAppointment(token, id)
 	if err != nil {
 		return nil, err
 	}
 	appt.Status = domain.AppointmentStatus(status)
-	return s.UpdateAppointment(appt)
+	return s.UpdateAppointment(token, appt)
 }

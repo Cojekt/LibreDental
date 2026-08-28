@@ -87,7 +87,7 @@
   async function saveFeeSchedule(e: Event) {
     e.preventDefault();
     if (!editingFeeCode || editingFeeCustom < 0) return;
-    const cc = (countryMeta?.code || "US") as CountryCode;
+    const cc = (countryMeta?.code || "US") as any;
     const payload: FeeSchedule = {
       id: `fee_${Date.now()}`,
       country_code: cc,

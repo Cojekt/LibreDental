@@ -32,7 +32,7 @@
   let payPatientId = $state("");
   let payClaimId = $state("");
   let payAmount = $state("");
-  let payMethod = $state<PaymentMethod>(PaymentMethod.PaymentMethodCash);
+  let payMethod = $state<any>(PaymentMethod.PaymentMethodCash);
   let payDate = $state(getTodayDateString());
   let payNotes = $state("");
 

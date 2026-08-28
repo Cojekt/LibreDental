@@ -8,6 +8,7 @@
   } from "@bindings/domain/models.js";
   import { ToothSystem, ToothSurface, ToothStatus } from "@bindings/domain/models.js";
   import { ChartService, BillingService } from "@bindings/services/index.js";
+  import { auth } from "../stores/auth.svelte.js";
   import ViewHeader from "../components/ui/ViewHeader.svelte";
   import OdontogramChart from "./charting/OdontogramChart.svelte";
   import ToothConditionModal from "./charting/ToothConditionModal.svelte";
@@ -72,19 +73,19 @@
   let editingConditionId = $state<string>("");
 
   // Condition Form Fields
-  let formSurfaces = $state<ToothSurface[]>([]);
+  let formSurfaces = $state<any[]>([]);
   let formADACode = $state<string>("");
   let formDescription = $state<string>("");
-  let formStatus = $state<ToothStatus>(ToothStatus.ToothStatusTreatmentPlanned);
+  let formStatus = $state<any>(ToothStatus.ToothStatusTreatmentPlanned);
   let formFee = $state<number>(0);
 
   // Active tooth system strictly derived from country configuration
-  let currentToothSystem = $derived<ToothSystem>(
+  let currentToothSystem = $derived<any>(
     countryMeta?.default_tooth_system || ToothSystem.ToothSystemUniversal
   );
 
   // Tooth numbering helper functions
-  function getToothLabel(num: number, system: ToothSystem): string {
+  function getToothLabel(num: number, system: any): string {
     if (num >= 1 && num <= 32) {
       if (system === ToothSystem.ToothSystemFDI) {
         if (num >= 1 && num <= 8) return `1${9 - num}`;
@@ -263,7 +264,7 @@
     }
     loadingChart = true;
     try {
-      const chart = await ChartService.GetPatientChart(patientId);
+      const chart = await ChartService.GetPatientChart(auth.token, patientId);
       if (gen === requestGenChart) {
         currentChart = chart || {
           patient_id: patientId,
@@ -327,9 +328,9 @@
     showConditionModal = true;
   }
 
-  function toggleSurface(s: ToothSurface) {
+  function toggleSurface(s: any) {
     if (formSurfaces.includes(s)) {
-      formSurfaces = formSurfaces.filter((item: ToothSurface) => item !== s);
+      formSurfaces = formSurfaces.filter((item: any) => item !== s);
     } else {
       formSurfaces = [...formSurfaces, s];
     }
@@ -339,7 +340,7 @@
     formADACode = preset.code === "EXISTS" ? "" : preset.code;
     formDescription = preset.desc;
     formFee = preset.fee;
-    formStatus = preset.status as ToothStatus;
+    formStatus = preset.status as any;
   }
 
   async function handleSaveCondition(e: Event) {
@@ -360,7 +361,7 @@
     };
 
     try {
-      await ChartService.SaveToothCondition(conditionData);
+      await ChartService.SaveToothCondition(auth.token, conditionData);
       showConditionModal = false;
       await loadChart(selectedPatientId);
     } catch (err) {
@@ -371,7 +372,7 @@
   async function handleDeleteCondition(id: string) {
     if (confirm(m.confirm_delete_condition())) {
       try {
-        await ChartService.DeleteToothCondition(id);
+        await ChartService.DeleteToothCondition(auth.token, id);
         if (editingConditionId === id) {
           showConditionModal = false;
         }

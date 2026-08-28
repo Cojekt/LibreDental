@@ -1,17 +1,20 @@
 import type { Provider } from "@bindings/domain/models.js";
-import { PracticeConfigService } from "@bindings/services/index.js";
+import { PracticeConfigService, AuditService } from "@bindings/services/index.js";
 
 function createAuthStore() {
   let currentStaffId = $state<string | null>(null);
   let currentStaff = $state<Provider | null>(null);
+  let sessionToken = $state<string>("");
 
-  // Load initial state from sessionStorage if in browser
+  // Load initial state from localStorage if in browser
   if (typeof window !== "undefined") {
-    const stored = sessionStorage.getItem("currentStaffId");
-    if (stored) {
-      currentStaffId = stored;
+    const storedId = localStorage.getItem("currentStaffId");
+    const storedToken = localStorage.getItem("sessionToken");
+    if (storedId && storedToken) {
+      currentStaffId = storedId;
+      sessionToken = storedToken;
       // Fetch the full provider object
-      fetchStaffDetails(stored);
+      fetchStaffDetails(storedId);
     }
   }
 
@@ -22,6 +25,11 @@ function createAuthStore() {
       const provider = (providers as Provider[])?.find((p) => p.id === id && p.is_active);
       if (provider) {
         currentStaff = provider;
+        const fetchedUser = await AuditService.GetSessionUser(sessionToken);
+        if (!fetchedUser) {
+          sessionToken = await AuditService.CreateSession(provider);
+          localStorage.setItem("sessionToken", sessionToken);
+        }
       } else {
         // Provider might have been deleted
         logout();
@@ -32,19 +40,26 @@ function createAuthStore() {
     }
   }
 
-  function login(provider: Provider) {
+  async function login(provider: Provider) {
     currentStaffId = provider.id;
     currentStaff = provider;
+    sessionToken = await AuditService.CreateSession(provider);
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("currentStaffId", provider.id);
+      localStorage.setItem("currentStaffId", provider.id);
+      localStorage.setItem("sessionToken", sessionToken);
     }
   }
 
-  function logout() {
+  async function logout() {
+    if (sessionToken) {
+      await AuditService.DestroySession(sessionToken).catch(console.error);
+    }
     currentStaffId = null;
     currentStaff = null;
+    sessionToken = "";
     if (typeof window !== "undefined") {
-      sessionStorage.removeItem("currentStaffId");
+      localStorage.removeItem("currentStaffId");
+      localStorage.removeItem("sessionToken");
     }
   }
 
@@ -54,6 +69,9 @@ function createAuthStore() {
     },
     get currentStaff() {
       return currentStaff;
+    },
+    get token() {
+      return sessionToken;
     },
     login,
     logout,
