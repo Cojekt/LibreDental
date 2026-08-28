@@ -73,7 +73,7 @@ type Provider struct {
 	Email         string       `json:"email"`
 	Phone         string       `json:"phone"`
 	Color         string       `json:"color"`
-	Pin           string       `json:"pin"`
+	Pin           string       `json:"pin,omitempty"`
 	IsActive      bool         `json:"is_active"`
 	HourlyRate    int64        `json:"hourly_rate"`
 	CreatedAt     time.Time    `json:"created_at"`

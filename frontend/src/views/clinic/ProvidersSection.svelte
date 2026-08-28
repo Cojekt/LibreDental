@@ -59,8 +59,6 @@
   let selectedProviderId = $state("");
   let selectedProviderName = $state("");
 
-  let revealedPins = $state<Record<string, boolean>>({});
-
   let searchQuery = $state("");
   let statusFilter = $state("all"); // 'all', 'active', 'inactive'
 
@@ -274,21 +272,7 @@
               {#if p.pin}
                 <div class="flex items-center gap-2">
                   <span>{m.prov_pin_display_label()}</span>
-                  {#if revealedPins[p.id]}
-                    <span class="text-slate-300 font-mono font-bold tracking-widest">{p.pin}</span>
-                    <button
-                      type="button"
-                      class="text-[10px] text-sky-400 hover:text-sky-300"
-                      onclick={() => (revealedPins[p.id] = false)}>{m.common_hide()}</button
-                    >
-                  {:else}
-                    <span class="text-slate-500 font-mono tracking-widest">****</span>
-                    <button
-                      type="button"
-                      class="text-[10px] text-sky-400 hover:text-sky-300"
-                      onclick={() => (revealedPins[p.id] = true)}>{m.common_reveal()}</button
-                    >
-                  {/if}
+                  <span class="text-slate-500 font-mono tracking-widest">****</span>
                 </div>
               {/if}
             </div>
@@ -468,7 +452,7 @@
         />
       </FormField>
 
-      <FormField label={m.prov_pin_label()} forId="prov-pin">
+      <FormField label={m.prov_pin_label()} forId="prov-pin" required>
         <Input
           id="prov-pin"
           type="password"
@@ -477,6 +461,8 @@
           pattern="[0-9]*"
           inputmode="numeric"
           maxlength={4}
+          minlength={4}
+          required
         />
       </FormField>
     </div>

@@ -77,19 +77,60 @@ func (s *PracticeConfigService) UpdatePracticeConfig(cfg domain.PracticeConfig) 
 }
 
 // ListProviders fetches all configured clinic providers and staff.
+
+// VerifyProviderPin checks a provider's pin and returns the redacted provider.
+func (s *PracticeConfigService) VerifyProviderPin(id string, pin string) (*domain.Provider, error) {
+	providers, err := s.repo.ListProviders(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list providers: %w", err)
+	}
+	for _, p := range providers {
+		if p.ID == id {
+			if p.Pin != pin {
+				return nil, errors.New("incorrect pin")
+			}
+			p.Pin = "****"
+			return p, nil
+		}
+	}
+	return nil, errors.New("provider not found")
+}
+
 func (s *PracticeConfigService) ListProviders() ([]*domain.Provider, error) {
-	return s.repo.ListProviders(context.Background())
+	providers, err := s.repo.ListProviders(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range providers {
+		p.Pin = "****"
+	}
+	return providers, nil
 }
 
 // SaveProvider creates or updates a clinic provider/staff member.
 func (s *PracticeConfigService) SaveProvider(p domain.Provider) (*domain.Provider, error) {
 	if p.ID == "" {
 		p.ID = fmt.Sprintf("prov_%d", time.Now().UnixNano())
+	} else {
+		if p.Pin == "****" {
+			existingProviders, err := s.repo.ListProviders(context.Background())
+			if err == nil {
+				for _, ex := range existingProviders {
+					if ex.ID == p.ID {
+						p.Pin = ex.Pin
+						break
+					}
+				}
+			}
+		}
 	}
+
 	err := s.repo.SaveProvider(context.Background(), &p)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save provider: %w", err)
 	}
+
+	p.Pin = "****"
 	return &p, nil
 }
 

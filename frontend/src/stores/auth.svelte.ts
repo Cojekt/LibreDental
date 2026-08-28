@@ -5,9 +5,9 @@ function createAuthStore() {
   let currentStaffId = $state<string | null>(null);
   let currentStaff = $state<Provider | null>(null);
 
-  // Load initial state from localStorage if in browser
+  // Load initial state from sessionStorage if in browser
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("currentStaffId");
+    const stored = sessionStorage.getItem("currentStaffId");
     if (stored) {
       currentStaffId = stored;
       // Fetch the full provider object
@@ -18,7 +18,8 @@ function createAuthStore() {
   async function fetchStaffDetails(id: string) {
     try {
       const providers = await PracticeConfigService.ListProviders();
-      const provider = (providers as Provider[])?.find((p) => p.id === id);
+      if (currentStaffId !== id) return;
+      const provider = (providers as Provider[])?.find((p) => p.id === id && p.is_active);
       if (provider) {
         currentStaff = provider;
       } else {
@@ -27,6 +28,9 @@ function createAuthStore() {
       }
     } catch (e) {
       console.error("Failed to fetch staff details:", e);
+      if (currentStaffId === id) {
+        logout();
+      }
     }
   }
 
@@ -34,7 +38,7 @@ function createAuthStore() {
     currentStaffId = provider.id;
     currentStaff = provider;
     if (typeof window !== "undefined") {
-      localStorage.setItem("currentStaffId", provider.id);
+      sessionStorage.setItem("currentStaffId", provider.id);
     }
   }
 
@@ -42,7 +46,7 @@ function createAuthStore() {
     currentStaffId = null;
     currentStaff = null;
     if (typeof window !== "undefined") {
-      localStorage.removeItem("currentStaffId");
+      sessionStorage.removeItem("currentStaffId");
     }
   }
 

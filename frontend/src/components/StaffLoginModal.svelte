@@ -3,6 +3,7 @@
   import Modal from "./ui/Modal.svelte";
   import { auth } from "../stores/auth.svelte.js";
   import { m } from "../paraglide/messages.js";
+  import { PracticeConfigService } from "@bindings/services/index.js";
 
   let { showModal = $bindable(false), providers = [] } = $props<{
     showModal: boolean;
@@ -19,19 +20,32 @@
     errorMsg = "";
   }
 
-  function handleLogin(e: Event) {
+  $effect(() => {
+    if (!showModal) {
+      selectedProvider = null;
+      pinInput = "";
+      errorMsg = "";
+    }
+  });
+
+  async function handleLogin(e: Event) {
     e.preventDefault();
     if (!selectedProvider) return;
 
-    if (selectedProvider.pin && selectedProvider.pin !== pinInput) {
+    try {
+      const verifiedProvider = await PracticeConfigService.VerifyProviderPin(
+        selectedProvider.id,
+        pinInput
+      );
+      if (!verifiedProvider) throw new Error("Verification failed");
+      auth.login(verifiedProvider);
+      showModal = false;
+      selectedProvider = null;
+      pinInput = "";
+      errorMsg = "";
+    } catch (err) {
       errorMsg = m.staff_login_incorrect_pin();
-      return;
     }
-
-    auth.login(selectedProvider);
-    showModal = false;
-    selectedProvider = null;
-    pinInput = "";
   }
 
   function handleLogout() {
