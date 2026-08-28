@@ -86,6 +86,12 @@ func (s *PracticeConfigService) VerifyProviderPin(id string, pin string) (*domai
 	}
 	for _, p := range providers {
 		if p.ID == id {
+			if !p.IsActive {
+				return nil, errors.New("provider is inactive")
+			}
+			if p.Pin == "" || pin == "" {
+				return nil, errors.New("pin not set or empty")
+			}
 			if p.Pin != pin {
 				return nil, errors.New("incorrect pin")
 			}
@@ -114,13 +120,21 @@ func (s *PracticeConfigService) SaveProvider(p domain.Provider) (*domain.Provide
 	} else {
 		if p.Pin == "****" {
 			existingProviders, err := s.repo.ListProviders(context.Background())
-			if err == nil {
-				for _, ex := range existingProviders {
-					if ex.ID == p.ID {
-						p.Pin = ex.Pin
-						break
-					}
+			if err != nil {
+				return nil, fmt.Errorf("failed to list providers for pin preservation: %w", err)
+			}
+
+			found := false
+			for _, ex := range existingProviders {
+				if ex.ID == p.ID {
+					p.Pin = ex.Pin
+					found = true
+					break
 				}
+			}
+
+			if !found {
+				return nil, fmt.Errorf("provider %q not found for pin preservation", p.ID)
 			}
 		}
 	}

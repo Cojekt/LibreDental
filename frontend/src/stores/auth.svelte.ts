@@ -28,9 +28,7 @@ function createAuthStore() {
       }
     } catch (e) {
       console.error("Failed to fetch staff details:", e);
-      if (currentStaffId === id) {
-        logout();
-      }
+      // Transient failures shouldn't log the user out; preserve the session.
     }
   }
 

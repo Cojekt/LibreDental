@@ -32,11 +32,16 @@
     e.preventDefault();
     if (!selectedProvider) return;
 
+    const currentAttemptProvider = selectedProvider;
+
     try {
       const verifiedProvider = await PracticeConfigService.VerifyProviderPin(
-        selectedProvider.id,
+        currentAttemptProvider.id,
         pinInput
       );
+
+      if (selectedProvider !== currentAttemptProvider || !showModal) return;
+
       if (!verifiedProvider) throw new Error("Verification failed");
       auth.login(verifiedProvider);
       showModal = false;
@@ -44,6 +49,7 @@
       pinInput = "";
       errorMsg = "";
     } catch (err) {
+      if (selectedProvider !== currentAttemptProvider || !showModal) return;
       errorMsg = m.staff_login_incorrect_pin();
     }
   }
