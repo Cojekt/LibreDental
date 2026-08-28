@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { auth } from "../stores/auth.svelte.js";
   import { onMount } from "svelte";
   import { m } from "../paraglide/messages.js";
   import { BillingService } from "@bindings/services/index.js";
@@ -21,7 +22,7 @@
   async function fetchRevenue() {
     loading = true;
     try {
-      const res = await BillingService.GetRevenueStats(startDate, endDate);
+      const res = await BillingService.GetRevenueStats(auth.token, startDate, endDate);
       payments = (res?.filter(Boolean) as Payment[]) || [];
     } catch (e) {
       console.error("Failed to fetch revenue stats", e);

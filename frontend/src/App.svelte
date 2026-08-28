@@ -238,6 +238,7 @@
   }
 
   async function loadPatients() {
+    if (!auth.token) return;
     loadingPatients = true;
     try {
       const res = await PatientService.ListPatients(auth.token, searchQuery, statusFilter);
@@ -250,6 +251,7 @@
   }
 
   async function loadAppointments() {
+    if (!auth.token) return;
     loadingAppointments = true;
     try {
       const res = await AppointmentService.ListAppointments(auth.token, {} as any);
@@ -551,8 +553,19 @@
 
   // Reactivity: Reload appointments when selected date changes
   $effect(() => {
-    if (selectedDate) {
+    if (selectedDate && auth.token) {
       loadAppointments();
+    }
+  });
+
+  // Reactivity: Load data when auth.token changes
+  $effect(() => {
+    if (auth.token) {
+      loadPatients();
+      loadAppointments();
+    } else {
+      patients = [];
+      appointments = [];
     }
   });
 
@@ -572,8 +585,10 @@
 
     await checkConfig();
     await loadClinicData();
-    await loadPatients();
-    await loadAppointments();
+    if (auth.token) {
+      await loadPatients();
+      await loadAppointments();
+    }
   });
 </script>
 
@@ -638,7 +653,11 @@
 
 <SettingsModal bind:showModal={showSettingsModal} bind:theme onchangetheme={applyTheme} />
 
-<StaffLoginModal bind:showModal={showStaffLoginModal} {providers} />
+<StaffLoginModal
+  bind:showModal={showStaffLoginModal}
+  {providers}
+  onlogout={() => (activeTab = "clinic")}
+/>
 
 <OnboardingModal bind:showOnboarding {supportedCountries} oncomplete={handleOnboardingComplete} />
 

@@ -60,7 +60,7 @@ func (s *ChartService) SaveToothCondition(token string, c *domain.ToothCondition
 	return c, nil
 }
 
-func (s *ChartService) DeleteToothCondition(token string, id string) error {
+func (s *ChartService) DeleteToothCondition(token string, id string, patientID string) error {
 	if s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
@@ -73,6 +73,6 @@ func (s *ChartService) DeleteToothCondition(token string, id string) error {
 		return fmt.Errorf("failed to delete tooth condition: %w", err)
 	}
 
-	_ = s.auditService.LogAction(token, domain.AuditActionDelete, "dental_chart", "Deleted tooth condition")
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, patientID, "dental_chart", "Deleted tooth condition")
 	return nil
 }

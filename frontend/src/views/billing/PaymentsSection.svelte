@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { auth } from "../../stores/auth.svelte.js";
   import { BillingService } from "@bindings/services/index.js";
   import type {
     Patient,
@@ -61,11 +62,11 @@
     const gen = ++requestGenPayments;
     loadingPayments = true;
     try {
-      const res = await BillingService.ListPayments(balancePatientId);
+      const res = await BillingService.ListPayments(auth.token, balancePatientId);
       if (gen === requestGenPayments) {
         payments = (res?.filter(Boolean) as Payment[]) || [];
       }
-      const claimRes = await BillingService.ListClaims(balancePatientId);
+      const claimRes = await BillingService.ListClaims(auth.token, balancePatientId);
       if (gen === requestGenPayments) {
         claims = (claimRes?.filter(Boolean) as Claim[]) || [];
       }
@@ -88,7 +89,7 @@
       return;
     }
     try {
-      const bal = await BillingService.GetPatientBalance(balancePatientId);
+      const bal = await BillingService.GetPatientBalance(auth.token, balancePatientId);
       if (gen === requestGenBalance) {
         patientBalance = bal as PatientBalance | null;
       }
@@ -133,7 +134,7 @@
     };
 
     try {
-      await BillingService.RecordPayment(payload);
+      await BillingService.RecordPayment(auth.token, payload);
       showPaymentModal = false;
       balancePatientId = payPatientId;
       await loadPayments();
@@ -146,7 +147,7 @@
   async function deletePayment(id: string) {
     if (!confirm(m.billing_pay_confirm_delete())) return;
     try {
-      await BillingService.DeletePayment(id);
+      await BillingService.DeletePayment(auth.token, id);
       await loadPayments();
       await loadBalance();
     } catch (e) {

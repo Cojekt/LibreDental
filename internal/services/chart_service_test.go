@@ -72,7 +72,7 @@ func TestChartService(t *testing.T) {
 		t.Fatalf("Expected 1 condition, got %d", len(chart.Conditions))
 	}
 
-	err = chartService.DeleteToothCondition(token, cond.ID)
+	err = chartService.DeleteToothCondition(token, cond.ID, pat.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete condition: %v", err)
 	}

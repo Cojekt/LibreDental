@@ -64,10 +64,10 @@ func main() {
 	procedureRepo := sqlite.NewProcedureRepository(db)
 
 	secretsService := services.NewSecretsService()
-	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, secretsService)
+	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, secretsService, auditService)
 
 	documentRepo := sqlite.NewDocumentRepository(db)
-	documentService := services.NewDocumentService(documentRepo, appDir)
+	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
 	serverCfg := app.LoadServerConfig()
 

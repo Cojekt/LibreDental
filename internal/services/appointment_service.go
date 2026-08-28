@@ -29,6 +29,7 @@ func (s *AppointmentService) ListAppointments(token string, filter domain.Appoin
 	if appts == nil {
 		appts = []*domain.Appointment{}
 	}
+	_ = s.auditService.LogAction(token, domain.AuditActionRead, "appointment", "Listed appointments")
 	return appts, nil
 }
 

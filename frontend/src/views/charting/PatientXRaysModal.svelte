@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { auth } from "../../stores/auth.svelte.js";
   import { DocumentService } from "@bindings/services/index.js";
   import type { Document, DocumentFilter } from "@bindings/domain/models.js";
   import { DocumentType } from "@bindings/domain/models.js";
@@ -37,7 +38,7 @@
         limit: undefined,
         offset: undefined,
       } as any as DocumentFilter;
-      const allDocs = (await DocumentService.ListPatientDocuments(filter)) || [];
+      const allDocs = (await DocumentService.ListPatientDocuments(auth.token, filter)) || [];
       documents = allDocs;
     } catch (err) {
       console.error("Failed to load patient xrays:", err);
@@ -90,6 +91,7 @@
 
         try {
           await DocumentService.SaveDocumentBase64(
+            auth.token,
             patientId,
             docName,
             "Patient X-Ray / Imaging",
@@ -123,7 +125,7 @@
   async function handleDelete(id: string) {
     if (confirm(m.doc_confirm_delete_xray())) {
       try {
-        await DocumentService.DeleteDocument(id);
+        await DocumentService.DeleteDocument(auth.token, id);
         loadXRays();
         if (viewingDocId === id) {
           viewingImages = [];
@@ -137,7 +139,7 @@
 
   async function handleView(doc: Document) {
     try {
-      const images = await DocumentService.GetDocumentImagesBase64(doc.id);
+      const images = await DocumentService.GetDocumentImagesBase64(auth.token, doc.id);
       if (images && images.length > 0) {
         viewingImages = images;
         viewingImageName = doc.name;
@@ -152,7 +154,7 @@
 
   async function handleDownload(id: string, name: string) {
     try {
-      const base64 = await DocumentService.GetDocumentBase64(id);
+      const base64 = await DocumentService.GetDocumentBase64(auth.token, id);
       if (base64) {
         const doc = documents.find((d) => d.id === id);
         const mimeType = doc?.content_type || "application/octet-stream";

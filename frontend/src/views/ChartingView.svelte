@@ -241,7 +241,12 @@
     claimNoticeMsg = "";
     try {
       const ids = billable.map((c) => c.id);
-      const claim = await BillingService.CreateClaimFromChartConditions(selectedPatientId, "", ids);
+      const claim = await BillingService.CreateClaimFromChartConditions(
+        auth.token,
+        selectedPatientId,
+        "",
+        ids
+      );
       if (claim) {
         claimNoticeMsg = `Claim created successfully! (${claim.line_items?.length || 0} line items billed)`;
         await loadChart(selectedPatientId);
@@ -372,7 +377,7 @@
   async function handleDeleteCondition(id: string) {
     if (confirm(m.confirm_delete_condition())) {
       try {
-        await ChartService.DeleteToothCondition(auth.token, id);
+        await ChartService.DeleteToothCondition(auth.token, id, selectedPatientId);
         if (editingConditionId === id) {
           showConditionModal = false;
         }

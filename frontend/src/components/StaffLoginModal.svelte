@@ -5,9 +5,14 @@
   import { m } from "../paraglide/messages.js";
   import { PracticeConfigService } from "@bindings/services/index.js";
 
-  let { showModal = $bindable(false), providers = [] } = $props<{
+  let {
+    showModal = $bindable(false),
+    providers = [],
+    onlogout,
+  } = $props<{
     showModal: boolean;
     providers: Provider[];
+    onlogout?: () => void;
   }>();
 
   let selectedProvider = $state<Provider | null>(null);
@@ -59,6 +64,7 @@
     showModal = false;
     selectedProvider = null;
     pinInput = "";
+    if (onlogout) onlogout();
   }
 </script>
 

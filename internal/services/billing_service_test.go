@@ -30,12 +30,17 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	patientRepo := sqlite.NewPatientRepository(db)
 	chartRepo := sqlite.NewChartRepository(db)
 	claimRepo := sqlite.NewClaimRepository(db)
+
+	auditRepo := sqlite.NewAuditRepository(db)
+	auditSvc := NewAuditService(auditRepo)
+	token := auditSvc.CreateSession(&domain.Provider{ID: "prov_1", Name: "Test Prov"})
+
 	paymentRepo := sqlite.NewPaymentRepository(db)
 	bundleRepo := sqlite.NewBundleRepository(db)
 	procRepo := sqlite.NewProcedureRepository(db)
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, secretsSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, secretsSvc, auditSvc)
 
 	// Create test patient
 	patient := &domain.Patient{
@@ -79,7 +84,7 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	}
 
 	// 3. Test CreateClaimFromChartConditions
-	claim, err := billingSvc.CreateClaimFromChartConditions("pat_test_1", "prov_1", []string{"cond_test_1"})
+	claim, err := billingSvc.CreateClaimFromChartConditions(token, "pat_test_1", "prov_1", []string{"cond_test_1"})
 	if err != nil {
 		t.Fatalf("Failed to create claim from chart condition: %v", err)
 	}
@@ -114,6 +119,10 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	ctx := context.Background()
 	claimRepo := sqlite.NewClaimRepository(db)
 
+	auditRepo := sqlite.NewAuditRepository(db)
+	auditSvc := NewAuditService(auditRepo)
+	token := auditSvc.CreateSession(&domain.Provider{ID: "prov_1", Name: "Test Prov"})
+
 	secretsSvc := NewSecretsService()
 	billingSvc := NewBillingService(
 		claimRepo,
@@ -123,6 +132,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 		sqlite.NewProcedureRepository(db),
 		sqlite.NewChartRepository(db),
 		secretsSvc,
+		auditSvc,
 	)
 
 	// Register the test provider
@@ -156,7 +166,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	}
 
 	// Test 1: Successful submission
-	result, err := billingSvc.SubmitClaimToProvider("claim_test_1", "test_mock")
+	result, err := billingSvc.SubmitClaimToProvider(token, "claim_test_1", "test_mock")
 	if err != nil {
 		t.Fatalf("SubmitClaimToProvider failed: %v", err)
 	}
@@ -174,7 +184,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	}
 
 	// Test 2: Idempotency check - should fail because it's already submitted
-	_, err = billingSvc.SubmitClaimToProvider("claim_test_1", "test_mock")
+	_, err = billingSvc.SubmitClaimToProvider(token, "claim_test_1", "test_mock")
 	if err == nil {
 		t.Fatalf("Expected error when submitting an already submitted claim")
 	}
@@ -192,7 +202,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	testProv.submitFunc = func() (*domain.ClaimSubmissionResult, error) {
 		return nil, nil // Return nil intentionally
 	}
-	_, err = billingSvc.SubmitClaimToProvider("claim_test_2", "test_mock")
+	_, err = billingSvc.SubmitClaimToProvider(token, "claim_test_2", "test_mock")
 	if err == nil || err.Error() != `provider "test_mock" returned nil result` {
 		t.Fatalf("Expected nil result error, got %v", err)
 	}

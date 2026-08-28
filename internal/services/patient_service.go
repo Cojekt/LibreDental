@@ -28,6 +28,7 @@ func (s *PatientService) ListPatients(token string, query string, status string)
 	if patients == nil {
 		patients = []*domain.Patient{}
 	}
+	_ = s.auditService.LogAction(token, domain.AuditActionRead, "patient_demographics", "Listed patients")
 	return patients, nil
 }
 
