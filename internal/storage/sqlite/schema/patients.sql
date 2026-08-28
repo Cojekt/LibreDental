@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS patients (
-	id TEXT PRIMARY KEY,
+	id TEXT NOT NULL PRIMARY KEY,
 	first_name TEXT NOT NULL,
 	last_name TEXT NOT NULL,
 	middle_name TEXT DEFAULT '',
@@ -44,7 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(last_name, first_name);
 CREATE INDEX IF NOT EXISTS idx_patients_dob ON patients(date_of_birth);
 
 CREATE TABLE IF NOT EXISTS documents (
-    id TEXT PRIMARY KEY,
+    id TEXT NOT NULL PRIMARY KEY,
     patient_id TEXT,
     type TEXT NOT NULL,
     name TEXT NOT NULL,

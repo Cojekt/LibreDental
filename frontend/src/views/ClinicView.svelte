@@ -227,6 +227,7 @@
   let provEmail = $state("");
   let provPhone = $state("");
   let provColor = $state("#3b82f6");
+  let provPin = $state("");
   let provIsActive = $state(true);
   let provHourlyRate = $state(0.0);
 
@@ -337,6 +338,7 @@
     provEmail = "";
     provPhone = "";
     provColor = "#3b82f6";
+    provPin = "";
     provIsActive = true;
     provHourlyRate = 0.0;
     showProviderModal = true;
@@ -352,6 +354,7 @@
     provEmail = p.email || "";
     provPhone = p.phone || "";
     provColor = p.color || "#3b82f6";
+    provPin = p.pin || "";
     provIsActive = p.is_active;
     provHourlyRate = (p.hourly_rate || 0.0) / 100;
     showProviderModal = true;
@@ -371,6 +374,7 @@
         email: provEmail,
         phone: provPhone,
         color: provColor,
+        pin: provPin,
         is_active: provIsActive,
         hourly_rate: Math.round(provHourlyRate * 100),
         created_at: new Date().toISOString(),
@@ -643,6 +647,7 @@
         bind:provEmail
         bind:provPhone
         bind:provColor
+        bind:provPin
         bind:provIsActive
         bind:provHourlyRate
       />

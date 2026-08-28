@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS providers (
-	id TEXT PRIMARY KEY,
+	id TEXT NOT NULL PRIMARY KEY,
 	name TEXT NOT NULL,
 	role TEXT NOT NULL DEFAULT 'dentist',
 	specialty TEXT DEFAULT '',
@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS providers (
 	email TEXT DEFAULT '',
 	phone TEXT DEFAULT '',
 	color TEXT DEFAULT '#3b82f6',
+	pin TEXT DEFAULT '',
 	is_active INTEGER NOT NULL DEFAULT 1,
 	hourly_rate INTEGER NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL,
@@ -14,7 +15,7 @@ CREATE TABLE IF NOT EXISTS providers (
 );
 
 CREATE TABLE IF NOT EXISTS timecards (
-    id TEXT PRIMARY KEY,
+    id TEXT NOT NULL PRIMARY KEY,
     provider_id TEXT NOT NULL,
     clock_in DATETIME NOT NULL,
     clock_out DATETIME,

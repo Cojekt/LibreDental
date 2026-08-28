@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS claims (
-    id TEXT PRIMARY KEY,
+    id TEXT NOT NULL PRIMARY KEY,
     patient_id TEXT NOT NULL,
     provider_id TEXT NOT NULL DEFAULT '',
     appointment_id TEXT DEFAULT '',
@@ -20,7 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_claims_status ON claims(status);
 CREATE INDEX IF NOT EXISTS idx_claims_date ON claims(date_of_service);
 
 CREATE TABLE IF NOT EXISTS payments (
-    id TEXT PRIMARY KEY,
+    id TEXT NOT NULL PRIMARY KEY,
     patient_id TEXT NOT NULL,
     claim_id TEXT DEFAULT '',
     amount INTEGER NOT NULL,
@@ -36,7 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_payments_claim ON payments(claim_id);
 CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(date);
 
 CREATE TABLE IF NOT EXISTS treatment_bundles (
-    id TEXT PRIMARY KEY,
+    id TEXT NOT NULL PRIMARY KEY,
     shortname TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT DEFAULT '',
@@ -62,7 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_procedure_codes_country ON procedure_codes(countr
 CREATE INDEX IF NOT EXISTS idx_procedure_codes_category ON procedure_codes(country_code, category);
 
 CREATE TABLE IF NOT EXISTS fee_schedules (
-	id TEXT PRIMARY KEY,
+	id TEXT NOT NULL PRIMARY KEY,
 	country_code TEXT NOT NULL,
 	code TEXT NOT NULL,
 	provider_id TEXT DEFAULT '',

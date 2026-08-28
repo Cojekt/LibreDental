@@ -27,6 +27,7 @@
     provEmail = $bindable(""),
     provPhone = $bindable(""),
     provColor = $bindable("#3b82f6"),
+    provPin = $bindable(""),
     provIsActive = $bindable(true),
     provHourlyRate = $bindable(0.0),
   } = $props<{
@@ -44,6 +45,7 @@
     provEmail: string;
     provPhone: string;
     provColor: string;
+    provPin: string;
     provIsActive: boolean;
     provHourlyRate: number;
   }>();
@@ -248,7 +250,7 @@
             </span>
           </div>
 
-          {#if p.license_number || p.email || p.phone || p.hourly_rate}
+          {#if p.license_number || p.email || p.phone || p.hourly_rate || p.pin}
             <div class="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
               {#if p.hourly_rate}
                 <div class="font-medium text-emerald-400">
@@ -266,6 +268,12 @@
               {/if}
               {#if p.phone}
                 <div>📞 {p.phone}</div>
+              {/if}
+              {#if p.pin}
+                <div class="flex items-center gap-2">
+                  <span>{m.prov_pin_display_label()}</span>
+                  <span class="text-slate-500 font-mono tracking-widest">****</span>
+                </div>
               {/if}
             </div>
           {/if}
@@ -432,16 +440,32 @@
       </FormField>
     </div>
 
-    <FormField label={m.prov_hourly_rate_label()} forId="prov-hourly">
-      <Input
-        id="prov-hourly"
-        type="number"
-        min="0"
-        step="0.01"
-        bind:value={provHourlyRate}
-        placeholder={m.prov_hourly_rate_placeholder()}
-      />
-    </FormField>
+    <div class="grid grid-cols-2 gap-3">
+      <FormField label={m.prov_hourly_rate_label()} forId="prov-hourly">
+        <Input
+          id="prov-hourly"
+          type="number"
+          min="0"
+          step="0.01"
+          bind:value={provHourlyRate}
+          placeholder={m.prov_hourly_rate_placeholder()}
+        />
+      </FormField>
+
+      <FormField label={m.prov_pin_label()} forId="prov-pin" required>
+        <Input
+          id="prov-pin"
+          type="password"
+          bind:value={provPin}
+          placeholder={m.prov_pin_placeholder()}
+          pattern="[0-9]*"
+          inputmode="numeric"
+          maxlength={4}
+          minlength={4}
+          required
+        />
+      </FormField>
+    </div>
 
     <div class="flex items-center justify-between pt-2">
       <div>

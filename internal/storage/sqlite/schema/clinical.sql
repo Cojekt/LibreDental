@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS appointments (
-	id TEXT PRIMARY KEY,
+	id TEXT NOT NULL PRIMARY KEY,
 	patient_id TEXT NOT NULL,
 	provider_id TEXT NOT NULL,
 	operatory_id TEXT NOT NULL,
@@ -19,7 +19,7 @@ CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time, end_time);
 
 CREATE TABLE IF NOT EXISTS dental_conditions (
-	id TEXT PRIMARY KEY,
+	id TEXT NOT NULL PRIMARY KEY,
 	patient_id TEXT NOT NULL,
 	tooth_number INTEGER NOT NULL,
 	surfaces TEXT DEFAULT '[]',

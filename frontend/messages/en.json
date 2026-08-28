@@ -504,5 +504,20 @@
   "prov_no_results_desc": "No providers match your current filters.",
   "validation_email_invalid": "Please enter a valid email address",
   "validation_phone_min_length": "Phone number must have at least 10 digits",
-  "validation_ssn_length": "SSN must be 9 digits"
+  "validation_ssn_length": "SSN must be 9 digits",
+  "prov_pin_label": "Staff Login PIN",
+  "prov_pin_placeholder": "4-digit PIN (e.g. 1234)",
+  "prov_pin_display_label": "Staff PIN:",
+  "common_reveal": "Reveal",
+  "common_hide": "Hide",
+  "header_staff_not_logged_in": "Not logged in",
+  "staff_login_title": "Staff Login",
+  "staff_login_subtitle": "Select your profile and enter your PIN to continue.",
+  "staff_login_current": "Currently logged in as:",
+  "staff_login_signout": "Sign Out",
+  "staff_login_switch": "Or switch to another profile:",
+  "staff_login_no_providers": "No active providers configured.",
+  "staff_login_enter_pin": "Enter PIN",
+  "staff_login_incorrect_pin": "Incorrect PIN",
+  "staff_login_signin": "Sign In"
 }

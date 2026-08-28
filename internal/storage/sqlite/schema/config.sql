@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS practice_config (
-	id INTEGER PRIMARY KEY CHECK (id = 1),
+	id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
 	clinic_name TEXT NOT NULL DEFAULT 'My Dental Clinic',
 	tagline TEXT DEFAULT '',
 	tax_id TEXT DEFAULT '',
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS practice_config (
 );
 
 CREATE TABLE IF NOT EXISTS operatories (
-	id TEXT PRIMARY KEY,
+	id TEXT NOT NULL PRIMARY KEY,
 	name TEXT NOT NULL,
 	room_code TEXT DEFAULT '',
 	type TEXT NOT NULL DEFAULT 'general',
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS operatories (
 );
 
 CREATE TABLE IF NOT EXISTS country_configs (
-	code TEXT PRIMARY KEY,
+	code TEXT NOT NULL PRIMARY KEY,
 	name TEXT NOT NULL,
 	national_id_name TEXT NOT NULL,
 	national_id_type TEXT NOT NULL,
