@@ -21,7 +21,7 @@ func TestAuditService(t *testing.T) {
 	defer auditDb.Close()
 
 	auditRepo := sqlite.NewAuditRepository(auditDb)
-	service := services.NewAuditService(auditRepo)
+	service := services.NewAuditService(auditRepo, nil)
 
 	// 1. Log an Event
 	entry := &domain.AuditLogEntry{

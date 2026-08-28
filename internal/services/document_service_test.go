@@ -27,8 +27,10 @@ func TestDocumentService(t *testing.T) {
 	repo := sqlite.NewDocumentRepository(db)
 
 	auditRepo := sqlite.NewAuditRepository(db)
-	auditSvc := services.NewAuditService(auditRepo)
-	token := auditSvc.CreateSession(&domain.Provider{ID: "prov_1", Name: "Test Prov"})
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
+	auditSvc := services.NewAuditService(auditRepo, configRepo)
+	token, _ := auditSvc.CreateSession("prov_1", "1234")
 
 	service := services.NewDocumentService(repo, tempDir, auditSvc)
 

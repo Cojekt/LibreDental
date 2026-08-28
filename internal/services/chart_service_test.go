@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -27,11 +28,10 @@ func TestChartService(t *testing.T) {
 	defer auditDb.Close()
 
 	auditRepo := sqlite.NewAuditRepository(auditDb)
-	auditService := services.NewAuditService(auditRepo)
-	token := auditService.CreateSession(&domain.Provider{
-		ID:   "test_user",
-		Name: "Test User",
-	})
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "test_user", Name: "Test User", Pin: "1234", IsActive: true})
+	auditService := services.NewAuditService(auditRepo, configRepo)
+	token, _ := auditService.CreateSession("test_user", "1234")
 
 	patientRepo := sqlite.NewPatientRepository(db)
 	patientService := services.NewPatientService(patientRepo, auditService)

@@ -39,7 +39,8 @@ func main() {
 	defer auditDb.Close()
 
 	auditRepo := sqlite.NewAuditRepository(auditDb)
-	auditService := services.NewAuditService(auditRepo)
+	practiceConfigRepo := sqlite.NewPracticeConfigRepository(db)
+	auditService := services.NewAuditService(auditRepo, practiceConfigRepo)
 
 	patientRepo := sqlite.NewPatientRepository(db)
 	patientService := services.NewPatientService(patientRepo, auditService)
@@ -47,7 +48,6 @@ func main() {
 	appointmentRepo := sqlite.NewAppointmentRepository(db)
 	appointmentService := services.NewAppointmentService(appointmentRepo, auditService)
 
-	practiceConfigRepo := sqlite.NewPracticeConfigRepository(db)
 	practiceConfigService := services.NewPracticeConfigService(practiceConfigRepo)
 
 	timecardRepo := sqlite.NewTimecardRepository(db)

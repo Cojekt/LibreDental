@@ -59,7 +59,9 @@ func (s *AppointmentService) CreateAppointment(token string, a *domain.Appointme
 	if err != nil {
 		return nil, fmt.Errorf("failed to create appointment: %w", err)
 	}
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, a.PatientID, "appointment", "Created appointment")
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, a.PatientID, "appointment", "Created appointment"); err != nil {
+		return nil, fmt.Errorf("failed to log audit action: %w", err)
+	}
 	return a, nil
 }
 
@@ -74,12 +76,17 @@ func (s *AppointmentService) UpdateAppointment(token string, a *domain.Appointme
 	if err != nil {
 		return nil, fmt.Errorf("failed to update appointment: %w", err)
 	}
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, a.PatientID, "appointment", "Updated appointment")
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, a.PatientID, "appointment", "Updated appointment"); err != nil {
+		return nil, fmt.Errorf("failed to log audit action: %w", err)
+	}
 	return a, nil
 }
 
 func (s *AppointmentService) DeleteAppointment(token string, id string) error {
-	appt, err := s.GetAppointment(token, id)
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
+	appt, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
 		return err
 	}
@@ -87,12 +94,17 @@ func (s *AppointmentService) DeleteAppointment(token string, id string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete appointment: %w", err)
 	}
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, appt.PatientID, "appointment", "Deleted appointment")
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, appt.PatientID, "appointment", "Deleted appointment"); err != nil {
+		return fmt.Errorf("failed to log audit action: %w", err)
+	}
 	return nil
 }
 
 func (s *AppointmentService) UpdateAppointmentStatus(token string, id string, status string) (*domain.Appointment, error) {
-	appt, err := s.GetAppointment(token, id)
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+	appt, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, err
 	}

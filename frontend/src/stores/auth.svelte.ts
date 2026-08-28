@@ -6,10 +6,10 @@ function createAuthStore() {
   let currentStaff = $state<Provider | null>(null);
   let sessionToken = $state<string>("");
 
-  // Load initial state from localStorage if in browser
+  // Load initial state from sessionStorage if in browser
   if (typeof window !== "undefined") {
-    const storedId = localStorage.getItem("currentStaffId");
-    const storedToken = localStorage.getItem("sessionToken");
+    const storedId = sessionStorage.getItem("currentStaffId");
+    const storedToken = sessionStorage.getItem("sessionToken");
     if (storedId && storedToken) {
       currentStaffId = storedId;
       sessionToken = storedToken;
@@ -24,11 +24,11 @@ function createAuthStore() {
       if (currentStaffId !== id) return;
       const provider = (providers as Provider[])?.find((p) => p.id === id && p.is_active);
       if (provider) {
-        currentStaff = provider;
         const fetchedUser = await AuditService.GetSessionUser(sessionToken);
-        if (!fetchedUser) {
-          sessionToken = await AuditService.CreateSession(provider);
-          localStorage.setItem("sessionToken", sessionToken);
+        if (fetchedUser && fetchedUser.id === provider.id) {
+          currentStaff = provider;
+        } else {
+          logout();
         }
       } else {
         // Provider might have been deleted
@@ -40,26 +40,28 @@ function createAuthStore() {
     }
   }
 
-  async function login(provider: Provider) {
+  async function login(provider: Provider, pin: string) {
+    const token = await AuditService.CreateSession(provider.id, pin);
     currentStaffId = provider.id;
     currentStaff = provider;
-    sessionToken = await AuditService.CreateSession(provider);
+    sessionToken = token;
     if (typeof window !== "undefined") {
-      localStorage.setItem("currentStaffId", provider.id);
-      localStorage.setItem("sessionToken", sessionToken);
+      sessionStorage.setItem("currentStaffId", provider.id);
+      sessionStorage.setItem("sessionToken", token);
     }
   }
 
-  async function logout() {
-    if (sessionToken) {
-      await AuditService.DestroySession(sessionToken).catch(console.error);
-    }
+  function logout() {
+    const oldToken = sessionToken;
     currentStaffId = null;
     currentStaff = null;
     sessionToken = "";
     if (typeof window !== "undefined") {
-      localStorage.removeItem("currentStaffId");
-      localStorage.removeItem("sessionToken");
+      sessionStorage.removeItem("currentStaffId");
+      sessionStorage.removeItem("sessionToken");
+    }
+    if (oldToken) {
+      AuditService.DestroySession(oldToken).catch(console.error);
     }
   }
 

@@ -52,7 +52,9 @@ func (s *PatientService) CreatePatient(token string, p *domain.Patient) (*domain
 	if err != nil {
 		return nil, fmt.Errorf("failed to create patient: %w", err)
 	}
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", "Created new patient record")
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", "Created new patient record"); err != nil {
+		return nil, fmt.Errorf("failed to log audit action: %w", err)
+	}
 	return p, nil
 }
 
@@ -64,19 +66,26 @@ func (s *PatientService) UpdatePatient(token string, p *domain.Patient) (*domain
 	if err != nil {
 		return nil, fmt.Errorf("failed to update patient: %w", err)
 	}
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Updated patient record")
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Updated patient record"); err != nil {
+		return nil, fmt.Errorf("failed to log audit action: %w", err)
+	}
 	return p, nil
 }
 
 func (s *PatientService) ArchivePatient(token string, id string) error {
-	p, err := s.GetPatient(token, id)
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
+	p, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
 		return err
 	}
 	p.Status = domain.StatusArchived
-	_, err = s.UpdatePatient(token, p)
+	err = s.repo.Update(context.Background(), p)
 	if err == nil {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Archived patient record")
+		if auditErr := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Archived patient record"); auditErr != nil {
+			return fmt.Errorf("failed to log audit action: %w", auditErr)
+		}
 	}
 	return err
 }

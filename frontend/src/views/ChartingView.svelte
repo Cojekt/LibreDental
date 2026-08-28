@@ -73,19 +73,19 @@
   let editingConditionId = $state<string>("");
 
   // Condition Form Fields
-  let formSurfaces = $state<any[]>([]);
+  let formSurfaces = $state<ToothSurface[]>([]);
   let formADACode = $state<string>("");
   let formDescription = $state<string>("");
-  let formStatus = $state<any>(ToothStatus.ToothStatusTreatmentPlanned);
+  let formStatus = $state<ToothStatus>(ToothStatus.ToothStatusTreatmentPlanned);
   let formFee = $state<number>(0);
 
   // Active tooth system strictly derived from country configuration
-  let currentToothSystem = $derived<any>(
+  let currentToothSystem = $derived<ToothSystem>(
     countryMeta?.default_tooth_system || ToothSystem.ToothSystemUniversal
   );
 
   // Tooth numbering helper functions
-  function getToothLabel(num: number, system: any): string {
+  function getToothLabel(num: number, system: ToothSystem): string {
     if (num >= 1 && num <= 32) {
       if (system === ToothSystem.ToothSystemFDI) {
         if (num >= 1 && num <= 8) return `1${9 - num}`;
@@ -277,10 +277,17 @@
           updated_at: "",
         };
       }
-    } catch (e) {
+    } catch (e: any) {
       if (gen === requestGenChart) {
         console.error("Failed to load patient chart:", e);
-        currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
+        if (
+          (e && typeof e.message === "string" && e.message.includes("unauthorized")) ||
+          (typeof e === "string" && e.includes("unauthorized"))
+        ) {
+          // Do not treat unauthorized as empty chart
+        } else {
+          currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
+        }
       }
     } finally {
       if (gen === requestGenChart) {
@@ -333,9 +340,9 @@
     showConditionModal = true;
   }
 
-  function toggleSurface(s: any) {
+  function toggleSurface(s: ToothSurface) {
     if (formSurfaces.includes(s)) {
-      formSurfaces = formSurfaces.filter((item: any) => item !== s);
+      formSurfaces = formSurfaces.filter((item: ToothSurface) => item !== s);
     } else {
       formSurfaces = [...formSurfaces, s];
     }
@@ -345,7 +352,7 @@
     formADACode = preset.code === "EXISTS" ? "" : preset.code;
     formDescription = preset.desc;
     formFee = preset.fee;
-    formStatus = preset.status as any;
+    formStatus = preset.status as ToothStatus;
   }
 
   async function handleSaveCondition(e: Event) {

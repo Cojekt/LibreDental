@@ -48,7 +48,7 @@
       if (selectedProvider !== currentAttemptProvider || !showModal) return;
 
       if (!verifiedProvider) throw new Error("Verification failed");
-      auth.login(verifiedProvider);
+      await auth.login(verifiedProvider, pinInput);
       showModal = false;
       selectedProvider = null;
       pinInput = "";

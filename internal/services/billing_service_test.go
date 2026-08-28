@@ -32,8 +32,10 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	claimRepo := sqlite.NewClaimRepository(db)
 
 	auditRepo := sqlite.NewAuditRepository(db)
-	auditSvc := NewAuditService(auditRepo)
-	token := auditSvc.CreateSession(&domain.Provider{ID: "prov_1", Name: "Test Prov"})
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
+	auditSvc := NewAuditService(auditRepo, configRepo)
+	token, _ := auditSvc.CreateSession("prov_1", "1234")
 
 	paymentRepo := sqlite.NewPaymentRepository(db)
 	bundleRepo := sqlite.NewBundleRepository(db)
@@ -120,8 +122,10 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	claimRepo := sqlite.NewClaimRepository(db)
 
 	auditRepo := sqlite.NewAuditRepository(db)
-	auditSvc := NewAuditService(auditRepo)
-	token := auditSvc.CreateSession(&domain.Provider{ID: "prov_1", Name: "Test Prov"})
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
+	auditSvc := NewAuditService(auditRepo, configRepo)
+	token, _ := auditSvc.CreateSession("prov_1", "1234")
 
 	secretsSvc := NewSecretsService()
 	billingSvc := NewBillingService(

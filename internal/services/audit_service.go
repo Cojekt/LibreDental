@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/google/uuid"
 )
 
@@ -18,27 +19,62 @@ type AuditRepository interface {
 }
 
 type AuditService struct {
-	repo     AuditRepository
-	mu       sync.RWMutex
-	sessions map[string]*domain.Provider
+	repo         AuditRepository
+	providerRepo storage.PracticeConfigRepository
+	mu           sync.RWMutex
+	sessions     map[string]*domain.Provider
 }
 
-func NewAuditService(repo AuditRepository) *AuditService {
+func NewAuditService(repo AuditRepository, providerRepo storage.PracticeConfigRepository) *AuditService {
 	return &AuditService{
-		repo:     repo,
-		sessions: make(map[string]*domain.Provider),
+		repo:         repo,
+		providerRepo: providerRepo,
+		sessions:     make(map[string]*domain.Provider),
 	}
 }
 
-func (s *AuditService) CreateSession(provider *domain.Provider) string {
-	if provider == nil {
-		return ""
+func (s *AuditService) CreateSession(id string, pin string) (string, error) {
+	if id == "" || pin == "" {
+		return "", errors.New("id and pin are required")
 	}
+	if s.providerRepo == nil {
+		return "", errors.New("provider repository not configured")
+	}
+
+	providers, err := s.providerRepo.ListProviders(context.Background())
+	if err != nil {
+		return "", err
+	}
+
+	var provider *domain.Provider
+	for _, p := range providers {
+		if p.ID == id {
+			if !p.IsActive {
+				return "", errors.New("provider is inactive")
+			}
+			if p.Pin == "" || pin == "" {
+				return "", errors.New("pin not set or empty")
+			}
+			if p.Pin != pin {
+				return "", errors.New("incorrect pin")
+			}
+
+			copiedProvider := *p
+			copiedProvider.Pin = "****"
+			provider = &copiedProvider
+			break
+		}
+	}
+
+	if provider == nil {
+		return "", errors.New("provider not found")
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	token := uuid.NewString()
 	s.sessions[token] = provider
-	return token
+	return token, nil
 }
 
 func (s *AuditService) DestroySession(token string) {
@@ -55,8 +91,31 @@ func (s *AuditService) GetSessionUser(token string) *domain.Provider {
 		return nil
 	}
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.sessions[token]
+	provider := s.sessions[token]
+	s.mu.RUnlock()
+
+	if provider == nil {
+		return nil
+	}
+
+	if s.providerRepo != nil {
+		providers, err := s.providerRepo.ListProviders(context.Background())
+		if err == nil {
+			foundAndActive := false
+			for _, p := range providers {
+				if p.ID == provider.ID && p.IsActive {
+					foundAndActive = true
+					break
+				}
+			}
+			if !foundAndActive {
+				s.DestroySession(token)
+				return nil
+			}
+		}
+	}
+
+	return provider
 }
 
 func (s *AuditService) LogAction(token string, action domain.AuditAction, resource string, details string) error {

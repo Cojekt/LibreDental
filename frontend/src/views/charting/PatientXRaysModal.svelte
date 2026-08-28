@@ -35,9 +35,7 @@
       const filter: DocumentFilter = {
         patient_id: patientId,
         type: DocumentType.DocumentTypeXRay,
-        limit: undefined,
-        offset: undefined,
-      } as any as DocumentFilter;
+      };
       const allDocs = (await DocumentService.ListPatientDocuments(auth.token, filter)) || [];
       documents = allDocs;
     } catch (err) {

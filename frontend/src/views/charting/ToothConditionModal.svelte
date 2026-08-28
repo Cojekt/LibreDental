@@ -26,19 +26,19 @@
   } = $props<{
     showConditionModal: boolean;
     selectedToothNumber: number | null;
-    currentToothSystem: any;
+    currentToothSystem: ToothSystem;
     countryMeta?: CountryConfig | null;
-    formSurfaces: any[];
+    formSurfaces: ToothSurface[];
     formADACode: string;
     formDescription: string;
-    formStatus: any;
+    formStatus: ToothStatus;
     formFee: number;
     isEditingCondition: boolean;
     editingConditionId: string;
     procedurePresets: { code: string; desc: string; fee: number; status: string }[];
     procedureCodes: ProcedureCode[];
-    getToothLabel: (num: number, system: any) => string;
-    toggleSurface: (s: any) => void;
+    getToothLabel: (num: number, system: ToothSystem) => string;
+    toggleSurface: (s: ToothSurface) => void;
     applyPreset: (preset: { code: string; desc: string; fee: number; status: string }) => void;
     handleSaveCondition: (e: Event) => void;
     handleDeleteCondition: (id: string) => void;

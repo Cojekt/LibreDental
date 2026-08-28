@@ -47,8 +47,10 @@ func (s *ChartService) SaveToothCondition(token string, c *domain.ToothCondition
 		return nil, fmt.Errorf("%w: tooth condition cannot be nil", storage.ErrInvalidInput)
 	}
 
+	action := domain.AuditActionUpdate
 	if c.ID == "" {
 		c.ID = fmt.Sprintf("cond_%d", time.Now().UnixNano())
+		action = domain.AuditActionCreate
 	}
 
 	err := s.chartRepo.SaveCondition(context.Background(), c)
@@ -56,7 +58,9 @@ func (s *ChartService) SaveToothCondition(token string, c *domain.ToothCondition
 		return nil, fmt.Errorf("failed to save tooth condition: %w", err)
 	}
 
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, c.PatientID, "dental_chart", "Saved tooth condition")
+	if err := s.auditService.LogPatientAction(token, action, c.PatientID, "dental_chart", "Saved tooth condition"); err != nil {
+		return nil, fmt.Errorf("failed to log audit action: %w", err)
+	}
 	return c, nil
 }
 
@@ -73,6 +77,8 @@ func (s *ChartService) DeleteToothCondition(token string, id string, patientID s
 		return fmt.Errorf("failed to delete tooth condition: %w", err)
 	}
 
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, patientID, "dental_chart", "Deleted tooth condition")
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, patientID, "dental_chart", "Deleted tooth condition"); err != nil {
+		return fmt.Errorf("failed to log audit action: %w", err)
+	}
 	return nil
 }

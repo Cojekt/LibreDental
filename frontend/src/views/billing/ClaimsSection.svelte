@@ -43,7 +43,8 @@
   let claimInsuranceCarrier = $state("");
   let claimPolicyNumber = $state("");
   let claimGroupNumber = $state("");
-  let claimStatus = $state<any>(ClaimStatus.ClaimStatusDraft);
+  let claimAppointmentId = $state<string | undefined>(undefined);
+  let claimStatus = $state<ClaimStatus>(ClaimStatus.ClaimStatusDraft);
   let claimNotes = $state("");
   let claimLineItems = $state<ClaimLineItem[]>([]);
 
@@ -120,6 +121,7 @@
     claimInsuranceCarrier = "";
     claimPolicyNumber = "";
     claimGroupNumber = "";
+    claimAppointmentId = undefined;
     claimStatus = ClaimStatus.ClaimStatusDraft;
     claimNotes = "";
     claimLineItems = [];
@@ -141,6 +143,7 @@
     claimInsuranceCarrier = c.insurance_carrier ?? "";
     claimPolicyNumber = c.policy_number ?? "";
     claimGroupNumber = c.group_number ?? "";
+    claimAppointmentId = c.appointment_id;
     claimStatus = c.status;
     claimNotes = c.notes ?? "";
     claimLineItems = (c.line_items ?? []).map((li) => ({
@@ -202,7 +205,7 @@
       id: isEditingClaim ? editingClaimId : `claim_${Date.now()}`,
       patient_id: claimPatientId,
       provider_id: claimProviderId,
-      appointment_id: undefined,
+      appointment_id: claimAppointmentId,
       date_of_service: claimDateOfService,
       insurance_carrier: claimInsuranceCarrier,
       policy_number: claimPolicyNumber,
