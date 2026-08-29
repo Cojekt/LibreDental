@@ -6,6 +6,7 @@ on:
       - "v*"
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,7 +14,7 @@ permissions:
 jobs:
   build:
     name: Build (${{ matrix.platform }})
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -59,7 +60,7 @@ jobs:
 
   generate-demo:
     name: Generate Demo Database
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -84,6 +85,7 @@ jobs:
     name: Publish GitHub Release
     needs: [build, generate-demo]
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
