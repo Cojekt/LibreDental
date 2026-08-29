@@ -80,16 +80,15 @@
     e.preventDefault();
     if (!editingFeeCode || editingFeeCustom < 0) return;
     const cc = (countryMeta?.code || "US") as CountryCode;
-    const payload: FeeSchedule = {
+    const payload: Omit<FeeSchedule, "updated_at"> = {
       id: `fee_${Date.now()}`,
       country_code: cc,
       code: editingFeeCode,
       provider_id: editingFeeProviderId,
       custom_fee: Math.round(Number(editingFeeCustom) * 100),
-      updated_at: "",
     };
     try {
-      await BillingService.SaveFeeSchedule(payload);
+      await BillingService.SaveFeeSchedule(payload as unknown as FeeSchedule);
       showFeeModal = false;
       await loadProcedureCodes();
       await loadFeeSchedules();
@@ -159,10 +158,13 @@
               <td class="px-4 py-3"><StatusBadge variant="draft" label={p.category} /></td>
               <td class="px-4 py-3 text-slate-200 font-medium">{p.description}</td>
               <td class="px-4 py-3 text-slate-400 font-mono"
-                >{formatCurrency(p.default_fee, countryMeta?.default_currency)}</td
+                >{formatCurrency(p.default_fee, countryMeta?.default_currency || "USD")}</td
               >
               <td class="px-4 py-3 font-bold text-slate-100 font-mono">
-                {formatCurrency(p.effective_fee || p.default_fee, countryMeta?.default_currency)}
+                {formatCurrency(
+                  p.effective_fee || p.default_fee,
+                  countryMeta?.default_currency || "USD"
+                )}
                 {#if hasCustom}
                   <span
                     class="ml-2 text-[10px] text-amber-400 font-semibold px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-800"

@@ -194,7 +194,7 @@
     e.preventDefault();
     if (!claimPatientId || !claimDateOfService) return;
 
-    const payload: Claim = {
+    const payload: Omit<Claim, "created_at" | "updated_at"> & { created_at?: string } = {
       id: isEditingClaim ? editingClaimId : `claim_${Date.now()}`,
       patient_id: claimPatientId,
       provider_id: claimProviderId,
@@ -213,14 +213,17 @@
         patient_portion:
           li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
       })),
-      created_at: isEditingClaim && editingClaimCreatedAt ? editingClaimCreatedAt : "",
-    } as any as Claim;
+    };
+
+    if (isEditingClaim && editingClaimCreatedAt) {
+      payload.created_at = editingClaimCreatedAt;
+    }
 
     try {
       if (isEditingClaim) {
-        await BillingService.UpdateClaim(auth.token, payload);
+        await BillingService.UpdateClaim(auth.token, payload as unknown as Claim);
       } else {
-        await BillingService.CreateClaim(auth.token, payload);
+        await BillingService.CreateClaim(auth.token, payload as unknown as Claim);
       }
       showClaimModal = false;
       await loadClaims();
@@ -800,7 +803,7 @@
 
 <ConfirmModal
   bind:showModal={showConfirmDeleteClaim}
-  title={m.billing_claims_confirm_delete()}
+  title={m.common_confirm()}
   message={m.billing_claims_confirm_delete()}
   onConfirm={executeDeleteClaim}
 />

@@ -115,7 +115,7 @@
     const amount = Math.round(parseFloat(payAmount) * 100);
     if (!payPatientId || isNaN(amount) || amount <= 0 || !payDate) return;
 
-    const payload: Payment = {
+    const payload: Omit<Payment, "created_at"> = {
       id: `pay_${Date.now()}`,
       patient_id: payPatientId,
       claim_id: payClaimId,
@@ -123,11 +123,10 @@
       method: payMethod,
       date: payDate,
       notes: payNotes,
-      created_at: "",
     };
 
     try {
-      await BillingService.RecordPayment(auth.token, payload);
+      await BillingService.RecordPayment(auth.token, payload as unknown as Payment);
       showPaymentModal = false;
       balancePatientId = payPatientId;
       await loadPayments();
@@ -389,7 +388,7 @@
 
 <ConfirmModal
   bind:showModal={showConfirmDeletePayment}
-  title={m.billing_pay_confirm_delete()}
+  title={m.common_confirm()}
   message={m.billing_pay_confirm_delete()}
   onConfirm={executeDeletePayment}
 />

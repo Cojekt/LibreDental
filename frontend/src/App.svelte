@@ -379,7 +379,7 @@
           await PatientService.UpdatePatient(auth.token, p);
         }
       } else {
-        const newPatient: Patient = {
+        const newPatient: Omit<Patient, "created_at" | "updated_at"> = {
           id: "pat_" + Date.now(),
           first_name: firstName,
           last_name: lastName,
@@ -417,10 +417,8 @@
           notes: "",
           version: 1,
           status: Status.StatusActive,
-          created_at: "",
-          updated_at: "",
         };
-        await PatientService.CreatePatient(auth.token, newPatient);
+        await PatientService.CreatePatient(auth.token, newPatient as unknown as Patient);
       }
       showPatientModal = false;
       await loadPatients();
@@ -514,7 +512,7 @@
           await AppointmentService.UpdateAppointment(auth.token, existing);
         }
       } else {
-        const newAppt: Appointment = {
+        const newAppt: Omit<Appointment, "created_at" | "updated_at"> = {
           id: "appt_" + Date.now(),
           patient_id: apptPatientId,
           provider_id: apptProviderId,
@@ -526,10 +524,8 @@
           color: apptColor,
           notes: apptNotes,
           version: 1,
-          created_at: "",
-          updated_at: "",
         };
-        await AppointmentService.CreateAppointment(auth.token, newAppt);
+        await AppointmentService.CreateAppointment(auth.token, newAppt as unknown as Appointment);
       }
       showApptModal = false;
       await loadAppointments();
@@ -736,12 +732,7 @@
 
 <ConfirmModal
   bind:showModal={showConfirmArchivePatient}
-  title={patientToArchive
-    ? m.confirm_archive_patient({
-        firstName: patientToArchive.first_name,
-        lastName: patientToArchive.last_name,
-      })
-    : ""}
+  title={m.common_confirm()}
   message={patientToArchive
     ? m.confirm_archive_patient({
         firstName: patientToArchive.first_name,
@@ -753,7 +744,7 @@
 
 <ConfirmModal
   bind:showModal={showConfirmDeleteAppt}
-  title={m.confirm_delete_appointment()}
+  title={m.common_confirm()}
   message={m.confirm_delete_appointment()}
   onConfirm={executeDeleteAppt}
 />

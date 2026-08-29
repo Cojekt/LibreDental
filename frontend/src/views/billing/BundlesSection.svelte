@@ -102,22 +102,24 @@
       default_fee: Math.round((item.default_fee || 0) * 100),
     }));
 
-    const payload: TreatmentBundle = {
+    const payload: Omit<TreatmentBundle, "created_at" | "updated_at"> & { created_at?: string } = {
       id: isEditingBundle ? editingBundleId : `bundle_${Date.now()}`,
       shortname: sn,
       name: bundleName.trim(),
       description: bundleDescription,
       items: convertedItems,
       total_fee: Math.round(bundleTotalFee() * 100),
-      created_at: "",
-      updated_at: "",
     };
+
+    if (isEditingBundle && editingBundleCreatedAt) {
+      payload.created_at = editingBundleCreatedAt;
+    }
 
     try {
       if (isEditingBundle) {
-        await BillingService.UpdateBundle(payload);
+        await BillingService.UpdateBundle(payload as unknown as TreatmentBundle);
       } else {
-        await BillingService.CreateBundle(payload);
+        await BillingService.CreateBundle(payload as unknown as TreatmentBundle);
       }
       showBundleModal = false;
       await loadBundles();

@@ -361,7 +361,7 @@
     e.preventDefault();
     if (!selectedPatientId || !selectedToothNumber) return;
 
-    const conditionData: ToothCondition = {
+    const conditionData: Omit<ToothCondition, "created_at" | "updated_at"> = {
       id: isEditingCondition ? editingConditionId : `cond_${Date.now()}`,
       patient_id: selectedPatientId,
       tooth_number: selectedToothNumber,
@@ -370,12 +370,10 @@
       description: formDescription || "Tooth finding",
       status: formStatus,
       fee: Math.round(Number(formFee) * 100) || 0,
-      created_at: "",
-      updated_at: "",
     };
 
     try {
-      await ChartService.SaveToothCondition(auth.token, conditionData);
+      await ChartService.SaveToothCondition(auth.token, conditionData as unknown as ToothCondition);
       showConditionModal = false;
       await loadChart(selectedPatientId);
     } catch (err) {
@@ -394,15 +392,16 @@
   async function executeDeleteCondition() {
     if (!conditionToDelete) return;
     const id = conditionToDelete;
-    conditionToDelete = "";
     try {
       await ChartService.DeleteToothCondition(auth.token, id, selectedPatientId);
       if (editingConditionId === id) {
         showConditionModal = false;
       }
       await loadChart(selectedPatientId);
+      conditionToDelete = "";
     } catch (err) {
       console.error("Failed to delete condition:", err);
+      throw err;
     }
   }
 
@@ -572,7 +571,7 @@
 
 <ConfirmModal
   bind:showModal={showConfirmDeleteCondition}
-  title={m.confirm_delete_condition()}
+  title={m.common_confirm()}
   message={m.confirm_delete_condition()}
   onConfirm={executeDeleteCondition}
 />
