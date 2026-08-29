@@ -17,7 +17,7 @@ license: "MIT"
 release: "1"
 
 contents:
-  - src: "./bin/libredental"
+  - src: "./dist/libredental"
     dst: "/usr/local/bin/libredental"
   - src: "./build/appicon.png"
     dst: "/usr/share/icons/hicolor/128x128/apps/libredental.png"
