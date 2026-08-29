@@ -373,7 +373,7 @@
     };
 
     try {
-      await ChartService.SaveToothCondition(auth.token, conditionData as unknown as ToothCondition);
+      await ChartService.SaveToothCondition(auth.token, conditionData);
       showConditionModal = false;
       await loadChart(selectedPatientId);
     } catch (err) {

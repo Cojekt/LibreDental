@@ -42,6 +42,18 @@ type ToothCondition struct {
 	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
+// SaveToothConditionPayload represents the payload for saving a tooth condition, omitting timestamps.
+type SaveToothConditionPayload struct {
+	ID          string         `json:"id"`
+	PatientID   string         `json:"patient_id"`
+	ToothNumber int            `json:"tooth_number"`
+	Surfaces    []ToothSurface `json:"surfaces,omitempty"`
+	ADACode     string         `json:"ada_code,omitempty"`
+	Description string         `json:"description"`
+	Status      ToothStatus    `json:"status"`
+	Fee         int64          `json:"fee,omitempty"`
+}
+
 // DentalChart represents a patient's full dental chart.
 type DentalChart struct {
 	PatientID  string           `json:"patient_id"`

@@ -53,7 +53,7 @@ func TestChartService(t *testing.T) {
 		t.Fatalf("Failed to create patient: %v", err)
 	}
 
-	cond, err := chartService.SaveToothCondition(token, &domain.ToothCondition{
+	cond, err := chartService.SaveToothCondition(token, &domain.SaveToothConditionPayload{
 		PatientID:   pat.ID,
 		ToothNumber: 14,
 		Surfaces:    []domain.ToothSurface{domain.SurfaceOcclusal},
