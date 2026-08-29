@@ -39,16 +39,27 @@ func (s *ChartService) GetPatientChart(token string, patientID string) (*domain.
 	return chart, nil
 }
 
-func (s *ChartService) SaveToothCondition(token string, c *domain.ToothCondition) (*domain.ToothCondition, error) {
+func (s *ChartService) SaveToothCondition(token string, payload *domain.SaveToothConditionPayload) (*domain.ToothCondition, error) {
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
-	if c == nil {
-		return nil, fmt.Errorf("%w: tooth condition cannot be nil", storage.ErrInvalidInput)
+	if payload == nil {
+		return nil, fmt.Errorf("%w: tooth condition payload cannot be nil", storage.ErrInvalidInput)
 	}
 
-	if c.ID == "" {
-		c.ID = fmt.Sprintf("cond_%d", time.Now().UnixNano())
+	if payload.ID == "" {
+		payload.ID = fmt.Sprintf("cond_%d", time.Now().UnixNano())
+	}
+
+	c := &domain.ToothCondition{
+		ID:          payload.ID,
+		PatientID:   payload.PatientID,
+		ToothNumber: payload.ToothNumber,
+		Surfaces:    payload.Surfaces,
+		ADACode:     payload.ADACode,
+		Description: payload.Description,
+		Status:      payload.Status,
+		Fee:         payload.Fee,
 	}
 
 	isInsert, err := s.chartRepo.SaveCondition(context.Background(), c)

@@ -4,7 +4,7 @@
   import { m } from "../paraglide/messages.js";
   import { BillingService } from "@bindings/services/index.js";
   import type { Payment } from "@bindings/domain/index.js";
-  import { getTodayDateString } from "$lib/date.js";
+  import { getTodayDateString, getLocalDateString } from "$lib/date.js";
 
   let payments = $state<Payment[]>([]);
   let loading = $state(false);
@@ -14,7 +14,7 @@
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
 
-  let startDate = $state(thirtyDaysAgo.toISOString().split("T")[0]);
+  let startDate = $state(getLocalDateString(thirtyDaysAgo));
   let endDate = $state(getTodayDateString());
 
   let totalRevenue = $derived(payments.reduce((sum, p) => sum + (p.amount || 0), 0));

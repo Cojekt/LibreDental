@@ -16,6 +16,7 @@
   import DocumentsSection from "./clinic/DocumentsSection.svelte";
   import IntegrationsSection from "./clinic/IntegrationsSection.svelte";
   import { m } from "../paraglide/messages.js";
+  import ConfirmModal from "../components/ui/ConfirmModal.svelte";
 
   let {
     practiceConfig = $bindable(),
@@ -289,7 +290,9 @@
     profileMessage = null;
 
     try {
-      const updatedConfig: PracticeConfig = {
+      const updatedConfig: Omit<PracticeConfig, "created_at" | "updated_at"> & {
+        created_at?: string;
+      } = {
         id: 1,
         clinic_name: clinicName,
         tagline: tagline,
@@ -308,11 +311,15 @@
         tooth_system: toothSystem as any,
         date_format: dateFormat,
         business_hours: businessHours,
-        created_at: practiceConfig?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
 
-      const res = await PracticeConfigService.UpdatePracticeConfig(updatedConfig);
+      if (practiceConfig?.created_at) {
+        updatedConfig.created_at = practiceConfig.created_at;
+      }
+
+      const res = await PracticeConfigService.UpdatePracticeConfig(
+        updatedConfig as unknown as PracticeConfig
+      );
       if (res) {
         practiceConfig = res;
         setProfileMessage("Clinic settings saved!", "success");
@@ -365,7 +372,7 @@
     if (!provName) return;
 
     try {
-      const p: Provider = {
+      const p: Omit<Provider, "created_at" | "updated_at"> = {
         id: provId,
         name: provName,
         role: provRole as any,
@@ -377,11 +384,9 @@
         pin: provPin,
         is_active: provIsActive,
         hourly_rate: Math.round(provHourlyRate * 100),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
 
-      await PracticeConfigService.SaveProvider(p);
+      await PracticeConfigService.SaveProvider(p as unknown as Provider);
       showProviderModal = false;
       await onrefresh();
     } catch (err) {
@@ -389,14 +394,23 @@
     }
   }
 
+  let showConfirmDeleteProvider = $state(false);
+  let providerToDelete = $state("");
+
   async function handleDeleteProvider(id: string) {
-    if (confirm(m.confirm_delete_provider())) {
-      try {
-        await PracticeConfigService.DeleteProvider(id);
-        await onrefresh();
-      } catch (err) {
-        console.error("Failed to delete provider:", err);
-      }
+    providerToDelete = id;
+    showConfirmDeleteProvider = true;
+  }
+
+  async function executeDeleteProvider() {
+    if (!providerToDelete) return;
+    try {
+      await PracticeConfigService.DeleteProvider(providerToDelete);
+      await onrefresh();
+      providerToDelete = "";
+    } catch (err) {
+      console.error("Failed to delete provider:", err);
+      throw err;
     }
   }
 
@@ -426,17 +440,15 @@
     if (!opName) return;
 
     try {
-      const op: Operatory = {
+      const op: Omit<Operatory, "created_at" | "updated_at"> = {
         id: opId,
         name: opName,
         room_code: opRoomCode,
         type: opType as any,
         is_active: opIsActive,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
 
-      await PracticeConfigService.SaveOperatory(op);
+      await PracticeConfigService.SaveOperatory(op as unknown as Operatory);
       showOperatoryModal = false;
       await onrefresh();
     } catch (err) {
@@ -444,14 +456,23 @@
     }
   }
 
+  let showConfirmDeleteOperatory = $state(false);
+  let operatoryToDelete = $state("");
+
   async function handleDeleteOperatory(id: string) {
-    if (confirm(m.confirm_delete_operatory())) {
-      try {
-        await PracticeConfigService.DeleteOperatory(id);
-        await onrefresh();
-      } catch (err) {
-        console.error("Failed to delete operatory:", err);
-      }
+    operatoryToDelete = id;
+    showConfirmDeleteOperatory = true;
+  }
+
+  async function executeDeleteOperatory() {
+    if (!operatoryToDelete) return;
+    try {
+      await PracticeConfigService.DeleteOperatory(operatoryToDelete);
+      await onrefresh();
+      operatoryToDelete = "";
+    } catch (err) {
+      console.error("Failed to delete operatory:", err);
+      throw err;
     }
   }
 
@@ -672,3 +693,17 @@
     {/if}
   </div>
 </div>
+
+<ConfirmModal
+  bind:showModal={showConfirmDeleteProvider}
+  title={m.common_confirm()}
+  message={m.confirm_delete_provider()}
+  onConfirm={executeDeleteProvider}
+/>
+
+<ConfirmModal
+  bind:showModal={showConfirmDeleteOperatory}
+  title={m.common_confirm()}
+  message={m.confirm_delete_operatory()}
+  onConfirm={executeDeleteOperatory}
+/>

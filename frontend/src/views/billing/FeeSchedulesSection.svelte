@@ -14,6 +14,7 @@
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { formatCurrency } from "$lib/currency.js";
 
   let { providers = [], countryMeta = null } = $props<{
     providers: Provider[];
@@ -30,15 +31,6 @@
   let editingFeeCode = $state("");
   let editingFeeCustom = $state<number>(0);
   let editingFeeProviderId = $state("");
-
-  function fmt(n: number) {
-    const curr = countryMeta?.default_currency || "USD";
-    try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
-    } catch {
-      return `${(n / 100).toFixed(2)}`;
-    }
-  }
 
   let requestGenCodes = 0;
   export async function loadProcedureCodes() {
@@ -88,16 +80,15 @@
     e.preventDefault();
     if (!editingFeeCode || editingFeeCustom < 0) return;
     const cc = (countryMeta?.code || "US") as CountryCode;
-    const payload: FeeSchedule = {
+    const payload: Omit<FeeSchedule, "updated_at"> = {
       id: `fee_${Date.now()}`,
       country_code: cc,
       code: editingFeeCode,
       provider_id: editingFeeProviderId,
       custom_fee: Math.round(Number(editingFeeCustom) * 100),
-      updated_at: new Date().toISOString(),
     };
     try {
-      await BillingService.SaveFeeSchedule(payload);
+      await BillingService.SaveFeeSchedule(payload as unknown as FeeSchedule);
       showFeeModal = false;
       await loadProcedureCodes();
       await loadFeeSchedules();
@@ -166,9 +157,14 @@
               <td class="px-4 py-3 font-mono font-bold text-sky-400">{p.code}</td>
               <td class="px-4 py-3"><StatusBadge variant="draft" label={p.category} /></td>
               <td class="px-4 py-3 text-slate-200 font-medium">{p.description}</td>
-              <td class="px-4 py-3 text-slate-400 font-mono">{fmt(p.default_fee)}</td>
+              <td class="px-4 py-3 text-slate-400 font-mono"
+                >{formatCurrency(p.default_fee, countryMeta?.default_currency || "USD")}</td
+              >
               <td class="px-4 py-3 font-bold text-slate-100 font-mono">
-                {fmt(p.effective_fee || p.default_fee)}
+                {formatCurrency(
+                  p.effective_fee || p.default_fee,
+                  countryMeta?.default_currency || "USD"
+                )}
                 {#if hasCustom}
                   <span
                     class="ml-2 text-[10px] text-amber-400 font-semibold px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-800"

@@ -16,6 +16,8 @@
   import PatientXRaysModal from "./charting/PatientXRaysModal.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { formatCurrency } from "$lib/currency.js";
+  import ConfirmModal from "../components/ui/ConfirmModal.svelte";
 
   let { patients = [], countryMeta = null } = $props<{
     patients: Patient[];
@@ -359,7 +361,7 @@
     e.preventDefault();
     if (!selectedPatientId || !selectedToothNumber) return;
 
-    const conditionData: ToothCondition = {
+    const conditionData: Omit<ToothCondition, "created_at" | "updated_at"> = {
       id: isEditingCondition ? editingConditionId : `cond_${Date.now()}`,
       patient_id: selectedPatientId,
       tooth_number: selectedToothNumber,
@@ -368,8 +370,6 @@
       description: formDescription || "Tooth finding",
       status: formStatus,
       fee: Math.round(Number(formFee) * 100) || 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     try {
@@ -381,32 +381,31 @@
     }
   }
 
-  async function handleDeleteCondition(id: string) {
-    if (confirm(m.confirm_delete_condition())) {
-      try {
-        await ChartService.DeleteToothCondition(auth.token, id, selectedPatientId);
-        if (editingConditionId === id) {
-          showConditionModal = false;
-        }
-        await loadChart(selectedPatientId);
-      } catch (err) {
-        console.error("Failed to delete condition:", err);
+  let showConfirmDeleteCondition = $state(false);
+  let conditionToDelete = $state("");
+
+  function promptDeleteCondition(id: string) {
+    conditionToDelete = id;
+    showConfirmDeleteCondition = true;
+  }
+
+  async function executeDeleteCondition() {
+    if (!conditionToDelete) return;
+    const id = conditionToDelete;
+    try {
+      await ChartService.DeleteToothCondition(auth.token, id, selectedPatientId);
+      if (editingConditionId === id) {
+        showConditionModal = false;
       }
+      await loadChart(selectedPatientId);
+      conditionToDelete = "";
+    } catch (err) {
+      console.error("Failed to delete condition:", err);
+      throw err;
     }
   }
 
-  function formatCurrency(amount: number): string {
-    const currency = countryMeta?.default_currency || "";
-    if (!currency) return (amount / 100).toFixed(2);
-    try {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: currency,
-      }).format(amount / 100);
-    } catch {
-      return `${(amount / 100).toFixed(2)}`;
-    }
-  }
+  // formatCurrency imported from $lib/currency.js
 </script>
 
 <div class="flex flex-col gap-6 w-full" data-locale={getLocaleVersion()}>
@@ -539,9 +538,9 @@
       bind:claimNoticeMsg
       {getToothLabel}
       {openEditCondition}
-      {handleDeleteCondition}
+      handleDeleteCondition={promptDeleteCondition}
       {handleGenerateClaimFromChart}
-      {formatCurrency}
+      formatCurrency={(n: number) => formatCurrency(n, countryMeta?.default_currency)}
     />
   {/if}
 </div>
@@ -564,8 +563,15 @@
   {toggleSurface}
   {applyPreset}
   {handleSaveCondition}
-  {handleDeleteCondition}
-  {formatCurrency}
+  handleDeleteCondition={promptDeleteCondition}
+  formatCurrency={(n: number) => formatCurrency(n, countryMeta?.default_currency)}
 />
 
 <PatientXRaysModal bind:showModal={showXRaysModal} patientId={selectedPatientId} />
+
+<ConfirmModal
+  bind:showModal={showConfirmDeleteCondition}
+  title={m.common_confirm()}
+  message={m.confirm_delete_condition()}
+  onConfirm={executeDeleteCondition}
+/>
