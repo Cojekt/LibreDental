@@ -6,6 +6,7 @@ vars:
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
   VITE_PORT: "{{.WAILS_VITE_PORT | default 9245}}"
   GOOS: "{{.GOOS | default OS}}"
+  ROOT_DIR: "{{.USER_WORKING_DIR}}"
 
 includes:
   common:
