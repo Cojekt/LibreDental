@@ -30,15 +30,17 @@ type DocumentRepository interface {
 
 // DocumentService handles business logic and file storage for documents.
 type DocumentService struct {
-	repo   DocumentRepository
-	appDir string // Base application data directory
+	repo         DocumentRepository
+	appDir       string // Base application data directory
+	auditService *AuditService
 }
 
 // NewDocumentService creates a new DocumentService.
-func NewDocumentService(repo DocumentRepository, appDir string) *DocumentService {
+func NewDocumentService(repo DocumentRepository, appDir string, auditService *AuditService) *DocumentService {
 	return &DocumentService{
-		repo:   repo,
-		appDir: appDir,
+		repo:         repo,
+		appDir:       appDir,
+		auditService: auditService,
 	}
 }
 
@@ -59,7 +61,11 @@ func (s *DocumentService) getClinicDocumentsPath() string {
 
 // SaveDocumentBase64 saves a document from a base64 encoded string.
 // If patientID is empty, it saves as a clinic document.
-func (s *DocumentService) SaveDocumentBase64(patientID, name, description, docType, contentType, base64Data string) (*domain.Document, error) {
+func (s *DocumentService) SaveDocumentBase64(token string, patientID, name, description, docType, contentType, base64Data string) (*domain.Document, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	// Decode base64
 	// Allow frontend to pass "data:image/png;base64,iVBORw0KGgo..." or just raw base64
 	b64str := base64Data
@@ -73,7 +79,11 @@ func (s *DocumentService) SaveDocumentBase64(patientID, name, description, docTy
 		return nil, fmt.Errorf("failed to decode base64 data: %w", err)
 	}
 
-	return s.saveDocumentBytes(patientID, name, description, docType, contentType, data)
+	doc, err := s.saveDocumentBytes(patientID, name, description, docType, contentType, data)
+	if err == nil && doc.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, *doc.PatientID, "document", "Created document")
+	}
+	return doc, err
 }
 
 func cleanPatientID(patientID string) (string, error) {
@@ -179,7 +189,11 @@ func (s *DocumentService) saveDocumentBytes(patientID, name, description, docTyp
 }
 
 // GetDocumentBase64 retrieves a document and returns its contents as a base64 encoded string.
-func (s *DocumentService) GetDocumentBase64(id string) (string, error) {
+func (s *DocumentService) GetDocumentBase64(token string, id string) (string, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return "", ErrUnauthorized
+	}
+
 	doc, err := s.repo.GetByID(id)
 	if err != nil {
 		return "", err
@@ -198,12 +212,20 @@ func (s *DocumentService) GetDocumentBase64(id string) (string, error) {
 		return "", fmt.Errorf("failed to read document file: %w", err)
 	}
 
-	return base64.StdEncoding.EncodeToString(data), nil
+	b64 := base64.StdEncoding.EncodeToString(data)
+	if doc.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Viewed document")
+	}
+	return b64, nil
 }
 
 // GetDocumentImagesBase64 retrieves an image document and returns a slice of data URLs.
 // For DICOM files, it extracts all frames. For regular images, it returns a single data URL.
-func (s *DocumentService) GetDocumentImagesBase64(id string) ([]string, error) {
+func (s *DocumentService) GetDocumentImagesBase64(token string, id string) ([]string, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	doc, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -240,6 +262,9 @@ func (s *DocumentService) GetDocumentImagesBase64(id string) ([]string, error) {
 			return nil, fmt.Errorf("failed to parse DICOM frames: %w", err)
 		}
 
+		if doc.PatientID != nil {
+			_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Viewed DICOM images")
+		}
 		return dataURLs, nil
 	}
 
@@ -251,11 +276,18 @@ func (s *DocumentService) GetDocumentImagesBase64(id string) ([]string, error) {
 	}
 
 	dataURL := fmt.Sprintf("data:%s;base64,%s", contentType, b64)
+	if doc.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Viewed document image")
+	}
 	return []string{dataURL}, nil
 }
 
 // OpenDocument opens the document in the OS default application.
-func (s *DocumentService) OpenDocument(id string) error {
+func (s *DocumentService) OpenDocument(token string, id string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
+
 	doc, err := s.repo.GetByID(id)
 	if err != nil {
 		return err
@@ -321,11 +353,18 @@ func (s *DocumentService) OpenDocument(id string) error {
 		return fmt.Errorf("failed to open file: %w", err)
 	}
 
+	if doc.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Opened document")
+	}
 	return nil
 }
 
 // ExportDocumentToPath exports a document to a specific file path.
-func (s *DocumentService) ExportDocumentToPath(id string, destPath string) error {
+func (s *DocumentService) ExportDocumentToPath(token string, id string, destPath string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
+
 	doc, err := s.repo.GetByID(id)
 	if err != nil {
 		return err
@@ -349,21 +388,40 @@ func (s *DocumentService) ExportDocumentToPath(id string, destPath string) error
 		return fmt.Errorf("failed to write to destination file: %w", err)
 	}
 
+	if doc.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, *doc.PatientID, "document", "Exported document")
+	}
 	return nil
 }
 
 // ListPatientDocuments lists documents for a specific patient using a filter.
-func (s *DocumentService) ListPatientDocuments(filter domain.DocumentFilter) ([]domain.Document, error) {
-	return s.repo.ListByFilter(filter)
+func (s *DocumentService) ListPatientDocuments(token string, filter domain.DocumentFilter) ([]domain.Document, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
+	docs, err := s.repo.ListByFilter(filter)
+	if err == nil && filter.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *filter.PatientID, "document", "Listed patient documents")
+	}
+	return docs, err
 }
 
 // ListClinicDocuments lists clinic-wide documents.
-func (s *DocumentService) ListClinicDocuments() ([]domain.Document, error) {
+func (s *DocumentService) ListClinicDocuments(token string) ([]domain.Document, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	return s.repo.ListClinicDocuments()
 }
 
 // DeleteDocument deletes a document and its associated file.
-func (s *DocumentService) DeleteDocument(id string) error {
+func (s *DocumentService) DeleteDocument(token string, id string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
+
 	doc, err := s.repo.GetByID(id)
 	if err != nil {
 		return err
@@ -378,5 +436,8 @@ func (s *DocumentService) DeleteDocument(id string) error {
 		return fmt.Errorf("failed to remove document file: %w", err)
 	}
 
+	if doc.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, *doc.PatientID, "document", "Deleted document")
+	}
 	return nil
 }

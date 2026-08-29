@@ -1,13 +1,15 @@
 <script lang="ts">
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { auth } from "../stores/auth.svelte.js";
 
   let { activeTab = $bindable("clinic"), ontabchange } = $props<{
     activeTab?: string;
     ontabchange: (tab: string) => void;
   }>();
 
-  // Tabs are derived so labels re-evaluate when localeVersion changes (locale switch).
+  // Tabs are derived so labels re-evaluate when localeVersion changes (locale switch),
+  // and enabled state re-evaluates when auth.token changes.
   const tabs = $derived([
     {
       id: "clinic",
@@ -17,27 +19,27 @@
     {
       id: "patients",
       label: (getLocaleVersion(), m.nav_patients()),
-      enabled: true,
+      enabled: !!auth.token,
     },
     {
       id: "appointments",
       label: (getLocaleVersion(), m.nav_appointments()),
-      enabled: true,
+      enabled: !!auth.token,
     },
     {
       id: "charting",
       label: (getLocaleVersion(), m.nav_charting()),
-      enabled: true,
+      enabled: !!auth.token,
     },
     {
       id: "billing",
       label: (getLocaleVersion(), m.nav_billing()),
-      enabled: true,
+      enabled: !!auth.token,
     },
     {
       id: "audit",
       label: (getLocaleVersion(), m.nav_audit()),
-      enabled: true,
+      enabled: !!auth.token,
     },
   ]);
 </script>
@@ -63,7 +65,7 @@
       {:else}
         <div
           class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed opacity-50 hover:opacity-75 transition-opacity"
-          title={m.nav_billing_coming_soon()}
+          title={m.nav_requires_login()}
         >
           <span>{tab.label}</span>
         </div>

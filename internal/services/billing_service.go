@@ -13,14 +13,15 @@ import (
 
 // BillingService exposes billing operations to the Wails frontend.
 type BillingService struct {
-	claimRepo  storage.ClaimRepository
-	payRepo    storage.PaymentRepository
-	bundleRepo storage.TreatmentBundleRepository
-	procRepo   storage.ProcedureCodeRepository
-	feeRepo    storage.FeeScheduleRepository
-	chartRepo  storage.ChartRepository
-	secrets    *SecretsService
-	providers  map[string]domain.ClaimProvider
+	claimRepo    storage.ClaimRepository
+	payRepo      storage.PaymentRepository
+	bundleRepo   storage.TreatmentBundleRepository
+	procRepo     storage.ProcedureCodeRepository
+	feeRepo      storage.FeeScheduleRepository
+	chartRepo    storage.ChartRepository
+	secrets      *SecretsService
+	auditService *AuditService
+	providers    map[string]domain.ClaimProvider
 }
 
 func NewBillingService(
@@ -31,16 +32,18 @@ func NewBillingService(
 	feeRepo storage.FeeScheduleRepository,
 	chartRepo storage.ChartRepository,
 	secrets *SecretsService,
+	auditService *AuditService,
 ) *BillingService {
 	return &BillingService{
-		claimRepo:  claimRepo,
-		payRepo:    payRepo,
-		bundleRepo: bundleRepo,
-		procRepo:   procRepo,
-		feeRepo:    feeRepo,
-		chartRepo:  chartRepo,
-		secrets:    secrets,
-		providers:  make(map[string]domain.ClaimProvider),
+		claimRepo:    claimRepo,
+		payRepo:      payRepo,
+		bundleRepo:   bundleRepo,
+		procRepo:     procRepo,
+		feeRepo:      feeRepo,
+		chartRepo:    chartRepo,
+		secrets:      secrets,
+		auditService: auditService,
+		providers:    make(map[string]domain.ClaimProvider),
 	}
 }
 
@@ -88,7 +91,11 @@ func (s *BillingService) SetProviderConfig(providerName string, config map[strin
 // ─── Claims ──────────────────────────────────────────────────────────────────
 
 // CreateClaim creates a new insurance claim.
-func (s *BillingService) CreateClaim(c *domain.Claim) (*domain.Claim, error) {
+func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Claim, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	if c == nil {
 		return nil, fmt.Errorf("%w: claim cannot be nil", storage.ErrInvalidInput)
 	}
@@ -104,11 +111,18 @@ func (s *BillingService) CreateClaim(c *domain.Claim) (*domain.Claim, error) {
 	if err := s.claimRepo.Create(context.Background(), c); err != nil {
 		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, c.PatientID, "claim", "Created claim"); err != nil {
+		return nil, fmt.Errorf("claim created but failed to log audit: %w", err)
+	}
 	return c, nil
 }
 
 // GetClaim retrieves a claim by ID.
-func (s *BillingService) GetClaim(id string) (*domain.Claim, error) {
+func (s *BillingService) GetClaim(token string, id string) (*domain.Claim, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	if id == "" {
 		return nil, fmt.Errorf("%w: claim ID is required", storage.ErrInvalidInput)
 	}
@@ -116,20 +130,34 @@ func (s *BillingService) GetClaim(id string) (*domain.Claim, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get claim: %w", err)
 	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, c.PatientID, "claim", "Viewed claim")
 	return c, nil
 }
 
 // ListClaims returns all claims, optionally filtered by patient ID.
-func (s *BillingService) ListClaims(patientID string) ([]*domain.Claim, error) {
+func (s *BillingService) ListClaims(token string, patientID string) ([]*domain.Claim, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	claims, err := s.claimRepo.List(context.Background(), patientID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list claims: %w", err)
+	}
+	if patientID != "" {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, patientID, "claim", "Listed claims")
+	} else {
+		_ = s.auditService.LogAction(token, domain.AuditActionRead, "claim", "Listed all claims")
 	}
 	return claims, nil
 }
 
 // UpdateClaim updates an existing claim.
-func (s *BillingService) UpdateClaim(c *domain.Claim) (*domain.Claim, error) {
+func (s *BillingService) UpdateClaim(token string, c *domain.Claim) (*domain.Claim, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	if c == nil || c.ID == "" {
 		return nil, fmt.Errorf("%w: claim and ID are required", storage.ErrInvalidInput)
 	}
@@ -139,22 +167,46 @@ func (s *BillingService) UpdateClaim(c *domain.Claim) (*domain.Claim, error) {
 			c.LineItems[i].ID = fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i)
 		}
 	}
+	existing, err := s.claimRepo.GetByID(context.Background(), c.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing claim: %w", err)
+	}
 	if err := s.claimRepo.Update(context.Background(), c); err != nil {
 		return nil, fmt.Errorf("failed to update claim: %w", err)
+	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, c.PatientID, "claim", "Updated claim")
+	if existing.PatientID != c.PatientID {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, existing.PatientID, "claim", "Reassigned claim to another patient")
 	}
 	return c, nil
 }
 
 // DeleteClaim removes a claim by ID.
-func (s *BillingService) DeleteClaim(id string) error {
+func (s *BillingService) DeleteClaim(token string, id string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
+
 	if id == "" {
 		return fmt.Errorf("%w: claim ID is required", storage.ErrInvalidInput)
 	}
-	return s.claimRepo.Delete(context.Background(), id)
+	c, err := s.claimRepo.GetByID(context.Background(), id)
+	if err != nil {
+		return fmt.Errorf("failed to fetch claim: %w", err)
+	}
+	err = s.claimRepo.Delete(context.Background(), id)
+	if err == nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, c.PatientID, "claim", "Deleted claim")
+	}
+	return err
 }
 
 // SubmitClaimToProvider sends a claim to the specified external provider.
-func (s *BillingService) SubmitClaimToProvider(claimID string, providerName string) (*domain.ClaimSubmissionResult, error) {
+func (s *BillingService) SubmitClaimToProvider(token string, claimID string, providerName string) (*domain.ClaimSubmissionResult, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	if claimID == "" {
 		return nil, fmt.Errorf("%w: claim ID is required", storage.ErrInvalidInput)
 	}
@@ -167,7 +219,7 @@ func (s *BillingService) SubmitClaimToProvider(claimID string, providerName stri
 		return nil, fmt.Errorf("provider %q not registered", providerName)
 	}
 
-	claim, err := s.GetClaim(claimID)
+	claim, err := s.GetClaim(token, claimID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get claim for submission: %w", err)
 	}
@@ -195,24 +247,29 @@ func (s *BillingService) SubmitClaimToProvider(claimID string, providerName stri
 
 	// Update claim status based on result
 	if result.Status != "" {
-		latestClaim, err := s.GetClaim(claimID)
+		latestClaim, err := s.GetClaim(token, claimID)
 		if err != nil {
 			return result, fmt.Errorf("claim submitted but failed to fetch latest claim for status update: %w", err)
 		}
 		latestClaim.Status = result.Status
-		if _, err := s.UpdateClaim(latestClaim); err != nil {
+		if _, err := s.UpdateClaim(token, latestClaim); err != nil {
 			// Log this error in a real app, since the submission succeeded but local update failed
 			return result, fmt.Errorf("claim submitted but failed to update local status: %w", err)
 		}
 	}
 
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, claim.PatientID, "claim", "Submitted claim to provider")
 	return result, nil
 }
 
 // ─── Payments ────────────────────────────────────────────────────────────────
 
 // RecordPayment records a new payment from a patient or insurer.
-func (s *BillingService) RecordPayment(p *domain.Payment) (*domain.Payment, error) {
+func (s *BillingService) RecordPayment(token string, p *domain.Payment) (*domain.Payment, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	if p == nil {
 		return nil, fmt.Errorf("%w: payment cannot be nil", storage.ErrInvalidInput)
 	}
@@ -222,29 +279,55 @@ func (s *BillingService) RecordPayment(p *domain.Payment) (*domain.Payment, erro
 	if err := s.payRepo.Create(context.Background(), p); err != nil {
 		return nil, fmt.Errorf("failed to record payment: %w", err)
 	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.PatientID, "payment", "Recorded payment")
 	return p, nil
 }
 
 // ListPayments returns all payments for a patient.
-func (s *BillingService) ListPayments(patientID string) ([]*domain.Payment, error) {
+func (s *BillingService) ListPayments(token string, patientID string) ([]*domain.Payment, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	payments, err := s.payRepo.List(context.Background(), patientID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list payments: %w", err)
+	}
+	if patientID != "" {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, patientID, "payment", "Listed payments")
+	} else {
+		_ = s.auditService.LogAction(token, domain.AuditActionRead, "payment", "Listed all payments")
 	}
 	return payments, nil
 }
 
 // DeletePayment removes a payment record by ID.
-func (s *BillingService) DeletePayment(id string) error {
+func (s *BillingService) DeletePayment(token string, id string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
+
 	if id == "" {
 		return fmt.Errorf("%w: payment ID is required", storage.ErrInvalidInput)
 	}
-	return s.payRepo.Delete(context.Background(), id)
+	p, err := s.payRepo.GetByID(context.Background(), id)
+	if err != nil {
+		return fmt.Errorf("failed to fetch payment: %w", err)
+	}
+	err = s.payRepo.Delete(context.Background(), id)
+	if err == nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, p.PatientID, "payment", "Deleted payment")
+	}
+	return err
 }
 
 // GetPatientBalance computes a patient's outstanding balance:
 // total_billed (sum of all claim line item fees) minus total_paid (sum of all payments).
-func (s *BillingService) GetPatientBalance(patientID string) (*domain.PatientBalance, error) {
+func (s *BillingService) GetPatientBalance(token string, patientID string) (*domain.PatientBalance, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	if patientID == "" {
 		return nil, fmt.Errorf("%w: patient ID is required", storage.ErrInvalidInput)
 	}
@@ -259,6 +342,7 @@ func (s *BillingService) GetPatientBalance(patientID string) (*domain.PatientBal
 		return nil, fmt.Errorf("failed to compute total paid: %w", err)
 	}
 
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, patientID, "patient_balance", "Viewed patient balance")
 	return &domain.PatientBalance{
 		PatientID:   patientID,
 		TotalBilled: billed,
@@ -268,11 +352,19 @@ func (s *BillingService) GetPatientBalance(patientID string) (*domain.PatientBal
 }
 
 // GetRevenueStats returns payments for a specific date range, for analytics.
-func (s *BillingService) GetRevenueStats(startDate, endDate string) ([]*domain.Payment, error) {
+func (s *BillingService) GetRevenueStats(token string, startDate, endDate string) ([]*domain.Payment, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	if startDate == "" || endDate == "" {
 		return nil, fmt.Errorf("start and end date are required for revenue stats")
 	}
-	return s.payRepo.ListByDateRange(context.Background(), startDate, endDate)
+	stats, err := s.payRepo.ListByDateRange(context.Background(), startDate, endDate)
+	if err == nil {
+		_ = s.auditService.LogAction(token, domain.AuditActionRead, "revenue_stats", "Viewed revenue stats")
+	}
+	return stats, err
 }
 
 // ─── Treatment Bundles ────────────────────────────────────────────────────────
@@ -416,7 +508,11 @@ func (s *BillingService) DeleteFeeSchedule(id string) error {
 // ─── Dental Charting Integration ─────────────────────────────────────────────
 
 // CreateClaimFromChartConditions creates an insurance claim directly from charted tooth conditions.
-func (s *BillingService) CreateClaimFromChartConditions(patientID string, providerID string, conditionIDs []string) (*domain.Claim, error) {
+func (s *BillingService) CreateClaimFromChartConditions(token string, patientID string, providerID string, conditionIDs []string) (*domain.Claim, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
 	if patientID == "" {
 		return nil, fmt.Errorf("%w: patient ID is required", storage.ErrInvalidInput)
 	}
@@ -473,7 +569,7 @@ func (s *BillingService) CreateClaimFromChartConditions(patientID string, provid
 		// Mark tooth condition status as completed if it was treatment planned
 		if cond.Status == domain.ToothStatusTreatmentPlanned {
 			cond.Status = domain.ToothStatusCompleted
-			_ = s.chartRepo.SaveCondition(ctx, &cond)
+			_, _ = s.chartRepo.SaveCondition(ctx, &cond)
 		}
 	}
 
@@ -484,6 +580,6 @@ func (s *BillingService) CreateClaimFromChartConditions(patientID string, provid
 	if err := s.claimRepo.Create(ctx, claim); err != nil {
 		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}
-
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, claim.PatientID, "claim", "Created claim from chart")
 	return claim, nil
 }

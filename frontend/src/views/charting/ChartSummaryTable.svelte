@@ -26,10 +26,10 @@
     selectedPatient: Patient;
     currentChart: DentalChart | null;
     countryMeta?: CountryConfig | null;
-    currentToothSystem: ToothSystem;
+    currentToothSystem: any;
     isCreatingClaim: boolean;
     claimNoticeMsg: string;
-    getToothLabel: (num: number, system: ToothSystem) => string;
+    getToothLabel: (num: number, system: any) => string;
     openEditCondition: (cond: ToothCondition) => void;
     handleDeleteCondition: (id: string) => void;
     handleGenerateClaimFromChart: () => void;

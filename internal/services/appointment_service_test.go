@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -16,17 +17,35 @@ func TestAppointmentService(t *testing.T) {
 
 	db, err := sqlite.Open(dbPath)
 	if err != nil {
-		t.Fatalf("Failed to open db: %v", err)
+		t.Fatalf("Failed to open sqlite db: %v", err)
 	}
 	defer db.Close()
 
+	auditDbPath := filepath.Join(tempDir, "test_audit_service.db")
+	auditDb, err := sqlite.OpenAudit(auditDbPath)
+	if err != nil {
+		t.Fatalf("Failed to open sqlite audit db: %v", err)
+	}
+	defer auditDb.Close()
+
+	auditRepo := sqlite.NewAuditRepository(auditDb)
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "test_user", Name: "Test User", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditService := services.NewAuditService(auditRepo, configRepo)
+	token, err := auditService.CreateSession("test_user", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
 	patientRepo := sqlite.NewPatientRepository(db)
-	patientService := services.NewPatientService(patientRepo)
+	patientService := services.NewPatientService(patientRepo, auditService)
 
-	apptRepo := sqlite.NewAppointmentRepository(db)
-	service := services.NewAppointmentService(apptRepo)
+	appointmentRepo := sqlite.NewAppointmentRepository(db)
+	service := services.NewAppointmentService(appointmentRepo, auditService)
 
-	p, err := patientService.CreatePatient(&domain.Patient{
+	p, err := patientService.CreatePatient(token, &domain.Patient{
 		ID:        "pat_001",
 		FirstName: "Alice",
 		LastName:  "Smith",
@@ -38,7 +57,7 @@ func TestAppointmentService(t *testing.T) {
 	start := time.Date(2026, 8, 3, 10, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 8, 3, 11, 0, 0, 0, time.UTC)
 
-	appt, err := service.CreateAppointment(&domain.Appointment{
+	appt, err := service.CreateAppointment(token, &domain.Appointment{
 		PatientID:   p.ID,
 		ProviderID:  "prov_1",
 		OperatoryID: "chair_1",
@@ -55,7 +74,7 @@ func TestAppointmentService(t *testing.T) {
 	}
 
 	// Update status
-	updated, err := service.UpdateAppointmentStatus(appt.ID, string(domain.AppointmentStatusConfirmed))
+	updated, err := service.UpdateAppointmentStatus(token, appt.ID, string(domain.AppointmentStatusConfirmed))
 	if err != nil {
 		t.Fatalf("Failed to update status: %v", err)
 	}
@@ -64,7 +83,7 @@ func TestAppointmentService(t *testing.T) {
 	}
 
 	// List appointments
-	list, err := service.ListAppointments(domain.AppointmentFilter{
+	list, err := service.ListAppointments(token, domain.AppointmentFilter{
 		PatientID: p.ID,
 	})
 	if err != nil {

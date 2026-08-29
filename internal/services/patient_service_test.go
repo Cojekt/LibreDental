@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,8 +21,26 @@ func TestPatientService(t *testing.T) {
 	}
 	defer db.Close()
 
+	auditDbPath := filepath.Join(tempDir, "test_audit_service.db")
+	auditDb, err := sqlite.OpenAudit(auditDbPath)
+	if err != nil {
+		t.Fatalf("Failed to open sqlite audit db: %v", err)
+	}
+	defer auditDb.Close()
+
+	auditRepo := sqlite.NewAuditRepository(auditDb)
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "test_user", Name: "Test User", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditService := services.NewAuditService(auditRepo, configRepo)
+	token, err := auditService.CreateSession("test_user", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
 	patientRepo := sqlite.NewPatientRepository(db)
-	service := services.NewPatientService(patientRepo)
+	service := services.NewPatientService(patientRepo, auditService)
 
 	// 1. Create Patient
 	newPatient := &domain.Patient{
@@ -34,7 +53,7 @@ func TestPatientService(t *testing.T) {
 		Status:      domain.StatusActive,
 	}
 
-	created, err := service.CreatePatient(newPatient)
+	created, err := service.CreatePatient(token, newPatient)
 	if err != nil {
 		t.Fatalf("Failed to create patient: %v", err)
 	}
@@ -43,7 +62,7 @@ func TestPatientService(t *testing.T) {
 	}
 
 	// 2. Get Patient
-	fetched, err := service.GetPatient("pat_101")
+	fetched, err := service.GetPatient(token, "pat_101")
 	if err != nil {
 		t.Fatalf("Failed to get patient: %v", err)
 	}
@@ -52,7 +71,7 @@ func TestPatientService(t *testing.T) {
 	}
 
 	// 3. List Patients
-	list, err := service.ListPatients("Alice", string(domain.StatusActive))
+	list, err := service.ListPatients(token, "Alice", string(domain.StatusActive))
 	if err != nil {
 		t.Fatalf("Failed to list patients: %v", err)
 	}
@@ -61,7 +80,7 @@ func TestPatientService(t *testing.T) {
 	}
 
 	// Empty query list
-	all, err := service.ListPatients("", "")
+	all, err := service.ListPatients(token, "", "")
 	if err != nil {
 		t.Fatalf("Failed to list all patients: %v", err)
 	}
@@ -71,7 +90,7 @@ func TestPatientService(t *testing.T) {
 
 	// 4. Update Patient
 	fetched.LastName = "Johnson"
-	updated, err := service.UpdatePatient(fetched)
+	updated, err := service.UpdatePatient(token, fetched)
 	if err != nil {
 		t.Fatalf("Failed to update patient: %v", err)
 	}
@@ -80,12 +99,12 @@ func TestPatientService(t *testing.T) {
 	}
 
 	// 5. Archive Patient
-	err = service.ArchivePatient("pat_101")
+	err = service.ArchivePatient(token, "pat_101")
 	if err != nil {
 		t.Fatalf("Failed to archive patient: %v", err)
 	}
 
-	archived, err := service.GetPatient("pat_101")
+	archived, err := service.GetPatient(token, "pat_101")
 	if err != nil {
 		t.Fatalf("Failed to get archived patient: %v", err)
 	}
@@ -94,7 +113,7 @@ func TestPatientService(t *testing.T) {
 	}
 
 	// Archive nonexistent patient returns error
-	err = service.ArchivePatient("non_existent_id")
+	err = service.ArchivePatient(token, "non_existent_id")
 	if err == nil {
 		t.Errorf("Expected error archiving non-existent patient, got nil")
 	}

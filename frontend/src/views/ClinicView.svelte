@@ -368,7 +368,7 @@
       const p: Provider = {
         id: provId,
         name: provName,
-        role: provRole as ProviderRole,
+        role: provRole as any,
         specialty: provSpecialty,
         license_number: provLicense,
         email: provEmail,
@@ -430,7 +430,7 @@
         id: opId,
         name: opName,
         room_code: opRoomCode,
-        type: opType as OperatoryType,
+        type: opType as any,
         is_active: opIsActive,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

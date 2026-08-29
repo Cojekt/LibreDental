@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,16 +13,57 @@ import (
 
 func TestAuditService(t *testing.T) {
 	tempDir := t.TempDir()
-	dbPath := filepath.Join(tempDir, "test_audit_service.db")
+	mainDbPath := filepath.Join(tempDir, "main.db")
+	auditDbPath := filepath.Join(tempDir, "audit.db")
 
-	auditDb, err := sqlite.OpenAudit(dbPath)
+	auditDb, err := sqlite.OpenAudit(auditDbPath)
 	if err != nil {
-		t.Fatalf("Failed to open sqlite audit db: %v", err)
+		t.Fatalf("Failed to open audit sqlite db: %v", err)
 	}
 	defer auditDb.Close()
 
+	mainDb, err := sqlite.Open(mainDbPath)
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer mainDb.Close()
+
 	auditRepo := sqlite.NewAuditRepository(auditDb)
-	service := services.NewAuditService(auditRepo)
+	configRepo := sqlite.NewPracticeConfigRepository(mainDb)
+
+	ctx := context.Background()
+	err = configRepo.SaveProvider(ctx, &domain.Provider{
+		ID:       "prov_1",
+		Name:     "Test Prov",
+		Pin:      "1234",
+		IsActive: true,
+	})
+	if err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+
+	service := services.NewAuditService(auditRepo, configRepo)
+
+	// Session Tests
+	token, err := service.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
+	user := service.GetSessionUser(token)
+	if user == nil || user.ID != "prov_1" {
+		t.Fatalf("Failed to get session user")
+	}
+
+	_, err = service.CreateSession("prov_1", "9999")
+	if err == nil {
+		t.Fatalf("Expected error for incorrect PIN")
+	}
+
+	service.DestroySession(token)
+	if service.GetSessionUser(token) != nil {
+		t.Fatalf("Expected session to be destroyed")
+	}
 
 	// 1. Log an Event
 	entry := &domain.AuditLogEntry{

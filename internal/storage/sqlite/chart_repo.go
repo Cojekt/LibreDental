@@ -82,9 +82,9 @@ func (r *ChartRepository) GetChart(ctx context.Context, patientID string) (*doma
 	}, nil
 }
 
-func (r *ChartRepository) SaveCondition(ctx context.Context, c *domain.ToothCondition) error {
+func (r *ChartRepository) SaveCondition(ctx context.Context, c *domain.ToothCondition) (bool, error) {
 	if c.ID == "" || c.PatientID == "" || c.ToothNumber <= 0 {
-		return fmt.Errorf("%w: ID, PatientID, and valid ToothNumber are required", storage.ErrInvalidInput)
+		return false, fmt.Errorf("%w: ID, PatientID, and valid ToothNumber are required", storage.ErrInvalidInput)
 	}
 
 	surfacesJSON, err := json.Marshal(c.Surfaces)
@@ -102,6 +102,18 @@ func (r *ChartRepository) SaveCondition(ctx context.Context, c *domain.ToothCond
 		c.Status = domain.ToothStatusExisting
 	}
 
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	var exists bool
+	err = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM dental_conditions WHERE id = ?)", c.ID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check existence: %w", err)
+	}
+
 	query := `
 	INSERT INTO dental_conditions (
 		id, patient_id, tooth_number, surfaces, ada_code, description, status, fee, created_at, updated_at
@@ -115,17 +127,21 @@ func (r *ChartRepository) SaveCondition(ctx context.Context, c *domain.ToothCond
 		fee = excluded.fee,
 		updated_at = excluded.updated_at`
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err = tx.ExecContext(ctx, query,
 		c.ID, c.PatientID, c.ToothNumber, string(surfacesJSON),
 		c.ADACode, c.Description, string(c.Status), c.Fee,
 		c.CreatedAt, c.UpdatedAt,
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to save tooth condition: %w", err)
+		return false, fmt.Errorf("failed to save tooth condition: %w", err)
 	}
 
-	return nil
+	if err := tx.Commit(); err != nil {
+		return false, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return !exists, nil
 }
 
 func (r *ChartRepository) DeleteCondition(ctx context.Context, id string) error {

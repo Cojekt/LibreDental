@@ -9,14 +9,18 @@ import (
 )
 
 type PatientService struct {
-	repo storage.PatientRepository
+	repo         storage.PatientRepository
+	auditService *AuditService
 }
 
-func NewPatientService(repo storage.PatientRepository) *PatientService {
-	return &PatientService{repo: repo}
+func NewPatientService(repo storage.PatientRepository, auditService *AuditService) *PatientService {
+	return &PatientService{repo: repo, auditService: auditService}
 }
 
-func (s *PatientService) ListPatients(query string, status string) ([]*domain.Patient, error) {
+func (s *PatientService) ListPatients(token string, query string, status string) ([]*domain.Patient, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	patients, _, err := s.repo.List(context.Background(), domain.PatientFilter{Query: query, Status: status})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list patients: %w", err)
@@ -24,39 +28,64 @@ func (s *PatientService) ListPatients(query string, status string) ([]*domain.Pa
 	if patients == nil {
 		patients = []*domain.Patient{}
 	}
+	_ = s.auditService.LogAction(token, domain.AuditActionRead, "patient_demographics", "Listed patients")
 	return patients, nil
 }
 
-func (s *PatientService) GetPatient(id string) (*domain.Patient, error) {
+func (s *PatientService) GetPatient(token string, id string) (*domain.Patient, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	p, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get patient: %w", err)
 	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, p.ID, "patient_demographics", "Viewed patient record")
 	return p, nil
 }
 
-func (s *PatientService) CreatePatient(p *domain.Patient) (*domain.Patient, error) {
+func (s *PatientService) CreatePatient(token string, p *domain.Patient) (*domain.Patient, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	err := s.repo.Create(context.Background(), p)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create patient: %w", err)
 	}
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", "Created new patient record"); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
 	return p, nil
 }
 
-func (s *PatientService) UpdatePatient(p *domain.Patient) (*domain.Patient, error) {
+func (s *PatientService) UpdatePatient(token string, p *domain.Patient) (*domain.Patient, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	err := s.repo.Update(context.Background(), p)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update patient: %w", err)
 	}
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Updated patient record"); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
 	return p, nil
 }
 
-func (s *PatientService) ArchivePatient(id string) error {
-	p, err := s.GetPatient(id)
+func (s *PatientService) ArchivePatient(token string, id string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
+	p, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get patient: %w", err)
 	}
 	p.Status = domain.StatusArchived
-	_, err = s.UpdatePatient(p)
+	err = s.repo.Update(context.Background(), p)
+	if err == nil {
+		if auditErr := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Archived patient record"); auditErr != nil {
+			fmt.Printf("Warning: failed to log audit action: %v\n", auditErr)
+		}
+	}
 	return err
 }

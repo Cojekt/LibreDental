@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { auth } from "../../stores/auth.svelte.js";
   import { DocumentService, SystemSettingsService } from "@bindings/services/index.js";
   import { DocumentType, type Document } from "@bindings/domain/models.js";
   import { Dialogs } from "@wailsio/runtime";
@@ -27,18 +27,35 @@
   let uploadError = $state("");
 
   async function loadDocuments() {
+    const currentToken = auth.token;
+    if (!currentToken) {
+      isLoading = false;
+      return;
+    }
     isLoading = true;
     try {
-      documents = (await DocumentService.ListClinicDocuments()) || [];
+      const result = await DocumentService.ListClinicDocuments(currentToken);
+      if (auth.token === currentToken) {
+        documents = result || [];
+      }
     } catch (err) {
-      console.error("Failed to load clinic documents:", err);
+      if (auth.token === currentToken) {
+        console.error("Failed to load clinic documents:", err);
+      }
     } finally {
-      isLoading = false;
+      if (auth.token === currentToken) {
+        isLoading = false;
+      }
     }
   }
 
-  onMount(() => {
-    loadDocuments();
+  $effect(() => {
+    if (auth.token) {
+      loadDocuments();
+    } else {
+      documents = [];
+      isLoading = false;
+    }
   });
 
   openUploadModal = () => {
@@ -88,6 +105,7 @@
           }
 
           await DocumentService.SaveDocumentBase64(
+            auth.token,
             "", // empty for clinic document
             docName,
             docDesc,
@@ -117,7 +135,7 @@
   async function handleDelete(id: string) {
     if (confirm(m.doc_confirm_delete())) {
       try {
-        await DocumentService.DeleteDocument(id);
+        await DocumentService.DeleteDocument(auth.token, id);
         loadDocuments();
       } catch (err) {
         console.error("Failed to delete document:", err);
@@ -126,7 +144,7 @@
   }
 
   async function downloadAndCreateObjectURL(doc: Document): Promise<string> {
-    const base64 = await DocumentService.GetDocumentBase64(doc.id);
+    const base64 = await DocumentService.GetDocumentBase64(auth.token, doc.id);
     if (!base64) {
       throw new Error("Empty document");
     }
@@ -148,7 +166,7 @@
         if (win && !win.closed) {
           win.close();
         }
-        await DocumentService.OpenDocument(doc.id);
+        await DocumentService.OpenDocument(auth.token, doc.id);
       } else {
         const url = await downloadAndCreateObjectURL(doc);
         if (win && !win.closed) {
@@ -185,7 +203,7 @@
           Title: m.doc_export_title(),
         });
         if (path) {
-          await DocumentService.ExportDocumentToPath(doc.id, path);
+          await DocumentService.ExportDocumentToPath(auth.token, doc.id, path);
           exportSuccessMsg = m.doc_export_success({ path });
           setTimeout(() => {
             exportSuccessMsg = "";

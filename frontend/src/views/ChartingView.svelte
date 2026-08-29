@@ -8,6 +8,7 @@
   } from "@bindings/domain/models.js";
   import { ToothSystem, ToothSurface, ToothStatus } from "@bindings/domain/models.js";
   import { ChartService, BillingService } from "@bindings/services/index.js";
+  import { auth } from "../stores/auth.svelte.js";
   import ViewHeader from "../components/ui/ViewHeader.svelte";
   import OdontogramChart from "./charting/OdontogramChart.svelte";
   import ToothConditionModal from "./charting/ToothConditionModal.svelte";
@@ -240,7 +241,12 @@
     claimNoticeMsg = "";
     try {
       const ids = billable.map((c) => c.id);
-      const claim = await BillingService.CreateClaimFromChartConditions(selectedPatientId, "", ids);
+      const claim = await BillingService.CreateClaimFromChartConditions(
+        auth.token,
+        selectedPatientId,
+        "",
+        ids
+      );
       if (claim) {
         claimNoticeMsg = `Claim created successfully! (${claim.line_items?.length || 0} line items billed)`;
         await loadChart(selectedPatientId);
@@ -263,7 +269,7 @@
     }
     loadingChart = true;
     try {
-      const chart = await ChartService.GetPatientChart(patientId);
+      const chart = await ChartService.GetPatientChart(auth.token, patientId);
       if (gen === requestGenChart) {
         currentChart = chart || {
           patient_id: patientId,
@@ -271,10 +277,17 @@
           updated_at: "",
         };
       }
-    } catch (e) {
+    } catch (e: any) {
       if (gen === requestGenChart) {
         console.error("Failed to load patient chart:", e);
-        currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
+        if (
+          (e && typeof e.message === "string" && e.message.includes("unauthorized")) ||
+          (typeof e === "string" && e.includes("unauthorized"))
+        ) {
+          // Do not treat unauthorized as empty chart
+        } else {
+          currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
+        }
       }
     } finally {
       if (gen === requestGenChart) {
@@ -360,7 +373,7 @@
     };
 
     try {
-      await ChartService.SaveToothCondition(conditionData);
+      await ChartService.SaveToothCondition(auth.token, conditionData);
       showConditionModal = false;
       await loadChart(selectedPatientId);
     } catch (err) {
@@ -371,7 +384,7 @@
   async function handleDeleteCondition(id: string) {
     if (confirm(m.confirm_delete_condition())) {
       try {
-        await ChartService.DeleteToothCondition(id);
+        await ChartService.DeleteToothCondition(auth.token, id, selectedPatientId);
         if (editingConditionId === id) {
           showConditionModal = false;
         }

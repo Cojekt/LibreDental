@@ -3,16 +3,22 @@
   import Modal from "./ui/Modal.svelte";
   import { auth } from "../stores/auth.svelte.js";
   import { m } from "../paraglide/messages.js";
-  import { PracticeConfigService } from "@bindings/services/index.js";
+  import { PracticeConfigService, AuditService } from "@bindings/services/index.js";
 
-  let { showModal = $bindable(false), providers = [] } = $props<{
+  let {
+    showModal = $bindable(false),
+    providers = [],
+    onlogout,
+  } = $props<{
     showModal: boolean;
     providers: Provider[];
+    onlogout?: () => void;
   }>();
 
   let selectedProvider = $state<Provider | null>(null);
   let pinInput = $state("");
   let errorMsg = $state("");
+  let isLoggingIn = $state(false);
 
   function selectProvider(p: Provider) {
     selectedProvider = p;
@@ -30,27 +36,41 @@
 
   async function handleLogin(e: Event) {
     e.preventDefault();
-    if (!selectedProvider) return;
+    if (!selectedProvider || isLoggingIn) return;
 
     const currentAttemptProvider = selectedProvider;
+    const currentPin = pinInput;
+    isLoggingIn = true;
 
     try {
-      const verifiedProvider = await PracticeConfigService.VerifyProviderPin(
-        currentAttemptProvider.id,
-        pinInput
-      );
+      const token = await AuditService.CreateSession(currentAttemptProvider.id, currentPin);
+
+      if (selectedProvider !== currentAttemptProvider || !showModal) {
+        AuditService.DestroySession(token).catch(console.error);
+        return;
+      }
+
+      auth.commitSession(currentAttemptProvider, token);
 
       if (selectedProvider !== currentAttemptProvider || !showModal) return;
 
-      if (!verifiedProvider) throw new Error("Verification failed");
-      auth.login(verifiedProvider);
       showModal = false;
       selectedProvider = null;
       pinInput = "";
       errorMsg = "";
-    } catch (err) {
+    } catch (err: any) {
       if (selectedProvider !== currentAttemptProvider || !showModal) return;
-      errorMsg = m.staff_login_incorrect_pin();
+      if (
+        err &&
+        err.message &&
+        (err.message.includes("incorrect pin") || err.message.includes("pin not set"))
+      ) {
+        errorMsg = m.staff_login_incorrect_pin();
+      } else {
+        errorMsg = "Failed to create session";
+      }
+    } finally {
+      isLoggingIn = false;
     }
   }
 
@@ -59,6 +79,7 @@
     showModal = false;
     selectedProvider = null;
     pinInput = "";
+    if (onlogout) onlogout();
   }
 </script>
 
@@ -159,13 +180,14 @@
           id="pin-input"
           type="password"
           bind:value={pinInput}
+          disabled={isLoggingIn}
           placeholder="****"
           maxlength="4"
           inputmode="numeric"
           pattern="[0-9]*"
           class="w-full rounded-xl border {errorMsg
             ? 'border-rose-500'
-            : 'border-slate-700'} bg-slate-900 px-4 py-3 text-lg tracking-[0.5em] text-center text-white focus:border-sky-500 focus:outline-none"
+            : 'border-slate-700'} bg-slate-900 px-4 py-3 text-lg tracking-[0.5em] text-center text-white focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {#if errorMsg}
           <p class="text-rose-400 text-xs font-semibold mt-2 text-center">{errorMsg}</p>
@@ -174,9 +196,10 @@
 
       <button
         type="submit"
-        class="w-full btn btn-primary py-3 font-bold text-sm shadow-md shadow-sky-500/20 mt-4"
+        disabled={isLoggingIn}
+        class="w-full btn btn-primary py-3 font-bold text-sm shadow-md shadow-sky-500/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {m.staff_login_signin()}
+        {isLoggingIn ? "..." : m.staff_login_signin()}
       </button>
     </form>
   {/if}

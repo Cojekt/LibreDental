@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -15,17 +16,35 @@ func TestChartService(t *testing.T) {
 
 	db, err := sqlite.Open(dbPath)
 	if err != nil {
-		t.Fatalf("Failed to open db: %v", err)
+		t.Fatalf("Failed to open sqlite db: %v", err)
 	}
 	defer db.Close()
 
+	auditDbPath := filepath.Join(tempDir, "test_audit_service.db")
+	auditDb, err := sqlite.OpenAudit(auditDbPath)
+	if err != nil {
+		t.Fatalf("Failed to open sqlite audit db: %v", err)
+	}
+	defer auditDb.Close()
+
+	auditRepo := sqlite.NewAuditRepository(auditDb)
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "test_user", Name: "Test User", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditService := services.NewAuditService(auditRepo, configRepo)
+	token, err := auditService.CreateSession("test_user", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
 	patientRepo := sqlite.NewPatientRepository(db)
-	patientService := services.NewPatientService(patientRepo)
+	patientService := services.NewPatientService(patientRepo, auditService)
 
 	chartRepo := sqlite.NewChartRepository(db)
-	chartService := services.NewChartService(chartRepo)
+	chartService := services.NewChartService(chartRepo, auditService)
 
-	pat, err := patientService.CreatePatient(&domain.Patient{
+	pat, err := patientService.CreatePatient(token, &domain.Patient{
 		ID:        "pat_svc_1",
 		FirstName: "Bob",
 		LastName:  "Builder",
@@ -34,7 +53,7 @@ func TestChartService(t *testing.T) {
 		t.Fatalf("Failed to create patient: %v", err)
 	}
 
-	cond, err := chartService.SaveToothCondition(&domain.ToothCondition{
+	cond, err := chartService.SaveToothCondition(token, &domain.ToothCondition{
 		PatientID:   pat.ID,
 		ToothNumber: 14,
 		Surfaces:    []domain.ToothSurface{domain.SurfaceOcclusal},
@@ -50,7 +69,7 @@ func TestChartService(t *testing.T) {
 		t.Errorf("Expected auto-generated ID for tooth condition")
 	}
 
-	chart, err := chartService.GetPatientChart(pat.ID)
+	chart, err := chartService.GetPatientChart(token, pat.ID)
 	if err != nil {
 		t.Fatalf("Failed to get chart: %v", err)
 	}
@@ -58,12 +77,12 @@ func TestChartService(t *testing.T) {
 		t.Fatalf("Expected 1 condition, got %d", len(chart.Conditions))
 	}
 
-	err = chartService.DeleteToothCondition(cond.ID)
+	err = chartService.DeleteToothCondition(token, cond.ID, pat.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete condition: %v", err)
 	}
 
-	emptyChart, err := chartService.GetPatientChart(pat.ID)
+	emptyChart, err := chartService.GetPatientChart(token, pat.ID)
 	if err != nil {
 		t.Fatalf("Failed to get empty chart: %v", err)
 	}

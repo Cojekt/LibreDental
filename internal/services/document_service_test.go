@@ -25,7 +25,19 @@ func TestDocumentService(t *testing.T) {
 	defer db.Close()
 
 	repo := sqlite.NewDocumentRepository(db)
-	service := services.NewDocumentService(repo, tempDir)
+
+	auditRepo := sqlite.NewAuditRepository(db)
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditSvc := services.NewAuditService(auditRepo, configRepo)
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
+	service := services.NewDocumentService(repo, tempDir, auditSvc)
 
 	// Create a test patient since documents have a foreign key to patients
 	patientRepo := sqlite.NewPatientRepository(db)
@@ -42,7 +54,7 @@ func TestDocumentService(t *testing.T) {
 		content := "Hello World"
 		b64 := base64.StdEncoding.EncodeToString([]byte(content))
 
-		doc, err := service.SaveDocumentBase64(patient.ID, "Test Doc", "Desc", "other", "text/plain", b64)
+		doc, err := service.SaveDocumentBase64(token, patient.ID, "Test Doc", "Desc", "other", "text/plain", b64)
 		if err != nil {
 			t.Fatalf("Failed to save document: %v", err)
 		}
@@ -68,12 +80,12 @@ func TestDocumentService(t *testing.T) {
 
 		// directly create a document via service to ensure file is on disk
 		b64Content := base64.StdEncoding.EncodeToString([]byte(content))
-		doc, err := service.SaveDocumentBase64(patient.ID, "Doc to read", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
+		doc, err := service.SaveDocumentBase64(token, patient.ID, "Doc to read", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
 		if err != nil {
 			t.Fatalf("Failed to setup document: %v", err)
 		}
 
-		b64, err := service.GetDocumentBase64(doc.ID)
+		b64, err := service.GetDocumentBase64(token, doc.ID)
 		if err != nil {
 			t.Fatalf("Failed to get document base64: %v", err)
 		}
@@ -90,12 +102,12 @@ func TestDocumentService(t *testing.T) {
 	t.Run("DeleteDocument", func(t *testing.T) {
 		// create a document to delete
 		b64Content := base64.StdEncoding.EncodeToString([]byte("delete me"))
-		doc, err := service.SaveDocumentBase64(patient.ID, "Doc to delete", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
+		doc, err := service.SaveDocumentBase64(token, patient.ID, "Doc to delete", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
 		if err != nil {
 			t.Fatalf("Failed to setup document: %v", err)
 		}
 
-		err = service.DeleteDocument(doc.ID)
+		err = service.DeleteDocument(token, doc.ID)
 		if err != nil {
 			t.Fatalf("Failed to delete document: %v", err)
 		}
@@ -117,7 +129,7 @@ func TestDocumentService(t *testing.T) {
 
 	t.Run("DeleteDocumentWhenDBRowAlreadyDeleted", func(t *testing.T) {
 		b64Content := base64.StdEncoding.EncodeToString([]byte("delete me too"))
-		doc, err := service.SaveDocumentBase64(patient.ID, "Doc concurrent delete", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
+		doc, err := service.SaveDocumentBase64(token, patient.ID, "Doc concurrent delete", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
 		if err != nil {
 			t.Fatalf("Failed to setup document: %v", err)
 		}
@@ -130,10 +142,10 @@ func TestDocumentService(t *testing.T) {
 			realRepo:           repo,
 			doc:                doc,
 		}
-		mockService := services.NewDocumentService(mockRepo, tempDir)
+		mockService := services.NewDocumentService(mockRepo, tempDir, auditSvc)
 
 		// Call service.DeleteDocument - should proceed to remove the file from disk without returning an error
-		err = mockService.DeleteDocument(doc.ID)
+		err = mockService.DeleteDocument(token, doc.ID)
 		if err != nil {
 			t.Fatalf("Expected DeleteDocument to succeed even if repo.Delete returns ErrNotFound, got: %v", err)
 		}
@@ -150,12 +162,12 @@ func TestDocumentService(t *testing.T) {
 	t.Run("ListDocuments", func(t *testing.T) {
 		// Patient document fixture
 		b64PatientContent := base64.StdEncoding.EncodeToString([]byte("patient doc"))
-		_, err := service.SaveDocumentBase64(patient.ID, "Patient Document", "", string(domain.DocumentTypePDF), "application/pdf", b64PatientContent)
+		_, err := service.SaveDocumentBase64(token, patient.ID, "Patient Document", "", string(domain.DocumentTypePDF), "application/pdf", b64PatientContent)
 		if err != nil {
 			t.Fatalf("Failed to setup patient document: %v", err)
 		}
 
-		docs, err := service.ListPatientDocuments(domain.DocumentFilter{PatientID: &patient.ID})
+		docs, err := service.ListPatientDocuments(token, domain.DocumentFilter{PatientID: &patient.ID})
 		if err != nil {
 			t.Fatalf("Failed to list patient docs: %v", err)
 		}
@@ -165,12 +177,12 @@ func TestDocumentService(t *testing.T) {
 
 		// Clinic document
 		b64Content := base64.StdEncoding.EncodeToString([]byte("clinic doc"))
-		_, err = service.SaveDocumentBase64("", "Clinic Policy", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
+		_, err = service.SaveDocumentBase64(token, "", "Clinic Policy", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
 		if err != nil {
 			t.Fatalf("Failed to setup clinic document: %v", err)
 		}
 
-		clinicDocs, err := service.ListClinicDocuments()
+		clinicDocs, err := service.ListClinicDocuments(token)
 		if err != nil {
 			t.Fatalf("Failed to list clinic docs: %v", err)
 		}
@@ -193,7 +205,7 @@ func TestDocumentService(t *testing.T) {
 		content := "Nested patient document content"
 		b64 := base64.StdEncoding.EncodeToString([]byte(content))
 
-		doc, err := service.SaveDocumentBase64(nestedPatientID, "Nested Doc", "Desc", "other", "text/plain", b64)
+		doc, err := service.SaveDocumentBase64(token, nestedPatientID, "Nested Doc", "Desc", "other", "text/plain", b64)
 		if err != nil {
 			t.Fatalf("Failed to save nested document: %v", err)
 		}
@@ -222,7 +234,7 @@ func TestDocumentService(t *testing.T) {
 		b64 := base64.StdEncoding.EncodeToString([]byte("malicious content"))
 
 		for _, badID := range invalidIDs {
-			_, err := service.SaveDocumentBase64(badID, "Bad Doc", "Desc", "other", "text/plain", b64)
+			_, err := service.SaveDocumentBase64(token, badID, "Bad Doc", "Desc", "other", "text/plain", b64)
 			if err == nil {
 				t.Errorf("Expected error when saving with invalid patient ID %q, but got nil", badID)
 			}
@@ -233,7 +245,7 @@ func TestDocumentService(t *testing.T) {
 		content := "Normalized Patient ID test"
 		b64 := base64.StdEncoding.EncodeToString([]byte(content))
 
-		doc, err := service.SaveDocumentBase64(patient.ID+"/.", "Normalized Doc", "Desc", "other", "text/plain", b64)
+		doc, err := service.SaveDocumentBase64(token, patient.ID+"/.", "Normalized Doc", "Desc", "other", "text/plain", b64)
 		if err != nil {
 			t.Fatalf("Failed to save document with raw patient ID: %v", err)
 		}

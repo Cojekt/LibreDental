@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import {
     PatientService,
     PracticeConfigService,
@@ -18,6 +18,7 @@
     Operatory,
   } from "@bindings/domain/index.js";
   import { Sex, Status, AppointmentStatus } from "@bindings/domain/index.js";
+  import { auth } from "./stores/auth.svelte.js";
 
   import Header from "./components/Header.svelte";
   import OnboardingModal from "./components/OnboardingModal.svelte";
@@ -122,7 +123,7 @@
   // Patient form fields
   let firstName = $state("");
   let lastName = $state("");
-  let sex = $state<Sex>(Sex.SexMale);
+  let sex = $state<any>(Sex.SexMale);
   let email = $state("");
   let phone = $state("");
   let phoneSecondary = $state("");
@@ -237,9 +238,10 @@
   }
 
   async function loadPatients() {
+    if (!auth.token) return;
     loadingPatients = true;
     try {
-      const res = await PatientService.ListPatients(searchQuery, statusFilter);
+      const res = await PatientService.ListPatients(auth.token, searchQuery, statusFilter);
       patients = (res?.filter(Boolean) as Patient[]) || [];
     } catch (err) {
       console.error("Failed to load patients:", err);
@@ -249,9 +251,10 @@
   }
 
   async function loadAppointments() {
+    if (!auth.token) return;
     loadingAppointments = true;
     try {
-      const res = await AppointmentService.ListAppointments({} as any);
+      const res = await AppointmentService.ListAppointments(auth.token, {} as any);
       appointments = (res?.filter(Boolean) as Appointment[]) || [];
     } catch (err) {
       console.error("Failed to load appointments:", err);
@@ -340,7 +343,7 @@
 
     try {
       if (isEditingPatient) {
-        const p = await PatientService.GetPatient(editingPatientId);
+        const p = await PatientService.GetPatient(auth.token, editingPatientId);
         if (p) {
           p.first_name = firstName;
           p.last_name = lastName;
@@ -372,7 +375,7 @@
           p.preferred_provider_id = preferredProviderId;
           p.referral_source = referralSource;
           p.medical_alerts = medicalAlerts ? medicalAlerts.split(",").map((s) => s.trim()) : [];
-          await PatientService.UpdatePatient(p);
+          await PatientService.UpdatePatient(auth.token, p);
         }
       } else {
         const newPatient: Patient = {
@@ -416,7 +419,7 @@
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
-        await PatientService.CreatePatient(newPatient);
+        await PatientService.CreatePatient(auth.token, newPatient);
       }
       showPatientModal = false;
       await loadPatients();
@@ -428,7 +431,7 @@
   async function handleArchivePatient(p: Patient) {
     if (confirm(m.confirm_archive_patient({ firstName: p.first_name, lastName: p.last_name }))) {
       try {
-        await PatientService.ArchivePatient(p.id);
+        await PatientService.ArchivePatient(auth.token, p.id);
         await loadPatients();
       } catch (err) {
         console.error("Failed to archive patient:", err);
@@ -487,18 +490,18 @@
       const endTimeISO = new Date(`${apptStartDateStr}T${apptEndTimeStr}:00`).toISOString();
 
       if (isEditingAppt) {
-        const existing = await AppointmentService.GetAppointment(editingApptId);
+        const existing = await AppointmentService.GetAppointment(auth.token, editingApptId);
         if (existing) {
           existing.patient_id = apptPatientId;
           existing.provider_id = apptProviderId;
           existing.operatory_id = apptOperatoryId;
           existing.start_time = startTimeISO;
           existing.end_time = endTimeISO;
-          existing.status = apptStatus as AppointmentStatus;
+          existing.status = apptStatus as any;
           existing.reason = apptReason;
           existing.color = apptColor;
           existing.notes = apptNotes;
-          await AppointmentService.UpdateAppointment(existing);
+          await AppointmentService.UpdateAppointment(auth.token, existing);
         }
       } else {
         const newAppt: Appointment = {
@@ -508,7 +511,7 @@
           operatory_id: apptOperatoryId,
           start_time: startTimeISO,
           end_time: endTimeISO,
-          status: apptStatus as AppointmentStatus,
+          status: apptStatus as any,
           reason: apptReason,
           color: apptColor,
           notes: apptNotes,
@@ -516,7 +519,7 @@
           updated_at: new Date().toISOString(),
           version: 1,
         };
-        await AppointmentService.CreateAppointment(newAppt);
+        await AppointmentService.CreateAppointment(auth.token, newAppt);
       }
       showApptModal = false;
       await loadAppointments();
@@ -527,7 +530,7 @@
 
   async function handleUpdateApptStatus(id: string, status: string) {
     try {
-      await AppointmentService.UpdateAppointmentStatus(id, status);
+      await AppointmentService.UpdateAppointmentStatus(auth.token, id, status);
       await loadAppointments();
     } catch (err) {
       console.error("Failed to update status:", err);
@@ -539,7 +542,7 @@
     if (!apptId) return;
     if (confirm(m.confirm_delete_appointment())) {
       try {
-        await AppointmentService.DeleteAppointment(apptId);
+        await AppointmentService.DeleteAppointment(auth.token, apptId);
         showApptModal = false;
         await loadAppointments();
       } catch (err) {
@@ -550,8 +553,21 @@
 
   // Reactivity: Reload appointments when selected date changes
   $effect(() => {
-    if (selectedDate) {
+    if (selectedDate && auth.token) {
       loadAppointments();
+    }
+  });
+
+  // Reactivity: Load data when auth.token changes
+  $effect(() => {
+    if (auth.token) {
+      untrack(() => {
+        loadPatients();
+        loadAppointments();
+      });
+    } else {
+      patients = [];
+      appointments = [];
     }
   });
 
@@ -571,8 +587,6 @@
 
     await checkConfig();
     await loadClinicData();
-    await loadPatients();
-    await loadAppointments();
   });
 </script>
 
@@ -637,7 +651,11 @@
 
 <SettingsModal bind:showModal={showSettingsModal} bind:theme onchangetheme={applyTheme} />
 
-<StaffLoginModal bind:showModal={showStaffLoginModal} {providers} />
+<StaffLoginModal
+  bind:showModal={showStaffLoginModal}
+  {providers}
+  onlogout={() => (activeTab = "clinic")}
+/>
 
 <OnboardingModal bind:showOnboarding {supportedCountries} oncomplete={handleOnboardingComplete} />
 

@@ -38,13 +38,16 @@ func main() {
 	}
 	defer auditDb.Close()
 
+	auditRepo := sqlite.NewAuditRepository(auditDb)
+	practiceConfigRepo := sqlite.NewPracticeConfigRepository(db)
+	auditService := services.NewAuditService(auditRepo, practiceConfigRepo)
+
 	patientRepo := sqlite.NewPatientRepository(db)
-	patientService := services.NewPatientService(patientRepo)
+	patientService := services.NewPatientService(patientRepo, auditService)
 
 	appointmentRepo := sqlite.NewAppointmentRepository(db)
-	appointmentService := services.NewAppointmentService(appointmentRepo)
+	appointmentService := services.NewAppointmentService(appointmentRepo, auditService)
 
-	practiceConfigRepo := sqlite.NewPracticeConfigRepository(db)
 	practiceConfigService := services.NewPracticeConfigService(practiceConfigRepo)
 
 	timecardRepo := sqlite.NewTimecardRepository(db)
@@ -53,7 +56,7 @@ func main() {
 	systemSettingsService := services.NewSystemSettingsService(appDir)
 
 	chartRepo := sqlite.NewChartRepository(db)
-	chartService := services.NewChartService(chartRepo)
+	chartService := services.NewChartService(chartRepo, auditService)
 
 	claimRepo := sqlite.NewClaimRepository(db)
 	paymentRepo := sqlite.NewPaymentRepository(db)
@@ -61,13 +64,10 @@ func main() {
 	procedureRepo := sqlite.NewProcedureRepository(db)
 
 	secretsService := services.NewSecretsService()
-	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, secretsService)
-
-	auditRepo := sqlite.NewAuditRepository(auditDb)
-	auditService := services.NewAuditService(auditRepo)
+	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, secretsService, auditService)
 
 	documentRepo := sqlite.NewDocumentRepository(db)
-	documentService := services.NewDocumentService(documentRepo, appDir)
+	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
 	serverCfg := app.LoadServerConfig()
 

@@ -10,14 +10,18 @@ import (
 )
 
 type ChartService struct {
-	chartRepo storage.ChartRepository
+	chartRepo    storage.ChartRepository
+	auditService *AuditService
 }
 
-func NewChartService(chartRepo storage.ChartRepository) *ChartService {
-	return &ChartService{chartRepo: chartRepo}
+func NewChartService(chartRepo storage.ChartRepository, auditService *AuditService) *ChartService {
+	return &ChartService{chartRepo: chartRepo, auditService: auditService}
 }
 
-func (s *ChartService) GetPatientChart(patientID string) (*domain.DentalChart, error) {
+func (s *ChartService) GetPatientChart(token string, patientID string) (*domain.DentalChart, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if patientID == "" {
 		return nil, fmt.Errorf("%w: patient ID is required", storage.ErrInvalidInput)
 	}
@@ -31,10 +35,14 @@ func (s *ChartService) GetPatientChart(patientID string) (*domain.DentalChart, e
 		chart.Conditions = []domain.ToothCondition{}
 	}
 
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, patientID, "dental_chart", "Viewed dental chart")
 	return chart, nil
 }
 
-func (s *ChartService) SaveToothCondition(c *domain.ToothCondition) (*domain.ToothCondition, error) {
+func (s *ChartService) SaveToothCondition(token string, c *domain.ToothCondition) (*domain.ToothCondition, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if c == nil {
 		return nil, fmt.Errorf("%w: tooth condition cannot be nil", storage.ErrInvalidInput)
 	}
@@ -43,15 +51,26 @@ func (s *ChartService) SaveToothCondition(c *domain.ToothCondition) (*domain.Too
 		c.ID = fmt.Sprintf("cond_%d", time.Now().UnixNano())
 	}
 
-	err := s.chartRepo.SaveCondition(context.Background(), c)
+	isInsert, err := s.chartRepo.SaveCondition(context.Background(), c)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save tooth condition: %w", err)
 	}
 
+	action := domain.AuditActionUpdate
+	if isInsert {
+		action = domain.AuditActionCreate
+	}
+
+	if err := s.auditService.LogPatientAction(token, action, c.PatientID, "dental_chart", "Saved tooth condition"); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
 	return c, nil
 }
 
-func (s *ChartService) DeleteToothCondition(id string) error {
+func (s *ChartService) DeleteToothCondition(token string, id string, patientID string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	if id == "" {
 		return fmt.Errorf("%w: condition ID is required", storage.ErrInvalidInput)
 	}
@@ -61,5 +80,8 @@ func (s *ChartService) DeleteToothCondition(id string) error {
 		return fmt.Errorf("failed to delete tooth condition: %w", err)
 	}
 
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, patientID, "dental_chart", "Deleted tooth condition"); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
 	return nil
 }

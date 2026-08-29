@@ -92,9 +92,9 @@
           {#each [{ id: "M", label: "Mesial (M)" }, { id: "D", label: "Distal (D)" }, { id: "O", label: "Occlusal (O)" }, { id: "I", label: "Incisal (I)" }, { id: "F", label: "Facial (F)" }, { id: "L", label: "Lingual (L)" }] as s}
             <button
               type="button"
-              onclick={() => toggleSurface(s.id as ToothSurface)}
+              onclick={() => toggleSurface(s.id as any)}
               class={`py-2 px-2 text-xs font-bold rounded-xl border transition-all ${
-                formSurfaces.includes(s.id as ToothSurface)
+                formSurfaces.includes(s.id as any)
                   ? "bg-sky-500 text-white border-sky-400 shadow-md shadow-sky-500/20"
                   : "bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700"
               }`}
