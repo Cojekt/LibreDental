@@ -123,7 +123,7 @@ tasks:
       - cp "{{.APP_BINARY}}" "{{.APP_NAME}}"
       - cp ../../appicon.png "{{.APP_NAME}}.png"
       - wails3 generate appimage -binary "{{.APP_NAME}}" -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/linux/appimage/build
-      - mv "{{.OUTPUT_DIR}}/{{.APP_NAME}}-*.AppImage" "{{.OUTPUT_DIR}}/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.AppImage"
+      - mv "{{.OUTPUT_DIR}}/{{.APP_NAME}}"-*.AppImage "{{.OUTPUT_DIR}}/{{.APP_NAME}}-linux-{{.TARGET_ARCH}}.AppImage"
     vars:
       APP_NAME: "{{.APP_NAME}}"
       APP_BINARY: "../../../{{.BIN_DIR}}/{{.APP_NAME}}"
