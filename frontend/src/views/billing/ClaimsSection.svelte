@@ -18,6 +18,8 @@
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { formatCurrency } from "$lib/currency.js";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
 
   let {
     patients = [],
@@ -76,15 +78,6 @@
   function providerName(id: string) {
     const p = providers.find((p: Provider) => p.id === id);
     return p ? p.name : id;
-  }
-
-  function fmt(n: number) {
-    const curr = countryMeta?.default_currency || "USD";
-    try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
-    } catch {
-      return `${(n / 100).toFixed(2)}`;
-    }
   }
 
   function claimTotal(c: Claim) {
@@ -220,9 +213,7 @@
         patient_portion:
           li.patient_portion != null ? Math.round(li.patient_portion * 100) : undefined,
       })),
-      created_at:
-        isEditingClaim && editingClaimCreatedAt ? editingClaimCreatedAt : new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: isEditingClaim && editingClaimCreatedAt ? editingClaimCreatedAt : "",
     } as any as Claim;
 
     try {
@@ -238,25 +229,35 @@
     }
   }
 
-  async function deleteClaim(id: string) {
-    if (!confirm(m.billing_claims_confirm_delete())) return;
+  let showConfirmDeleteClaim = $state(false);
+  let claimToDelete = $state("");
+
+  function promptDeleteClaim(id: string) {
+    claimToDelete = id;
+    showConfirmDeleteClaim = true;
+  }
+
+  async function executeDeleteClaim() {
+    if (!claimToDelete) return;
     try {
-      await BillingService.DeleteClaim(auth.token, id);
+      await BillingService.DeleteClaim(auth.token, claimToDelete);
       await loadClaims();
     } catch (e) {
       console.error("Failed to delete claim:", e);
+    } finally {
+      claimToDelete = "";
     }
   }
 
   async function submitClaim(id: string) {
     if (submittingClaims[id]) return;
-    if (!confirm("Are you sure you want to submit this claim to the clearinghouse?")) return;
+    if (!confirm(m.billing_claims_confirm_submit())) return;
 
     try {
       submittingClaims[id] = true;
       const providersList = await BillingService.ListProviders();
       if (!providersList || providersList.length === 0) {
-        alert("No claim providers registered. Check system configuration.");
+        alert(m.billing_claim_no_provider());
         return;
       }
 
@@ -268,7 +269,7 @@
         );
         if (!choice) return;
         if (!providersList.includes(choice)) {
-          alert("Invalid provider selected.");
+          alert(m.billing_claim_invalid_provider());
           return;
         }
         providerToUse = choice;
@@ -278,7 +279,7 @@
       await loadClaims();
     } catch (e) {
       console.error("Failed to submit claim:", e);
-      alert("Failed to submit claim. Check console for details.");
+      alert(m.billing_claim_submit_failed());
     } finally {
       submittingClaims[id] = false;
     }
@@ -414,7 +415,9 @@
                   {/if}
                 </div>
               </td>
-              <td class="px-4 py-3 font-bold text-slate-100 font-mono">{fmt(claimTotal(c))}</td>
+              <td class="px-4 py-3 font-bold text-slate-100 font-mono"
+                >{formatCurrency(claimTotal(c), countryMeta?.default_currency)}</td
+              >
               <td class="px-4 py-3">
                 <StatusBadge variant={c.status} />
               </td>
@@ -463,7 +466,7 @@
                   <button
                     type="button"
                     class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
-                    onclick={() => deleteClaim(c.id)}
+                    onclick={() => promptDeleteClaim(c.id)}
                     title={m.patient_archive()}
                   >
                     <svg
@@ -688,8 +691,9 @@
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             Total: <strong class="text-white text-sm font-mono"
-              >{fmt(
-                Math.round(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0) * 100)
+              >{formatCurrency(
+                Math.round(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0) * 100),
+                countryMeta?.default_currency
               )}</strong
             >
           </div>
@@ -766,7 +770,9 @@
                 <div class="text-slate-400">{cond.description}</div>
               </div>
             </div>
-            <div class="font-mono font-semibold text-slate-100">{fmt(cond.fee || 0)}</div>
+            <div class="font-mono font-semibold text-slate-100">
+              {formatCurrency(cond.fee || 0, countryMeta?.default_currency)}
+            </div>
           </label>
         {/each}
       </div>
@@ -791,3 +797,10 @@
     </div>
   </div>
 </Modal>
+
+<ConfirmModal
+  bind:showModal={showConfirmDeleteClaim}
+  title={m.billing_claims_confirm_delete()}
+  message={m.billing_claims_confirm_delete()}
+  onConfirm={executeDeleteClaim}
+/>

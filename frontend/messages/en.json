@@ -520,5 +520,20 @@
   "staff_login_no_providers": "No active providers configured.",
   "staff_login_enter_pin": "Enter PIN",
   "staff_login_incorrect_pin": "Incorrect PIN",
-  "staff_login_signin": "Sign In"
+  "staff_login_signin": "Sign In",
+  "billing_claims_confirm_submit": "Are you sure you want to submit this claim to the clearinghouse?",
+  "billing_claim_no_provider": "No claim providers registered. Check system configuration.",
+  "billing_claim_invalid_provider": "Invalid provider selected.",
+  "billing_claim_submit_failed": "Failed to submit claim. Check console for details.",
+  "integrations_title": "Integrations",
+  "integrations_subtitle": "Manage third-party integrations and clearinghouses.",
+  "integrations_section_claims_us": "Claims Integrations (US)",
+  "integrations_label_provider": "Provider",
+  "integrations_label_api_key": "API Key",
+  "integrations_placeholder_provider": "-- Select Provider --",
+  "integrations_placeholder_api_key": "Enter API Key",
+  "integrations_btn_save": "Save Credentials",
+  "integrations_btn_saving": "Saving...",
+  "integrations_save_success": "Credentials saved successfully.",
+  "integrations_save_error": "Failed to save credentials."
 }

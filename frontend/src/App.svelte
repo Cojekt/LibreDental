@@ -32,6 +32,7 @@
   import ChartingView from "./views/ChartingView.svelte";
   import BillingView from "./views/BillingView.svelte";
   import AuditView from "./views/AuditView.svelte";
+  import ConfirmModal from "./components/ui/ConfirmModal.svelte";
 
   // App Navigation (Default to "clinic" landing tab on far left)
   let activeTab = $state("clinic");
@@ -416,8 +417,8 @@
           notes: "",
           version: 1,
           status: Status.StatusActive,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: "",
+          updated_at: "",
         };
         await PatientService.CreatePatient(auth.token, newPatient);
       }
@@ -428,14 +429,23 @@
     }
   }
 
+  let showConfirmArchivePatient = $state(false);
+  let patientToArchive = $state<Patient | null>(null);
+
   async function handleArchivePatient(p: Patient) {
-    if (confirm(m.confirm_archive_patient({ firstName: p.first_name, lastName: p.last_name }))) {
-      try {
-        await PatientService.ArchivePatient(auth.token, p.id);
-        await loadPatients();
-      } catch (err) {
-        console.error("Failed to archive patient:", err);
-      }
+    patientToArchive = p;
+    showConfirmArchivePatient = true;
+  }
+
+  async function executeArchivePatient() {
+    if (!patientToArchive) return;
+    try {
+      await PatientService.ArchivePatient(auth.token, patientToArchive.id);
+      await loadPatients();
+    } catch (err) {
+      console.error("Failed to archive patient:", err);
+    } finally {
+      patientToArchive = null;
     }
   }
 
@@ -515,9 +525,9 @@
           reason: apptReason,
           color: apptColor,
           notes: apptNotes,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
           version: 1,
+          created_at: "",
+          updated_at: "",
         };
         await AppointmentService.CreateAppointment(auth.token, newAppt);
       }
@@ -537,17 +547,26 @@
     }
   }
 
+  let showConfirmDeleteAppt = $state(false);
+  let apptToDelete = $state("");
+
   async function handleDeleteAppt(id?: string) {
     const apptId = id || editingApptId;
     if (!apptId) return;
-    if (confirm(m.confirm_delete_appointment())) {
-      try {
-        await AppointmentService.DeleteAppointment(auth.token, apptId);
-        showApptModal = false;
-        await loadAppointments();
-      } catch (err) {
-        console.error("Failed to delete appointment:", err);
-      }
+    apptToDelete = apptId;
+    showConfirmDeleteAppt = true;
+  }
+
+  async function executeDeleteAppt() {
+    if (!apptToDelete) return;
+    try {
+      await AppointmentService.DeleteAppointment(auth.token, apptToDelete);
+      showApptModal = false;
+      await loadAppointments();
+    } catch (err) {
+      console.error("Failed to delete appointment:", err);
+    } finally {
+      apptToDelete = "";
     }
   }
 
@@ -713,4 +732,28 @@
   bind:notes={apptNotes}
   onsave={handleSaveAppt}
   ondelete={() => handleDeleteAppt(editingApptId)}
+/>
+
+<ConfirmModal
+  bind:showModal={showConfirmArchivePatient}
+  title={patientToArchive
+    ? m.confirm_archive_patient({
+        firstName: patientToArchive.first_name,
+        lastName: patientToArchive.last_name,
+      })
+    : ""}
+  message={patientToArchive
+    ? m.confirm_archive_patient({
+        firstName: patientToArchive.first_name,
+        lastName: patientToArchive.last_name,
+      })
+    : ""}
+  onConfirm={executeArchivePatient}
+/>
+
+<ConfirmModal
+  bind:showModal={showConfirmDeleteAppt}
+  title={m.confirm_delete_appointment()}
+  message={m.confirm_delete_appointment()}
+  onConfirm={executeDeleteAppt}
 />

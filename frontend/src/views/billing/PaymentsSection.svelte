@@ -16,6 +16,8 @@
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { formatCurrency } from "$lib/currency.js";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
 
   let { patients = [], countryMeta = null } = $props<{
     patients: Patient[];
@@ -42,15 +44,6 @@
   function patientName(id: string) {
     const p = patients.find((p: Patient) => p.id === id);
     return p ? `${p.first_name} ${p.last_name}` : id;
-  }
-
-  function fmt(n: number) {
-    const curr = countryMeta?.default_currency || "USD";
-    try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
-    } catch {
-      return `${(n / 100).toFixed(2)}`;
-    }
   }
 
   function claimTotal(c: Claim) {
@@ -130,7 +123,7 @@
       method: payMethod,
       date: payDate,
       notes: payNotes,
-      created_at: new Date().toISOString(),
+      created_at: "",
     };
 
     try {
@@ -144,14 +137,24 @@
     }
   }
 
-  async function deletePayment(id: string) {
-    if (!confirm(m.billing_pay_confirm_delete())) return;
+  let showConfirmDeletePayment = $state(false);
+  let paymentToDelete = $state("");
+
+  function promptDeletePayment(id: string) {
+    paymentToDelete = id;
+    showConfirmDeletePayment = true;
+  }
+
+  async function executeDeletePayment() {
+    if (!paymentToDelete) return;
     try {
-      await BillingService.DeletePayment(auth.token, id);
+      await BillingService.DeletePayment(auth.token, paymentToDelete);
       await loadPayments();
       await loadBalance();
     } catch (e) {
       console.error("Failed to delete payment:", e);
+    } finally {
+      paymentToDelete = "";
     }
   }
 </script>
@@ -193,7 +196,7 @@
             {m.billing_claims_stats_billed()}
           </div>
           <div class="text-2xl font-extrabold text-slate-300 font-mono">
-            {fmt(patientBalance.total_billed)}
+            {formatCurrency(patientBalance.total_billed, countryMeta?.default_currency)}
           </div>
         </div>
         <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
@@ -201,7 +204,7 @@
             Total Paid
           </div>
           <div class="text-2xl font-extrabold text-emerald-400 font-mono">
-            {fmt(patientBalance.total_paid)}
+            {formatCurrency(patientBalance.total_paid, countryMeta?.default_currency)}
           </div>
         </div>
         <div
@@ -213,7 +216,7 @@
           <div
             class={`text-2xl font-extrabold font-mono ${patientBalance.outstanding > 0 ? "text-amber-400" : "text-emerald-400"}`}
           >
-            {fmt(patientBalance.outstanding)}
+            {formatCurrency(patientBalance.outstanding, countryMeta?.default_currency)}
           </div>
         </div>
       </div>
@@ -246,7 +249,9 @@
             class="flex items-center justify-between p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:border-slate-700 transition-colors"
           >
             <div class="flex items-center gap-3">
-              <span class="text-base font-bold text-slate-100 font-mono">{fmt(pay.amount)}</span>
+              <span class="text-base font-bold text-slate-100 font-mono"
+                >{formatCurrency(pay.amount, countryMeta?.default_currency)}</span
+              >
               <StatusBadge variant={pay.method} label={pay.method.replace("_", " ")} />
               {#if pay.claim_id}
                 <span
@@ -263,7 +268,7 @@
               {/if}
               <button
                 class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
-                onclick={() => deletePayment(pay.id)}
+                onclick={() => promptDeletePayment(pay.id)}
                 title={m.patient_archive()}
               >
                 <svg
@@ -349,7 +354,10 @@
         <option value="">{m.billing_pay_claim_none()}</option>
         {#each claims.filter((c) => c.patient_id === payPatientId) as c}
           <option value={c.id}>
-            {c.date_of_service} — {c.insurance_carrier || "No carrier"} ({fmt(claimTotal(c))})
+            {c.date_of_service} — {c.insurance_carrier || "No carrier"} ({formatCurrency(
+              claimTotal(c),
+              countryMeta?.default_currency
+            )})
           </option>
         {/each}
       </select>
@@ -378,3 +386,10 @@
     </div>
   </form>
 </Modal>
+
+<ConfirmModal
+  bind:showModal={showConfirmDeletePayment}
+  title={m.billing_pay_confirm_delete()}
+  message={m.billing_pay_confirm_delete()}
+  onConfirm={executeDeletePayment}
+/>

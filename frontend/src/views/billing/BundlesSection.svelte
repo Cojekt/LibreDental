@@ -12,6 +12,7 @@
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { formatCurrency } from "$lib/currency.js";
 
   let { countryMeta = null } = $props<{
     countryMeta?: CountryConfig | null;
@@ -30,15 +31,6 @@
   let bundleDescription = $state("");
   let bundleItems = $state<BundleItemTemplate[]>([]);
   let shortnameError = $state("");
-
-  function fmt(n: number) {
-    const curr = countryMeta?.default_currency || "USD";
-    try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(n / 100);
-    } catch {
-      return `${(n / 100).toFixed(2)}`;
-    }
-  }
 
   let requestGenBundles = 0;
   export async function loadBundles() {
@@ -117,11 +109,8 @@
       description: bundleDescription,
       items: convertedItems,
       total_fee: Math.round(bundleTotalFee() * 100),
-      created_at:
-        isEditingBundle && editingBundleCreatedAt
-          ? editingBundleCreatedAt
-          : new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: "",
+      updated_at: "",
     };
 
     try {
@@ -221,7 +210,7 @@
                   <span class="text-slate-300 truncate">{item.description}</span>
                 </div>
                 <span class="font-mono font-semibold text-slate-100 shrink-0"
-                  >{fmt(item.default_fee)}</span
+                  >{formatCurrency(item.default_fee, countryMeta?.default_currency)}</span
                 >
               </div>
             {/each}
@@ -231,7 +220,8 @@
             class="flex items-center justify-between px-4 py-3 bg-slate-950/60 border-t border-slate-800 text-xs"
           >
             <span class="text-slate-400"
-              >Total: <strong class="text-slate-100 font-mono text-sm">{fmt(b.total_fee)}</strong
+              >Total: <strong class="text-slate-100 font-mono text-sm"
+                >{formatCurrency(b.total_fee, countryMeta?.default_currency)}</strong
               ></span
             >
             <div class="flex items-center gap-1">
@@ -381,7 +371,10 @@
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             Total Bundle Fee: <strong class="text-white text-sm font-mono"
-              >{fmt(Math.round(bundleTotalFee() * 100))}</strong
+              >{formatCurrency(
+                Math.round(bundleTotalFee() * 100),
+                countryMeta?.default_currency
+              )}</strong
             >
           </div>
         </div>

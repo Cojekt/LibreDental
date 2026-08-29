@@ -16,6 +16,7 @@
   import DocumentsSection from "./clinic/DocumentsSection.svelte";
   import IntegrationsSection from "./clinic/IntegrationsSection.svelte";
   import { m } from "../paraglide/messages.js";
+  import ConfirmModal from "../components/ui/ConfirmModal.svelte";
 
   let {
     practiceConfig = $bindable(),
@@ -308,8 +309,8 @@
         tooth_system: toothSystem as any,
         date_format: dateFormat,
         business_hours: businessHours,
-        created_at: practiceConfig?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: practiceConfig?.created_at || "",
+        updated_at: "",
       };
 
       const res = await PracticeConfigService.UpdatePracticeConfig(updatedConfig);
@@ -377,8 +378,8 @@
         pin: provPin,
         is_active: provIsActive,
         hourly_rate: Math.round(provHourlyRate * 100),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: "",
+        updated_at: "",
       };
 
       await PracticeConfigService.SaveProvider(p);
@@ -389,14 +390,23 @@
     }
   }
 
+  let showConfirmDeleteProvider = $state(false);
+  let providerToDelete = $state("");
+
   async function handleDeleteProvider(id: string) {
-    if (confirm(m.confirm_delete_provider())) {
-      try {
-        await PracticeConfigService.DeleteProvider(id);
-        await onrefresh();
-      } catch (err) {
-        console.error("Failed to delete provider:", err);
-      }
+    providerToDelete = id;
+    showConfirmDeleteProvider = true;
+  }
+
+  async function executeDeleteProvider() {
+    if (!providerToDelete) return;
+    try {
+      await PracticeConfigService.DeleteProvider(providerToDelete);
+      await onrefresh();
+    } catch (err) {
+      console.error("Failed to delete provider:", err);
+    } finally {
+      providerToDelete = "";
     }
   }
 
@@ -432,8 +442,8 @@
         room_code: opRoomCode,
         type: opType as any,
         is_active: opIsActive,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: "",
+        updated_at: "",
       };
 
       await PracticeConfigService.SaveOperatory(op);
@@ -444,14 +454,23 @@
     }
   }
 
+  let showConfirmDeleteOperatory = $state(false);
+  let operatoryToDelete = $state("");
+
   async function handleDeleteOperatory(id: string) {
-    if (confirm(m.confirm_delete_operatory())) {
-      try {
-        await PracticeConfigService.DeleteOperatory(id);
-        await onrefresh();
-      } catch (err) {
-        console.error("Failed to delete operatory:", err);
-      }
+    operatoryToDelete = id;
+    showConfirmDeleteOperatory = true;
+  }
+
+  async function executeDeleteOperatory() {
+    if (!operatoryToDelete) return;
+    try {
+      await PracticeConfigService.DeleteOperatory(operatoryToDelete);
+      await onrefresh();
+    } catch (err) {
+      console.error("Failed to delete operatory:", err);
+    } finally {
+      operatoryToDelete = "";
     }
   }
 
@@ -672,3 +691,17 @@
     {/if}
   </div>
 </div>
+
+<ConfirmModal
+  bind:showModal={showConfirmDeleteProvider}
+  title={m.confirm_delete_provider()}
+  message={m.confirm_delete_provider()}
+  onConfirm={executeDeleteProvider}
+/>
+
+<ConfirmModal
+  bind:showModal={showConfirmDeleteOperatory}
+  title={m.confirm_delete_operatory()}
+  message={m.confirm_delete_operatory()}
+  onConfirm={executeDeleteOperatory}
+/>
