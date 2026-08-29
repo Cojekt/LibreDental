@@ -5,6 +5,7 @@
   "nav_charting": "Dental Charting",
   "nav_billing": "Billing & Claims",
   "nav_billing_coming_soon": "Coming soon",
+  "nav_requires_login": "Requires staff login",
   "nav_audit": "Audit & Analytics",
   "audit_tab_auditing": "Auditing",
   "audit_tab_analytics": "Analytics",

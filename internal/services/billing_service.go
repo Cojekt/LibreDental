@@ -111,7 +111,9 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 	if err := s.claimRepo.Create(context.Background(), c); err != nil {
 		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, c.PatientID, "claim", "Created claim")
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, c.PatientID, "claim", "Created claim"); err != nil {
+		return nil, fmt.Errorf("claim created but failed to log audit: %w", err)
+	}
 	return c, nil
 }
 
@@ -165,10 +167,17 @@ func (s *BillingService) UpdateClaim(token string, c *domain.Claim) (*domain.Cla
 			c.LineItems[i].ID = fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i)
 		}
 	}
+	existing, err := s.claimRepo.GetByID(context.Background(), c.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing claim: %w", err)
+	}
 	if err := s.claimRepo.Update(context.Background(), c); err != nil {
 		return nil, fmt.Errorf("failed to update claim: %w", err)
 	}
 	_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, c.PatientID, "claim", "Updated claim")
+	if existing.PatientID != c.PatientID {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, existing.PatientID, "claim", "Reassigned claim to another patient")
+	}
 	return c, nil
 }
 

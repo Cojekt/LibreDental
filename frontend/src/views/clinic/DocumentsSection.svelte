@@ -1,6 +1,5 @@
 <script lang="ts">
   import { auth } from "../../stores/auth.svelte.js";
-  import { onMount } from "svelte";
   import { DocumentService, SystemSettingsService } from "@bindings/services/index.js";
   import { DocumentType, type Document } from "@bindings/domain/models.js";
   import { Dialogs } from "@wailsio/runtime";
@@ -28,23 +27,27 @@
   let uploadError = $state("");
 
   async function loadDocuments() {
-    if (!auth.token) {
+    const currentToken = auth.token;
+    if (!currentToken) {
       isLoading = false;
       return;
     }
     isLoading = true;
     try {
-      documents = (await DocumentService.ListClinicDocuments(auth.token)) || [];
+      const result = await DocumentService.ListClinicDocuments(currentToken);
+      if (auth.token === currentToken) {
+        documents = result || [];
+      }
     } catch (err) {
-      console.error("Failed to load clinic documents:", err);
+      if (auth.token === currentToken) {
+        console.error("Failed to load clinic documents:", err);
+      }
     } finally {
-      isLoading = false;
+      if (auth.token === currentToken) {
+        isLoading = false;
+      }
     }
   }
-
-  onMount(() => {
-    loadDocuments();
-  });
 
   $effect(() => {
     if (auth.token) {

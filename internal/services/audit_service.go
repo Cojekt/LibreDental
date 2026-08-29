@@ -41,33 +41,10 @@ func (s *AuditService) CreateSession(id string, pin string) (string, error) {
 		return "", errors.New("provider repository not configured")
 	}
 
-	providers, err := s.providerRepo.ListProviders(context.Background())
+	configService := NewPracticeConfigService(s.providerRepo)
+	provider, err := configService.VerifyProviderPin(id, pin)
 	if err != nil {
 		return "", err
-	}
-
-	var provider *domain.Provider
-	for _, p := range providers {
-		if p.ID == id {
-			if !p.IsActive {
-				return "", errors.New("provider is inactive")
-			}
-			if p.Pin == "" || pin == "" {
-				return "", errors.New("pin not set or empty")
-			}
-			if p.Pin != pin {
-				return "", errors.New("incorrect pin")
-			}
-
-			copiedProvider := *p
-			copiedProvider.Pin = "****"
-			provider = &copiedProvider
-			break
-		}
-	}
-
-	if provider == nil {
-		return "", errors.New("provider not found")
 	}
 
 	s.mu.Lock()
@@ -93,27 +70,6 @@ func (s *AuditService) GetSessionUser(token string) *domain.Provider {
 	s.mu.RLock()
 	provider := s.sessions[token]
 	s.mu.RUnlock()
-
-	if provider == nil {
-		return nil
-	}
-
-	if s.providerRepo != nil {
-		providers, err := s.providerRepo.ListProviders(context.Background())
-		if err == nil {
-			foundAndActive := false
-			for _, p := range providers {
-				if p.ID == provider.ID && p.IsActive {
-					foundAndActive = true
-					break
-				}
-			}
-			if !foundAndActive {
-				s.DestroySession(token)
-				return nil
-			}
-		}
-	}
 
 	return provider
 }

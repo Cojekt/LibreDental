@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import {
     PatientService,
     PracticeConfigService,
@@ -561,8 +561,10 @@
   // Reactivity: Load data when auth.token changes
   $effect(() => {
     if (auth.token) {
-      loadPatients();
-      loadAppointments();
+      untrack(() => {
+        loadPatients();
+        loadAppointments();
+      });
     } else {
       patients = [];
       appointments = [];
@@ -585,10 +587,6 @@
 
     await checkConfig();
     await loadClinicData();
-    if (auth.token) {
-      await loadPatients();
-      await loadAppointments();
-    }
   });
 </script>
 

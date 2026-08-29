@@ -80,8 +80,8 @@ func (s *DocumentService) SaveDocumentBase64(token string, patientID, name, desc
 	}
 
 	doc, err := s.saveDocumentBytes(patientID, name, description, docType, contentType, data)
-	if err == nil && patientID != "" {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, patientID, "document", "Created document")
+	if err == nil && doc.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, *doc.PatientID, "document", "Created document")
 	}
 	return doc, err
 }
@@ -356,9 +356,6 @@ func (s *DocumentService) OpenDocument(token string, id string) error {
 	if doc.PatientID != nil {
 		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Opened document")
 	}
-	if doc.PatientID != nil {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, *doc.PatientID, "document", "Deleted document")
-	}
 	return nil
 }
 
@@ -392,10 +389,7 @@ func (s *DocumentService) ExportDocumentToPath(token string, id string, destPath
 	}
 
 	if doc.PatientID != nil {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Opened document")
-	}
-	if doc.PatientID != nil {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, *doc.PatientID, "document", "Deleted document")
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, *doc.PatientID, "document", "Exported document")
 	}
 	return nil
 }
@@ -442,9 +436,6 @@ func (s *DocumentService) DeleteDocument(token string, id string) error {
 		return fmt.Errorf("failed to remove document file: %w", err)
 	}
 
-	if doc.PatientID != nil {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Opened document")
-	}
 	if doc.PatientID != nil {
 		_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, *doc.PatientID, "document", "Deleted document")
 	}

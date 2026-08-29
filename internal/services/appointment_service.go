@@ -60,7 +60,7 @@ func (s *AppointmentService) CreateAppointment(token string, a *domain.Appointme
 		return nil, fmt.Errorf("failed to create appointment: %w", err)
 	}
 	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, a.PatientID, "appointment", "Created appointment"); err != nil {
-		return nil, fmt.Errorf("failed to log audit action: %w", err)
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return a, nil
 }
@@ -77,7 +77,7 @@ func (s *AppointmentService) UpdateAppointment(token string, a *domain.Appointme
 		return nil, fmt.Errorf("failed to update appointment: %w", err)
 	}
 	if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, a.PatientID, "appointment", "Updated appointment"); err != nil {
-		return nil, fmt.Errorf("failed to log audit action: %w", err)
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return a, nil
 }
@@ -95,7 +95,7 @@ func (s *AppointmentService) DeleteAppointment(token string, id string) error {
 		return fmt.Errorf("failed to delete appointment: %w", err)
 	}
 	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, appt.PatientID, "appointment", "Deleted appointment"); err != nil {
-		return fmt.Errorf("failed to log audit action: %w", err)
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return nil
 }

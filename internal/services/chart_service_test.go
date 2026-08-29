@@ -29,9 +29,14 @@ func TestChartService(t *testing.T) {
 
 	auditRepo := sqlite.NewAuditRepository(auditDb)
 	configRepo := sqlite.NewPracticeConfigRepository(db)
-	configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "test_user", Name: "Test User", Pin: "1234", IsActive: true})
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "test_user", Name: "Test User", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
 	auditService := services.NewAuditService(auditRepo, configRepo)
-	token, _ := auditService.CreateSession("test_user", "1234")
+	token, err := auditService.CreateSession("test_user", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
 
 	patientRepo := sqlite.NewPatientRepository(db)
 	patientService := services.NewPatientService(patientRepo, auditService)

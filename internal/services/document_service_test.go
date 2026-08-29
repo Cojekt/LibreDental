@@ -28,9 +28,14 @@ func TestDocumentService(t *testing.T) {
 
 	auditRepo := sqlite.NewAuditRepository(db)
 	configRepo := sqlite.NewPracticeConfigRepository(db)
-	configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
 	auditSvc := services.NewAuditService(auditRepo, configRepo)
-	token, _ := auditSvc.CreateSession("prov_1", "1234")
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
 
 	service := services.NewDocumentService(repo, tempDir, auditSvc)
 

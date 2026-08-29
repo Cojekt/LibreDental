@@ -18,6 +18,7 @@
   let selectedProvider = $state<Provider | null>(null);
   let pinInput = $state("");
   let errorMsg = $state("");
+  let isLoggingIn = $state(false);
 
   function selectProvider(p: Provider) {
     selectedProvider = p;
@@ -35,20 +36,25 @@
 
   async function handleLogin(e: Event) {
     e.preventDefault();
-    if (!selectedProvider) return;
+    if (!selectedProvider || isLoggingIn) return;
 
     const currentAttemptProvider = selectedProvider;
+    const currentPin = pinInput;
+    isLoggingIn = true;
 
     try {
       const verifiedProvider = await PracticeConfigService.VerifyProviderPin(
         currentAttemptProvider.id,
-        pinInput
+        currentPin
       );
 
       if (selectedProvider !== currentAttemptProvider || !showModal) return;
 
       if (!verifiedProvider) throw new Error("Verification failed");
-      await auth.login(verifiedProvider, pinInput);
+      await auth.login(verifiedProvider, currentPin);
+
+      if (selectedProvider !== currentAttemptProvider || !showModal) return;
+
       showModal = false;
       selectedProvider = null;
       pinInput = "";
@@ -56,6 +62,8 @@
     } catch (err) {
       if (selectedProvider !== currentAttemptProvider || !showModal) return;
       errorMsg = m.staff_login_incorrect_pin();
+    } finally {
+      isLoggingIn = false;
     }
   }
 
@@ -165,13 +173,14 @@
           id="pin-input"
           type="password"
           bind:value={pinInput}
+          disabled={isLoggingIn}
           placeholder="****"
           maxlength="4"
           inputmode="numeric"
           pattern="[0-9]*"
           class="w-full rounded-xl border {errorMsg
             ? 'border-rose-500'
-            : 'border-slate-700'} bg-slate-900 px-4 py-3 text-lg tracking-[0.5em] text-center text-white focus:border-sky-500 focus:outline-none"
+            : 'border-slate-700'} bg-slate-900 px-4 py-3 text-lg tracking-[0.5em] text-center text-white focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {#if errorMsg}
           <p class="text-rose-400 text-xs font-semibold mt-2 text-center">{errorMsg}</p>
@@ -180,9 +189,10 @@
 
       <button
         type="submit"
-        class="w-full btn btn-primary py-3 font-bold text-sm shadow-md shadow-sky-500/20 mt-4"
+        disabled={isLoggingIn}
+        class="w-full btn btn-primary py-3 font-bold text-sm shadow-md shadow-sky-500/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {m.staff_login_signin()}
+        {isLoggingIn ? "..." : m.staff_login_signin()}
       </button>
     </form>
   {/if}

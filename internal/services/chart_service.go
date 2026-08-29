@@ -51,6 +51,20 @@ func (s *ChartService) SaveToothCondition(token string, c *domain.ToothCondition
 	if c.ID == "" {
 		c.ID = fmt.Sprintf("cond_%d", time.Now().UnixNano())
 		action = domain.AuditActionCreate
+	} else {
+		chart, err := s.chartRepo.GetChart(context.Background(), c.PatientID)
+		exists := false
+		if err == nil && chart != nil {
+			for _, existing := range chart.Conditions {
+				if existing.ID == c.ID {
+					exists = true
+					break
+				}
+			}
+		}
+		if !exists {
+			action = domain.AuditActionCreate
+		}
 	}
 
 	err := s.chartRepo.SaveCondition(context.Background(), c)
@@ -59,7 +73,7 @@ func (s *ChartService) SaveToothCondition(token string, c *domain.ToothCondition
 	}
 
 	if err := s.auditService.LogPatientAction(token, action, c.PatientID, "dental_chart", "Saved tooth condition"); err != nil {
-		return nil, fmt.Errorf("failed to log audit action: %w", err)
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return c, nil
 }
@@ -78,7 +92,7 @@ func (s *ChartService) DeleteToothCondition(token string, id string, patientID s
 	}
 
 	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, patientID, "dental_chart", "Deleted tooth condition"); err != nil {
-		return fmt.Errorf("failed to log audit action: %w", err)
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return nil
 }

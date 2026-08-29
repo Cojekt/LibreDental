@@ -53,7 +53,7 @@ func (s *PatientService) CreatePatient(token string, p *domain.Patient) (*domain
 		return nil, fmt.Errorf("failed to create patient: %w", err)
 	}
 	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", "Created new patient record"); err != nil {
-		return nil, fmt.Errorf("failed to log audit action: %w", err)
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return p, nil
 }
@@ -67,7 +67,7 @@ func (s *PatientService) UpdatePatient(token string, p *domain.Patient) (*domain
 		return nil, fmt.Errorf("failed to update patient: %w", err)
 	}
 	if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Updated patient record"); err != nil {
-		return nil, fmt.Errorf("failed to log audit action: %w", err)
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return p, nil
 }
@@ -84,7 +84,7 @@ func (s *PatientService) ArchivePatient(token string, id string) error {
 	err = s.repo.Update(context.Background(), p)
 	if err == nil {
 		if auditErr := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Archived patient record"); auditErr != nil {
-			return fmt.Errorf("failed to log audit action: %w", auditErr)
+			fmt.Printf("Warning: failed to log audit action: %v\n", auditErr)
 		}
 	}
 	return err
