@@ -3,7 +3,7 @@
   import Modal from "./ui/Modal.svelte";
   import { auth } from "../stores/auth.svelte.js";
   import { m } from "../paraglide/messages.js";
-  import { PracticeConfigService } from "@bindings/services/index.js";
+  import { PracticeConfigService, AuditService } from "@bindings/services/index.js";
 
   let {
     showModal = $bindable(false),
@@ -43,15 +43,14 @@
     isLoggingIn = true;
 
     try {
-      const verifiedProvider = await PracticeConfigService.VerifyProviderPin(
-        currentAttemptProvider.id,
-        currentPin
-      );
+      const token = await AuditService.CreateSession(currentAttemptProvider.id, currentPin);
 
-      if (selectedProvider !== currentAttemptProvider || !showModal) return;
+      if (selectedProvider !== currentAttemptProvider || !showModal) {
+        AuditService.DestroySession(token).catch(console.error);
+        return;
+      }
 
-      if (!verifiedProvider) throw new Error("Verification failed");
-      await auth.login(verifiedProvider, currentPin);
+      auth.commitSession(currentAttemptProvider, token);
 
       if (selectedProvider !== currentAttemptProvider || !showModal) return;
 
@@ -59,9 +58,17 @@
       selectedProvider = null;
       pinInput = "";
       errorMsg = "";
-    } catch (err) {
+    } catch (err: any) {
       if (selectedProvider !== currentAttemptProvider || !showModal) return;
-      errorMsg = m.staff_login_incorrect_pin();
+      if (
+        err &&
+        err.message &&
+        (err.message.includes("incorrect pin") || err.message.includes("pin not set"))
+      ) {
+        errorMsg = m.staff_login_incorrect_pin();
+      } else {
+        errorMsg = "Failed to create session";
+      }
     } finally {
       isLoggingIn = false;
     }

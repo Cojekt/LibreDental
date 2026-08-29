@@ -78,7 +78,7 @@ func (s *PatientService) ArchivePatient(token string, id string) error {
 	}
 	p, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get patient: %w", err)
 	}
 	p.Status = domain.StatusArchived
 	err = s.repo.Update(context.Background(), p)

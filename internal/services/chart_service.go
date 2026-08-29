@@ -47,29 +47,18 @@ func (s *ChartService) SaveToothCondition(token string, c *domain.ToothCondition
 		return nil, fmt.Errorf("%w: tooth condition cannot be nil", storage.ErrInvalidInput)
 	}
 
-	action := domain.AuditActionUpdate
 	if c.ID == "" {
 		c.ID = fmt.Sprintf("cond_%d", time.Now().UnixNano())
-		action = domain.AuditActionCreate
-	} else {
-		chart, err := s.chartRepo.GetChart(context.Background(), c.PatientID)
-		exists := false
-		if err == nil && chart != nil {
-			for _, existing := range chart.Conditions {
-				if existing.ID == c.ID {
-					exists = true
-					break
-				}
-			}
-		}
-		if !exists {
-			action = domain.AuditActionCreate
-		}
 	}
 
-	err := s.chartRepo.SaveCondition(context.Background(), c)
+	isInsert, err := s.chartRepo.SaveCondition(context.Background(), c)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save tooth condition: %w", err)
+	}
+
+	action := domain.AuditActionUpdate
+	if isInsert {
+		action = domain.AuditActionCreate
 	}
 
 	if err := s.auditService.LogPatientAction(token, action, c.PatientID, "dental_chart", "Saved tooth condition"); err != nil {

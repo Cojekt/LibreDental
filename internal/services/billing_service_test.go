@@ -33,9 +33,15 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 
 	auditRepo := sqlite.NewAuditRepository(db)
 	configRepo := sqlite.NewPracticeConfigRepository(db)
-	configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
+	err = configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
+	if err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
 	auditSvc := NewAuditService(auditRepo, configRepo)
-	token, _ := auditSvc.CreateSession("prov_1", "1234")
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
 
 	paymentRepo := sqlite.NewPaymentRepository(db)
 	bundleRepo := sqlite.NewBundleRepository(db)
@@ -81,7 +87,7 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
-	if err := chartRepo.SaveCondition(ctx, cond); err != nil {
+	if _, err := chartRepo.SaveCondition(ctx, cond); err != nil {
 		t.Fatalf("Failed to save tooth condition: %v", err)
 	}
 
@@ -123,9 +129,15 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 
 	auditRepo := sqlite.NewAuditRepository(db)
 	configRepo := sqlite.NewPracticeConfigRepository(db)
-	configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
+	err = configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
+	if err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
 	auditSvc := NewAuditService(auditRepo, configRepo)
-	token, _ := auditSvc.CreateSession("prov_1", "1234")
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
 
 	secretsSvc := NewSecretsService()
 	billingSvc := NewBillingService(

@@ -46,7 +46,7 @@ func TestChartRepository_CRUD(t *testing.T) {
 		Fee:         17500,
 	}
 
-	if err := chartRepo.SaveCondition(ctx, cond1); err != nil {
+	if _, err := chartRepo.SaveCondition(ctx, cond1); err != nil {
 		t.Fatalf("Failed to save tooth condition 1: %v", err)
 	}
 
@@ -62,7 +62,7 @@ func TestChartRepository_CRUD(t *testing.T) {
 		Fee:         0,
 	}
 
-	if err := chartRepo.SaveCondition(ctx, cond2); err != nil {
+	if _, err := chartRepo.SaveCondition(ctx, cond2); err != nil {
 		t.Fatalf("Failed to save tooth condition 2: %v", err)
 	}
 
@@ -93,7 +93,7 @@ func TestChartRepository_CRUD(t *testing.T) {
 
 	// 5. Update Condition 1 (Change status to completed)
 	cond1.Status = domain.ToothStatusCompleted
-	if err := chartRepo.SaveCondition(ctx, cond1); err != nil {
+	if _, err := chartRepo.SaveCondition(ctx, cond1); err != nil {
 		t.Fatalf("Failed to update tooth condition: %v", err)
 	}
 

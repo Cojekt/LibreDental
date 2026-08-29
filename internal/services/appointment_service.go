@@ -88,7 +88,7 @@ func (s *AppointmentService) DeleteAppointment(token string, id string) error {
 	}
 	appt, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get appointment: %w", err)
 	}
 	err = s.repo.Delete(context.Background(), id)
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *AppointmentService) UpdateAppointmentStatus(token string, id string, st
 	}
 	appt, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get appointment: %w", err)
 	}
 	appt.Status = domain.AppointmentStatus(status)
 	return s.UpdateAppointment(token, appt)

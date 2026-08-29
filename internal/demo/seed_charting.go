@@ -158,7 +158,7 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 	}
 
 	for _, cond := range conditions {
-		if err := chartRepo.SaveCondition(ctx, cond); err != nil {
+		if _, err := chartRepo.SaveCondition(ctx, cond); err != nil {
 			return fmt.Errorf("failed to seed tooth condition %s: %w", cond.ID, err)
 		}
 		summary.ConditionsCount++

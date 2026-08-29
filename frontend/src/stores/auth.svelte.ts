@@ -19,12 +19,14 @@ function createAuthStore() {
   }
 
   async function fetchStaffDetails(id: string) {
+    const attemptToken = sessionToken;
     try {
       const providers = await PracticeConfigService.ListProviders();
-      if (currentStaffId !== id) return;
+      if (currentStaffId !== id || sessionToken !== attemptToken) return;
       const provider = (providers as Provider[])?.find((p) => p.id === id && p.is_active);
       if (provider) {
         const fetchedUser = await AuditService.GetSessionUser(sessionToken);
+        if (currentStaffId !== id || sessionToken !== attemptToken) return;
         if (fetchedUser && fetchedUser.id === provider.id) {
           currentStaff = provider;
         } else {
@@ -42,12 +44,20 @@ function createAuthStore() {
 
   async function login(provider: Provider, pin: string) {
     const token = await AuditService.CreateSession(provider.id, pin);
+    commitSession(provider, token);
+  }
+
+  function commitSession(provider: Provider, token: string) {
+    const oldToken = sessionToken;
     currentStaffId = provider.id;
     currentStaff = provider;
     sessionToken = token;
     if (typeof window !== "undefined") {
       sessionStorage.setItem("currentStaffId", provider.id);
       sessionStorage.setItem("sessionToken", token);
+    }
+    if (oldToken) {
+      AuditService.DestroySession(oldToken).catch(console.error);
     }
   }
 
@@ -76,6 +86,7 @@ function createAuthStore() {
       return sessionToken;
     },
     login,
+    commitSession,
     logout,
   };
 }

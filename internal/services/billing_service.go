@@ -569,7 +569,7 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		// Mark tooth condition status as completed if it was treatment planned
 		if cond.Status == domain.ToothStatusTreatmentPlanned {
 			cond.Status = domain.ToothStatusCompleted
-			_ = s.chartRepo.SaveCondition(ctx, &cond)
+			_, _ = s.chartRepo.SaveCondition(ctx, &cond)
 		}
 	}
 

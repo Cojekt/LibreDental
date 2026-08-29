@@ -54,6 +54,7 @@
       loadDocuments();
     } else {
       documents = [];
+      isLoading = false;
     }
   });
 
