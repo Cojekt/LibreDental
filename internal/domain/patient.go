@@ -43,6 +43,8 @@ type Patient struct {
 	InsuranceCarrier       string      `json:"insurance_carrier,omitempty"`
 	InsurancePolicyNumber  string      `json:"insurance_policy_number,omitempty"`
 	InsuranceGroupNumber   string      `json:"insurance_group_number,omitempty"`
+	InsuranceIsSubscriber  bool        `json:"insurance_is_subscriber"`
+	InsuranceSubscriberID  string      `json:"insurance_subscriber_id,omitempty"`
 	PreferredContactMethod string      `json:"preferred_contact_method,omitempty"`
 	PreferredLanguage      string      `json:"preferred_language,omitempty"`
 	ReminderOptIn          bool        `json:"reminder_opt_in"`

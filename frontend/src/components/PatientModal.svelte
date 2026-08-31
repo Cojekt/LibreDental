@@ -34,6 +34,8 @@
     insuranceCarrier = $bindable(),
     insurancePolicy = $bindable(),
     insuranceGroup = $bindable(),
+    insuranceIsSubscriber = $bindable(),
+    insuranceSubscriberId = $bindable(),
     preferredContactMethod = $bindable(),
     preferredLanguage = $bindable(),
     reminderOptIn = $bindable(),
@@ -68,6 +70,8 @@
     insuranceCarrier: string;
     insurancePolicy: string;
     insuranceGroup: string;
+    insuranceIsSubscriber: boolean;
+    insuranceSubscriberId: string;
     preferredContactMethod: string;
     preferredLanguage: string;
     reminderOptIn: boolean;
@@ -247,6 +251,36 @@
             placeholder="e.g. 90210, M5V 2T6"
           />
         </FormField>
+
+        <FormField label={m.patient_pref_contact_method()} forId="pref-method">
+          <select
+            id="pref-method"
+            bind:value={preferredContactMethod}
+            class="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          >
+            <option value="phone">{(getLocaleVersion(), m.patient_pref_method_phone())}</option>
+            <option value="sms">{m.patient_pref_method_sms()}</option>
+            <option value="email">{m.patient_pref_method_email()}</option>
+          </select>
+        </FormField>
+
+        <FormField label={m.patient_pref_referral()} forId="referral">
+          <Input
+            id="referral"
+            type="text"
+            bind:value={referralSource}
+            placeholder="e.g. Doctor Referral, Online"
+          />
+        </FormField>
+
+        <div class="flex items-center pt-6">
+          <label
+            class="flex items-center gap-2.5 cursor-pointer text-sm text-slate-200 select-none"
+          >
+            <input type="checkbox" bind:checked={reminderOptIn} />
+            <span>{m.patient_pref_reminder_opt_in()}</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -337,35 +371,25 @@
           />
         </FormField>
 
-        <FormField label={m.patient_pref_contact_method()} forId="pref-method">
-          <select
-            id="pref-method"
-            bind:value={preferredContactMethod}
-            class="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-          >
-            <option value="phone">{(getLocaleVersion(), m.patient_pref_method_phone())}</option>
-            <option value="sms">{m.patient_pref_method_sms()}</option>
-            <option value="email">{m.patient_pref_method_email()}</option>
-          </select>
-        </FormField>
-
-        <FormField label={m.patient_pref_referral()} forId="referral">
-          <Input
-            id="referral"
-            type="text"
-            bind:value={referralSource}
-            placeholder="e.g. Doctor Referral, Online"
-          />
-        </FormField>
-
         <div class="flex items-center pt-6">
           <label
             class="flex items-center gap-2.5 cursor-pointer text-sm text-slate-200 select-none"
           >
-            <input type="checkbox" bind:checked={reminderOptIn} />
-            <span>{m.patient_pref_reminder_opt_in()}</span>
+            <input type="checkbox" bind:checked={insuranceIsSubscriber} />
+            <span>Subscriber (Head of Family)</span>
           </label>
         </div>
+
+        {#if !insuranceIsSubscriber}
+          <FormField label="Subscriber ID" forId="ins-subscriber">
+            <Input
+              id="ins-subscriber"
+              type="text"
+              bind:value={insuranceSubscriberId}
+              placeholder="e.g. pat_123456"
+            />
+          </FormField>
+        {/if}
       </div>
     </div>
 

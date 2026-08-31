@@ -144,6 +144,8 @@
   let insuranceCarrier = $state("");
   let insurancePolicy = $state("");
   let insuranceGroup = $state("");
+  let insuranceIsSubscriber = $state(true);
+  let insuranceSubscriberId = $state("");
   let preferredContactMethod = $state("phone");
   let preferredLanguage = $state("en");
   let reminderOptIn = $state(true);
@@ -290,6 +292,8 @@
     insuranceCarrier = "";
     insurancePolicy = "";
     insuranceGroup = "";
+    insuranceIsSubscriber = true;
+    insuranceSubscriberId = "";
     preferredContactMethod = "phone";
     preferredLanguage = "en";
     reminderOptIn = true;
@@ -324,6 +328,8 @@
     insuranceCarrier = p.insurance_carrier || "";
     insurancePolicy = p.insurance_policy_number || "";
     insuranceGroup = p.insurance_group_number || "";
+    insuranceIsSubscriber = p.insurance_is_subscriber;
+    insuranceSubscriberId = p.insurance_subscriber_id || "";
     preferredContactMethod = p.preferred_contact_method || "phone";
     preferredLanguage = p.preferred_language || "en";
     reminderOptIn = p.reminder_opt_in !== false;
@@ -370,6 +376,8 @@
           p.insurance_carrier = insuranceCarrier;
           p.insurance_policy_number = insurancePolicy;
           p.insurance_group_number = insuranceGroup;
+          p.insurance_is_subscriber = insuranceIsSubscriber;
+          p.insurance_subscriber_id = insuranceSubscriberId;
           p.preferred_contact_method = preferredContactMethod;
           p.preferred_language = preferredLanguage;
           p.reminder_opt_in = reminderOptIn;
@@ -399,6 +407,8 @@
           insurance_carrier: insuranceCarrier,
           insurance_policy_number: insurancePolicy,
           insurance_group_number: insuranceGroup,
+          insurance_is_subscriber: insuranceIsSubscriber,
+          insurance_subscriber_id: insuranceSubscriberId,
           preferred_contact_method: preferredContactMethod,
           preferred_language: preferredLanguage,
           reminder_opt_in: reminderOptIn,
@@ -699,6 +709,8 @@
   bind:insuranceCarrier
   bind:insurancePolicy
   bind:insuranceGroup
+  bind:insuranceIsSubscriber
+  bind:insuranceSubscriberId
   bind:preferredContactMethod
   bind:preferredLanguage
   bind:reminderOptIn

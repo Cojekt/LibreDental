@@ -19,7 +19,6 @@ tasks:
   server:
     desc: Builds and runs the application in server mode (HTTP server at http://localhost:4242)
     cmds:
-      - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config build/config.yml -dir build
       - rm -rf build/darwin build/ios
       - wails3 generate bindings -ts -i
       - cd frontend && {{.PACKAGE_MANAGER}} run build
@@ -35,7 +34,6 @@ tasks:
   artifact:
     desc: Builds all local artifacts (desktop binary, server binary, and demo data)
     cmds:
-      - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config build/config.yml -dir build
       - '{{if eq OS "windows"}}if exist "build\darwin" rmdir /s /q "build\darwin" & if exist "build\ios" rmdir /s /q "build\ios"{{else}}rm -rf build/darwin build/ios{{end}}'
       - wails3 generate bindings -ts -i
       - cd frontend && {{.PACKAGE_MANAGER}} run build
