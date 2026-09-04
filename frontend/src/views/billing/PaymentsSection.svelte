@@ -159,33 +159,33 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex justify-end">
-    <button
-      type="button"
-      class="btn btn-primary text-xs flex items-center gap-1.5"
-      onclick={openNewPayment}
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
-        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      {m.billing_btn_record_payment()}
-    </button>
-  </div>
-
   <div class="space-y-4">
-    <div class="max-w-xs space-y-1.5">
-      <FormField label="Select Patient for Ledger & Balance" forId="balance-patient">
-        <select
-          id="balance-patient"
-          bind:value={balancePatientId}
-          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-        >
-          <option value="">— Select patient —</option>
-          {#each patients as p}
-            <option value={p.id}>{p.first_name} {p.last_name}</option>
-          {/each}
-        </select>
-      </FormField>
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div class="w-full max-w-xs">
+        <FormField label="Select Patient for Ledger & Balance" forId="balance-patient">
+          <select
+            id="balance-patient"
+            bind:value={balancePatientId}
+            class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+          >
+            <option value="">— Select patient —</option>
+            {#each patients as p}
+              <option value={p.id}>{p.first_name} {p.last_name}</option>
+            {/each}
+          </select>
+        </FormField>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-primary text-xs flex items-center gap-1.5 shrink-0"
+        onclick={openNewPayment}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        {m.billing_btn_record_payment()}
+      </button>
     </div>
 
     {#if patientBalance && balancePatientId}

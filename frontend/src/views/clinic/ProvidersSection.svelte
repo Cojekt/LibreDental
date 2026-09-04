@@ -263,10 +263,10 @@
                 </div>
               {/if}
               {#if p.email}
-                <div>{p.email}</div>
+                <div>{m.prov_email_label()}: {p.email}</div>
               {/if}
               {#if p.phone}
-                <div>{p.phone}</div>
+                <div>{m.prov_phone_label()}: {p.phone}</div>
               {/if}
               {#if p.pin}
                 <div class="flex items-center gap-2">
