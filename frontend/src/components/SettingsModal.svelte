@@ -186,8 +186,7 @@
         <div>
           <span
             class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2.5"
-          >
-            {m.settings_section_appearance()}
+            >{m.settings_section_appearance()}
           </span>
           <div class="grid grid-cols-3 gap-2.5">
             <!-- System Theme -->
@@ -200,10 +199,7 @@
                   : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
               }`}
             >
-              <div class="text-2xl mb-1.5">💻</div>
-              <div class="text-sm font-semibold">
-                {m.settings_theme_system()}
-              </div>
+              <div class="text-sm font-semibold">{m.settings_theme_system()}</div>
             </button>
 
             <!-- Dark Mode -->
@@ -216,7 +212,6 @@
                   : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
               }`}
             >
-              <div class="text-2xl mb-1.5">🌙</div>
               <div class="text-sm font-semibold">{m.settings_theme_dark()}</div>
             </button>
 
@@ -230,10 +225,7 @@
                   : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
               }`}
             >
-              <div class="text-2xl mb-1.5">☀️</div>
-              <div class="text-sm font-semibold">
-                {m.settings_theme_light()}
-              </div>
+              <div class="text-sm font-semibold">{m.settings_theme_light()}</div>
             </button>
           </div>
         </div>
@@ -243,8 +235,7 @@
           <div>
             <span
               class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-            >
-              {m.settings_section_display()}
+              >{m.settings_section_display()}
             </span>
             <div
               class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-3"
@@ -280,10 +271,8 @@
 
         <!-- Language Section -->
         <div>
-          <span
-            class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-          >
-            {m.settings_section_language()}
+          <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
+            >{m.settings_section_language()}
           </span>
           <select
             id="language-select"
@@ -302,8 +291,7 @@
           <div>
             <span
               class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-            >
-              {m.settings_section_storage()}
+              >{m.settings_section_storage()}
             </span>
 
             <div

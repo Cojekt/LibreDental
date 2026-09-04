@@ -56,7 +56,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("✅ Demo save archive successfully created!\n")
+	fmt.Printf("Demo save archive successfully created!\n")
 	fmt.Printf("   • Practice Configured : %v\n", summary.PracticeConfigured)
 	fmt.Printf("   • Healthcare Providers: %d\n", summary.ProvidersCount)
 	fmt.Printf("   • Operatory Rooms     : %d\n", summary.OperatoriesCount)

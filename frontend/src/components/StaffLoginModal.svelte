@@ -87,7 +87,6 @@
   bind:showModal
   title={m.staff_login_title()}
   subtitle={m.staff_login_subtitle()}
-  icon="🔑"
   maxWidth="max-w-md"
 >
   {#if auth.currentStaffId}

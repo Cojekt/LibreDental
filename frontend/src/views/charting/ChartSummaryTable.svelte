@@ -86,11 +86,12 @@
     <div
       class="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-between"
     >
-      <span>✓ {claimNoticeMsg}</span>
+      <span>{claimNoticeMsg}</span>
       <button
         type="button"
         onclick={() => (claimNoticeMsg = "")}
-        class="text-emerald-400 hover:text-white">✕</button
+        class="text-emerald-400 hover:text-white"
+        aria-label="Dismiss">✕</button
       >
     </div>
   {/if}
@@ -123,8 +124,8 @@
             <tr class="hover:bg-slate-800/40 transition-colors">
               <td class="py-3 px-4 font-bold text-sky-400">
                 Tooth {getToothLabel(cond.tooth_number, currentToothSystem)}
-                <span class="text-[10px] text-slate-500 font-normal">
-                  {m.charting_th_internal_no()}{cond.tooth_number})</span
+                <span class="text-[10px] text-slate-500 font-normal"
+                  >{m.charting_th_internal_no()}{cond.tooth_number})</span
                 >
               </td>
               <td class="py-3 px-4 font-mono font-medium text-slate-300">

@@ -36,7 +36,7 @@
   }
 </script>
 
-<Modal bind:showModal preventDismiss={loading} {title} icon="⚠️" maxWidth="max-w-md">
+<Modal bind:showModal preventDismiss={loading} {title} maxWidth="max-w-md">
   <div class="py-4 text-slate-300 text-sm">
     {message}
   </div>

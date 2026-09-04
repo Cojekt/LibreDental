@@ -126,7 +126,7 @@
         {#if procedureCodes.length > 0}
           <div class="flex flex-col gap-1">
             <label for="condition-catalog-code" class="text-xs font-semibold text-sky-400">
-              📍 {countryMeta?.name || "Regional"}
+              {countryMeta?.name || "Regional"}
               {m.charting_modal_catalog_label()}
             </label>
             <select

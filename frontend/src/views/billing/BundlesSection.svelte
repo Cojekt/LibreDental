@@ -178,7 +178,6 @@
     <EmptyState
       title={m.billing_no_bundles()}
       subtitle="Create procedure bundle templates (e.g. Crown + Build-up) to speed up claim entry."
-      icon="📦"
     />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -275,7 +274,6 @@
   bind:showModal={showBundleModal}
   title={isEditingBundle ? "Edit Bundle" : m.billing_bundle_btn_create()}
   subtitle="Configure multi-code procedure templates for single-click claim entry"
-  icon="📦"
   maxWidth="max-w-3xl"
 >
   <form onsubmit={saveBundle} class="space-y-4">

@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS patients (
 	insurance_carrier TEXT DEFAULT '',
 	insurance_policy_number TEXT DEFAULT '',
 	insurance_group_number TEXT DEFAULT '',
+	insurance_is_subscriber INTEGER NOT NULL DEFAULT 0,
+	insurance_subscriber_id TEXT DEFAULT '',
 	preferred_contact_method TEXT DEFAULT 'phone',
 	preferred_language TEXT DEFAULT '',
 	reminder_opt_in INTEGER NOT NULL DEFAULT 1,

@@ -1,3 +1,4 @@
-h1:GMcPDrfQNgy+BuerS25azniMlnj6AqmzDv9YXrImOW0=
+h1:S21rKllNTUFDQJqM2FlHG34XTSds+wSVe+jYDO93SEY=
 20260827000744_initial_schema.sql h1:orsXvjIO0RfRnjFGV4HiGFdEAABZYUqhuwXvG2pBzfc=
 20260828015510_add_provider_pin.sql h1:GLNXrxkzYKPrvDAcr5kMMBoQDO587gXRP7fhWdgpd74=
+20260904151500_add_patient_insurance_subscriber_fields.sql h1:Vj4KaQ61mdsF2DlnclpFb31nQxtRBubeNkh4RNjg6S4=

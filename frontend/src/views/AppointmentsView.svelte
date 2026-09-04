@@ -362,7 +362,6 @@
               : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span>📅</span>
           {m.appts_view_grid()}
         </button>
         <button
@@ -374,7 +373,6 @@
               : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span>📋</span>
           {m.appts_view_agenda()}
         </button>
       </div>
@@ -490,7 +488,6 @@
       <div
         class="flex items-center gap-2 text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3 py-1.5 rounded-lg"
       >
-        <span>📋</span>
         <span>{m.appts_agenda_header()}</span>
       </div>
     {/if}
@@ -516,7 +513,6 @@
   <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
       {#if viewMode === "calendar" || viewMode === "grid"}
-        <span>📅</span>
         {#if calendarView === "day"}
           {formattedDateHeading(selectedDate)}
         {:else if calendarView === "week"}
@@ -525,7 +521,6 @@
           {monthYearHeading}
         {/if}
       {:else}
-        <span>📋</span>
         Agenda (All Dates)
       {/if}
     </h2>

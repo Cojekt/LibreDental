@@ -84,7 +84,7 @@
   });
 </script>
 
-<Modal bind:showModal title={modalTitle} subtitle={modalSubtitle} icon="📅" maxWidth="max-w-xl">
+<Modal bind:showModal title={modalTitle} subtitle={modalSubtitle} maxWidth="max-w-xl">
   <form onsubmit={onsave} class="space-y-4">
     <!-- Patient Picker -->
     <FormField label={m.appt_label_patient()} forId="appt-patient" required>

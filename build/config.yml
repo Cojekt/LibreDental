@@ -52,8 +52,6 @@ dev_mode:
       - "*.ts" # The frontend directory will be excluded entirely by the setting above.
     git_ignore: true
   executes:
-    - cmd: wails3 update build-assets -name "libredental" -binaryname "libredental" -config build/config.yml -dir build
-      type: blocking
     - cmd: rm -rf build/darwin build/ios
       type: blocking
     - cmd: task -t .github/Taskfile.yml build DEV=true

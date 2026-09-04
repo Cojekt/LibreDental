@@ -122,9 +122,9 @@
                       {getPatientName(appt.patient_id)}
                     </div>
                     <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                      <span>⏱ {formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span>
+                      <span> {formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span>
                       {#if getPatientPhone(appt.patient_id)}
-                        <span>📞 {getPatientPhone(appt.patient_id)}</span>
+                        <span>{getPatientPhone(appt.patient_id)}</span>
                       {/if}
                     </div>
                   </div>
@@ -136,15 +136,15 @@
                   <div
                     class="mt-2 text-xs font-medium text-sky-200/90 bg-slate-900/60 rounded-lg px-2.5 py-1"
                   >
-                    📋 {appt.reason}
+                    {appt.reason}
                   </div>
                 {/if}
 
                 <div
                   class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-700/50"
                 >
-                  <span>👤 {getProviderName(appt.provider_id)}</span>
-                  <span>📍 {getOperatoryName(appt.operatory_id)}</span>
+                  <span>{getProviderName(appt.provider_id)}</span>
+                  <span>{getOperatoryName(appt.operatory_id)}</span>
                 </div>
 
                 <!-- Quick Status Actions -->
