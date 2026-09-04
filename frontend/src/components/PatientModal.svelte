@@ -102,7 +102,6 @@
   bind:showModal={showPatientModal}
   title={modalTitle}
   subtitle={modalSubtitle}
-  icon="👤"
   maxWidth="max-w-3xl"
 >
   <form onsubmit={onsave} class="space-y-6">
@@ -111,7 +110,7 @@
       <h3
         class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3 flex items-center gap-1.5"
       >
-        <span>👤</span> Patient Identity & Demographics
+        Patient Identity & Demographics
       </h3>
       <div
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
@@ -188,7 +187,7 @@
       <h3
         class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3 flex items-center gap-1.5"
       >
-        <span>📍</span> Contact Details & Location
+        Contact Details & Location
       </h3>
       <div
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
@@ -289,7 +288,7 @@
       <h3
         class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3 flex items-center gap-1.5"
       >
-        <span>🆘</span> Emergency Contact & Billing Guarantor
+        Emergency Contact & Billing Guarantor
       </h3>
       <div
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
@@ -341,7 +340,7 @@
       <h3
         class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3 flex items-center gap-1.5"
       >
-        <span>🛡️</span> Dental Insurance & Preferences
+        Dental Insurance & Preferences
       </h3>
       <div
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"

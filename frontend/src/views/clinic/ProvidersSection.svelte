@@ -218,9 +218,9 @@
   </div>
 
   {#if providers.length === 0}
-    <EmptyState title={m.prov_empty_title()} subtitle={m.prov_empty_sub()} icon="👨‍⚕️" />
+    <EmptyState title={m.prov_empty_title()} subtitle={m.prov_empty_sub()} />
   {:else if filteredProviders.length === 0}
-    <EmptyState title={m.prov_no_results_title()} subtitle={m.prov_no_results_desc()} icon="🔍" />
+    <EmptyState title={m.prov_no_results_title()} subtitle={m.prov_no_results_desc()} />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each filteredProviders as p}
@@ -245,8 +245,7 @@
             </div>
             <span
               class={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${p.is_active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-slate-800 text-slate-500"}`}
-            >
-              {p.is_active ? m.common_active() : m.common_inactive()}
+              >{p.is_active ? m.common_active() : m.common_inactive()}
             </span>
           </div>
 
@@ -259,15 +258,15 @@
               {/if}
               {#if p.license_number}
                 <div>
-                  🪪 {m.prov_license_prefix()}
+                  {m.prov_license_prefix()}
                   <span class="text-slate-300 font-mono">{p.license_number}</span>
                 </div>
               {/if}
               {#if p.email}
-                <div>✉️ {p.email}</div>
+                <div>{p.email}</div>
               {/if}
               {#if p.phone}
-                <div>📞 {p.phone}</div>
+                <div>{p.phone}</div>
               {/if}
               {#if p.pin}
                 <div class="flex items-center gap-2">
@@ -379,7 +378,6 @@
   bind:showModal={showProviderModal}
   title={isEditingProvider ? m.prov_modal_subtitle() : m.prov_add_btn()}
   subtitle={m.prov_modal_subtitle()}
-  icon="👨‍⚕️"
   maxWidth="max-w-md"
 >
   <form onsubmit={handleSaveProvider} class="space-y-4">

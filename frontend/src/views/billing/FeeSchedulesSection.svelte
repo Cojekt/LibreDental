@@ -124,7 +124,7 @@
       </select>
     </div>
     <div class="text-xs text-sky-400 font-semibold">
-      📍 {countryMeta?.name || "Global"}
+      {countryMeta?.name || "Global"}
       {m.billing_catalog_banner()}
     </div>
   </div>
@@ -168,8 +168,7 @@
                 {#if hasCustom}
                   <span
                     class="ml-2 text-[10px] text-amber-400 font-semibold px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-800"
-                  >
-                    {m.billing_custom_tag()}
+                    >{m.billing_custom_tag()}
                   </span>
                 {/if}
               </td>
@@ -195,7 +194,6 @@
   bind:showModal={showFeeModal}
   title={`${m.billing_fee_edit_title()}: ${editingFeeCode}`}
   subtitle={m.billing_fee_custom_desc()}
-  icon="🏷️"
   maxWidth="max-w-md"
 >
   <form onsubmit={saveFeeSchedule} class="space-y-4">

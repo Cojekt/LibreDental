@@ -99,7 +99,7 @@
   </div>
 
   {#if filteredOperatories.length === 0}
-    <EmptyState title={m.clinic_op_empty_title()} subtitle={m.clinic_op_empty_sub()} icon="🚪" />
+    <EmptyState title={m.clinic_op_empty_title()} subtitle={m.clinic_op_empty_sub()} />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each filteredOperatories as op}
@@ -151,7 +151,6 @@
   bind:showModal={showOperatoryModal}
   title={isEditingOperatory ? m.clinic_op_modal_edit_title() : m.clinic_op_modal_add_title()}
   subtitle={m.clinic_op_modal_edit_title()}
-  icon="🦷"
   maxWidth="max-w-md"
 >
   <form onsubmit={handleSaveOperatory} class="space-y-4">

@@ -377,7 +377,7 @@
   {#if loadingClaims}
     <div class="p-8 text-center text-sm text-slate-400">{m.common_loading()}</div>
   {:else if claims.length === 0}
-    <EmptyState title={m.billing_no_claims()} icon="📄" />
+    <EmptyState title={m.billing_no_claims()} />
   {:else}
     <div class="rounded-xl border border-slate-800 bg-slate-900/40 overflow-x-auto">
       <table class="w-full text-left text-sm text-slate-300">
@@ -499,7 +499,6 @@
   bind:showModal={showClaimModal}
   title={isEditingClaim ? "Edit Claim" : m.billing_btn_new_claim()}
   subtitle="Configure claim details, insurance carrier policy numbers, and CDT line items"
-  icon="📄"
   maxWidth="max-w-4xl"
 >
   <form onsubmit={saveClaim} class="space-y-5">
@@ -594,8 +593,7 @@
             type="button"
             class="btn btn-secondary btn-sm flex items-center gap-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60"
             onclick={openChartImportModal}
-          >
-            🦷 {m.billing_btn_import_chart()}
+            >{m.billing_btn_import_chart()}
           </button>
           <div class="flex items-center gap-1.5">
             <input
@@ -621,7 +619,7 @@
       </div>
 
       {#if bundleLookupError}
-        <p class="text-xs text-rose-400 m-0">⚠️ {bundleLookupError}</p>
+        <p class="text-xs text-rose-400 m-0">{bundleLookupError}</p>
       {/if}
 
       {#if claimLineItems.length > 0}
@@ -730,7 +728,6 @@
   bind:showModal={showChartImportModal}
   title={m.billing_chart_import_title()}
   subtitle={m.billing_chart_import_desc()}
-  icon="🦷"
   maxWidth="max-w-2xl"
 >
   <div class="space-y-4">

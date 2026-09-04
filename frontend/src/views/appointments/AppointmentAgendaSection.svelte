@@ -60,11 +60,11 @@
                 <div
                   class="text-slate-200 font-semibold text-xs flex items-center gap-1.5 group-hover/date:text-sky-400 group-hover/date:underline"
                 >
-                  <span class="text-slate-400">📅</span>
+                  <span class="text-slate-400"></span>
                   {formatApptDate(appt.start_time)}
                 </div>
                 <div class="text-sky-400 text-xs mt-1 flex items-center gap-1.5">
-                  <span class="text-slate-400">⏱</span>
+                  <span class="text-slate-400"></span>
                   {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
                 </div>
               </button>

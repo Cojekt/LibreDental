@@ -35,7 +35,7 @@
   {/if}
 
   {#if error}
-    <p class="text-[11px] text-rose-400 m-0">⚠️ {error}</p>
+    <p class="text-[11px] text-rose-400 m-0">{error}</p>
   {:else if helpText}
     <p class="text-[11px] text-slate-400 m-0">{helpText}</p>
   {/if}

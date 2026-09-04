@@ -80,8 +80,8 @@
     <div class="space-y-6">
       <!-- Claims Integrations (US) Section -->
       <div>
-        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
-          {m.integrations_section_claims_us()}
+        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
+          >{m.integrations_section_claims_us()}
         </span>
 
         <div class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">

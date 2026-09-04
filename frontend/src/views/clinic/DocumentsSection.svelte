@@ -249,7 +249,7 @@
       ></div>
     </div>
   {:else if documents.length === 0}
-    <EmptyState title={m.doc_empty_title()} subtitle={m.doc_empty_subtitle()} icon="📄" />
+    <EmptyState title={m.doc_empty_title()} subtitle={m.doc_empty_subtitle()} />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each documents as doc}
@@ -313,7 +313,6 @@
   bind:showModal={showUploadModal}
   title={m.doc_btn_upload()}
   subtitle={m.doc_modal_subtitle()}
-  icon="📤"
   maxWidth="max-w-md"
 >
   <form onsubmit={handleUpload} class="space-y-4">
@@ -384,7 +383,6 @@
   <div
     class="fixed bottom-4 right-4 bg-emerald-500/20 border border-emerald-500/50 text-emerald-100 px-4 py-3 rounded-xl shadow-lg shadow-emerald-500/10 z-50 backdrop-blur-md transition-opacity duration-500 flex items-center gap-2 max-w-md"
   >
-    <span>✅</span>
     <p class="text-sm font-medium truncate" title={exportSuccessMsg}>{exportSuccessMsg}</p>
   </div>
 {/if}

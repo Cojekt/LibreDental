@@ -21,7 +21,7 @@
   const langState = useLanguageState();
 
   function getFlagEmoji(countryCode: string) {
-    if (!countryCode) return "🌐";
+    if (!countryCode) return "";
     const codePoints = countryCode
       .toUpperCase()
       .split("")

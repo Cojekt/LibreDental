@@ -102,7 +102,7 @@
                   {#each p.medical_alerts as alert}
                     <span
                       class="rounded-md border border-amber-400/30 bg-amber-500/15 px-2 py-1 text-xs font-medium text-amber-400"
-                      >⚠️ {alert}</span
+                      >{alert}</span
                     >
                   {/each}
                 </div>

@@ -166,9 +166,7 @@
         <p class="text-sm font-semibold text-slate-300">
           {(getLocaleVersion(), m.patient_info_no_selected_title())}
         </p>
-        <p class="mt-1 text-xs text-slate-400 max-w-[220px]">
-          {m.patient_info_no_selected_desc()}
-        </p>
+        <p class="mt-1 text-xs text-slate-400 max-w-[220px]">{m.patient_info_no_selected_desc()}</p>
       </div>
     {:else}
       <!-- Full Patient Info View -->
@@ -343,7 +341,7 @@
         {#if patient.emergency_contact_name || patient.emergency_contact_phone}
           <div class="space-y-2 text-xs">
             <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
-              🆘 {m.patient_info_emergency_title()}
+              {m.patient_info_emergency_title()}
             </p>
             <div
               class="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 space-y-1 text-slate-300"
@@ -367,7 +365,7 @@
         {#if patient.insurance_carrier || patient.insurance_policy_number}
           <div class="space-y-2 text-xs">
             <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
-              🛡️ {m.patient_info_insurance_title()}
+              {m.patient_info_insurance_title()}
             </p>
             <div
               class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-1.5 text-slate-300"
@@ -395,7 +393,7 @@
         {#if patient.guarantor_name}
           <div class="space-y-2 text-xs">
             <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
-              💳 {m.patient_info_guarantor_title()}
+              {m.patient_info_guarantor_title()}
             </p>
             <div
               class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-1 text-slate-300"
@@ -418,7 +416,7 @@
         <!-- Preferences & Reminders -->
         <div class="space-y-2 text-xs">
           <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
-            ⚙️ {m.patient_info_preferences_title()}
+            {m.patient_info_preferences_title()}
           </p>
           <div
             class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-1.5 text-slate-300"
@@ -434,14 +432,12 @@
               {#if patient.reminder_opt_in !== false}
                 <span
                   class="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20"
-                >
-                  ✓ {m.patient_info_reminders_enabled()}
+                  >{m.patient_info_reminders_enabled()}
                 </span>
               {:else}
                 <span
                   class="text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded"
-                >
-                  ✕ {m.patient_info_reminders_disabled()}
+                  >{m.patient_info_reminders_disabled()}
                 </span>
               {/if}
             </div>
@@ -464,16 +460,14 @@
               {#each patient.medical_alerts as alert}
                 <span
                   class="rounded-md border border-amber-400/30 bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-400 flex items-center gap-1"
-                >
-                  ⚠️ {alert}
+                  >{alert}
                 </span>
               {/each}
             </div>
           {:else}
             <span
               class="inline-block rounded-md bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-400"
-            >
-              {m.patients_clean_record()}
+              >{m.patients_clean_record()}
             </span>
           {/if}
         </div>

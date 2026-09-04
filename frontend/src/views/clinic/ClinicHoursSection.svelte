@@ -53,8 +53,7 @@
           {#if hour.is_closed}
             <span
               class="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full"
-            >
-              {m.clinic_hours_status_closed()}
+              >{m.clinic_hours_status_closed()}
             </span>
           {:else if !isEditingProfile}
             <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-300">
@@ -63,8 +62,7 @@
                   {#each hour.slots as slot, sIdx}
                     <span
                       class="bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2.5 py-1 rounded-lg"
-                    >
-                      {m.clinic_hours_shift_label()}
+                      >{m.clinic_hours_shift_label()}
                       {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(slot.close_time)}
                     </span>
                   {/each}
@@ -84,7 +82,7 @@
                     <span
                       class="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1"
                     >
-                      <span>☕ {brk.name || "Break"}:</span>
+                      <span>{brk.name || "Break"}:</span>
                       <span class="font-semibold"
                         >{formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}</span
                       >
@@ -161,7 +159,7 @@
             <div class="pt-2 border-t border-slate-800/60 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold text-amber-400/90 flex items-center gap-1.5">
-                  <span>☕ {m.clinic_hours_breaks_title()}</span>
+                  <span>{m.clinic_hours_breaks_title()}</span>
                 </span>
                 <button
                   type="button"

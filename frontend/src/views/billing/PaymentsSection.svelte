@@ -295,7 +295,6 @@
   bind:showModal={showPaymentModal}
   title={m.billing_pay_modal_title()}
   subtitle={m.billing_pay_modal_subtitle()}
-  icon="💵"
   maxWidth="max-w-md"
 >
   <form onsubmit={savePayment} class="space-y-4">

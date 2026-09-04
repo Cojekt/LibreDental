@@ -72,9 +72,7 @@
         <span class="text-slate-300">{m.charting_legend_missing()}</span>
       </div>
     </div>
-    <div class="text-slate-400 text-[11px]">
-      {m.charting_guidance_text()}
-    </div>
+    <div class="text-slate-400 text-[11px]">{m.charting_guidance_text()}</div>
   </div>
 
   <!-- Odontogram Chart Layout -->
