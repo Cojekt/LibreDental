@@ -8,7 +8,7 @@ require (
 	github.com/suyashkumar/dicom v1.1.0
 	github.com/wailsapp/wails/v3 v3.0.0-beta.15
 	github.com/zalando/go-keyring v0.2.8
-	modernc.org/sqlite v1.57.0
+	modernc.org/sqlite v1.58.0
 )
 
 require (
