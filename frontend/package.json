@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@inlang/paraglide-js": "^2.24.1",
-    "@inlang/plugin-m-function-matcher": "^2.2.12",
+    "@inlang/plugin-m-function-matcher": "^2.2.13",
     "@inlang/plugin-message-format": "^4.4.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tsconfig/svelte": "^5.0.8",
