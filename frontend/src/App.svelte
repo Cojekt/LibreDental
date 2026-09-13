@@ -52,12 +52,8 @@
     } catch (e) {
       console.warn("Could not query OS dark mode from backend:", e);
     }
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    ) {
-      return "dark";
+    if (typeof window !== "undefined" && window.matchMedia) {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
     return "dark";
   }
@@ -212,7 +208,7 @@
 
   async function handleOnboardingComplete(countryCode: string) {
     try {
-      const cfg = await PracticeConfigService.SetConfig(countryCode);
+      const cfg = await PracticeConfigService.SetConfig(auth.token, countryCode);
       practiceConfig = cfg;
       await loadCountryMeta(countryCode);
       showOnboarding = false;
@@ -240,16 +236,22 @@
     await loadClinicData();
   }
 
+  let patientsRequestGen = 0;
+
   async function loadPatients() {
     if (!auth.token) return;
+    const gen = ++patientsRequestGen;
     loadingPatients = true;
     try {
       const res = await PatientService.ListPatients(auth.token, searchQuery, statusFilter);
+      if (gen !== patientsRequestGen) return; // a newer search superseded this one
       patients = (res?.filter(Boolean) as Patient[]) || [];
     } catch (err) {
       console.error("Failed to load patients:", err);
     } finally {
-      loadingPatients = false;
+      if (gen === patientsRequestGen) {
+        loadingPatients = false;
+      }
     }
   }
 
@@ -324,7 +326,7 @@
     emergencyPhone = p.emergency_contact_phone || "";
     guarantorName = p.guarantor_name || "";
     guarantorRel = p.guarantor_rel || "";
-    guarantorPhone = p.emergency_contact_phone || "";
+    guarantorPhone = p.guarantor_phone || "";
     insuranceCarrier = p.insurance_carrier || "";
     insurancePolicy = p.insurance_policy_number || "";
     insuranceGroup = p.insurance_group_number || "";
@@ -669,7 +671,7 @@
     {:else if activeTab === "billing"}
       <BillingView {patients} {providers} {countryMeta} />
     {:else if activeTab === "audit"}
-      <AuditView {patients} />
+      <AuditView {patients} {countryMeta} />
     {/if}
   </main>
 </div>

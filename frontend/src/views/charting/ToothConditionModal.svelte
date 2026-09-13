@@ -89,12 +89,12 @@
         <span class="text-xs font-semibold text-slate-300">{m.charting_modal_surfaces_label()}</span
         >
         <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {#each [{ id: "M", label: "Mesial (M)" }, { id: "D", label: "Distal (D)" }, { id: "O", label: "Occlusal (O)" }, { id: "I", label: "Incisal (I)" }, { id: "F", label: "Facial (F)" }, { id: "L", label: "Lingual (L)" }] as s}
+          {#each [{ id: ToothSurface.SurfaceMesial, label: "Mesial (M)" }, { id: ToothSurface.SurfaceDistal, label: "Distal (D)" }, { id: ToothSurface.SurfaceOcclusal, label: "Occlusal (O)" }, { id: ToothSurface.SurfaceIncisal, label: "Incisal (I)" }, { id: ToothSurface.SurfaceFacial, label: "Facial (F)" }, { id: ToothSurface.SurfaceLingual, label: "Lingual (L)" }] as s}
             <button
               type="button"
-              onclick={() => toggleSurface(s.id as any)}
+              onclick={() => toggleSurface(s.id)}
               class={`py-2 px-2 text-xs font-bold rounded-xl border transition-all ${
-                formSurfaces.includes(s.id as any)
+                formSurfaces.includes(s.id)
                   ? "bg-sky-500 text-white border-sky-400 shadow-md shadow-sky-500/20"
                   : "bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700"
               }`}

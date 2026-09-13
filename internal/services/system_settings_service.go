@@ -364,7 +364,9 @@ func (s *SystemSettingsService) IsSystemDarkMode() (bool, error) {
 		outTheme, err := exec.Command("gsettings", "get", "org.gnome.desktop.interface", "gtk-theme").Output()
 		if err == nil && (len(outTheme) > 0) {
 			str := string(outTheme)
-			if (len(str) >= 4) && (str[len(str)-5:] == "dark'" || str[len(str)-6:] == "dark'\n" || str[len(str)-4:] == "dark") {
+			if (len(str) >= 6 && str[len(str)-6:] == "dark'\n") ||
+				(len(str) >= 5 && str[len(str)-5:] == "dark'") ||
+				(len(str) >= 4 && str[len(str)-4:] == "dark") {
 				return true, nil
 			}
 			for i := 0; i <= len(str)-4; i++ {

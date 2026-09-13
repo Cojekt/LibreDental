@@ -8,6 +8,7 @@
   } from "@bindings/domain/models.js";
   import { ProviderRole, OperatoryType } from "@bindings/domain/models.js";
   import { PracticeConfigService } from "@bindings/services/index.js";
+  import { auth } from "../stores/auth.svelte.js";
   import TabNav from "../components/ui/TabNav.svelte";
   import ClinicProfileSection from "./clinic/ClinicProfileSection.svelte";
   import ClinicHoursSection from "./clinic/ClinicHoursSection.svelte";
@@ -318,6 +319,7 @@
       }
 
       const res = await PracticeConfigService.UpdatePracticeConfig(
+        auth.token,
         updatedConfig as unknown as PracticeConfig
       );
       if (res) {
@@ -386,7 +388,7 @@
         hourly_rate: Math.round(provHourlyRate * 100),
       };
 
-      await PracticeConfigService.SaveProvider(p as unknown as Provider);
+      await PracticeConfigService.SaveProvider(auth.token, p as unknown as Provider);
       showProviderModal = false;
       await onrefresh();
     } catch (err) {
@@ -405,7 +407,7 @@
   async function executeDeleteProvider() {
     if (!providerToDelete) return;
     try {
-      await PracticeConfigService.DeleteProvider(providerToDelete);
+      await PracticeConfigService.DeleteProvider(auth.token, providerToDelete);
       await onrefresh();
       providerToDelete = "";
     } catch (err) {
@@ -448,7 +450,7 @@
         is_active: opIsActive,
       };
 
-      await PracticeConfigService.SaveOperatory(op as unknown as Operatory);
+      await PracticeConfigService.SaveOperatory(auth.token, op as unknown as Operatory);
       showOperatoryModal = false;
       await onrefresh();
     } catch (err) {
@@ -467,7 +469,7 @@
   async function executeDeleteOperatory() {
     if (!operatoryToDelete) return;
     try {
-      await PracticeConfigService.DeleteOperatory(operatoryToDelete);
+      await PracticeConfigService.DeleteOperatory(auth.token, operatoryToDelete);
       await onrefresh();
       operatoryToDelete = "";
     } catch (err) {

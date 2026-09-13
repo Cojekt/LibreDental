@@ -3,8 +3,13 @@
   import { onMount } from "svelte";
   import { m } from "../paraglide/messages.js";
   import { BillingService } from "@bindings/services/index.js";
-  import type { Payment } from "@bindings/domain/index.js";
+  import type { Payment, CountryConfig } from "@bindings/domain/index.js";
   import { getTodayDateString, getLocalDateString } from "$lib/date.js";
+  import { formatCurrency } from "$lib/currency.js";
+
+  let { countryMeta = null } = $props<{
+    countryMeta?: CountryConfig | null;
+  }>();
 
   let payments = $state<Payment[]>([]);
   let loading = $state(false);
@@ -85,8 +90,7 @@
     >
       <span class="text-sm font-medium text-sky-400">Total Revenue</span>
       <span class="mt-2 text-3xl font-bold text-slate-100">
-        <!-- Assume USD/cents for now, this could be localized later -->
-        ${(totalRevenue / 100).toFixed(2)}
+        {formatCurrency(totalRevenue, countryMeta?.default_currency)}
       </span>
     </div>
     <div
@@ -126,7 +130,7 @@
               <td class="whitespace-nowrap px-4 py-3">{payment.date}</td>
               <td class="px-4 py-3 capitalize">{payment.method}</td>
               <td class="px-4 py-3 text-right font-medium text-slate-200"
-                >${(payment.amount / 100).toFixed(2)}</td
+                >{formatCurrency(payment.amount, countryMeta?.default_currency)}</td
               >
             </tr>
           {/each}

@@ -135,7 +135,9 @@ func ParseDicomDataURLs(data []byte) ([]string, error) {
 			}
 		}
 
-		return nil, frameErr
+		// Skip this frame but keep any frames already decoded — one corrupt
+		// frame in a multi-frame series shouldn't make the whole thing unviewable.
+		fmt.Printf("Warning: skipping unreadable DICOM frame %d: %v\n", i, frameErr)
 	}
 
 	if len(dataURLs) == 0 {

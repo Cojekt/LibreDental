@@ -2,7 +2,9 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -142,6 +144,43 @@ func (r *ChartRepository) SaveCondition(ctx context.Context, c *domain.ToothCond
 	}
 
 	return !exists, nil
+}
+
+func (r *ChartRepository) GetConditionByID(ctx context.Context, id string) (*domain.ToothCondition, error) {
+	if id == "" {
+		return nil, fmt.Errorf("%w: ID is required", storage.ErrInvalidInput)
+	}
+
+	query := `
+	SELECT id, patient_id, tooth_number, surfaces, ada_code, description, status, fee, created_at, updated_at
+	FROM dental_conditions
+	WHERE id = ?`
+
+	var c domain.ToothCondition
+	var surfacesJSON string
+	var statusStr string
+
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&c.ID, &c.PatientID, &c.ToothNumber, &surfacesJSON,
+		&c.ADACode, &c.Description, &statusStr, &c.Fee,
+		&c.CreatedAt, &c.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to query tooth condition: %w", err)
+	}
+
+	c.Status = domain.ToothStatus(statusStr)
+	if len(surfacesJSON) > 0 {
+		json.Unmarshal([]byte(surfacesJSON), &c.Surfaces)
+	}
+	if c.Surfaces == nil {
+		c.Surfaces = []domain.ToothSurface{}
+	}
+
+	return &c, nil
 }
 
 func (r *ChartRepository) DeleteCondition(ctx context.Context, id string) error {

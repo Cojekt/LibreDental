@@ -23,7 +23,7 @@ func TestTimecardService_ValidationAndErrors(t *testing.T) {
 
 	configRepo := sqlite.NewPracticeConfigRepository(db)
 	timecardRepo := sqlite.NewTimecardRepository(db)
-	service := services.NewTimecardService(timecardRepo, configRepo)
+	service := services.NewTimecardService(timecardRepo, configRepo, nil)
 	ctx := context.Background()
 
 	prov := &domain.Provider{
@@ -38,7 +38,7 @@ func TestTimecardService_ValidationAndErrors(t *testing.T) {
 	}
 
 	t.Run("ClockIn duplicate active check", func(t *testing.T) {
-		tc1, err := service.ClockIn("prov_svc_1")
+		tc1, err := service.ClockIn("", "prov_svc_1")
 		if err != nil {
 			t.Fatalf("ClockIn failed: %v", err)
 		}
@@ -47,13 +47,13 @@ func TestTimecardService_ValidationAndErrors(t *testing.T) {
 		}
 
 		// Second clock in should fail
-		_, err = service.ClockIn("prov_svc_1")
+		_, err = service.ClockIn("", "prov_svc_1")
 		if err == nil {
 			t.Fatalf("Expected error when clocking in twice, got nil")
 		}
 
 		// Clock out
-		_, err = service.ClockOut("prov_svc_1")
+		_, err = service.ClockOut("", "prov_svc_1")
 		if err != nil {
 			t.Fatalf("ClockOut failed: %v", err)
 		}
@@ -84,24 +84,24 @@ func TestTimecardService_ValidationAndErrors(t *testing.T) {
 		validDate := time.Now().Format(time.RFC3339)
 
 		// Non-positive minutes
-		err := service.CreateManualTimecard("prov_svc_1", 0, validDate)
+		err := service.CreateManualTimecard("", "prov_svc_1", 0, validDate)
 		if err == nil {
 			t.Errorf("Expected error for 0 minutes in CreateManualTimecard, got nil")
 		}
 
-		err = service.CreateManualTimecard("prov_svc_1", -30, validDate)
+		err = service.CreateManualTimecard("", "prov_svc_1", -30, validDate)
 		if err == nil {
 			t.Errorf("Expected error for negative minutes in CreateManualTimecard, got nil")
 		}
 
 		// Invalid date format
-		err = service.CreateManualTimecard("prov_svc_1", 60, "not-a-date")
+		err = service.CreateManualTimecard("", "prov_svc_1", 60, "not-a-date")
 		if err == nil {
 			t.Errorf("Expected error for invalid date format in CreateManualTimecard, got nil")
 		}
 
 		// Valid manual timecard
-		err = service.CreateManualTimecard("prov_svc_1", 60, validDate)
+		err = service.CreateManualTimecard("", "prov_svc_1", 60, validDate)
 		if err != nil {
 			t.Errorf("Expected success for valid manual timecard, got %v", err)
 		}

@@ -92,13 +92,13 @@
       if (system === ToothSystem.ToothSystemFDI) {
         if (num >= 1 && num <= 8) return `1${9 - num}`;
         if (num >= 9 && num <= 16) return `2${num - 8}`;
-        if (num >= 17 && num <= 24) return `3${num - 16}`;
-        if (num >= 25 && num <= 32) return `4${33 - num}`;
+        if (num >= 17 && num <= 24) return `3${25 - num}`;
+        if (num >= 25 && num <= 32) return `4${num - 24}`;
       } else if (system === ToothSystem.ToothSystemPalmer) {
         if (num >= 1 && num <= 8) return `UR${9 - num}`;
         if (num >= 9 && num <= 16) return `UL${num - 8}`;
-        if (num >= 17 && num <= 24) return `LL${num - 16}`;
-        if (num >= 25 && num <= 32) return `LR${33 - num}`;
+        if (num >= 17 && num <= 24) return `LL${25 - num}`;
+        if (num >= 25 && num <= 32) return `LR${num - 24}`;
       }
       return String(num);
     }
@@ -108,14 +108,14 @@
       if (system === ToothSystem.ToothSystemFDI) {
         if (idx >= 0 && idx <= 4) return `5${5 - idx}`;
         if (idx >= 5 && idx <= 9) return `6${idx - 4}`;
-        if (idx >= 10 && idx <= 14) return `7${idx - 9}`;
-        if (idx >= 15 && idx <= 19) return `8${20 - idx}`;
+        if (idx >= 10 && idx <= 14) return `7${15 - idx}`;
+        if (idx >= 15 && idx <= 19) return `8${idx - 14}`;
       } else if (system === ToothSystem.ToothSystemPalmer) {
         const letters = ["A", "B", "C", "D", "E"];
         if (idx >= 0 && idx <= 4) return `UR${letters[4 - idx]}`;
         if (idx >= 5 && idx <= 9) return `UL${letters[idx - 5]}`;
-        if (idx >= 10 && idx <= 14) return `LL${letters[idx - 10]}`;
-        if (idx >= 15 && idx <= 19) return `LR${letters[19 - idx]}`;
+        if (idx >= 10 && idx <= 14) return `LL${letters[14 - idx]}`;
+        if (idx >= 15 && idx <= 19) return `LR${letters[idx - 15]}`;
       }
       const universalPrimary = [
         "A",
@@ -393,7 +393,7 @@
     if (!conditionToDelete) return;
     const id = conditionToDelete;
     try {
-      await ChartService.DeleteToothCondition(auth.token, id, selectedPatientId);
+      await ChartService.DeleteToothCondition(auth.token, id);
       if (editingConditionId === id) {
         showConditionModal = false;
       }

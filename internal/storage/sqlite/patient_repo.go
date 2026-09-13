@@ -59,14 +59,9 @@ func (r *PatientRepository) Create(ctx context.Context, p *domain.Patient) error
 		isSubInt = 1
 	}
 
-	reminderInt := 1
-	if !p.ReminderOptIn && p.ID != "" {
-		// handle boolean bool
-		if p.ReminderOptIn {
-			reminderInt = 1
-		} else {
-			reminderInt = 0
-		}
+	reminderInt := 0
+	if p.ReminderOptIn {
+		reminderInt = 1
 	}
 
 	_, err := r.db.ExecContext(

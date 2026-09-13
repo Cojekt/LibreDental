@@ -122,4 +122,20 @@ func TestChartRepository_CRUD(t *testing.T) {
 	if err := chartRepo.DeleteCondition(ctx, "non_existent"); err != storage.ErrNotFound {
 		t.Errorf("Expected ErrNotFound on non-existent delete, got: %v", err)
 	}
+
+	// 8. GetConditionByID returns the correct patient, independent of any caller input
+	fetched, err := chartRepo.GetConditionByID(ctx, "cond_1")
+	if err != nil {
+		t.Fatalf("Failed to get condition by ID: %v", err)
+	}
+	if fetched.PatientID != "pat_chart_1" {
+		t.Errorf("Expected patient_id 'pat_chart_1', got '%s'", fetched.PatientID)
+	}
+	if fetched.ToothNumber != 3 || fetched.Status != domain.ToothStatusCompleted {
+		t.Errorf("Expected tooth #3 completed, got tooth #%d status %s", fetched.ToothNumber, fetched.Status)
+	}
+
+	if _, err := chartRepo.GetConditionByID(ctx, "non_existent"); err != storage.ErrNotFound {
+		t.Errorf("Expected ErrNotFound for GetConditionByID on non-existent ID, got: %v", err)
+	}
 }

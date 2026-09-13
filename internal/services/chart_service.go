@@ -78,7 +78,7 @@ func (s *ChartService) SaveToothCondition(token string, payload *domain.SaveToot
 	return c, nil
 }
 
-func (s *ChartService) DeleteToothCondition(token string, id string, patientID string) error {
+func (s *ChartService) DeleteToothCondition(token string, id string) error {
 	if s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
@@ -86,12 +86,18 @@ func (s *ChartService) DeleteToothCondition(token string, id string, patientID s
 		return fmt.Errorf("%w: condition ID is required", storage.ErrInvalidInput)
 	}
 
-	err := s.chartRepo.DeleteCondition(context.Background(), id)
+	// Fetch first so the audit entry is attributed to the condition's actual
+	// patient, not whatever patientID a caller happens to pass in.
+	condition, err := s.chartRepo.GetConditionByID(context.Background(), id)
 	if err != nil {
+		return fmt.Errorf("failed to look up tooth condition: %w", err)
+	}
+
+	if err := s.chartRepo.DeleteCondition(context.Background(), id); err != nil {
 		return fmt.Errorf("failed to delete tooth condition: %w", err)
 	}
 
-	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, patientID, "dental_chart", "Deleted tooth condition"); err != nil {
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, condition.PatientID, "dental_chart", "Deleted tooth condition"); err != nil {
 		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return nil

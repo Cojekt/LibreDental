@@ -160,7 +160,11 @@
 
   function changeMonth(delta: number) {
     const curr = parseLocalDate(selectedDate);
+    const day = curr.getDate();
+    curr.setDate(1); // avoid rolling into the wrong month while day is still out of range
     curr.setMonth(curr.getMonth() + delta);
+    const lastDayOfTargetMonth = new Date(curr.getFullYear(), curr.getMonth() + 1, 0).getDate();
+    curr.setDate(Math.min(day, lastDayOfTargetMonth));
     selectedDate = getLocalDateString(curr);
   }
 
