@@ -20,29 +20,30 @@ func NewChartRepository(db *DB) *ChartRepository {
 	return &ChartRepository{db: db}
 }
 
-// toothConditionScanner is satisfied by both *sql.Row and *sql.Rows.
-type toothConditionScanner interface {
-	Scan(dest ...any) error
-}
-
 // scanToothCondition scans a single dental_conditions row (as selected by the
 // column list used in GetChart/GetConditionByID) into a domain.ToothCondition.
-func scanToothCondition(scanner toothConditionScanner) (*domain.ToothCondition, error) {
+func scanToothCondition(scanner rowScanner) (*domain.ToothCondition, error) {
 	var c domain.ToothCondition
-	var surfacesJSON string
+	var surfacesJSON sql.NullString
+	var adaCode sql.NullString
+	var description sql.NullString
 	var statusStr string
+	var fee sql.NullInt64
 
 	if err := scanner.Scan(
 		&c.ID, &c.PatientID, &c.ToothNumber, &surfacesJSON,
-		&c.ADACode, &c.Description, &statusStr, &c.Fee,
+		&adaCode, &description, &statusStr, &fee,
 		&c.CreatedAt, &c.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
 
+	c.ADACode = adaCode.String
+	c.Description = description.String
+	c.Fee = fee.Int64
 	c.Status = domain.ToothStatus(statusStr)
-	if len(surfacesJSON) > 0 {
-		if err := json.Unmarshal([]byte(surfacesJSON), &c.Surfaces); err != nil {
+	if surfacesJSON.Valid && len(surfacesJSON.String) > 0 {
+		if err := json.Unmarshal([]byte(surfacesJSON.String), &c.Surfaces); err != nil {
 			return nil, fmt.Errorf("failed to decode tooth condition surfaces: %w", err)
 		}
 	}

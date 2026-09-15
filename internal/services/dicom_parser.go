@@ -21,6 +21,7 @@ import (
 type DicomParseResult struct {
 	ImageURLs      []string `json:"image_urls"`
 	TotalFrames    int      `json:"total_frames"`
+	Truncated      bool     `json:"truncated,omitempty"`       // true when TotalFrames exceeds the processed-frame limit
 	SkippedIndexes []int    `json:"skipped_indexes,omitempty"` // 0-based original frame positions that failed to decode
 }
 
@@ -158,13 +159,11 @@ func ParseDicomDataURLs(data []byte) (*DicomParseResult, error) {
 	}
 
 	totalFrames := len(pixelDataInfo.Frames)
-	if totalFrames > maxFrames {
-		totalFrames = maxFrames
-	}
 
 	return &DicomParseResult{
 		ImageURLs:      dataURLs,
 		TotalFrames:    totalFrames,
+		Truncated:      totalFrames > maxFrames,
 		SkippedIndexes: skippedIndexes,
 	}, nil
 }

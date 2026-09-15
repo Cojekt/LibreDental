@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -32,7 +33,7 @@ func (s *TimecardService) logAction(token string, action domain.AuditAction, res
 	if s.auditService == nil {
 		return
 	}
-	if err := s.auditService.LogAction(token, action, resource, details); err != nil {
+	if err := s.auditService.LogAction(token, action, resource, details); err != nil && !errors.Is(err, ErrUnauthorized) {
 		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 }

@@ -58,6 +58,9 @@ func (s *PracticeConfigService) SetConfig(token string, countryCode string) (*do
 	cfg := domain.NewPracticeConfig(*meta)
 
 	_, existErr := s.repo.Get(context.Background())
+	if existErr != nil && !errors.Is(existErr, storage.ErrNotFound) {
+		return nil, fmt.Errorf("failed to check existing practice config: %w", existErr)
+	}
 	action := domain.AuditActionUpdate
 	if errors.Is(existErr, storage.ErrNotFound) {
 		action = domain.AuditActionCreate
