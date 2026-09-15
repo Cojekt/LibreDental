@@ -92,9 +92,15 @@ workflow file rather than assuming, since it can drift from `Taskfile.yml`.
 - Frontend: Prettier config is 100-char print width, double quotes off (`singleQuote:
   false` — i.e. double quotes), semicolons on, es5 trailing commas. Svelte files use
   the svelte parser.
-- i18n strings go through Paraglide (`frontend/src/paraglide/messages/`) — these are
-  generated from `frontend/project.inlang` via `npm run build:i18n`; don't hand-edit
-  generated message files.
+- **No raw/hardcoded text in the frontend.** Every user-visible string (labels,
+  buttons, placeholders, alerts, confirm dialogs, validation and error messages,
+  aria-labels, etc.) must go through Paraglide — never inline English literals in
+  `.svelte`/`.ts` files. To add copy: add a key to `frontend/messages/en.json`, run
+  `npm run build:i18n` to regenerate `frontend/src/paraglide/`, then reference it via
+  `m.<key>()`. Don't hand-edit the generated `frontend/src/paraglide/messages/`
+  files directly — they're regenerated from `en.json`. This applies to new code and
+  to any existing code you touch; if you notice raw strings in a file you're already
+  editing, localize them as part of that change.
 - No emojis in code, commit messages, or UI copy (recent commit history explicitly
   removed emojis project-wide — keep it that way).
 - Comments should be sparse and explain *why*, not *what* — match the existing style

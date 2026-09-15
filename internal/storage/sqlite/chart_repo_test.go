@@ -106,8 +106,12 @@ func TestChartRepository_CRUD(t *testing.T) {
 	}
 
 	// 6. Delete Condition 2
-	if err := chartRepo.DeleteCondition(ctx, "cond_2"); err != nil {
+	deleted, err := chartRepo.DeleteCondition(ctx, "cond_2")
+	if err != nil {
 		t.Fatalf("Failed to delete condition 2: %v", err)
+	}
+	if deleted.ID != "cond_2" {
+		t.Errorf("Expected deleted condition ID cond_2, got %s", deleted.ID)
 	}
 
 	finalChart, err := chartRepo.GetChart(ctx, "pat_chart_1")
@@ -119,7 +123,7 @@ func TestChartRepository_CRUD(t *testing.T) {
 	}
 
 	// 7. Non-existent delete returns ErrNotFound
-	if err := chartRepo.DeleteCondition(ctx, "non_existent"); err != storage.ErrNotFound {
+	if _, err := chartRepo.DeleteCondition(ctx, "non_existent"); err != storage.ErrNotFound {
 		t.Errorf("Expected ErrNotFound on non-existent delete, got: %v", err)
 	}
 

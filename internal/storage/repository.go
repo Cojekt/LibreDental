@@ -60,7 +60,7 @@ type ChartRepository interface {
 	GetChart(ctx context.Context, patientID string) (*domain.DentalChart, error)
 	SaveCondition(ctx context.Context, condition *domain.ToothCondition) (bool, error)
 	GetConditionByID(ctx context.Context, id string) (*domain.ToothCondition, error)
-	DeleteCondition(ctx context.Context, id string) error
+	DeleteCondition(ctx context.Context, id string) (*domain.ToothCondition, error)
 }
 
 // ClaimRepository defines storage operations for insurance claims.

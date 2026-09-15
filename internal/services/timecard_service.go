@@ -32,7 +32,9 @@ func (s *TimecardService) logAction(token string, action domain.AuditAction, res
 	if s.auditService == nil {
 		return
 	}
-	_ = s.auditService.LogAction(token, action, resource, details)
+	if err := s.auditService.LogAction(token, action, resource, details); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
 }
 
 // ClockIn starts a new timecard for the given provider.

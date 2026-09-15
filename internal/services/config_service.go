@@ -29,7 +29,9 @@ func (s *PracticeConfigService) logAction(token string, action domain.AuditActio
 	if s.auditService == nil {
 		return
 	}
-	_ = s.auditService.LogAction(token, action, resource, details)
+	if err := s.auditService.LogAction(token, action, resource, details); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
 }
 
 // GetConfig fetches the current practice configuration, or returns nil if unconfigured.
@@ -55,10 +57,16 @@ func (s *PracticeConfigService) SetConfig(token string, countryCode string) (*do
 
 	cfg := domain.NewPracticeConfig(*meta)
 
+	_, existErr := s.repo.Get(context.Background())
+	action := domain.AuditActionUpdate
+	if errors.Is(existErr, storage.ErrNotFound) {
+		action = domain.AuditActionCreate
+	}
+
 	if err := s.repo.Save(context.Background(), cfg); err != nil {
 		return nil, fmt.Errorf("failed to save practice config: %w", err)
 	}
-	s.logAction(token, domain.AuditActionUpdate, "practice_config", "Set practice config during onboarding")
+	s.logAction(token, action, "practice_config", "Set practice config during onboarding")
 	return cfg, nil
 }
 

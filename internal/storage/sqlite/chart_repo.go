@@ -20,6 +20,39 @@ func NewChartRepository(db *DB) *ChartRepository {
 	return &ChartRepository{db: db}
 }
 
+// toothConditionScanner is satisfied by both *sql.Row and *sql.Rows.
+type toothConditionScanner interface {
+	Scan(dest ...any) error
+}
+
+// scanToothCondition scans a single dental_conditions row (as selected by the
+// column list used in GetChart/GetConditionByID) into a domain.ToothCondition.
+func scanToothCondition(scanner toothConditionScanner) (*domain.ToothCondition, error) {
+	var c domain.ToothCondition
+	var surfacesJSON string
+	var statusStr string
+
+	if err := scanner.Scan(
+		&c.ID, &c.PatientID, &c.ToothNumber, &surfacesJSON,
+		&c.ADACode, &c.Description, &statusStr, &c.Fee,
+		&c.CreatedAt, &c.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+
+	c.Status = domain.ToothStatus(statusStr)
+	if len(surfacesJSON) > 0 {
+		if err := json.Unmarshal([]byte(surfacesJSON), &c.Surfaces); err != nil {
+			return nil, fmt.Errorf("failed to decode tooth condition surfaces: %w", err)
+		}
+	}
+	if c.Surfaces == nil {
+		c.Surfaces = []domain.ToothSurface{}
+	}
+
+	return &c, nil
+}
+
 func (r *ChartRepository) GetChart(ctx context.Context, patientID string) (*domain.DentalChart, error) {
 	if patientID == "" {
 		return nil, fmt.Errorf("%w: patient ID is required", storage.ErrInvalidInput)
@@ -41,32 +74,16 @@ func (r *ChartRepository) GetChart(ctx context.Context, patientID string) (*doma
 	var latestUpdate time.Time
 
 	for rows.Next() {
-		var c domain.ToothCondition
-		var surfacesJSON string
-		var statusStr string
-
-		err := rows.Scan(
-			&c.ID, &c.PatientID, &c.ToothNumber, &surfacesJSON,
-			&c.ADACode, &c.Description, &statusStr, &c.Fee,
-			&c.CreatedAt, &c.UpdatedAt,
-		)
+		c, err := scanToothCondition(rows)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan tooth condition: %w", err)
-		}
-
-		c.Status = domain.ToothStatus(statusStr)
-		if len(surfacesJSON) > 0 {
-			json.Unmarshal([]byte(surfacesJSON), &c.Surfaces)
-		}
-		if c.Surfaces == nil {
-			c.Surfaces = []domain.ToothSurface{}
 		}
 
 		if c.UpdatedAt.After(latestUpdate) {
 			latestUpdate = c.UpdatedAt
 		}
 
-		conditions = append(conditions, c)
+		conditions = append(conditions, *c)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -156,15 +173,7 @@ func (r *ChartRepository) GetConditionByID(ctx context.Context, id string) (*dom
 	FROM dental_conditions
 	WHERE id = ?`
 
-	var c domain.ToothCondition
-	var surfacesJSON string
-	var statusStr string
-
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&c.ID, &c.PatientID, &c.ToothNumber, &surfacesJSON,
-		&c.ADACode, &c.Description, &statusStr, &c.Fee,
-		&c.CreatedAt, &c.UpdatedAt,
-	)
+	c, err := scanToothCondition(r.db.QueryRowContext(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrNotFound
@@ -172,34 +181,44 @@ func (r *ChartRepository) GetConditionByID(ctx context.Context, id string) (*dom
 		return nil, fmt.Errorf("failed to query tooth condition: %w", err)
 	}
 
-	c.Status = domain.ToothStatus(statusStr)
-	if len(surfacesJSON) > 0 {
-		json.Unmarshal([]byte(surfacesJSON), &c.Surfaces)
-	}
-	if c.Surfaces == nil {
-		c.Surfaces = []domain.ToothSurface{}
-	}
-
-	return &c, nil
+	return c, nil
 }
 
-func (r *ChartRepository) DeleteCondition(ctx context.Context, id string) error {
+// DeleteCondition deletes the tooth condition with the given ID and returns the
+// condition as it existed at deletion time, read and removed within the same
+// transaction so callers get an accurate record (e.g. PatientID) to audit-log even
+// if a concurrent request deletes/recreates the same ID for a different patient.
+func (r *ChartRepository) DeleteCondition(ctx context.Context, id string) (*domain.ToothCondition, error) {
 	if id == "" {
-		return fmt.Errorf("%w: ID is required", storage.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: ID is required", storage.ErrInvalidInput)
 	}
 
-	res, err := r.db.ExecContext(ctx, "DELETE FROM dental_conditions WHERE id = ?", id)
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to delete tooth condition: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
+	defer tx.Rollback()
 
-	rows, err := res.RowsAffected()
+	query := `
+	SELECT id, patient_id, tooth_number, surfaces, ada_code, description, status, fee, created_at, updated_at
+	FROM dental_conditions
+	WHERE id = ?`
+
+	c, err := scanToothCondition(tx.QueryRowContext(ctx, query, id))
 	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return storage.ErrNotFound
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to query tooth condition: %w", err)
 	}
 
-	return nil
+	if _, err := tx.ExecContext(ctx, "DELETE FROM dental_conditions WHERE id = ?", id); err != nil {
+		return nil, fmt.Errorf("failed to delete tooth condition: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return c, nil
 }

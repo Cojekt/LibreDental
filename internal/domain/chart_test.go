@@ -55,3 +55,45 @@ func TestFormatToothDisplay_Palmer(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatToothDisplay_Universal(t *testing.T) {
+	cases := []struct {
+		tooth int
+		want  string
+	}{
+		{1, "1"},
+		{8, "8"},
+		{16, "16"},
+		{32, "32"},
+		{101, "A"},
+		{105, "E"},
+		{111, "K"},
+		{120, "T"},
+	}
+	for _, c := range cases {
+		got := FormatToothDisplay(c.tooth, ToothSystemUniversal)
+		if got != c.want {
+			t.Errorf("FormatToothDisplay(%d, Universal) = %q, want %q", c.tooth, got, c.want)
+		}
+	}
+}
+
+func TestFormatToothDisplay_OutOfRange(t *testing.T) {
+	cases := []struct {
+		tooth int
+		want  string
+	}{
+		{0, "0"},
+		{33, "33"},
+		{100, "100"},
+		{121, "121"},
+	}
+	for _, c := range cases {
+		for _, system := range []ToothSystem{ToothSystemUniversal, ToothSystemFDI, ToothSystemPalmer} {
+			got := FormatToothDisplay(c.tooth, system)
+			if got != c.want {
+				t.Errorf("FormatToothDisplay(%d, %v) = %q, want %q", c.tooth, system, got, c.want)
+			}
+		}
+	}
+}

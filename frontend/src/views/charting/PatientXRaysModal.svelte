@@ -24,6 +24,8 @@
 
   // Viewing state
   let viewingImages = $state<string[]>([]);
+  let viewingSkippedCount = $state(0);
+  let viewingTotalFrames = $state(0);
   let currentFrameIndex = $state(0);
   let viewingImageName = $state<string>("");
   let viewingDocId = $state<string | null>(null);
@@ -49,6 +51,7 @@
     if (showModal && patientId) {
       loadXRays();
       viewingImages = [];
+      viewingSkippedCount = 0;
       viewingDocId = null;
     }
   });
@@ -127,6 +130,7 @@
         loadXRays();
         if (viewingDocId === id) {
           viewingImages = [];
+          viewingSkippedCount = 0;
           viewingDocId = null;
         }
       } catch (err) {
@@ -137,9 +141,11 @@
 
   async function handleView(doc: Document) {
     try {
-      const images = await DocumentService.GetDocumentImagesBase64(auth.token, doc.id);
-      if (images && images.length > 0) {
-        viewingImages = images;
+      const result = await DocumentService.GetDocumentImagesBase64(auth.token, doc.id);
+      if (result && result.image_urls && result.image_urls.length > 0) {
+        viewingImages = result.image_urls;
+        viewingSkippedCount = result.skipped_indexes?.length ?? 0;
+        viewingTotalFrames = result.total_frames;
         viewingImageName = doc.name;
         currentFrameIndex = 0;
         viewingDocId = doc.id;
@@ -305,6 +311,19 @@
             {m.xray_btn_download()}
           </button>
         </div>
+
+        {#if viewingSkippedCount > 0}
+          <div class="absolute top-16 w-full flex justify-center z-10 px-4 pointer-events-none">
+            <div
+              class="bg-amber-500/90 text-black text-xs font-semibold rounded-lg px-3 py-1.5 shadow-md"
+            >
+              {m.xray_incomplete_series_warning({
+                skipped: viewingSkippedCount,
+                total: viewingTotalFrames,
+              })}
+            </div>
+          </div>
+        {/if}
 
         <div class="flex-1 flex items-center justify-center overflow-hidden p-2">
           <img

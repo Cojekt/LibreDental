@@ -86,14 +86,11 @@ func (s *ChartService) DeleteToothCondition(token string, id string) error {
 		return fmt.Errorf("%w: condition ID is required", storage.ErrInvalidInput)
 	}
 
-	// Fetch first so the audit entry is attributed to the condition's actual
-	// patient, not whatever patientID a caller happens to pass in.
-	condition, err := s.chartRepo.GetConditionByID(context.Background(), id)
+	// DeleteCondition reads and deletes within one transaction so the audit entry
+	// is attributed to the condition's actual patient at deletion time, even under
+	// a concurrent delete/recreate of the same ID for a different patient.
+	condition, err := s.chartRepo.DeleteCondition(context.Background(), id)
 	if err != nil {
-		return fmt.Errorf("failed to look up tooth condition: %w", err)
-	}
-
-	if err := s.chartRepo.DeleteCondition(context.Background(), id); err != nil {
 		return fmt.Errorf("failed to delete tooth condition: %w", err)
 	}
 

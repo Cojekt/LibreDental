@@ -473,6 +473,7 @@
   "timecard_delete_confirm": "Delete",
   "xray_btn_download": "Download",
   "xray_frame_info": "Frame: {current} / {total}",
+  "xray_incomplete_series_warning": "{skipped} of {total} frames could not be read and are missing from this series.",
   "common_all": "All",
   "common_active": "Active",
   "common_inactive": "Inactive",
