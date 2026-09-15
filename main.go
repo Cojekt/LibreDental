@@ -22,7 +22,9 @@ func main() {
 		dataDir = "."
 	}
 	appDir := filepath.Join(dataDir, "LibreDental")
-	os.MkdirAll(appDir, 0o755)
+	if err := os.MkdirAll(appDir, 0o755); err != nil {
+		log.Fatalf("Failed to create app data directory %s: %v", appDir, err)
+	}
 
 	dbPath := filepath.Join(appDir, "libredental.db")
 	db, err := sqlite.Open(dbPath)
@@ -48,10 +50,10 @@ func main() {
 	appointmentRepo := sqlite.NewAppointmentRepository(db)
 	appointmentService := services.NewAppointmentService(appointmentRepo, auditService)
 
-	practiceConfigService := services.NewPracticeConfigService(practiceConfigRepo)
+	practiceConfigService := services.NewPracticeConfigService(practiceConfigRepo, auditService)
 
 	timecardRepo := sqlite.NewTimecardRepository(db)
-	timecardService := services.NewTimecardService(timecardRepo, practiceConfigRepo)
+	timecardService := services.NewTimecardService(timecardRepo, practiceConfigRepo, auditService)
 
 	systemSettingsService := services.NewSystemSettingsService(appDir)
 

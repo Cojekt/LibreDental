@@ -693,7 +693,7 @@
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             Total: <strong class="text-white text-sm font-mono"
               >{formatCurrency(
-                Math.round(claimLineItems.reduce((s, li) => s + (li.fee || 0), 0) * 100),
+                claimLineItems.reduce((s, li) => s + Math.round((li.fee || 0) * 100), 0),
                 countryMeta?.default_currency
               )}</strong
             >

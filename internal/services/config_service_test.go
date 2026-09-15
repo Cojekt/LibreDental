@@ -20,7 +20,7 @@ func TestPracticeConfigService(t *testing.T) {
 	defer db.Close()
 
 	repo := sqlite.NewPracticeConfigRepository(db)
-	service := services.NewPracticeConfigService(repo)
+	service := services.NewPracticeConfigService(repo, nil)
 
 	// 1. Initial GetConfig should return (nil, nil) when unconfigured
 	cfg, err := service.GetConfig()
@@ -32,7 +32,7 @@ func TestPracticeConfigService(t *testing.T) {
 	}
 
 	// 2. SetConfig (Onboarding flow for US)
-	setCfg, err := service.SetConfig("US")
+	setCfg, err := service.SetConfig("", "US")
 	if err != nil {
 		t.Fatalf("Failed to set practice config: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestPracticeConfigService(t *testing.T) {
 
 	// 5. UpdatePracticeConfig
 	fetchedCfg.ClinicName = "Bright Smiles Dental"
-	updatedCfg, err := service.UpdatePracticeConfig(*fetchedCfg)
+	updatedCfg, err := service.UpdatePracticeConfig("", *fetchedCfg)
 	if err != nil {
 		t.Fatalf("Failed to update practice config: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestPracticeConfigService(t *testing.T) {
 	}
 
 	// 6. Provider Management Flow
-	prov, err := service.SaveProvider(domain.Provider{
+	prov, err := service.SaveProvider("", domain.Provider{
 		Name:      "Dr. Sarah Connor",
 		Role:      domain.RoleDentist,
 		Specialty: "General Dentistry",
@@ -114,7 +114,7 @@ func TestPracticeConfigService(t *testing.T) {
 		t.Errorf("Expected provider name 'Dr. Sarah Connor', got '%s'", providers[0].Name)
 	}
 
-	err = service.DeleteProvider(prov.ID)
+	err = service.DeleteProvider("", prov.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete provider: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestPracticeConfigService(t *testing.T) {
 	}
 
 	// 7. Operatory Management Flow
-	op, err := service.SaveOperatory(domain.Operatory{
+	op, err := service.SaveOperatory("", domain.Operatory{
 		Name:     "Hygiene Suite 1",
 		RoomCode: "HYG-1",
 		Type:     domain.OperatoryTypeHygiene,
@@ -152,7 +152,7 @@ func TestPracticeConfigService(t *testing.T) {
 		t.Errorf("Expected room code 'HYG-1', got '%s'", operatories[0].RoomCode)
 	}
 
-	err = service.DeleteOperatory(op.ID)
+	err = service.DeleteOperatory("", op.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete operatory: %v", err)
 	}

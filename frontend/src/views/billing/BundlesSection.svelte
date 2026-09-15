@@ -13,6 +13,7 @@
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
   import { formatCurrency } from "$lib/currency.js";
+  import { auth } from "../../stores/auth.svelte.js";
 
   let { countryMeta = null } = $props<{
     countryMeta?: CountryConfig | null;
@@ -117,9 +118,9 @@
 
     try {
       if (isEditingBundle) {
-        await BillingService.UpdateBundle(payload as unknown as TreatmentBundle);
+        await BillingService.UpdateBundle(auth.token, payload as unknown as TreatmentBundle);
       } else {
-        await BillingService.CreateBundle(payload as unknown as TreatmentBundle);
+        await BillingService.CreateBundle(auth.token, payload as unknown as TreatmentBundle);
       }
       showBundleModal = false;
       await loadBundles();
@@ -144,7 +145,7 @@
   async function executeDelete() {
     if (!bundleToDelete) return;
     try {
-      await BillingService.DeleteBundle(bundleToDelete);
+      await BillingService.DeleteBundle(auth.token, bundleToDelete);
       await loadBundles();
     } catch (e) {
       console.error("Failed to delete bundle:", e);

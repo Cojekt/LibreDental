@@ -15,6 +15,7 @@
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
   import { formatCurrency } from "$lib/currency.js";
+  import { auth } from "../../stores/auth.svelte.js";
 
   let { providers = [], countryMeta = null } = $props<{
     providers: Provider[];
@@ -88,7 +89,7 @@
       custom_fee: Math.round(Number(editingFeeCustom) * 100),
     };
     try {
-      await BillingService.SaveFeeSchedule(payload as unknown as FeeSchedule);
+      await BillingService.SaveFeeSchedule(auth.token, payload as unknown as FeeSchedule);
       showFeeModal = false;
       await loadProcedureCodes();
       await loadFeeSchedules();

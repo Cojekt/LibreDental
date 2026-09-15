@@ -8,6 +8,7 @@
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import { getLocalDateString } from "$lib/date.js";
   import { handleError } from "$lib/error.js";
+  import { auth } from "../../stores/auth.svelte.js";
 
   let {
     showModal = $bindable(false),
@@ -85,7 +86,12 @@
     try {
       // Create date with time at local noon to avoid timezone shift to prev/next day
       const d = new Date(manualDate + "T12:00:00").toISOString();
-      await TimecardService.CreateManualTimecard(providerId, Math.round(manualHours * 60), d);
+      await TimecardService.CreateManualTimecard(
+        auth.token,
+        providerId,
+        Math.round(manualHours * 60),
+        d
+      );
       showManualEntry = false;
       await loadTimecards();
       await onrefresh();
@@ -101,7 +107,12 @@
 
   async function handleSaveEdit(t: Timecard) {
     try {
-      await TimecardService.EditTimecardHours(t.id, providerId, Math.round(editHours * 60));
+      await TimecardService.EditTimecardHours(
+        auth.token,
+        t.id,
+        providerId,
+        Math.round(editHours * 60)
+      );
       editingId = null;
       await loadTimecards();
       await onrefresh();
@@ -121,7 +132,7 @@
   async function executeDelete() {
     if (!timecardToDelete) return;
     try {
-      await TimecardService.DeleteTimecard(timecardToDelete);
+      await TimecardService.DeleteTimecard(auth.token, timecardToDelete);
       await loadTimecards();
       await onrefresh();
     } catch (e: any) {

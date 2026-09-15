@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -14,17 +15,31 @@ import (
 type TimecardService struct {
 	timecardRepo       *sqlite.TimecardRepository
 	practiceConfigRepo *sqlite.PracticeConfigRepository
+	auditService       *AuditService
 }
 
-func NewTimecardService(timecardRepo *sqlite.TimecardRepository, practiceConfigRepo *sqlite.PracticeConfigRepository) *TimecardService {
+func NewTimecardService(timecardRepo *sqlite.TimecardRepository, practiceConfigRepo *sqlite.PracticeConfigRepository, auditService *AuditService) *TimecardService {
 	return &TimecardService{
 		timecardRepo:       timecardRepo,
 		practiceConfigRepo: practiceConfigRepo,
+		auditService:       auditService,
+	}
+}
+
+// logAction records an audit entry when a session is available. Clocking in/out and
+// payroll aren't gated behind staff login in this app, so this is best-effort
+// attribution, not an access check.
+func (s *TimecardService) logAction(token string, action domain.AuditAction, resource string, details string) {
+	if s.auditService == nil {
+		return
+	}
+	if err := s.auditService.LogAction(token, action, resource, details); err != nil && !errors.Is(err, ErrUnauthorized) {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 }
 
 // ClockIn starts a new timecard for the given provider.
-func (s *TimecardService) ClockIn(providerID string) (*domain.Timecard, error) {
+func (s *TimecardService) ClockIn(token string, providerID string) (*domain.Timecard, error) {
 	ctx := context.Background()
 
 	// Check if already clocked in
@@ -69,11 +84,12 @@ func (s *TimecardService) ClockIn(providerID string) (*domain.Timecard, error) {
 		return nil, fmt.Errorf("failed to save timecard: %w", err)
 	}
 
+	s.logAction(token, domain.AuditActionCreate, "timecard", fmt.Sprintf("Clocked in provider %s", providerID))
 	return t, nil
 }
 
 // ClockOut ends the active timecard for the given provider.
-func (s *TimecardService) ClockOut(providerID string) (*domain.Timecard, error) {
+func (s *TimecardService) ClockOut(token string, providerID string) (*domain.Timecard, error) {
 	ctx := context.Background()
 
 	active, err := s.timecardRepo.GetActiveTimecard(ctx, providerID)
@@ -94,6 +110,7 @@ func (s *TimecardService) ClockOut(providerID string) (*domain.Timecard, error) 
 		return nil, fmt.Errorf("failed to save timecard on clock out: %w", err)
 	}
 
+	s.logAction(token, domain.AuditActionUpdate, "timecard", fmt.Sprintf("Clocked out provider %s", providerID))
 	return active, nil
 }
 
@@ -136,7 +153,7 @@ func (s *TimecardService) ListTimecards(providerID string, startDateStr string, 
 }
 
 // EditTimecardHours allows manual overriding of a timecard's recorded minutes.
-func (s *TimecardService) EditTimecardHours(timecardID string, providerID string, newMinutes int64) error {
+func (s *TimecardService) EditTimecardHours(token string, timecardID string, providerID string, newMinutes int64) error {
 	ctx := context.Background()
 	timecards, err := s.timecardRepo.ListTimecards(ctx, providerID, nil, nil)
 	if err != nil {
@@ -151,6 +168,7 @@ func (s *TimecardService) EditTimecardHours(timecardID string, providerID string
 			if err := s.timecardRepo.SaveTimecard(ctx, t); err != nil {
 				return fmt.Errorf("failed to save edited timecard: %w", err)
 			}
+			s.logAction(token, domain.AuditActionUpdate, "timecard", fmt.Sprintf("Edited timecard %s hours for provider %s", timecardID, providerID))
 			return nil
 		}
 	}
@@ -158,7 +176,7 @@ func (s *TimecardService) EditTimecardHours(timecardID string, providerID string
 }
 
 // CreateManualTimecard allows creating retroactive time entries.
-func (s *TimecardService) CreateManualTimecard(providerID string, minutes int64, date string) error {
+func (s *TimecardService) CreateManualTimecard(token string, providerID string, minutes int64, date string) error {
 	ctx := context.Background()
 
 	if minutes <= 0 {
@@ -201,6 +219,7 @@ func (s *TimecardService) CreateManualTimecard(providerID string, minutes int64,
 	if err := s.timecardRepo.SaveTimecard(ctx, t); err != nil {
 		return fmt.Errorf("failed to save manual timecard: %w", err)
 	}
+	s.logAction(token, domain.AuditActionCreate, "timecard", fmt.Sprintf("Created manual timecard for provider %s", providerID))
 	return nil
 }
 
@@ -211,13 +230,21 @@ func (s *TimecardService) GetTotalOwed(providerID string) (int64, error) {
 }
 
 // DeleteTimecard removes a specific timecard record.
-func (s *TimecardService) DeleteTimecard(id string) error {
+func (s *TimecardService) DeleteTimecard(token string, id string) error {
 	ctx := context.Background()
-	return s.timecardRepo.DeleteTimecard(ctx, id)
+	if err := s.timecardRepo.DeleteTimecard(ctx, id); err != nil {
+		return err
+	}
+	s.logAction(token, domain.AuditActionDelete, "timecard", fmt.Sprintf("Deleted timecard %s", id))
+	return nil
 }
 
 // PaySalary marks all unpaid timecards for a provider as paid.
-func (s *TimecardService) PaySalary(providerID string) error {
+func (s *TimecardService) PaySalary(token string, providerID string) error {
 	ctx := context.Background()
-	return s.timecardRepo.MarkTimecardsPaid(ctx, providerID)
+	if err := s.timecardRepo.MarkTimecardsPaid(ctx, providerID); err != nil {
+		return err
+	}
+	s.logAction(token, domain.AuditActionUpdate, "timecard", fmt.Sprintf("Paid salary for provider %s", providerID))
+	return nil
 }

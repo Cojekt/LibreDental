@@ -219,9 +219,10 @@ func (s *DocumentService) GetDocumentBase64(token string, id string) (string, er
 	return b64, nil
 }
 
-// GetDocumentImagesBase64 retrieves an image document and returns a slice of data URLs.
-// For DICOM files, it extracts all frames. For regular images, it returns a single data URL.
-func (s *DocumentService) GetDocumentImagesBase64(token string, id string) ([]string, error) {
+// GetDocumentImagesBase64 retrieves an image document and returns its decoded image data URLs.
+// For DICOM files, it extracts all frames and reports any that could not be decoded. For
+// regular images, it returns a single data URL with no skipped frames.
+func (s *DocumentService) GetDocumentImagesBase64(token string, id string) (*DicomParseResult, error) {
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
@@ -257,7 +258,7 @@ func (s *DocumentService) GetDocumentImagesBase64(token string, id string) ([]st
 	}
 
 	if isDicom {
-		dataURLs, err := ParseDicomDataURLs(data)
+		result, err := ParseDicomDataURLs(data)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse DICOM frames: %w", err)
 		}
@@ -265,7 +266,7 @@ func (s *DocumentService) GetDocumentImagesBase64(token string, id string) ([]st
 		if doc.PatientID != nil {
 			_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Viewed DICOM images")
 		}
-		return dataURLs, nil
+		return result, nil
 	}
 
 	// For standard images, return a single data URL
@@ -279,7 +280,7 @@ func (s *DocumentService) GetDocumentImagesBase64(token string, id string) ([]st
 	if doc.PatientID != nil {
 		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Viewed document image")
 	}
-	return []string{dataURL}, nil
+	return &DicomParseResult{ImageURLs: []string{dataURL}, TotalFrames: 1}, nil
 }
 
 // OpenDocument opens the document in the OS default application.

@@ -15,9 +15,19 @@ import (
 	"github.com/suyashkumar/dicom/pkg/tag"
 )
 
+// DicomParseResult holds the decoded frame images from a DICOM file along with
+// metadata about any frames that could not be decoded, so callers (and ultimately
+// the X-ray viewer) can tell a shortened series from a complete one.
+type DicomParseResult struct {
+	ImageURLs      []string `json:"image_urls"`
+	TotalFrames    int      `json:"total_frames"`
+	Truncated      bool     `json:"truncated,omitempty"`       // true when TotalFrames exceeds the processed-frame limit
+	SkippedIndexes []int    `json:"skipped_indexes,omitempty"` // 0-based original frame positions that failed to decode
+}
+
 // ParseDicomDataURLs parses a DICOM file from bytes, extracts image frames (up to a limit),
 // and encodes them directly to data URLs to limit memory usage.
-func ParseDicomDataURLs(data []byte) ([]string, error) {
+func ParseDicomDataURLs(data []byte) (*DicomParseResult, error) {
 	// Parse the DICOM dataset from bytes
 	dataset, err := dicom.Parse(bytes.NewReader(data), int64(len(data)), nil)
 	if err != nil {
@@ -42,6 +52,7 @@ func ParseDicomDataURLs(data []byte) ([]string, error) {
 	}
 
 	var dataURLs []string
+	var skippedIndexes []int
 	const maxFrames = 50
 
 	for i, frame := range pixelDataInfo.Frames {
@@ -135,12 +146,24 @@ func ParseDicomDataURLs(data []byte) ([]string, error) {
 			}
 		}
 
-		return nil, frameErr
+		// Skip this frame but keep any frames already decoded — one corrupt
+		// frame in a multi-frame series shouldn't make the whole thing unviewable.
+		// Record the original position so callers can tell the series is incomplete
+		// rather than silently presenting a shortened, renumbered slice.
+		fmt.Printf("Warning: skipping unreadable DICOM frame %d: %v\n", i, frameErr)
+		skippedIndexes = append(skippedIndexes, i)
 	}
 
 	if len(dataURLs) == 0 {
 		return nil, errors.New("could not extract any images from frames")
 	}
 
-	return dataURLs, nil
+	totalFrames := len(pixelDataInfo.Frames)
+
+	return &DicomParseResult{
+		ImageURLs:      dataURLs,
+		TotalFrames:    totalFrames,
+		Truncated:      totalFrames > maxFrames,
+		SkippedIndexes: skippedIndexes,
+	}, nil
 }

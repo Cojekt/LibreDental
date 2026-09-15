@@ -11,11 +11,27 @@ import (
 )
 
 type PracticeConfigService struct {
-	repo storage.PracticeConfigRepository
+	repo         storage.PracticeConfigRepository
+	auditService *AuditService
 }
 
-func NewPracticeConfigService(repo storage.PracticeConfigRepository) *PracticeConfigService {
-	return &PracticeConfigService{repo: repo}
+// NewPracticeConfigService constructs the service. auditService may be nil (e.g. the
+// internal instance AuditService itself uses for PIN verification during login, before
+// any session exists) — mutations still succeed without it, they just aren't audit-logged.
+func NewPracticeConfigService(repo storage.PracticeConfigRepository, auditService *AuditService) *PracticeConfigService {
+	return &PracticeConfigService{repo: repo, auditService: auditService}
+}
+
+// logAction records an audit entry when a session is available. Staff login isn't
+// required to manage practice/staff config in this app (see SetConfig's bootstrap use
+// before any provider exists), so this is best-effort attribution, not an access check.
+func (s *PracticeConfigService) logAction(token string, action domain.AuditAction, resource string, details string) {
+	if s.auditService == nil {
+		return
+	}
+	if err := s.auditService.LogAction(token, action, resource, details); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
 }
 
 // GetConfig fetches the current practice configuration, or returns nil if unconfigured.
@@ -31,7 +47,9 @@ func (s *PracticeConfigService) GetConfig() (*domain.PracticeConfig, error) {
 }
 
 // SetConfig initializes or updates the practice country and derives all regional defaults.
-func (s *PracticeConfigService) SetConfig(countryCode string) (*domain.PracticeConfig, error) {
+// Called during first-run onboarding, before any provider/staff account exists yet, so it
+// cannot require an authenticated session.
+func (s *PracticeConfigService) SetConfig(token string, countryCode string) (*domain.PracticeConfig, error) {
 	meta, err := s.GetCountryConfig(countryCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch country config for %s: %w", countryCode, err)
@@ -39,9 +57,19 @@ func (s *PracticeConfigService) SetConfig(countryCode string) (*domain.PracticeC
 
 	cfg := domain.NewPracticeConfig(*meta)
 
+	_, existErr := s.repo.Get(context.Background())
+	if existErr != nil && !errors.Is(existErr, storage.ErrNotFound) {
+		return nil, fmt.Errorf("failed to check existing practice config: %w", existErr)
+	}
+	action := domain.AuditActionUpdate
+	if errors.Is(existErr, storage.ErrNotFound) {
+		action = domain.AuditActionCreate
+	}
+
 	if err := s.repo.Save(context.Background(), cfg); err != nil {
 		return nil, fmt.Errorf("failed to save practice config: %w", err)
 	}
+	s.logAction(token, action, "practice_config", "Set practice config during onboarding")
 	return cfg, nil
 }
 
@@ -68,11 +96,12 @@ func (s *PracticeConfigService) GetCountryConfig(countryCode string) (*domain.Co
 }
 
 // UpdatePracticeConfig updates practice details and regional configuration.
-func (s *PracticeConfigService) UpdatePracticeConfig(cfg domain.PracticeConfig) (*domain.PracticeConfig, error) {
+func (s *PracticeConfigService) UpdatePracticeConfig(token string, cfg domain.PracticeConfig) (*domain.PracticeConfig, error) {
 	err := s.repo.Save(context.Background(), &cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update practice config: %w", err)
 	}
+	s.logAction(token, domain.AuditActionUpdate, "practice_config", "Updated practice config")
 	return &cfg, nil
 }
 
@@ -113,8 +142,10 @@ func (s *PracticeConfigService) ListProviders() ([]*domain.Provider, error) {
 	return providers, nil
 }
 
-// SaveProvider creates or updates a clinic provider/staff member.
-func (s *PracticeConfigService) SaveProvider(p domain.Provider) (*domain.Provider, error) {
+// SaveProvider creates or updates a clinic provider/staff member. Not gated behind a
+// session: creating the very first provider happens before any session can exist.
+func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*domain.Provider, error) {
+	isNew := p.ID == ""
 	if p.ID == "" {
 		p.ID = fmt.Sprintf("prov_%d", time.Now().UnixNano())
 	} else {
@@ -144,13 +175,23 @@ func (s *PracticeConfigService) SaveProvider(p domain.Provider) (*domain.Provide
 		return nil, fmt.Errorf("failed to save provider: %w", err)
 	}
 
+	action := domain.AuditActionUpdate
+	if isNew {
+		action = domain.AuditActionCreate
+	}
+	s.logAction(token, action, "provider", fmt.Sprintf("Saved provider %s", p.ID))
+
 	p.Pin = "****"
 	return &p, nil
 }
 
 // DeleteProvider removes a provider record by ID.
-func (s *PracticeConfigService) DeleteProvider(id string) error {
-	return s.repo.DeleteProvider(context.Background(), id)
+func (s *PracticeConfigService) DeleteProvider(token string, id string) error {
+	if err := s.repo.DeleteProvider(context.Background(), id); err != nil {
+		return err
+	}
+	s.logAction(token, domain.AuditActionDelete, "provider", fmt.Sprintf("Deleted provider %s", id))
+	return nil
 }
 
 // ListOperatories fetches all configured operatories/treatment rooms.
@@ -159,7 +200,8 @@ func (s *PracticeConfigService) ListOperatories() ([]*domain.Operatory, error) {
 }
 
 // SaveOperatory creates or updates a clinic operatory/room.
-func (s *PracticeConfigService) SaveOperatory(op domain.Operatory) (*domain.Operatory, error) {
+func (s *PracticeConfigService) SaveOperatory(token string, op domain.Operatory) (*domain.Operatory, error) {
+	isNew := op.ID == ""
 	if op.ID == "" {
 		op.ID = fmt.Sprintf("op_%d", time.Now().UnixNano())
 	}
@@ -167,10 +209,19 @@ func (s *PracticeConfigService) SaveOperatory(op domain.Operatory) (*domain.Oper
 	if err != nil {
 		return nil, fmt.Errorf("failed to save operatory: %w", err)
 	}
+	action := domain.AuditActionUpdate
+	if isNew {
+		action = domain.AuditActionCreate
+	}
+	s.logAction(token, action, "operatory", fmt.Sprintf("Saved operatory %s", op.ID))
 	return &op, nil
 }
 
 // DeleteOperatory removes an operatory record by ID.
-func (s *PracticeConfigService) DeleteOperatory(id string) error {
-	return s.repo.DeleteOperatory(context.Background(), id)
+func (s *PracticeConfigService) DeleteOperatory(token string, id string) error {
+	if err := s.repo.DeleteOperatory(context.Background(), id); err != nil {
+		return err
+	}
+	s.logAction(token, domain.AuditActionDelete, "operatory", fmt.Sprintf("Deleted operatory %s", id))
+	return nil
 }

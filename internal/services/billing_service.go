@@ -370,7 +370,10 @@ func (s *BillingService) GetRevenueStats(token string, startDate, endDate string
 // ─── Treatment Bundles ────────────────────────────────────────────────────────
 
 // CreateBundle creates a new clinic-wide treatment bundle template.
-func (s *BillingService) CreateBundle(b *domain.TreatmentBundle) (*domain.TreatmentBundle, error) {
+func (s *BillingService) CreateBundle(token string, b *domain.TreatmentBundle) (*domain.TreatmentBundle, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if b == nil {
 		return nil, fmt.Errorf("%w: bundle cannot be nil", storage.ErrInvalidInput)
 	}
@@ -391,6 +394,9 @@ func (s *BillingService) CreateBundle(b *domain.TreatmentBundle) (*domain.Treatm
 
 	if err := s.bundleRepo.Create(context.Background(), b); err != nil {
 		return nil, fmt.Errorf("failed to create bundle: %w", err)
+	}
+	if err := s.auditService.LogAction(token, domain.AuditActionCreate, "treatment_bundle", fmt.Sprintf("Created bundle %s", b.ID)); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return b, nil
 }
@@ -421,7 +427,10 @@ func (s *BillingService) ListBundles() ([]*domain.TreatmentBundle, error) {
 }
 
 // UpdateBundle updates an existing bundle template.
-func (s *BillingService) UpdateBundle(b *domain.TreatmentBundle) (*domain.TreatmentBundle, error) {
+func (s *BillingService) UpdateBundle(token string, b *domain.TreatmentBundle) (*domain.TreatmentBundle, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if b == nil || b.ID == "" {
 		return nil, fmt.Errorf("%w: bundle and ID are required", storage.ErrInvalidInput)
 	}
@@ -436,15 +445,27 @@ func (s *BillingService) UpdateBundle(b *domain.TreatmentBundle) (*domain.Treatm
 	if err := s.bundleRepo.Update(context.Background(), b); err != nil {
 		return nil, fmt.Errorf("failed to update bundle: %w", err)
 	}
+	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "treatment_bundle", fmt.Sprintf("Updated bundle %s", b.ID)); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
 	return b, nil
 }
 
 // DeleteBundle removes a bundle template by ID.
-func (s *BillingService) DeleteBundle(id string) error {
+func (s *BillingService) DeleteBundle(token string, id string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	if id == "" {
 		return fmt.Errorf("%w: bundle ID is required", storage.ErrInvalidInput)
 	}
-	return s.bundleRepo.Delete(context.Background(), id)
+	if err := s.bundleRepo.Delete(context.Background(), id); err != nil {
+		return err
+	}
+	if err := s.auditService.LogAction(token, domain.AuditActionDelete, "treatment_bundle", fmt.Sprintf("Deleted bundle %s", id)); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
+	return nil
 }
 
 // ─── Procedure Codes & Fee Schedules ─────────────────────────────────────────
@@ -476,7 +497,10 @@ func (s *BillingService) ListProcedureCodes(countryCode string, providerID strin
 }
 
 // SaveFeeSchedule saves a custom fee override for a procedure code.
-func (s *BillingService) SaveFeeSchedule(fee *domain.FeeSchedule) (*domain.FeeSchedule, error) {
+func (s *BillingService) SaveFeeSchedule(token string, fee *domain.FeeSchedule) (*domain.FeeSchedule, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if fee == nil || fee.Code == "" {
 		return nil, fmt.Errorf("%w: fee schedule and code are required", storage.ErrInvalidInput)
 	}
@@ -485,6 +509,9 @@ func (s *BillingService) SaveFeeSchedule(fee *domain.FeeSchedule) (*domain.FeeSc
 	}
 	if err := s.feeRepo.Save(context.Background(), fee); err != nil {
 		return nil, fmt.Errorf("failed to save fee schedule: %w", err)
+	}
+	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "fee_schedule", fmt.Sprintf("Saved fee schedule for code %s", fee.Code)); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return fee, nil
 }
@@ -498,11 +525,20 @@ func (s *BillingService) ListFeeSchedules(countryCode string, providerID string)
 }
 
 // DeleteFeeSchedule removes a custom fee schedule override.
-func (s *BillingService) DeleteFeeSchedule(id string) error {
+func (s *BillingService) DeleteFeeSchedule(token string, id string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	if id == "" {
 		return fmt.Errorf("%w: ID is required", storage.ErrInvalidInput)
 	}
-	return s.feeRepo.Delete(context.Background(), id)
+	if err := s.feeRepo.Delete(context.Background(), id); err != nil {
+		return err
+	}
+	if err := s.auditService.LogAction(token, domain.AuditActionDelete, "fee_schedule", fmt.Sprintf("Deleted fee schedule %s", id)); err != nil {
+		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	}
+	return nil
 }
 
 // ─── Dental Charting Integration ─────────────────────────────────────────────

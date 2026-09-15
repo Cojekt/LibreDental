@@ -77,7 +77,7 @@ func TestChartService(t *testing.T) {
 		t.Fatalf("Expected 1 condition, got %d", len(chart.Conditions))
 	}
 
-	err = chartService.DeleteToothCondition(token, cond.ID, pat.ID)
+	err = chartService.DeleteToothCondition(token, cond.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete condition: %v", err)
 	}
@@ -88,5 +88,13 @@ func TestChartService(t *testing.T) {
 	}
 	if len(emptyChart.Conditions) != 0 {
 		t.Errorf("Expected 0 conditions after deletion, got %d", len(emptyChart.Conditions))
+	}
+
+	if err := chartService.DeleteToothCondition(token, cond.ID); err == nil {
+		t.Errorf("Expected error deleting an already-deleted/unknown condition ID")
+	}
+
+	if err := chartService.DeleteToothCondition("bogus-token", cond.ID); err != services.ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized for DeleteToothCondition without a session, got %v", err)
 	}
 }

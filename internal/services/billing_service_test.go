@@ -114,6 +114,94 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	}
 }
 
+func TestBillingService_BundlesAndFeeSchedulesRequireAuth(t *testing.T) {
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "test_billing_service_bundles.db")
+
+	db, err := sqlite.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	ctx := context.Background()
+	chartRepo := sqlite.NewChartRepository(db)
+	claimRepo := sqlite.NewClaimRepository(db)
+	paymentRepo := sqlite.NewPaymentRepository(db)
+	bundleRepo := sqlite.NewBundleRepository(db)
+	procRepo := sqlite.NewProcedureRepository(db)
+	auditRepo := sqlite.NewAuditRepository(db)
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+
+	if err := configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditSvc := NewAuditService(auditRepo, configRepo)
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
+	secretsSvc := NewSecretsService()
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, secretsSvc, auditSvc)
+
+	bundle := &domain.TreatmentBundle{
+		Shortname: "crwn",
+		Name:      "Crown",
+		Items: []domain.BundleItemTemplate{
+			{ADACode: "D2740", Description: "Crown - porcelain", DefaultFee: 120000},
+		},
+	}
+
+	// Unauthenticated calls must be rejected, not silently allowed.
+	if _, err := billingSvc.CreateBundle("bogus-token", bundle); err != ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized for CreateBundle without a session, got %v", err)
+	}
+	if _, err := billingSvc.UpdateBundle("bogus-token", bundle); err != ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized for UpdateBundle without a session, got %v", err)
+	}
+	if err := billingSvc.DeleteBundle("bogus-token", "bundle_1"); err != ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized for DeleteBundle without a session, got %v", err)
+	}
+	fee := &domain.FeeSchedule{Code: "D2740", CustomFee: 130000}
+	if _, err := billingSvc.SaveFeeSchedule("bogus-token", fee); err != ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized for SaveFeeSchedule without a session, got %v", err)
+	}
+	if err := billingSvc.DeleteFeeSchedule("bogus-token", "fee_1"); err != ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized for DeleteFeeSchedule without a session, got %v", err)
+	}
+
+	// Authenticated calls should succeed and be reflected in storage.
+	created, err := billingSvc.CreateBundle(token, bundle)
+	if err != nil {
+		t.Fatalf("Failed to create bundle with valid session: %v", err)
+	}
+	if created.ID == "" {
+		t.Errorf("Expected generated bundle ID")
+	}
+
+	created.Name = "Crown (Updated)"
+	if _, err := billingSvc.UpdateBundle(token, created); err != nil {
+		t.Fatalf("Failed to update bundle with valid session: %v", err)
+	}
+
+	if err := billingSvc.DeleteBundle(token, created.ID); err != nil {
+		t.Fatalf("Failed to delete bundle with valid session: %v", err)
+	}
+
+	savedFee, err := billingSvc.SaveFeeSchedule(token, fee)
+	if err != nil {
+		t.Fatalf("Failed to save fee schedule with valid session: %v", err)
+	}
+	if savedFee.ID == "" {
+		t.Errorf("Expected generated fee schedule ID")
+	}
+
+	if err := billingSvc.DeleteFeeSchedule(token, savedFee.ID); err != nil {
+		t.Fatalf("Failed to delete fee schedule with valid session: %v", err)
+	}
+}
+
 func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test_billing_service_submit.db")

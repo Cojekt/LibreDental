@@ -78,7 +78,7 @@ func (s *ChartService) SaveToothCondition(token string, payload *domain.SaveToot
 	return c, nil
 }
 
-func (s *ChartService) DeleteToothCondition(token string, id string, patientID string) error {
+func (s *ChartService) DeleteToothCondition(token string, id string) error {
 	if s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
@@ -86,12 +86,15 @@ func (s *ChartService) DeleteToothCondition(token string, id string, patientID s
 		return fmt.Errorf("%w: condition ID is required", storage.ErrInvalidInput)
 	}
 
-	err := s.chartRepo.DeleteCondition(context.Background(), id)
+	// DeleteCondition reads and deletes within one transaction so the audit entry
+	// is attributed to the condition's actual patient at deletion time, even under
+	// a concurrent delete/recreate of the same ID for a different patient.
+	condition, err := s.chartRepo.DeleteCondition(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete tooth condition: %w", err)
 	}
 
-	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, patientID, "dental_chart", "Deleted tooth condition"); err != nil {
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionDelete, condition.PatientID, "dental_chart", "Deleted tooth condition"); err != nil {
 		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return nil

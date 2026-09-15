@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"sync"
 
 	"github.com/LibreDental/libredental/internal/storage/seed"
 	"github.com/pressly/goose/v3"
@@ -15,6 +16,11 @@ var embedMigrations embed.FS
 
 //go:embed audit_migrations/*.sql
 var auditEmbedMigrations embed.FS
+
+// gooseMu serializes migrate/migrateAudit: goose.SetBaseFS is a package-level
+// global, so two migrations racing (main + audit) could each run against the
+// other's embedded migration set.
+var gooseMu sync.Mutex
 
 // DB wraps the *sql.DB handle for LibreDental SQLite storage.
 type DB struct {
@@ -46,6 +52,8 @@ func Open(dbPath string) (*DB, error) {
 }
 
 func (db *DB) migrate() error {
+	gooseMu.Lock()
+	defer gooseMu.Unlock()
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("sqlite3"); err != nil {
@@ -88,6 +96,8 @@ func OpenAudit(dbPath string) (*DB, error) {
 }
 
 func (db *DB) migrateAudit() error {
+	gooseMu.Lock()
+	defer gooseMu.Unlock()
 	goose.SetBaseFS(auditEmbedMigrations)
 
 	if err := goose.SetDialect("sqlite3"); err != nil {

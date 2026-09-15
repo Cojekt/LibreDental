@@ -3,6 +3,7 @@
   import { m } from "../paraglide/messages.js";
   import { AuditService } from "@bindings/services/index.js";
   import type { Patient, AuditLogEntry } from "@bindings/domain/index.js";
+  import { auth } from "../stores/auth.svelte.js";
 
   let { patients = [] } = $props<{
     patients: Patient[];
@@ -22,7 +23,7 @@
   async function fetchLogs() {
     loading = true;
     try {
-      const res = await AuditService.GetAuditLogs(selectedPatient, limit, page * limit);
+      const res = await AuditService.GetAuditLogs(auth.token, selectedPatient, limit, page * limit);
       logs = (res?.filter(Boolean) as AuditLogEntry[]) || [];
     } catch (e) {
       console.error("Failed to fetch audit logs", e);

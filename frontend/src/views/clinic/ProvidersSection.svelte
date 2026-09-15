@@ -2,6 +2,7 @@
   import type { Provider, Timecard } from "@bindings/domain/models.js";
   import { TimecardService } from "@bindings/services/index.js";
   import { untrack } from "svelte";
+  import { auth } from "../../stores/auth.svelte.js";
   import Modal from "../../components/ui/Modal.svelte";
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
@@ -120,7 +121,7 @@
     inFlightAction[pId] = "clockIn";
     const gen = (providerGen[pId] = (providerGen[pId] || 0) + 1);
     try {
-      const tc = await TimecardService.ClockIn(pId);
+      const tc = await TimecardService.ClockIn(auth.token, pId);
       if (providerGen[pId] === gen) {
         activeTimecards[pId] = tc;
       }
@@ -138,7 +139,7 @@
     inFlightAction[pId] = "clockOut";
     const gen = (providerGen[pId] = (providerGen[pId] || 0) + 1);
     try {
-      await TimecardService.ClockOut(pId);
+      await TimecardService.ClockOut(auth.token, pId);
       if (providerGen[pId] === gen) {
         activeTimecards[pId] = null;
       }
@@ -162,7 +163,7 @@
   async function executePay() {
     if (!providerToPay) return;
     try {
-      await TimecardService.PaySalary(providerToPay);
+      await TimecardService.PaySalary(auth.token, providerToPay);
       await loadProviderStates();
     } catch (e) {
       console.error("Pay Salary failed", e);

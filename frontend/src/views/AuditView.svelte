@@ -1,11 +1,12 @@
 <script lang="ts">
   import { m } from "../paraglide/messages.js";
-  import type { Patient } from "@bindings/domain/index.js";
+  import type { Patient, CountryConfig } from "@bindings/domain/index.js";
   import AuditingSubtab from "./AuditingSubtab.svelte";
   import AnalyticsSubtab from "./AnalyticsSubtab.svelte";
 
-  let { patients = [] } = $props<{
+  let { patients = [], countryMeta = null } = $props<{
     patients: Patient[];
+    countryMeta?: CountryConfig | null;
   }>();
 
   let activeSubtab = $state("analytics");
@@ -41,7 +42,7 @@
     {#if activeSubtab === "auditing"}
       <AuditingSubtab {patients} />
     {:else if activeSubtab === "analytics"}
-      <AnalyticsSubtab />
+      <AnalyticsSubtab {countryMeta} />
     {/if}
   </div>
 </div>

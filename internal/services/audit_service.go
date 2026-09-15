@@ -41,7 +41,7 @@ func (s *AuditService) CreateSession(id string, pin string) (string, error) {
 		return "", errors.New("provider repository not configured")
 	}
 
-	configService := NewPracticeConfigService(s.providerRepo)
+	configService := NewPracticeConfigService(s.providerRepo, nil)
 	provider, err := configService.VerifyProviderPin(id, pin)
 	if err != nil {
 		return "", err
@@ -113,7 +113,10 @@ func (s *AuditService) LogPatientAction(token string, action domain.AuditAction,
 	return s.repo.Log(context.Background(), entry)
 }
 
-func (s *AuditService) GetAuditLogs(patientID string, limit int, offset int) ([]*domain.AuditLogEntry, error) {
+func (s *AuditService) GetAuditLogs(token string, patientID string, limit int, offset int) ([]*domain.AuditLogEntry, error) {
+	if s.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	return s.repo.Query(context.Background(), patientID, limit, offset)
 }
 
