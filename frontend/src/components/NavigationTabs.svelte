@@ -37,6 +37,11 @@
       enabled: !!auth.token,
     },
     {
+      id: "accounting",
+      label: (getLocaleVersion(), m.nav_accounting()),
+      enabled: !!auth.token,
+    },
+    {
       id: "audit",
       label: (getLocaleVersion(), m.nav_audit()),
       enabled: !!auth.token,
