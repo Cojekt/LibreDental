@@ -31,6 +31,7 @@
   import AppointmentsView from "./views/AppointmentsView.svelte";
   import ChartingView from "./views/ChartingView.svelte";
   import BillingView from "./views/BillingView.svelte";
+  import AccountingView from "./views/AccountingView.svelte";
   import AuditView from "./views/AuditView.svelte";
   import ConfirmModal from "./components/ui/ConfirmModal.svelte";
 
@@ -670,8 +671,10 @@
       <ChartingView {patients} {countryMeta} />
     {:else if activeTab === "billing"}
       <BillingView {patients} {providers} {countryMeta} />
+    {:else if activeTab === "accounting"}
+      <AccountingView {providers} {countryMeta} />
     {:else if activeTab === "audit"}
-      <AuditView {patients} {countryMeta} />
+      <AuditView {patients} />
     {/if}
   </main>
 </div>

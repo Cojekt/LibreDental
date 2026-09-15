@@ -26,9 +26,9 @@ func NewTimecardService(timecardRepo *sqlite.TimecardRepository, practiceConfigR
 	}
 }
 
-// logAction records an audit entry when a session is available. Clocking in/out and
-// payroll aren't gated behind staff login in this app, so this is best-effort
-// attribution, not an access check.
+// logAction records an audit entry for the given session token. ClockIn/ClockOut
+// aren't gated behind staff login, so for those it's best-effort attribution rather
+// than an access check; every other caller here checks GetSessionUser first.
 func (s *TimecardService) logAction(token string, action domain.AuditAction, resource string, details string) {
 	if s.auditService == nil {
 		return
@@ -154,6 +154,9 @@ func (s *TimecardService) ListTimecards(providerID string, startDateStr string, 
 
 // EditTimecardHours allows manual overriding of a timecard's recorded minutes.
 func (s *TimecardService) EditTimecardHours(token string, timecardID string, providerID string, newMinutes int64) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	ctx := context.Background()
 	timecards, err := s.timecardRepo.ListTimecards(ctx, providerID, nil, nil)
 	if err != nil {
@@ -177,6 +180,9 @@ func (s *TimecardService) EditTimecardHours(token string, timecardID string, pro
 
 // CreateManualTimecard allows creating retroactive time entries.
 func (s *TimecardService) CreateManualTimecard(token string, providerID string, minutes int64, date string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	ctx := context.Background()
 
 	if minutes <= 0 {
@@ -231,6 +237,9 @@ func (s *TimecardService) GetTotalOwed(providerID string) (int64, error) {
 
 // DeleteTimecard removes a specific timecard record.
 func (s *TimecardService) DeleteTimecard(token string, id string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	ctx := context.Background()
 	if err := s.timecardRepo.DeleteTimecard(ctx, id); err != nil {
 		return err
@@ -241,6 +250,9 @@ func (s *TimecardService) DeleteTimecard(token string, id string) error {
 
 // PaySalary marks all unpaid timecards for a provider as paid.
 func (s *TimecardService) PaySalary(token string, providerID string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	ctx := context.Background()
 	if err := s.timecardRepo.MarkTimecardsPaid(ctx, providerID); err != nil {
 		return err
