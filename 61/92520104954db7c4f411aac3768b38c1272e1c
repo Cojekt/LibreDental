@@ -1,0 +1,16 @@
+go.mod
+  h_46a62801059d09 9,11,28-32
+.github/actions/setup-env/action.yml
+  h_46a62801059d09 63-64,66-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6192520104954db7c4f411aac3768b38c1272e1c",
+  "prompts": {},
+  "humans": {
+    "h_46a62801059d09": {
+      "author": "RedMarcher <weijiixu@gmail.com>"
+    }
+  }
+}
