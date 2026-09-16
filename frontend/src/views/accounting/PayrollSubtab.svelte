@@ -57,6 +57,7 @@
       await loadTotalOwed();
     } catch (e) {
       console.error("Pay Salary failed", e);
+      throw e;
     } finally {
       providerToPay = null;
     }

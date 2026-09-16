@@ -4,6 +4,7 @@
   import PayrollSubtab from "./accounting/PayrollSubtab.svelte";
   import AnalyticsSubtab from "./AnalyticsSubtab.svelte";
   import { m } from "../paraglide/messages.js";
+  import { getLocaleVersion } from "../lib/locale.svelte.js";
 
   let { providers = [], countryMeta = null } = $props<{
     providers: Provider[];
@@ -12,10 +13,10 @@
 
   let activeSubtab = $state("payroll");
 
-  const subtabs = [
-    { id: "payroll", label: m.acct_tab_payroll() },
-    { id: "analysis", label: m.acct_tab_analysis() },
-  ];
+  const subtabs = $derived([
+    { id: "payroll", label: (getLocaleVersion(), m.acct_tab_payroll()) },
+    { id: "analysis", label: (getLocaleVersion(), m.acct_tab_analysis()) },
+  ]);
 </script>
 
 <div class="flex h-full w-full flex-col gap-6">

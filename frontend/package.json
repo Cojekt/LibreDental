@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
-    "@wailsio/runtime": "latest",
+    "@wailsio/runtime": "3.0.0-beta.22",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

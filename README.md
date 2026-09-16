@@ -73,6 +73,9 @@ LibreDental™ is built as a **[Wails v3](https://v3.wails.io)** application com
    cd frontend && npm install && cd ..
    ```
 
+   > **IMPORTANT** \
+   > `wails3@latest` above may land ahead of the version this repo's `go.mod` actually pins, and a mismatched CLI/runtime is a common source of confusing "method not binding" errors. After cloning, run `task deps:sync-wails` (see [Command Reference](#command-reference)) to align the `wails3` CLI and `@wailsio/runtime` to the exact version `go.mod` already requires.
+
 3. **Create a Feature Branch**:
 
    ```bash
@@ -102,6 +105,8 @@ All project build, development, and formatting tasks are managed through [Task](
 | `task artifact` | Builds all local artifacts (desktop binary, server binary, and demo data). |
 | `task demo` | Generates a standalone pre-populated save archive (`libredental-demo-data.zip`) for testing. |
 | `task format` | Formats Go backend files with `gofmt -w -s` and frontend code with Prettier. **Must be run before creating PRs.** |
+| `task deps:update` | Safely updates Go modules and frontend npm packages together, keeping the `wails3` CLI and `@wailsio/runtime` pinned to the same Wails version, then regenerates bindings and verifies the repo still builds and tests pass. |
+| `task deps:sync-wails` | Aligns the installed `wails3` CLI and `@wailsio/runtime` to whatever Wails version `go.mod` already pins, without upgrading any dependencies. Useful right after cloning. |
 
 ## License
 

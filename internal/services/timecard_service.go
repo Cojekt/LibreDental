@@ -154,7 +154,7 @@ func (s *TimecardService) ListTimecards(providerID string, startDateStr string, 
 
 // EditTimecardHours allows manual overriding of a timecard's recorded minutes.
 func (s *TimecardService) EditTimecardHours(token string, timecardID string, providerID string, newMinutes int64) error {
-	if s.auditService.GetSessionUser(token) == nil {
+	if s.auditService != nil && s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
 	ctx := context.Background()
@@ -180,7 +180,7 @@ func (s *TimecardService) EditTimecardHours(token string, timecardID string, pro
 
 // CreateManualTimecard allows creating retroactive time entries.
 func (s *TimecardService) CreateManualTimecard(token string, providerID string, minutes int64, date string) error {
-	if s.auditService.GetSessionUser(token) == nil {
+	if s.auditService != nil && s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
 	ctx := context.Background()
@@ -237,7 +237,7 @@ func (s *TimecardService) GetTotalOwed(providerID string) (int64, error) {
 
 // DeleteTimecard removes a specific timecard record.
 func (s *TimecardService) DeleteTimecard(token string, id string) error {
-	if s.auditService.GetSessionUser(token) == nil {
+	if s.auditService != nil && s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
 	ctx := context.Background()
@@ -250,7 +250,7 @@ func (s *TimecardService) DeleteTimecard(token string, id string) error {
 
 // PaySalary marks all unpaid timecards for a provider as paid.
 func (s *TimecardService) PaySalary(token string, providerID string) error {
-	if s.auditService.GetSessionUser(token) == nil {
+	if s.auditService != nil && s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
 	ctx := context.Background()
