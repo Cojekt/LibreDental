@@ -2,7 +2,9 @@ package sqlite_test
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/LibreDental/libredental/internal/domain"
@@ -164,13 +166,96 @@ func TestPracticeConfigRepository_ProvidersAndOperatories(t *testing.T) {
 		t.Errorf("Expected room code 'ROOM-A', got '%s'", operatories[0].RoomCode)
 	}
 
-	// Deletion testing
+	// Deletion testing: deactivating the sole active provider must be rejected.
+	if err := repo.DeleteProvider(ctx, "prov_101"); !errors.Is(err, storage.ErrLastActiveProvider) {
+		t.Fatalf("Expected ErrLastActiveProvider deleting the last active provider, got: %v", err)
+	}
+
+	// Add a second active provider so the first can be deactivated.
+	prov2 := &domain.Provider{
+		ID:       "prov_102",
+		Name:     "Dr. John Wick",
+		Role:     domain.RoleDentist,
+		IsActive: true,
+	}
+	if err := repo.SaveProvider(ctx, prov2); err != nil {
+		t.Fatalf("Failed to save second provider: %v", err)
+	}
+
 	err = repo.DeleteProvider(ctx, "prov_101")
 	if err != nil {
 		t.Fatalf("Failed to delete provider: %v", err)
 	}
 	providersAfterDelete, _ := repo.ListProviders(ctx)
-	if len(providersAfterDelete) != 1 || providersAfterDelete[0].IsActive {
-		t.Errorf("Expected provider to be inactive after delete, got active or wrong count: %d", len(providersAfterDelete))
+	for _, p := range providersAfterDelete {
+		if p.ID == "prov_101" && p.IsActive {
+			t.Errorf("Expected prov_101 to be inactive after delete")
+		}
+	}
+
+	// Deactivating the now-sole remaining active provider must be rejected too.
+	if err := repo.DeleteProvider(ctx, "prov_102"); !errors.Is(err, storage.ErrLastActiveProvider) {
+		t.Fatalf("Expected ErrLastActiveProvider deleting the last remaining active provider, got: %v", err)
+	}
+}
+
+// TestPracticeConfigRepository_DeleteProvider_ConcurrentRace verifies that concurrent
+// DeleteProvider calls on different providers can never both succeed when only two
+// active providers remain, which would otherwise leave zero active providers.
+func TestPracticeConfigRepository_DeleteProvider_ConcurrentRace(t *testing.T) {
+	tempDir := t.TempDir()
+	dbPath := filepath.Join(tempDir, "test_providers_race.db")
+
+	db, err := sqlite.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	repo := sqlite.NewPracticeConfigRepository(db)
+	ctx := context.Background()
+
+	ids := []string{"prov_a", "prov_b"}
+	for _, id := range ids {
+		if err := repo.SaveProvider(ctx, &domain.Provider{ID: id, Name: id, Role: domain.RoleDentist, IsActive: true}); err != nil {
+			t.Fatalf("Failed to save provider %s: %v", id, err)
+		}
+	}
+
+	var wg sync.WaitGroup
+	errs := make([]error, len(ids))
+	for i, id := range ids {
+		wg.Add(1)
+		go func(i int, id string) {
+			defer wg.Done()
+			errs[i] = repo.DeleteProvider(ctx, id)
+		}(i, id)
+	}
+	wg.Wait()
+
+	successCount := 0
+	for _, err := range errs {
+		if err == nil {
+			successCount++
+		} else if !errors.Is(err, storage.ErrLastActiveProvider) {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+	}
+	if successCount != 1 {
+		t.Fatalf("Expected exactly 1 of 2 concurrent deletes to succeed, got %d", successCount)
+	}
+
+	providers, err := repo.ListProviders(ctx)
+	if err != nil {
+		t.Fatalf("Failed to list providers: %v", err)
+	}
+	activeCount := 0
+	for _, p := range providers {
+		if p.IsActive {
+			activeCount++
+		}
+	}
+	if activeCount != 1 {
+		t.Fatalf("Expected exactly 1 active provider remaining, got %d", activeCount)
 	}
 }

@@ -213,18 +213,40 @@ func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.P
 	return nil
 }
 
+// DeleteProvider deactivates a provider by ID. The active-provider count check and
+// the deactivation are performed as a single statement so that two concurrent calls
+// deactivating different providers can never both succeed and leave zero active
+// providers: SQLite evaluates the subquery against the same locked write state that
+// the UPDATE itself commits, so the count can't go stale between check and write.
 func (r *PracticeConfigRepository) DeleteProvider(ctx context.Context, id string) error {
-	query := `UPDATE providers SET is_active = 0, updated_at = ? WHERE id = ?`
+	query := `
+	UPDATE providers
+	SET is_active = 0, updated_at = ?
+	WHERE id = ?
+	  AND (is_active = 0 OR (SELECT COUNT(*) FROM providers WHERE is_active = 1) > 1)`
 	res, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete provider: %w", err)
 	}
 
 	rows, err := res.RowsAffected()
-	if err == nil && rows == 0 {
-		return storage.ErrNotFound
+	if err != nil {
+		return fmt.Errorf("failed to check delete result: %w", err)
 	}
-	return nil
+	if rows > 0 {
+		return nil
+	}
+
+	// Nothing was updated: the provider either doesn't exist or is the last active one.
+	var isActive bool
+	err = r.db.QueryRowContext(ctx, `SELECT is_active FROM providers WHERE id = ?`, id).Scan(&isActive)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return storage.ErrNotFound
+		}
+		return fmt.Errorf("failed to check provider: %w", err)
+	}
+	return storage.ErrLastActiveProvider
 }
 
 // Operatories CRUD

@@ -185,7 +185,10 @@ func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*
 	return &p, nil
 }
 
-// DeleteProvider removes a provider record by ID.
+// DeleteProvider deactivates a provider record by ID. At least one provider must
+// remain active at all times, so deactivating the last active provider is forbidden.
+// The check-then-deactivate logic lives in the repository as a single atomic
+// operation, so concurrent deletes of different providers can't race past it.
 func (s *PracticeConfigService) DeleteProvider(token string, id string) error {
 	if err := s.repo.DeleteProvider(context.Background(), id); err != nil {
 		return err

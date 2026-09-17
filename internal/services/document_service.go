@@ -80,8 +80,12 @@ func (s *DocumentService) SaveDocumentBase64(token string, patientID, name, desc
 	}
 
 	doc, err := s.saveDocumentBytes(patientID, name, description, docType, contentType, data)
-	if err == nil && doc.PatientID != nil {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, *doc.PatientID, "document", "Created document")
+	if err == nil {
+		if doc.PatientID != nil {
+			_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, *doc.PatientID, "document", "Created document")
+		} else {
+			_ = s.auditService.LogAction(token, domain.AuditActionCreate, "document", "Created clinic document")
+		}
 	}
 	return doc, err
 }

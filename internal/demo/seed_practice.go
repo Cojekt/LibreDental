@@ -1,60 +1,75 @@
 package demo
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
-	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
-func seedPracticeConfig(ctx context.Context, practiceConfigRepo *sqlite.PracticeConfigRepository, now time.Time, summary *SeedSummary) error {
-	config := &domain.PracticeConfig{
-		ID:            1,
-		ClinicName:    "Apex Dental Studio",
-		Tagline:       "Modern Dental Care & Implant Center",
-		TaxID:         "94-1234567",
-		LicenseNumber: "DEN-CA-884920",
-		Phone:         "(555) 234-5678",
-		Email:         "info@apexdentalstudio.com",
-		Website:       "https://apexdentalstudio.example.com",
-		AddressLine1:  "101 Dental Plaza, Suite 200",
-		City:          "San Francisco",
-		StateProvince: "CA",
-		PostalCode:    "94105",
-		CountryCode:   domain.CountryUS,
-		Currency:      "USD",
-		ToothSystem:   domain.ToothSystemUniversal,
-		DateFormat:    "MM/DD/YYYY",
-		BusinessHours: domain.DefaultBusinessHours(),
+// bootstrapFirstProvider creates the very first provider through PracticeConfigService
+// without a session token (the same way a fresh install's onboarding would, since no
+// session can exist before any provider does), then opens a session as that provider.
+// The returned token is used to authenticate every subsequent seed step.
+func bootstrapFirstProvider(g *ServiceGraph, now time.Time, summary *SeedSummary) (string, error) {
+	first := domain.Provider{
+		ID:            "prov_101",
+		Name:          "Dr. Sarah Jenkins",
+		Role:          domain.RoleDentist,
+		Specialty:     "General Dentistry & Restorative",
+		LicenseNumber: "DEN-98212",
+		Email:         "s.jenkins@apexdentalstudio.com",
+		Phone:         "555-0101",
+		Color:         "#3b82f6",
+		Pin:           "1111",
+		IsActive:      true,
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}
 
-	if err := practiceConfigRepo.Save(ctx, config); err != nil {
+	if _, err := g.Practice.SaveProvider("", first); err != nil {
+		return "", fmt.Errorf("failed to bootstrap first provider: %w", err)
+	}
+	summary.ProvidersCount++
+
+	token, err := g.Audit.CreateSession(first.ID, first.Pin)
+	if err != nil {
+		return "", fmt.Errorf("failed to create bootstrap session: %w", err)
+	}
+	return token, nil
+}
+
+func seedPracticeConfig(g *ServiceGraph, now time.Time, summary *SeedSummary) error {
+	cfg, err := g.Practice.SetConfig("", string(domain.CountryUS))
+	if err != nil {
+		return fmt.Errorf("failed to initialize practice config: %w", err)
+	}
+
+	cfg.ClinicName = "Apex Dental Studio"
+	cfg.Tagline = "Modern Dental Care & Implant Center"
+	cfg.TaxID = "94-1234567"
+	cfg.LicenseNumber = "DEN-CA-884920"
+	cfg.Phone = "(555) 234-5678"
+	cfg.Email = "info@apexdentalstudio.com"
+	cfg.Website = "https://apexdentalstudio.example.com"
+	cfg.AddressLine1 = "101 Dental Plaza, Suite 200"
+	cfg.City = "San Francisco"
+	cfg.StateProvince = "CA"
+	cfg.PostalCode = "94105"
+	cfg.DateFormat = "MM/DD/YYYY"
+	cfg.BusinessHours = domain.DefaultBusinessHours()
+	cfg.CreatedAt = now
+	cfg.UpdatedAt = now
+
+	if _, err := g.Practice.UpdatePracticeConfig("", *cfg); err != nil {
 		return fmt.Errorf("failed to seed practice config: %w", err)
 	}
 	summary.PracticeConfigured = true
 	return nil
 }
 
-func seedProviders(ctx context.Context, practiceConfigRepo *sqlite.PracticeConfigRepository, now time.Time, summary *SeedSummary) error {
-	providers := []*domain.Provider{
-		{
-			ID:            "prov_101",
-			Name:          "Dr. Sarah Jenkins",
-			Role:          domain.RoleDentist,
-			Specialty:     "General Dentistry & Restorative",
-			LicenseNumber: "DEN-98212",
-			Email:         "s.jenkins@apexdentalstudio.com",
-			Phone:         "555-0101",
-			Color:         "#3b82f6",
-			Pin:           "1111",
-			IsActive:      true,
-			CreatedAt:     now,
-			UpdatedAt:     now,
-		},
+func seedProviders(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
+	providers := []domain.Provider{
 		{
 			ID:            "prov_102",
 			Name:          "Dr. Marcus Vance",
@@ -86,7 +101,7 @@ func seedProviders(ctx context.Context, practiceConfigRepo *sqlite.PracticeConfi
 	}
 
 	for _, p := range providers {
-		if err := practiceConfigRepo.SaveProvider(ctx, p); err != nil {
+		if _, err := g.Practice.SaveProvider(token, p); err != nil {
 			return fmt.Errorf("failed to seed provider %s: %w", p.Name, err)
 		}
 		summary.ProvidersCount++
@@ -94,8 +109,8 @@ func seedProviders(ctx context.Context, practiceConfigRepo *sqlite.PracticeConfi
 	return nil
 }
 
-func seedOperatories(ctx context.Context, practiceConfigRepo *sqlite.PracticeConfigRepository, now time.Time, summary *SeedSummary) error {
-	operatories := []*domain.Operatory{
+func seedOperatories(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
+	operatories := []domain.Operatory{
 		{
 			ID:        "op_1",
 			Name:      "Operatory 1",
@@ -126,7 +141,7 @@ func seedOperatories(ctx context.Context, practiceConfigRepo *sqlite.PracticeCon
 	}
 
 	for _, op := range operatories {
-		if err := practiceConfigRepo.SaveOperatory(ctx, op); err != nil {
+		if _, err := g.Practice.SaveOperatory(token, op); err != nil {
 			return fmt.Errorf("failed to seed operatory %s: %w", op.Name, err)
 		}
 		summary.OperatoriesCount++

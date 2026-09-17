@@ -1,72 +1,15 @@
 package demo
 
 import (
-	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
-	"github.com/LibreDental/libredental/internal/storage/sqlite"
-	"github.com/google/uuid"
 )
 
-func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir string, now time.Time, summary *SeedSummary) error {
-	docRepo := sqlite.NewDocumentRepository(db)
-
-	// Setup sample definitions to seed
-	seedFile := func(patientID, name, desc, docType, mimeType, path string) error {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to read %s: %w", path, err)
-		}
-
-		docID := uuid.New().String()
-		var relDir string
-		var pID *string
-
-		if patientID != "" {
-			relDir = patientID
-			pID = &patientID
-		} else {
-			relDir = "clinic"
-		}
-
-		targetDir := filepath.Join(appDir, "documents", relDir)
-		if err := os.MkdirAll(targetDir, 0o755); err != nil {
-			return fmt.Errorf("failed to create document directory: %w", err)
-		}
-
-		filePathRelative := filepath.Join(relDir, docID)
-		fullPath := filepath.Join(appDir, "documents", filePathRelative)
-
-		if err := os.WriteFile(fullPath, data, 0o644); err != nil {
-			return fmt.Errorf("failed to write document file: %w", err)
-		}
-
-		doc := &domain.Document{
-			ID:          docID,
-			PatientID:   pID,
-			Type:        domain.DocumentType(docType),
-			Name:        name,
-			Description: desc,
-			FilePath:    filePathRelative,
-			SizeBytes:   int64(len(data)),
-			ContentType: mimeType,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-		}
-
-		if err := docRepo.Create(doc); err != nil {
-			_ = os.Remove(fullPath)
-			return fmt.Errorf("failed to save document record: %w", err)
-		}
-
-		summary.DocumentsCount++
-		return nil
-	}
-
+func seedDocuments(g *ServiceGraph, token string, demoDataDir string, summary *SeedSummary) error {
 	type seedDef struct {
 		name      string
 		desc      string
@@ -94,18 +37,21 @@ func seedDocuments(ctx context.Context, db *sqlite.DB, appDir, demoDataDir strin
 	for _, s := range seeds {
 		fullPath := filepath.Join(demoDataDir, s.path)
 
-		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		data, err := os.ReadFile(fullPath)
+		if err != nil {
 			return fmt.Errorf("demo document asset missing: %w", err)
 		}
 
-		pID := s.patientID
+		patientID := s.patientID
 		if s.isClinic {
-			pID = "" // clinic-wide document
+			patientID = "" // clinic-wide document
 		}
 
-		if err := seedFile(pID, s.name, s.desc, s.docType, s.mimeType, fullPath); err != nil {
-			return err
+		b64 := base64.StdEncoding.EncodeToString(data)
+		if _, err := g.Document.SaveDocumentBase64(token, patientID, s.name, s.desc, s.docType, s.mimeType, b64); err != nil {
+			return fmt.Errorf("failed to seed document %s: %w", s.name, err)
 		}
+		summary.DocumentsCount++
 	}
 
 	return nil

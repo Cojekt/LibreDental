@@ -2,6 +2,7 @@ package demo
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,8 +21,15 @@ func TestSeedDatabase(t *testing.T) {
 	}
 	defer db.Close()
 
+	auditDbPath := filepath.Join(tempDir, "test_demo_audit.db")
+	auditDb, err := sqlite.OpenAudit(auditDbPath)
+	if err != nil {
+		t.Fatalf("Failed to open test audit sqlite db: %v", err)
+	}
+	defer auditDb.Close()
+
 	appDir := t.TempDir()
-	summary, err := SeedDatabase(db, appDir, "./data")
+	summary, err := SeedDatabase(db, auditDb, appDir, "./data")
 	if err != nil {
 		t.Fatalf("SeedDatabase failed: %v", err)
 	}
@@ -153,5 +161,20 @@ func TestSeedDatabase(t *testing.T) {
 	}
 	if len(patDocs) != 6 {
 		t.Errorf("Expected 6 patient documents for pat_101, got %d", len(patDocs))
+	}
+
+	// Verify the save folder is a complete drop-in appDir: app settings were written,
+	// and the audit trail recorded real activity from driving the services.
+	if _, err := os.Stat(filepath.Join(appDir, "config.json")); err != nil {
+		t.Errorf("Expected config.json to be written to appDir: %v", err)
+	}
+
+	auditRepo := sqlite.NewAuditRepository(auditDb)
+	auditEntries, err := auditRepo.Query(ctx, "", 1, 0)
+	if err != nil {
+		t.Fatalf("Failed to query audit log: %v", err)
+	}
+	if len(auditEntries) == 0 {
+		t.Errorf("Expected at least one audit log entry from seeding through services")
 	}
 }

@@ -1,16 +1,13 @@
 package demo
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
-	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
-func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository, now time.Time, summary *SeedSummary) error {
-	conditions := []*domain.ToothCondition{
+func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) error {
+	conditions := []*domain.SaveToothConditionPayload{
 		{
 			ID:          "cond_301",
 			PatientID:   "pat_101",
@@ -20,8 +17,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "2-Surface Posterior Composite Restoration",
 			Status:      domain.ToothStatusCompleted,
 			Fee:         28000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_302",
@@ -32,8 +27,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "1-Surface Posterior Composite",
 			Status:      domain.ToothStatusExisting,
 			Fee:         19000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_303",
@@ -44,8 +37,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "3-Surface Posterior Composite",
 			Status:      domain.ToothStatusTreatmentPlanned,
 			Fee:         35000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_304",
@@ -56,8 +47,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Impacted Wisdom Tooth Extraction",
 			Status:      domain.ToothStatusCompleted,
 			Fee:         45000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_305",
@@ -68,8 +57,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Molar Endodontic Therapy (Root Canal)",
 			Status:      domain.ToothStatusTreatmentPlanned,
 			Fee:         120000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_306",
@@ -80,8 +67,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Porcelain/Ceramic Crown",
 			Status:      domain.ToothStatusTreatmentPlanned,
 			Fee:         135000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_307",
@@ -92,8 +77,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Missing Tooth (Extracted)",
 			Status:      domain.ToothStatusMissing,
 			Fee:         0,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_308",
@@ -104,8 +87,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Porcelain Fused to High Noble Metal Crown",
 			Status:      domain.ToothStatusTreatmentPlanned,
 			Fee:         140000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_309",
@@ -116,8 +97,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Amalgam Restoration 2 Surfaces",
 			Status:      domain.ToothStatusExisting,
 			Fee:         22000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_310",
@@ -128,8 +107,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Anterior Composite 2 Surfaces",
 			Status:      domain.ToothStatusExisting,
 			Fee:         26000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_311",
@@ -140,8 +117,6 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Anterior Composite 2 Surfaces",
 			Status:      domain.ToothStatusExisting,
 			Fee:         26000,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 		{
 			ID:          "cond_312",
@@ -152,13 +127,11 @@ func seedChartConditions(ctx context.Context, chartRepo *sqlite.ChartRepository,
 			Description: "Dental Sealant - Per Tooth",
 			Status:      domain.ToothStatusCompleted,
 			Fee:         6500,
-			CreatedAt:   now,
-			UpdatedAt:   now,
 		},
 	}
 
 	for _, cond := range conditions {
-		if _, err := chartRepo.SaveCondition(ctx, cond); err != nil {
+		if _, err := g.Chart.SaveToothCondition(token, cond); err != nil {
 			return fmt.Errorf("failed to seed tooth condition %s: %w", cond.ID, err)
 		}
 		summary.ConditionsCount++

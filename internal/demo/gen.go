@@ -20,6 +20,17 @@ func main() {
 		outputPath = os.Args[1]
 	}
 
+	if err := run(outputPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// run does the actual work and returns an error instead of calling os.Exit, so that
+// deferred cleanup (closing the databases, removing tempDir) always runs on every
+// exit path — os.Exit skips deferred functions, which previously leaked tempDir
+// whenever an error occurred after it was created.
+func run(outputPath string) error {
 	absPath, err := filepath.Abs(outputPath)
 	if err != nil {
 		absPath = outputPath
@@ -29,31 +40,41 @@ func main() {
 
 	tempDir, err := os.MkdirTemp("", "libredental_demo_*")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Failed to create temp directory: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir) // clean up
 
+	// tempDir doubles as the save folder (appDir): the main DB, audit DB, documents,
+	// and app settings are all written directly into it by the same services the real
+	// app uses, so zipping tempDir's contents produces a complete drop-in save folder.
 	dbPath := filepath.Join(tempDir, "libredental.db")
 	db, err := sqlite.Open(dbPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Failed to open SQLite database: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to open SQLite database: %w", err)
 	}
+	defer db.Close()
+
+	auditDbPath := filepath.Join(tempDir, "audit.db")
+	auditDb, err := sqlite.OpenAudit(auditDbPath)
+	if err != nil {
+		return fmt.Errorf("failed to open audit SQLite database: %w", err)
+	}
+	defer auditDb.Close()
 
 	demoDataDir := filepath.Join(".", "internal", "demo", "data")
-	summary, err := demo.SeedDatabase(db, tempDir, demoDataDir)
+	summary, err := demo.SeedDatabase(db, auditDb, tempDir, demoDataDir)
 	_ = db.Close()
+	_ = auditDb.Close()
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Failed to seed demo database: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to seed demo database: %w", err)
 	}
 
-	// Zip the temp directory contents
-	if err := zipDirectory(tempDir, absPath); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Failed to create zip archive: %v\n", err)
-		os.Exit(1)
+	// Zip the temp directory contents under a "LibreDental/" root folder, so
+	// extracting the archive reproduces the real save folder 1:1 (matching
+	// os.UserConfigDir()/LibreDental) rather than dumping files loose.
+	if err := zipDirectory(tempDir, absPath, "LibreDental"); err != nil {
+		return fmt.Errorf("failed to create zip archive: %w", err)
 	}
 
 	fmt.Printf("Demo save archive successfully created!\n")
@@ -69,9 +90,10 @@ func main() {
 	fmt.Printf("   • Patient Payments    : %d\n", summary.PaymentsCount)
 	fmt.Printf("   • Documents Saved     : %d\n", summary.DocumentsCount)
 	fmt.Printf("File: %s\n", absPath)
+	return nil
 }
 
-func zipDirectory(sourceDir, targetZipFile string) error {
+func zipDirectory(sourceDir, targetZipFile, rootFolderName string) error {
 	zipFile, err := os.Create(targetZipFile)
 	if err != nil {
 		return err
@@ -99,6 +121,7 @@ func zipDirectory(sourceDir, targetZipFile string) error {
 
 		// Always use forward slashes in zip
 		relPath = strings.ReplaceAll(relPath, string(os.PathSeparator), "/")
+		relPath = rootFolderName + "/" + relPath
 
 		if info.IsDir() {
 			relPath += "/"

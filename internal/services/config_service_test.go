@@ -114,6 +114,21 @@ func TestPracticeConfigService(t *testing.T) {
 		t.Errorf("Expected provider name 'Dr. Sarah Connor', got '%s'", providers[0].Name)
 	}
 
+	// Deactivating the sole active provider must be forbidden.
+	if err := service.DeleteProvider("", prov.ID); err == nil {
+		t.Fatalf("Expected error deactivating the last active provider, got nil")
+	}
+
+	// Add a second provider so the first can be deactivated.
+	prov2, err := service.SaveProvider("", domain.Provider{
+		Name:     "Dr. John Wick",
+		Role:     domain.RoleDentist,
+		IsActive: true,
+	})
+	if err != nil {
+		t.Fatalf("Failed to save second provider: %v", err)
+	}
+
 	err = service.DeleteProvider("", prov.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete provider: %v", err)
@@ -123,8 +138,13 @@ func TestPracticeConfigService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list providers after delete: %v", err)
 	}
-	if len(providersAfterDelete) != 1 || providersAfterDelete[0].IsActive {
-		t.Errorf("Expected provider to be inactive after deletion, got active or wrong count: %d", len(providersAfterDelete))
+	if len(providersAfterDelete) != 2 {
+		t.Fatalf("Expected 2 providers after delete, got %d", len(providersAfterDelete))
+	}
+
+	// Now only prov2 remains active; deactivating it must also be forbidden.
+	if err := service.DeleteProvider("", prov2.ID); err == nil {
+		t.Fatalf("Expected error deactivating the last remaining active provider, got nil")
 	}
 
 	// 7. Operatory Management Flow
