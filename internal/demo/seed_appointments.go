@@ -1,15 +1,13 @@
 package demo
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
-	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
-func seedAppointments(ctx context.Context, appointmentRepo *sqlite.AppointmentRepository, now time.Time, today time.Time, summary *SeedSummary) error {
+func seedAppointments(g *ServiceGraph, token string, now time.Time, today time.Time, summary *SeedSummary) error {
 	twoDaysAgo := today.AddDate(0, 0, -2)
 	yesterday := today.AddDate(0, 0, -1)
 	tomorrow := today.AddDate(0, 0, 1)
@@ -178,7 +176,7 @@ func seedAppointments(ctx context.Context, appointmentRepo *sqlite.AppointmentRe
 	}
 
 	for _, appt := range appointments {
-		if err := appointmentRepo.Create(ctx, appt); err != nil {
+		if _, err := g.Appointment.CreateAppointment(token, appt); err != nil {
 			return fmt.Errorf("failed to seed appointment %s: %w", appt.ID, err)
 		}
 		summary.AppointmentsCount++

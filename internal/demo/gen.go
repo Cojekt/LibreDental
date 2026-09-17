@@ -34,6 +34,9 @@ func main() {
 	}
 	defer os.RemoveAll(tempDir) // clean up
 
+	// tempDir doubles as the save folder (appDir): the main DB, audit DB, documents,
+	// and app settings are all written directly into it by the same services the real
+	// app uses, so zipping tempDir's contents produces a complete drop-in save folder.
 	dbPath := filepath.Join(tempDir, "libredental.db")
 	db, err := sqlite.Open(dbPath)
 	if err != nil {
@@ -41,17 +44,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	auditDbPath := filepath.Join(tempDir, "audit.db")
+	auditDb, err := sqlite.OpenAudit(auditDbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Failed to open audit SQLite database: %v\n", err)
+		os.Exit(1)
+	}
+
 	demoDataDir := filepath.Join(".", "internal", "demo", "data")
-	summary, err := demo.SeedDatabase(db, tempDir, demoDataDir)
+	summary, err := demo.SeedDatabase(db, auditDb, tempDir, demoDataDir)
 	_ = db.Close()
+	_ = auditDb.Close()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Failed to seed demo database: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Zip the temp directory contents
-	if err := zipDirectory(tempDir, absPath); err != nil {
+	// Zip the temp directory contents under a "LibreDental/" root folder, so
+	// extracting the archive reproduces the real save folder 1:1 (matching
+	// os.UserConfigDir()/LibreDental) rather than dumping files loose.
+	if err := zipDirectory(tempDir, absPath, "LibreDental"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Failed to create zip archive: %v\n", err)
 		os.Exit(1)
 	}
@@ -71,7 +84,7 @@ func main() {
 	fmt.Printf("File: %s\n", absPath)
 }
 
-func zipDirectory(sourceDir, targetZipFile string) error {
+func zipDirectory(sourceDir, targetZipFile, rootFolderName string) error {
 	zipFile, err := os.Create(targetZipFile)
 	if err != nil {
 		return err
@@ -99,6 +112,7 @@ func zipDirectory(sourceDir, targetZipFile string) error {
 
 		// Always use forward slashes in zip
 		relPath = strings.ReplaceAll(relPath, string(os.PathSeparator), "/")
+		relPath = rootFolderName + "/" + relPath
 
 		if info.IsDir() {
 			relPath += "/"

@@ -185,8 +185,31 @@ func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*
 	return &p, nil
 }
 
-// DeleteProvider removes a provider record by ID.
+// DeleteProvider deactivates a provider record by ID. At least one provider must
+// remain active at all times, so deactivating the last active provider is forbidden.
 func (s *PracticeConfigService) DeleteProvider(token string, id string) error {
+	providers, err := s.repo.ListProviders(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to list providers: %w", err)
+	}
+
+	activeCount := 0
+	var target *domain.Provider
+	for _, p := range providers {
+		if p.IsActive {
+			activeCount++
+		}
+		if p.ID == id {
+			target = p
+		}
+	}
+	if target == nil {
+		return storage.ErrNotFound
+	}
+	if target.IsActive && activeCount <= 1 {
+		return errors.New("cannot deactivate the last active provider")
+	}
+
 	if err := s.repo.DeleteProvider(context.Background(), id); err != nil {
 		return err
 	}

@@ -1,15 +1,13 @@
 package demo
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
-	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
-func seedFeeSchedules(ctx context.Context, procedureRepo *sqlite.ProcedureRepository, now time.Time, summary *SeedSummary) error {
+func seedFeeSchedules(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
 	feeSchedules := []*domain.FeeSchedule{
 		{
 			ID:          "fee_sched_1",
@@ -30,7 +28,7 @@ func seedFeeSchedules(ctx context.Context, procedureRepo *sqlite.ProcedureReposi
 	}
 
 	for _, fs := range feeSchedules {
-		if err := procedureRepo.Save(ctx, fs); err != nil {
+		if _, err := g.Billing.SaveFeeSchedule(token, fs); err != nil {
 			return fmt.Errorf("failed to seed fee schedule %s: %w", fs.ID, err)
 		}
 		summary.FeeSchedulesCount++
@@ -38,7 +36,7 @@ func seedFeeSchedules(ctx context.Context, procedureRepo *sqlite.ProcedureReposi
 	return nil
 }
 
-func seedBundles(ctx context.Context, bundleRepo *sqlite.BundleRepository, now time.Time, summary *SeedSummary) error {
+func seedBundles(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
 	bundles := []*domain.TreatmentBundle{
 		{
 			ID:          "bundle_1",
@@ -70,7 +68,7 @@ func seedBundles(ctx context.Context, bundleRepo *sqlite.BundleRepository, now t
 	}
 
 	for _, b := range bundles {
-		if err := bundleRepo.Create(ctx, b); err != nil {
+		if _, err := g.Billing.CreateBundle(token, b); err != nil {
 			return fmt.Errorf("failed to seed treatment bundle %s: %w", b.ID, err)
 		}
 		summary.BundlesCount++
@@ -78,7 +76,7 @@ func seedBundles(ctx context.Context, bundleRepo *sqlite.BundleRepository, now t
 	return nil
 }
 
-func seedClaims(ctx context.Context, claimRepo *sqlite.ClaimRepository, now time.Time, summary *SeedSummary) error {
+func seedClaims(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
 	claims := []*domain.Claim{
 		{
 			ID:               "claim_401",
@@ -186,7 +184,7 @@ func seedClaims(ctx context.Context, claimRepo *sqlite.ClaimRepository, now time
 	}
 
 	for _, c := range claims {
-		if err := claimRepo.Create(ctx, c); err != nil {
+		if _, err := g.Billing.CreateClaim(token, c); err != nil {
 			return fmt.Errorf("failed to seed claim %s: %w", c.ID, err)
 		}
 		summary.ClaimsCount++
@@ -194,7 +192,7 @@ func seedClaims(ctx context.Context, claimRepo *sqlite.ClaimRepository, now time
 	return nil
 }
 
-func seedPayments(ctx context.Context, paymentRepo *sqlite.PaymentRepository, now time.Time, summary *SeedSummary) error {
+func seedPayments(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
 	payments := []*domain.Payment{
 		{
 			ID:        "pay_501",
@@ -219,7 +217,7 @@ func seedPayments(ctx context.Context, paymentRepo *sqlite.PaymentRepository, no
 	}
 
 	for _, p := range payments {
-		if err := paymentRepo.Create(ctx, p); err != nil {
+		if _, err := g.Billing.RecordPayment(token, p); err != nil {
 			return fmt.Errorf("failed to seed payment %s: %w", p.ID, err)
 		}
 		summary.PaymentsCount++

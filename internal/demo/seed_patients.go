@@ -1,15 +1,13 @@
 package demo
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
-	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
-func seedPatients(ctx context.Context, patientRepo *sqlite.PatientRepository, now time.Time, summary *SeedSummary) error {
+func seedPatients(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
 	patients := []*domain.Patient{
 		{
 			ID:                     "pat_101",
@@ -226,7 +224,7 @@ func seedPatients(ctx context.Context, patientRepo *sqlite.PatientRepository, no
 	}
 
 	for _, p := range patients {
-		if err := patientRepo.Create(ctx, p); err != nil {
+		if _, err := g.Patient.CreatePatient(token, p); err != nil {
 			return fmt.Errorf("failed to seed patient %s: %w", p.FirstName, err)
 		}
 		summary.PatientsCount++
