@@ -40,18 +40,6 @@ func (s *ChartService) GetPatientChart(token string, patientID string) (*domain.
 }
 
 func (s *ChartService) SaveToothCondition(token string, payload *domain.SaveToothConditionPayload) (*domain.ToothCondition, error) {
-	return s.saveToothConditionAt(token, payload, time.Time{})
-}
-
-// SeedToothCondition saves a tooth condition with an explicit CreatedAt timestamp
-// instead of the wall-clock time. It exists for the demo data generator, which seeds
-// every record against a single fixed reference time so repeated runs produce a
-// deterministic archive.
-func (s *ChartService) SeedToothCondition(token string, payload *domain.SaveToothConditionPayload, createdAt time.Time) (*domain.ToothCondition, error) {
-	return s.saveToothConditionAt(token, payload, createdAt)
-}
-
-func (s *ChartService) saveToothConditionAt(token string, payload *domain.SaveToothConditionPayload, createdAt time.Time) (*domain.ToothCondition, error) {
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
@@ -72,7 +60,6 @@ func (s *ChartService) saveToothConditionAt(token string, payload *domain.SaveTo
 		Description: payload.Description,
 		Status:      payload.Status,
 		Fee:         payload.Fee,
-		CreatedAt:   createdAt,
 	}
 
 	isInsert, err := s.chartRepo.SaveCondition(context.Background(), c)

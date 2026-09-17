@@ -73,7 +73,7 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 	}
 
 	// 7. Dental Chart Conditions
-	if err := seedChartConditions(graph, token, now, summary); err != nil {
+	if err := seedChartConditions(graph, token, summary); err != nil {
 		return nil, err
 	}
 
@@ -98,7 +98,7 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 	}
 
 	// 12. Documents
-	if err := seedDocuments(graph, token, now, demoDataDir, summary); err != nil {
+	if err := seedDocuments(graph, token, demoDataDir, summary); err != nil {
 		return nil, err
 	}
 
