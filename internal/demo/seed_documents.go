@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 )
 
-func seedDocuments(g *ServiceGraph, token string, demoDataDir string, summary *SeedSummary) error {
+func seedDocuments(g *ServiceGraph, token string, now time.Time, demoDataDir string, summary *SeedSummary) error {
 	type seedDef struct {
 		name      string
 		desc      string
@@ -48,7 +49,7 @@ func seedDocuments(g *ServiceGraph, token string, demoDataDir string, summary *S
 		}
 
 		b64 := base64.StdEncoding.EncodeToString(data)
-		if _, err := g.Document.SaveDocumentBase64(token, patientID, s.name, s.desc, s.docType, s.mimeType, b64); err != nil {
+		if _, err := g.Document.SeedDocumentBase64(token, patientID, s.name, s.desc, s.docType, s.mimeType, b64, now); err != nil {
 			return fmt.Errorf("failed to seed document %s: %w", s.name, err)
 		}
 		summary.DocumentsCount++

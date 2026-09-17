@@ -62,6 +62,18 @@ func (s *DocumentService) getClinicDocumentsPath() string {
 // SaveDocumentBase64 saves a document from a base64 encoded string.
 // If patientID is empty, it saves as a clinic document.
 func (s *DocumentService) SaveDocumentBase64(token string, patientID, name, description, docType, contentType, base64Data string) (*domain.Document, error) {
+	return s.saveDocumentBase64At(token, patientID, name, description, docType, contentType, base64Data, time.Now())
+}
+
+// SeedDocumentBase64 saves a document from a base64 encoded string with an explicit
+// CreatedAt/UpdatedAt timestamp instead of the wall-clock time. It exists for the demo
+// data generator, which seeds every record against a single fixed reference time so
+// repeated runs produce a deterministic archive.
+func (s *DocumentService) SeedDocumentBase64(token string, patientID, name, description, docType, contentType, base64Data string, createdAt time.Time) (*domain.Document, error) {
+	return s.saveDocumentBase64At(token, patientID, name, description, docType, contentType, base64Data, createdAt)
+}
+
+func (s *DocumentService) saveDocumentBase64At(token string, patientID, name, description, docType, contentType, base64Data string, createdAt time.Time) (*domain.Document, error) {
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
@@ -79,9 +91,13 @@ func (s *DocumentService) SaveDocumentBase64(token string, patientID, name, desc
 		return nil, fmt.Errorf("failed to decode base64 data: %w", err)
 	}
 
-	doc, err := s.saveDocumentBytes(patientID, name, description, docType, contentType, data)
-	if err == nil && doc.PatientID != nil {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, *doc.PatientID, "document", "Created document")
+	doc, err := s.saveDocumentBytes(patientID, name, description, docType, contentType, data, createdAt)
+	if err == nil {
+		if doc.PatientID != nil {
+			_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, *doc.PatientID, "document", "Created document")
+		} else {
+			_ = s.auditService.LogAction(token, domain.AuditActionCreate, "document", "Created clinic document")
+		}
 	}
 	return doc, err
 }
@@ -127,8 +143,8 @@ func cleanPatientID(patientID string) (string, error) {
 	return cleanID, nil
 }
 
-// saveDocumentBytes saves a document from a byte array.
-func (s *DocumentService) saveDocumentBytes(patientID, name, description, docType, contentType string, data []byte) (*domain.Document, error) {
+// saveDocumentBytes saves a document from a byte array, stamping it with createdAt.
+func (s *DocumentService) saveDocumentBytes(patientID, name, description, docType, contentType string, data []byte, createdAt time.Time) (*domain.Document, error) {
 	docID := uuid.New().String()
 
 	var relDir string
@@ -165,7 +181,6 @@ func (s *DocumentService) saveDocumentBytes(patientID, name, description, docTyp
 		return nil, fmt.Errorf("failed to write document file: %w", err)
 	}
 
-	now := time.Now()
 	doc := &domain.Document{
 		ID:          docID,
 		PatientID:   pID,
@@ -175,8 +190,8 @@ func (s *DocumentService) saveDocumentBytes(patientID, name, description, docTyp
 		FilePath:    filePathRelative,
 		SizeBytes:   int64(len(data)),
 		ContentType: contentType,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		CreatedAt:   createdAt,
+		UpdatedAt:   createdAt,
 	}
 
 	if err := s.repo.Create(doc); err != nil {

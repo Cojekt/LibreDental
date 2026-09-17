@@ -2,11 +2,12 @@ package demo
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 )
 
-func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) error {
+func seedChartConditions(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
 	conditions := []*domain.SaveToothConditionPayload{
 		{
 			ID:          "cond_301",
@@ -131,7 +132,7 @@ func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) er
 	}
 
 	for _, cond := range conditions {
-		if _, err := g.Chart.SaveToothCondition(token, cond); err != nil {
+		if _, err := g.Chart.SeedToothCondition(token, cond, now); err != nil {
 			return fmt.Errorf("failed to seed tooth condition %s: %w", cond.ID, err)
 		}
 		summary.ConditionsCount++

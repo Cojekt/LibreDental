@@ -11,6 +11,10 @@ var (
 	ErrNotFound     = errors.New("record not found")
 	ErrConflict     = errors.New("optimistic concurrency conflict: record has been updated by another user")
 	ErrInvalidInput = errors.New("invalid input data")
+
+	// ErrLastActiveProvider is returned when an operation would leave the clinic
+	// with zero active providers, which is not allowed.
+	ErrLastActiveProvider = errors.New("cannot deactivate the last active provider")
 )
 
 // PatientRepository defines storage operations for patient demographic records.
