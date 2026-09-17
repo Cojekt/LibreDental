@@ -1,5 +1,12 @@
 version: "3"
 
+includes:
+  deps:
+    taskfile: ./Taskfile.deps.yml
+    dir: .
+    vars:
+      PACKAGE_MANAGER: "{{.PACKAGE_MANAGER}}"
+
 vars:
   APP_NAME: "libredental"
   BIN_DIR: "dist"

@@ -4,14 +4,12 @@
   import { untrack } from "svelte";
   import { auth } from "../../stores/auth.svelte.js";
   import Modal from "../../components/ui/Modal.svelte";
-  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmailInput from "../../components/ui/EmailInput.svelte";
   import PhoneInput from "../../components/ui/PhoneInput.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
-  import TimecardsModal from "./TimecardsModal.svelte";
 
   let {
     providers = [],
@@ -52,13 +50,8 @@
   }>();
 
   let activeTimecards = $state<Record<string, Timecard | null | undefined>>({});
-  let totalOwed = $state<Record<string, number | undefined>>({});
   let inFlightAction = $state<Record<string, "clockIn" | "clockOut" | null>>({});
   let providerGen: Record<string, number> = {};
-
-  let showTimecardsModal = $state(false);
-  let selectedProviderId = $state("");
-  let selectedProviderName = $state("");
 
   let searchQuery = $state("");
   let statusFilter = $state("all"); // 'all', 'active', 'inactive'
@@ -103,16 +96,6 @@
           activeTimecards[p.id] = undefined;
         }
       }
-      try {
-        const owed = await TimecardService.GetTotalOwed(p.id);
-        if (providerGen[p.id] === gen) {
-          totalOwed[p.id] = owed;
-        }
-      } catch (e) {
-        if (providerGen[p.id] === gen) {
-          totalOwed[p.id] = undefined;
-        }
-      }
     }
   }
 
@@ -149,26 +132,6 @@
       console.error("Clock Out failed", e);
     } finally {
       inFlightAction[pId] = null;
-    }
-  }
-
-  let showConfirmPay = $state(false);
-  let providerToPay = $state<string | null>(null);
-
-  function promptPay(id: string) {
-    providerToPay = id;
-    showConfirmPay = true;
-  }
-
-  async function executePay() {
-    if (!providerToPay) return;
-    try {
-      await TimecardService.PaySalary(auth.token, providerToPay);
-      await loadProviderStates();
-    } catch (e) {
-      console.error("Pay Salary failed", e);
-    } finally {
-      providerToPay = null;
     }
   }
 </script>
@@ -333,41 +296,6 @@
               </button>
             </div>
           </div>
-
-          <div class="bg-slate-800/40 rounded-lg p-3 mt-2 border border-slate-700/50">
-            <div class="flex items-center justify-between">
-              <div class="text-slate-300 text-xs font-semibold">
-                {m.prov_total_owed()}
-                {#if totalOwed[p.id] === undefined}
-                  <span class="text-slate-500 text-sm ml-1">...</span>
-                {:else}
-                  <span class="text-emerald-400 text-sm ml-1"
-                    >${((totalOwed[p.id] || 0) / 100).toFixed(2)}</span
-                  >
-                {/if}
-              </div>
-              <button
-                type="button"
-                onclick={() => promptPay(p.id)}
-                class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 rounded text-xs font-bold transition-colors border border-emerald-500/30"
-              >
-                {m.prov_pay_salary()}
-              </button>
-            </div>
-            <div class="mt-3 flex justify-end">
-              <button
-                type="button"
-                onclick={() => {
-                  selectedProviderId = p.id;
-                  selectedProviderName = p.name;
-                  showTimecardsModal = true;
-                }}
-                class="text-sky-400 hover:text-sky-300 text-xs font-semibold flex items-center gap-1"
-              >
-                {m.prov_view_timecards()}
-              </button>
-            </div>
-          </div>
         </div>
       {/each}
     </div>
@@ -501,18 +429,3 @@
     </div>
   </form>
 </Modal>
-
-<TimecardsModal
-  bind:showModal={showTimecardsModal}
-  providerId={selectedProviderId}
-  providerName={selectedProviderName}
-  onrefresh={loadProviderStates}
-/>
-
-<ConfirmModal
-  bind:showModal={showConfirmPay}
-  title={m.prov_pay_salary()}
-  message={m.prov_confirm_pay_salary()}
-  confirmText={m.billing_btn_record_payment()}
-  onConfirm={executePay}
-/>

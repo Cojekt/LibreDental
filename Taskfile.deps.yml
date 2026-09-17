@@ -1,0 +1,74 @@
+version: "3"
+
+vars:
+  PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
+
+tasks:
+  update:
+    desc: >
+      Safely updates Go modules and frontend npm packages together, keeps the
+      wails3 CLI and @wailsio/runtime in lockstep with the wails Go module,
+      regenerates bindings, and verifies the repo still builds/tests before
+      leaving the changes for review.
+    cmds:
+      - task: check-clean
+      - task: update-go
+      - task: sync-wails
+      - task: update-frontend
+      - task: verify
+      - cmd: |
+          echo "Dependencies updated. Review the diff (git diff go.mod go.sum frontend/package.json frontend/package-lock.json) and commit if it looks good."
+        silent: true
+
+  check-clean:
+    internal: true
+    cmds:
+      - |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Working tree is dirty. Commit or stash pending changes first so the dependency-update diff stays isolated and easy to revert." >&2
+          exit 1
+        fi
+
+  update-go:
+    internal: true
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  # Keeps the wails3 CLI binary and the frontend's @wailsio/runtime package
+  # pinned to the exact same beta as the wails Go module, since all three
+  # drift independently otherwise (this is what broke bundle lookups once
+  # before: go.mod moved ahead while the CLI and npm runtime stayed behind).
+  # Not internal: unlike `update`, this never changes go.mod/package.json
+  # version constraints, so it's also safe for a fresh clone to run whenever
+  # `wails3 version` looks out of step with what go.mod already pins.
+  sync-wails:
+    desc: Aligns the installed wails3 CLI and @wailsio/runtime to whatever version go.mod already pins (no dependency upgrades).
+    cmds:
+      - |
+        WV=$(go list -m github.com/wailsapp/wails/v3 | awk '{print $2}')
+        VER=${WV#v}
+        echo "Syncing wails3 CLI and @wailsio/runtime to ${WV}"
+        go install github.com/wailsapp/wails/v3/cmd/wails3@${WV}
+        cd frontend && case "{{.PACKAGE_MANAGER}}" in
+          npm) npm install "@wailsio/runtime@${VER}" --save-exact ;;
+          yarn) yarn add "@wailsio/runtime@${VER}" --exact ;;
+          pnpm) pnpm add "@wailsio/runtime@${VER}" --save-exact ;;
+          bun) bun add "@wailsio/runtime@${VER}" --exact ;;
+          *) echo "Unsupported PACKAGE_MANAGER: {{.PACKAGE_MANAGER}}" >&2; exit 1 ;;
+        esac
+
+  update-frontend:
+    internal: true
+    dir: frontend
+    cmds:
+      - "{{.PACKAGE_MANAGER}} update"
+      - "{{.PACKAGE_MANAGER}} install"
+
+  verify:
+    internal: true
+    cmds:
+      - wails3 generate bindings -ts -i
+      - go test ./...
+      - cd frontend && {{.PACKAGE_MANAGER}} run check
+      - cd frontend && {{.PACKAGE_MANAGER}} run build
