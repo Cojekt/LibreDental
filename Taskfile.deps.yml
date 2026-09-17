@@ -47,9 +47,16 @@ tasks:
     cmds:
       - |
         WV=$(go list -m github.com/wailsapp/wails/v3 | awk '{print $2}')
+        VER=${WV#v}
         echo "Syncing wails3 CLI and @wailsio/runtime to ${WV}"
         go install github.com/wailsapp/wails/v3/cmd/wails3@${WV}
-        cd frontend && {{.PACKAGE_MANAGER}} install "@wailsio/runtime@${WV#v}" --save-exact
+        cd frontend && case "{{.PACKAGE_MANAGER}}" in
+          npm) npm install "@wailsio/runtime@${VER}" --save-exact ;;
+          yarn) yarn add "@wailsio/runtime@${VER}" --exact ;;
+          pnpm) pnpm add "@wailsio/runtime@${VER}" --save-exact ;;
+          bun) bun add "@wailsio/runtime@${VER}" --exact ;;
+          *) echo "Unsupported PACKAGE_MANAGER: {{.PACKAGE_MANAGER}}" >&2; exit 1 ;;
+        esac
 
   update-frontend:
     internal: true
@@ -64,3 +71,4 @@ tasks:
       - wails3 generate bindings -ts -i
       - go test ./...
       - cd frontend && {{.PACKAGE_MANAGER}} run check
+      - cd frontend && {{.PACKAGE_MANAGER}} run build
