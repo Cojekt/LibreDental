@@ -99,9 +99,9 @@
       },
       no_show: {
         label: m.appts_status_no_show(),
-        bg: "bg-slate-500/15",
-        text: "text-slate-400",
-        border: "border-slate-500/30",
+        bg: "bg-cyan-500/15",
+        text: "text-cyan-400",
+        border: "border-cyan-500/30",
       },
     });
 
@@ -112,7 +112,7 @@
     in_chair: "#a855f7",
     completed: "#10b981",
     cancelled: "#f43f5e",
-    no_show: "#64748b",
+    no_show: "#06b6d4",
   };
 
   function getStatusColor(status: string): string {
@@ -626,6 +626,7 @@
         seatLabel={m.appts_action_seat()}
         completeLabel={m.appts_action_complete()}
         cancelLabel={m.appts_action_cancel()}
+        noShowLabel={m.appts_action_no_show()}
       />
     {:else if calendarView === "week"}
       <AppointmentWeekSection

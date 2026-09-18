@@ -19,7 +19,7 @@
     in_chair: "bg-purple-500/15 text-purple-400 border-purple-500/30",
     completed: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
     cancelled: "bg-rose-500/15 text-rose-400 border-rose-500/30",
-    no_show: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+    no_show: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
 
     // Claim Statuses
     draft: "bg-slate-700/80 text-slate-300 border-slate-600/50",

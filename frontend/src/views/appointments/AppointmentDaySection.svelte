@@ -25,6 +25,7 @@
     seatLabel = m.appts_action_seat(),
     completeLabel = m.appts_action_complete(),
     cancelLabel = m.appts_action_cancel(),
+    noShowLabel = m.appts_action_no_show(),
   } = $props<{
     selectedDate: string;
     timeSlots: string[];
@@ -46,6 +47,7 @@
     seatLabel?: string;
     completeLabel?: string;
     cancelLabel?: string;
+    noShowLabel?: string;
   }>();
 
   const PX_PER_MIN = 1.6; // 96px per hour
@@ -339,6 +341,15 @@
                     class="px-2 py-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/30"
                   >
                     {completeLabel}
+                  </button>
+                {/if}
+                {#if appt.status === "scheduled" || appt.status === "confirmed"}
+                  <button
+                    type="button"
+                    onclick={() => onupdatestatus(appt.id, "no_show")}
+                    class="px-2 py-0.5 text-[10px] font-semibold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 rounded border border-cyan-500/30"
+                  >
+                    {noShowLabel}
                   </button>
                 {/if}
                 {#if appt.status === "scheduled" || appt.status === "confirmed" || appt.status === "arrived"}

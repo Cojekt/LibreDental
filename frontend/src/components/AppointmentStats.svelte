@@ -26,14 +26,17 @@
   let cancelledCount = $derived(
     appointments.filter((a: Appointment) => a.status === "cancelled").length
   );
+  let noShowCount = $derived(
+    appointments.filter((a: Appointment) => a.status === "no_show").length
+  );
 </script>
 
-<div class={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 ${compact ? "gap-2" : "gap-3"}`}>
+<div class={`grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 ${compact ? "gap-2" : "gap-3"}`}>
   <!-- Scheduled -->
   <div
-    class={`rounded-lg border border-slate-700/80 bg-slate-800/80 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
+    class={`rounded-lg border-l-4 border border-slate-500/40 border-l-slate-400 bg-slate-500/15 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
   >
-    <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400">
+    <div class="flex items-center justify-between text-[11px] font-semibold text-slate-300">
       <span>{(getLocaleVersion(), m.appts_status_scheduled())}</span>
       <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
     </div>
@@ -44,66 +47,79 @@
 
   <!-- Confirmed -->
   <div
-    class={`rounded-lg border border-slate-700/80 bg-slate-800/80 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
+    class={`rounded-lg border-l-4 border border-blue-500/40 border-l-blue-400 bg-blue-500/15 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
   >
-    <div class="flex items-center justify-between text-[11px] font-semibold text-blue-400">
+    <div class="flex items-center justify-between text-[11px] font-semibold text-blue-300">
       <span>{m.appts_status_confirmed()}</span>
       <span class="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
     </div>
-    <div class={`font-bold text-blue-300 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
+    <div class={`font-bold text-blue-100 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
       {confirmedCount}
     </div>
   </div>
 
   <!-- Arrived / Waiting -->
   <div
-    class={`rounded-lg border border-amber-500/30 bg-amber-500/10 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
+    class={`rounded-lg border-l-4 border border-amber-500/40 border-l-amber-400 bg-amber-500/15 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
   >
-    <div class="flex items-center justify-between text-[11px] font-semibold text-amber-400">
+    <div class="flex items-center justify-between text-[11px] font-semibold text-amber-300">
       <span>{m.appts_status_arrived()}</span>
       <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span>
     </div>
-    <div class={`font-bold text-amber-300 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
+    <div class={`font-bold text-amber-100 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
       {arrivedCount}
     </div>
   </div>
 
   <!-- In Chair -->
   <div
-    class={`rounded-lg border border-purple-500/30 bg-purple-500/10 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
+    class={`rounded-lg border-l-4 border border-purple-500/40 border-l-purple-400 bg-purple-500/15 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
   >
-    <div class="flex items-center justify-between text-[11px] font-semibold text-purple-400">
+    <div class="flex items-center justify-between text-[11px] font-semibold text-purple-300">
       <span>{m.appts_status_in_chair()}</span>
       <span class="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse"></span>
     </div>
-    <div class={`font-bold text-purple-300 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
+    <div class={`font-bold text-purple-100 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
       {inChairCount}
     </div>
   </div>
 
   <!-- Completed -->
   <div
-    class={`rounded-lg border border-emerald-500/30 bg-emerald-500/10 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
+    class={`rounded-lg border-l-4 border border-emerald-500/40 border-l-emerald-400 bg-emerald-500/15 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
   >
-    <div class="flex items-center justify-between text-[11px] font-semibold text-emerald-400">
+    <div class="flex items-center justify-between text-[11px] font-semibold text-emerald-300">
       <span>{m.appts_status_completed()}</span>
       <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
     </div>
-    <div class={`font-bold text-emerald-300 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
+    <div class={`font-bold text-emerald-100 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
       {completedCount}
     </div>
   </div>
 
   <!-- Cancelled -->
   <div
-    class={`rounded-lg border border-rose-500/30 bg-rose-500/10 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
+    class={`rounded-lg border-l-4 border border-rose-500/40 border-l-rose-400 bg-rose-500/15 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
   >
-    <div class="flex items-center justify-between text-[11px] font-semibold text-rose-400">
+    <div class="flex items-center justify-between text-[11px] font-semibold text-rose-300">
       <span>{m.appts_status_cancelled()}</span>
       <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
     </div>
-    <div class={`font-bold text-rose-300 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
+    <div class={`font-bold text-rose-100 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
       {cancelledCount}
+    </div>
+  </div>
+
+  <!-- No Show -->
+  <div
+    class={`rounded-lg border-l-4 border border-cyan-500/40 border-l-cyan-400 bg-cyan-500/15 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}
+  >
+    <div class="flex items-center justify-between text-[11px] font-semibold text-cyan-300">
+      <span>{m.appts_status_no_show()}</span>
+      <span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+    </div>
+    <div class={`font-bold text-cyan-100 ${compact ? "mt-0.5 text-base" : "mt-2 text-2xl"}`}>
+      {noShowCount}
     </div>
   </div>
 </div>

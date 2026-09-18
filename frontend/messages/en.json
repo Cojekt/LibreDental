@@ -168,6 +168,7 @@
   "appts_action_seat": "Seat in Chair",
   "appts_action_complete": "Complete Visit",
   "appts_action_cancel": "Cancel",
+  "appts_action_no_show": "No Show",
   "appts_action_edit": "Edit",
   "appts_status_scheduled": "Scheduled",
   "appts_status_confirmed": "Confirmed",
