@@ -83,6 +83,11 @@
   let isToday = $derived(selectedDate === getLocalDateString(now));
   let nowTopPx = $derived((now.getHours() * 60 + now.getMinutes()) * PX_PER_MIN);
 
+  // Prevent marking an appointment as a no-show before its scheduled visit has ended.
+  function canMarkNoShow(appt: Appointment): boolean {
+    return new Date(appt.end_time) <= now;
+  }
+
   let hours = $derived(timeSlots.map((s: string) => parseInt(s.split(":")[0], 10) || 0));
 
   // Ranges of the day (in px, top/height) that fall outside business hours.
@@ -343,7 +348,7 @@
                     {completeLabel}
                   </button>
                 {/if}
-                {#if appt.status === "scheduled" || appt.status === "confirmed"}
+                {#if (appt.status === "scheduled" || appt.status === "confirmed") && canMarkNoShow(appt)}
                   <button
                     type="button"
                     onclick={() => onupdatestatus(appt.id, "no_show")}

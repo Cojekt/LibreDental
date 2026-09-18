@@ -47,6 +47,25 @@
 
   let calendarView = $state<"day" | "week" | "month">("day");
 
+  // Appointment filters, shared by calendar and agenda views. The date range
+  // only applies to agenda (calendar navigation already picks the date), and
+  // defaults to "today and after" so agenda opens on upcoming appointments
+  // rather than the full history.
+  let filterPatient = $state("all");
+  let filterOperatory = $state("all");
+  let filterStatus = $state("all");
+  let filterDateFrom = $state(getLocalDateString());
+  let filterDateTo = $state("");
+
+  function clearFilters() {
+    selectedProvider = "all";
+    filterPatient = "all";
+    filterOperatory = "all";
+    filterStatus = "all";
+    filterDateFrom = getLocalDateString();
+    filterDateTo = "";
+  }
+
   function getProviderName(id: string): string {
     const p = providers.find((prov: Provider) => prov.id === id);
     if (p) return p.name;
@@ -350,9 +369,17 @@
     appointments
       .filter((a: Appointment) => {
         if (selectedProvider !== "all" && a.provider_id !== selectedProvider) return false;
+        if (filterPatient !== "all" && a.patient_id !== filterPatient) return false;
+        if (filterOperatory !== "all" && a.operatory_id !== filterOperatory) return false;
+        if (filterStatus !== "all" && a.status !== filterStatus) return false;
         const isCalendar = viewMode === "calendar" || viewMode === "grid";
         if (isCalendar && calendarView === "day") {
           return isSameDay(a.start_time, selectedDate);
+        }
+        if (viewMode === "agenda") {
+          const apptDateStr = getLocalDateString(a.start_time);
+          if (filterDateFrom && apptDateStr < filterDateFrom) return false;
+          if (filterDateTo && apptDateStr > filterDateTo) return false;
         }
         return true;
       })
@@ -543,20 +570,35 @@
           class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1 text-sm text-slate-200 focus:border-sky-500 focus:outline-none"
         />
       </div>
-    {:else}
-      <div
-        class="flex items-center gap-2 text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3 py-1.5 rounded-lg"
-      >
-        <span>{m.appts_agenda_header()}</span>
-      </div>
     {/if}
+  </div>
 
-    <div class="flex items-center gap-2">
-      <label for="provider-filter" class="text-xs font-medium text-slate-400">
+  <!-- Appointment Filters -->
+  <div
+    class="flex flex-wrap items-end gap-4 rounded-xl border border-slate-700/80 bg-slate-800/80 p-4 shadow-sm backdrop-blur"
+  >
+    <div class="flex flex-col gap-1">
+      <label for="appt-filter-patient" class="text-xs font-medium text-slate-400">
+        {m.appts_filter_patient()}
+      </label>
+      <select
+        id="appt-filter-patient"
+        bind:value={filterPatient}
+        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="all">{m.appts_filter_all_patients()}</option>
+        {#each patients as p}
+          <option value={p.id}>{p.first_name} {p.last_name}</option>
+        {/each}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="appt-filter-provider" class="text-xs font-medium text-slate-400">
         {m.appts_provider_filter()}
       </label>
       <select
-        id="provider-filter"
+        id="appt-filter-provider"
         bind:value={selectedProvider}
         class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
       >
@@ -566,6 +608,76 @@
         {/each}
       </select>
     </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="appt-filter-operatory" class="text-xs font-medium text-slate-400">
+        {m.appts_filter_operatory()}
+      </label>
+      <select
+        id="appt-filter-operatory"
+        bind:value={filterOperatory}
+        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="all">{m.appts_filter_all_operatories()}</option>
+        {#each operatories as o}
+          <option value={o.id}>{o.name}</option>
+        {/each}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="appt-filter-status" class="text-xs font-medium text-slate-400">
+        {m.appts_filter_status()}
+      </label>
+      <select
+        id="appt-filter-status"
+        bind:value={filterStatus}
+        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="all">{m.appts_filter_all_statuses()}</option>
+        <option value="scheduled">{m.appts_status_scheduled()}</option>
+        <option value="confirmed">{m.appts_status_confirmed()}</option>
+        <option value="arrived">{m.appts_status_arrived()}</option>
+        <option value="in_chair">{m.appts_status_in_chair()}</option>
+        <option value="completed">{m.appts_status_completed()}</option>
+        <option value="cancelled">{m.appts_status_cancelled()}</option>
+        <option value="no_show">{m.appts_status_no_show()}</option>
+      </select>
+    </div>
+
+    {#if viewMode === "agenda"}
+      <div class="flex flex-col gap-1">
+        <label for="appt-filter-date-from" class="text-xs font-medium text-slate-400">
+          {m.appts_filter_date_from()}
+        </label>
+        <input
+          id="appt-filter-date-from"
+          type="date"
+          bind:value={filterDateFrom}
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-200 focus:border-sky-500 focus:outline-none"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="appt-filter-date-to" class="text-xs font-medium text-slate-400">
+          {m.appts_filter_date_to()}
+        </label>
+        <input
+          id="appt-filter-date-to"
+          type="date"
+          bind:value={filterDateTo}
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-200 focus:border-sky-500 focus:outline-none"
+        />
+      </div>
+    {/if}
+
+    <button
+      type="button"
+      onclick={clearFilters}
+      class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+    >
+      {m.appts_filter_clear()}
+    </button>
   </div>
 
   {#if viewMode === "calendar" || viewMode === "grid"}
@@ -585,7 +697,7 @@
           {monthYearHeading}
         {/if}
       {:else}
-        Agenda (All Dates)
+        {m.appts_agenda_title()}
       {/if}
     </h2>
     <span class="text-xs text-slate-400 font-medium">
