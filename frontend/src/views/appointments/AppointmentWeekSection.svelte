@@ -13,6 +13,7 @@
     getPatientName,
     getProviderName,
     statusBadges,
+    getStatusColor,
   } = $props<{
     weekDays: {
       dateStr: string;
@@ -29,6 +30,7 @@
     getPatientName: (id: string) => string;
     getProviderName: (id: string) => string;
     statusBadges: Record<string, { label: string; bg: string; text: string; border: string }>;
+    getStatusColor: (status: string) => string;
   }>();
 </script>
 
@@ -81,7 +83,7 @@
             {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
             <div
               class="relative rounded-lg border border-l-4 p-2.5 shadow-sm hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer transition-all hover:scale-[1.01]"
-              style="border-left-color: {appt.color || '#3b82f6'};"
+              style="border-left-color: {getStatusColor(appt.status)};"
               onclick={() => oneditappointment(appt)}
               role="button"
               tabindex="0"

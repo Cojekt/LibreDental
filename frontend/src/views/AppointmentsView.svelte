@@ -1,5 +1,12 @@
 <script lang="ts">
-  import type { Patient, Appointment, Provider, Operatory } from "@bindings/domain/models.js";
+  import type {
+    Patient,
+    Appointment,
+    Provider,
+    Operatory,
+    BusinessHourDay,
+    TimeSlot,
+  } from "@bindings/domain/models.js";
   import AppointmentStats from "../components/AppointmentStats.svelte";
   import AppointmentDaySection from "./appointments/AppointmentDaySection.svelte";
   import AppointmentWeekSection from "./appointments/AppointmentWeekSection.svelte";
@@ -14,6 +21,7 @@
     patients = [],
     providers = [],
     operatories = [],
+    businessHours = null,
     loading = false,
     selectedDate = $bindable(getLocalDateString()),
     selectedProvider = $bindable("all"),
@@ -26,6 +34,7 @@
     patients: Patient[];
     providers?: Provider[];
     operatories?: Operatory[];
+    businessHours?: BusinessHourDay[] | null;
     loading: boolean;
     selectedDate: string;
     selectedProvider: string;
@@ -37,6 +46,25 @@
   }>();
 
   let calendarView = $state<"day" | "week" | "month">("day");
+
+  // Appointment filters, shared by calendar and agenda views. The date range
+  // only applies to agenda (calendar navigation already picks the date), and
+  // defaults to "today and after" so agenda opens on upcoming appointments
+  // rather than the full history.
+  let filterPatient = $state("all");
+  let filterOperatory = $state("all");
+  let filterStatus = $state("all");
+  let filterDateFrom = $state(getLocalDateString());
+  let filterDateTo = $state("");
+
+  function clearFilters() {
+    selectedProvider = "all";
+    filterPatient = "all";
+    filterOperatory = "all";
+    filterStatus = "all";
+    filterDateFrom = getLocalDateString();
+    filterDateTo = "";
+  }
 
   function getProviderName(id: string): string {
     const p = providers.find((prov: Provider) => prov.id === id);
@@ -54,15 +82,15 @@
     $derived({
       scheduled: {
         label: m.appts_status_scheduled(),
-        bg: "bg-blue-500/15",
-        text: "text-blue-400",
-        border: "border-blue-500/30",
+        bg: "bg-slate-500/15",
+        text: "text-slate-300",
+        border: "border-slate-500/30",
       },
       confirmed: {
         label: m.appts_status_confirmed(),
-        bg: "bg-sky-500/15",
-        text: "text-sky-400",
-        border: "border-sky-500/30",
+        bg: "bg-blue-500/15",
+        text: "text-blue-400",
+        border: "border-blue-500/30",
       },
       arrived: {
         label: m.appts_status_arrived(),
@@ -90,38 +118,98 @@
       },
       no_show: {
         label: m.appts_status_no_show(),
-        bg: "bg-slate-500/15",
-        text: "text-slate-400",
-        border: "border-slate-500/30",
+        bg: "bg-cyan-500/15",
+        text: "text-cyan-400",
+        border: "border-cyan-500/30",
       },
     });
 
+  const statusColors: Record<string, string> = {
+    scheduled: "#94a3b8",
+    confirmed: "#3b82f6",
+    arrived: "#f59e0b",
+    in_chair: "#a855f7",
+    completed: "#10b981",
+    cancelled: "#f43f5e",
+    no_show: "#06b6d4",
+  };
+
+  function getStatusColor(status: string): string {
+    return statusColors[status] || statusColors.scheduled;
+  }
+
   let timeSlots = $derived.by(() => {
-    let minH = 7;
-    let maxH = 18;
-
-    if (filteredAppointments.length > 0) {
-      for (const a of filteredAppointments) {
-        if (!a.start_time) continue;
-        try {
-          const d = new Date(a.start_time);
-          const h = d.getHours();
-          if (!isNaN(h)) {
-            if (h < minH) minH = h;
-            if (h > maxH) maxH = h;
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
-
     const slots: string[] = [];
-    for (let h = minH; h <= maxH; h++) {
+    for (let h = 0; h < 24; h++) {
       slots.push(`${String(h).padStart(2, "0")}:00`);
     }
     return slots;
   });
+
+  const WEEKDAY_NAMES = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  function parseTimeToMinutes(time: string): number {
+    if (!time) return 0;
+    const [hStr, mStr] = time.split(":");
+    const h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
+    return h * 60 + m;
+  }
+
+  let selectedDayBusinessHours = $derived.by(() => {
+    if (!businessHours || businessHours.length === 0) return null;
+    const d = parseLocalDate(selectedDate);
+    if (isNaN(d.getTime())) return null;
+    const dayName = WEEKDAY_NAMES[d.getDay()];
+    return businessHours.find((bh: BusinessHourDay) => bh.day === dayName) || null;
+  });
+
+  // Ranges of the day (in minutes since midnight) the practice is open, with breaks removed.
+  // `null` means "no business-hours data configured" - callers should not grey anything out.
+  let workingIntervals = $derived.by(() => {
+    const day = selectedDayBusinessHours;
+    if (!day) return null;
+    if (day.is_closed) return [] as [number, number][];
+
+    let intervals: [number, number][] =
+      day.slots && day.slots.length > 0
+        ? day.slots.map((s: TimeSlot): [number, number] => [
+            parseTimeToMinutes(s.open_time),
+            parseTimeToMinutes(s.close_time),
+          ])
+        : [[parseTimeToMinutes(day.open_time), parseTimeToMinutes(day.close_time)]];
+
+    for (const brk of day.breaks || []) {
+      const bStart = parseTimeToMinutes(brk.start_time);
+      const bEnd = parseTimeToMinutes(brk.end_time);
+      const next: [number, number][] = [];
+      for (const [s, e] of intervals) {
+        if (bEnd <= s || bStart >= e) {
+          next.push([s, e]);
+          continue;
+        }
+        if (bStart > s) next.push([s, bStart]);
+        if (bEnd < e) next.push([bEnd, e]);
+      }
+      intervals = next;
+    }
+
+    return intervals;
+  });
+
+  let workdayStartMinute = $derived(
+    workingIntervals && workingIntervals.length > 0
+      ? Math.min(...workingIntervals.map(([s]) => s))
+      : 8 * 60
+  );
 
   function formatSlotLabel(slot: string): string {
     try {
@@ -281,9 +369,17 @@
     appointments
       .filter((a: Appointment) => {
         if (selectedProvider !== "all" && a.provider_id !== selectedProvider) return false;
+        if (filterPatient !== "all" && a.patient_id !== filterPatient) return false;
+        if (filterOperatory !== "all" && a.operatory_id !== filterOperatory) return false;
+        if (filterStatus !== "all" && a.status !== filterStatus) return false;
         const isCalendar = viewMode === "calendar" || viewMode === "grid";
         if (isCalendar && calendarView === "day") {
           return isSameDay(a.start_time, selectedDate);
+        }
+        if (viewMode === "agenda") {
+          const apptDateStr = getLocalDateString(a.start_time);
+          if (filterDateFrom && apptDateStr < filterDateFrom) return false;
+          if (filterDateTo && apptDateStr > filterDateTo) return false;
         }
         return true;
       })
@@ -303,17 +399,6 @@
       });
     } catch {
       return isoStr;
-    }
-  }
-
-  function getApptHour(isoStr: string): string {
-    if (!isoStr) return "";
-    try {
-      const d = new Date(isoStr);
-      const h = String(d.getHours()).padStart(2, "0");
-      return `${h}:00`;
-    } catch {
-      return "";
     }
   }
 
@@ -348,9 +433,6 @@
 </script>
 
 <div class="space-y-6" data-locale={getLocaleVersion()}>
-  <!-- Stats Summary -->
-  <AppointmentStats appointments={filteredAppointments} />
-
   <!-- Control Bar -->
   <div
     class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-700/80 bg-slate-800/80 p-4 shadow-sm backdrop-blur"
@@ -488,20 +570,35 @@
           class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1 text-sm text-slate-200 focus:border-sky-500 focus:outline-none"
         />
       </div>
-    {:else}
-      <div
-        class="flex items-center gap-2 text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3 py-1.5 rounded-lg"
-      >
-        <span>{m.appts_agenda_header()}</span>
-      </div>
     {/if}
+  </div>
 
-    <div class="flex items-center gap-2">
-      <label for="provider-filter" class="text-xs font-medium text-slate-400">
+  <!-- Appointment Filters -->
+  <div
+    class="flex flex-wrap items-end gap-4 rounded-xl border border-slate-700/80 bg-slate-800/80 p-4 shadow-sm backdrop-blur"
+  >
+    <div class="flex flex-col gap-1">
+      <label for="appt-filter-patient" class="text-xs font-medium text-slate-400">
+        {m.appts_filter_patient()}
+      </label>
+      <select
+        id="appt-filter-patient"
+        bind:value={filterPatient}
+        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="all">{m.appts_filter_all_patients()}</option>
+        {#each patients as p}
+          <option value={p.id}>{p.first_name} {p.last_name}</option>
+        {/each}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="appt-filter-provider" class="text-xs font-medium text-slate-400">
         {m.appts_provider_filter()}
       </label>
       <select
-        id="provider-filter"
+        id="appt-filter-provider"
         bind:value={selectedProvider}
         class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
       >
@@ -511,7 +608,82 @@
         {/each}
       </select>
     </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="appt-filter-operatory" class="text-xs font-medium text-slate-400">
+        {m.appts_filter_operatory()}
+      </label>
+      <select
+        id="appt-filter-operatory"
+        bind:value={filterOperatory}
+        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="all">{m.appts_filter_all_operatories()}</option>
+        {#each operatories as o}
+          <option value={o.id}>{o.name}</option>
+        {/each}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="appt-filter-status" class="text-xs font-medium text-slate-400">
+        {m.appts_filter_status()}
+      </label>
+      <select
+        id="appt-filter-status"
+        bind:value={filterStatus}
+        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="all">{m.appts_filter_all_statuses()}</option>
+        <option value="scheduled">{m.appts_status_scheduled()}</option>
+        <option value="confirmed">{m.appts_status_confirmed()}</option>
+        <option value="arrived">{m.appts_status_arrived()}</option>
+        <option value="in_chair">{m.appts_status_in_chair()}</option>
+        <option value="completed">{m.appts_status_completed()}</option>
+        <option value="cancelled">{m.appts_status_cancelled()}</option>
+        <option value="no_show">{m.appts_status_no_show()}</option>
+      </select>
+    </div>
+
+    {#if viewMode === "agenda"}
+      <div class="flex flex-col gap-1">
+        <label for="appt-filter-date-from" class="text-xs font-medium text-slate-400">
+          {m.appts_filter_date_from()}
+        </label>
+        <input
+          id="appt-filter-date-from"
+          type="date"
+          bind:value={filterDateFrom}
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-200 focus:border-sky-500 focus:outline-none"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="appt-filter-date-to" class="text-xs font-medium text-slate-400">
+          {m.appts_filter_date_to()}
+        </label>
+        <input
+          id="appt-filter-date-to"
+          type="date"
+          bind:value={filterDateTo}
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-200 focus:border-sky-500 focus:outline-none"
+        />
+      </div>
+    {/if}
+
+    <button
+      type="button"
+      onclick={clearFilters}
+      class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
+    >
+      {m.appts_filter_clear()}
+    </button>
   </div>
+
+  {#if viewMode === "calendar" || viewMode === "grid"}
+    <!-- Stats Summary -->
+    <AppointmentStats appointments={filteredAppointments} compact />
+  {/if}
 
   <!-- Header Title -->
   <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
@@ -525,7 +697,7 @@
           {monthYearHeading}
         {/if}
       {:else}
-        Agenda (All Dates)
+        {m.appts_agenda_title()}
       {/if}
     </h2>
     <span class="text-xs text-slate-400 font-medium">
@@ -548,8 +720,9 @@
       <AppointmentDaySection
         {selectedDate}
         {timeSlots}
+        {workingIntervals}
+        {workdayStartMinute}
         {filteredAppointments}
-        {getApptHour}
         {formatSlotLabel}
         {formatTime}
         {getPatientName}
@@ -557,13 +730,15 @@
         {getProviderName}
         {getOperatoryName}
         {statusBadges}
+        {getStatusColor}
         {oneditappointment}
         {onupdatestatus}
-        noApptsLabel={m.appts_no_appts_slot()}
         confirmLabel={m.appts_action_confirm()}
         arrivedLabel={m.appts_action_arrived()}
         seatLabel={m.appts_action_seat()}
         completeLabel={m.appts_action_complete()}
+        cancelLabel={m.appts_action_cancel()}
+        noShowLabel={m.appts_action_no_show()}
       />
     {:else if calendarView === "week"}
       <AppointmentWeekSection
@@ -576,6 +751,7 @@
         {getPatientName}
         {getProviderName}
         {statusBadges}
+        {getStatusColor}
       />
     {:else if calendarView === "month"}
       <AppointmentMonthSection
@@ -586,6 +762,7 @@
         {oneditappointment}
         {formatTime}
         {getPatientName}
+        {getStatusColor}
       />
     {/if}
   {:else}

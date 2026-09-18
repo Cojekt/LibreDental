@@ -21,7 +21,6 @@
     endTimeStr = $bindable("10:00"),
     status = $bindable("scheduled"),
     reason = $bindable(""),
-    color = $bindable("#3b82f6"),
     notes = $bindable(""),
     onsave,
     ondelete,
@@ -39,7 +38,6 @@
     endTimeStr: string;
     status: string;
     reason: string;
-    color: string;
     notes: string;
     onsave: (e: Event) => void;
     ondelete?: () => void;
@@ -54,15 +52,6 @@
     { id: "cancelled", label: m.appts_status_cancelled() },
     { id: "no_show", label: m.appts_status_no_show() },
   ]);
-
-  const colorOptions = [
-    { hex: "#3b82f6", name: "Blue" },
-    { hex: "#06b6d4", name: "Cyan" },
-    { hex: "#10b981", name: "Emerald" },
-    { hex: "#f59e0b", name: "Amber" },
-    { hex: "#a855f7", name: "Purple" },
-    { hex: "#f43f5e", name: "Rose" },
-  ];
 
   function setDuration(minutes: number) {
     if (!startTimeStr) return;
@@ -192,39 +181,18 @@
       </button>
     </div>
 
-    <!-- Status & Color -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <FormField label={m.appt_label_status()} forId="appt-status">
-        <select
-          id="appt-status"
-          bind:value={status}
-          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
-        >
-          {#each statuses as st}
-            <option value={st.id}>{st.label}</option>
-          {/each}
-        </select>
-      </FormField>
-
-      <div class="flex flex-col gap-1.5">
-        <span class="text-xs font-semibold text-slate-300">{m.appt_label_color_marker()}</span>
-        <div class="flex items-center gap-2 pt-1">
-          {#each colorOptions as c}
-            <button
-              type="button"
-              onclick={() => (color = c.hex)}
-              class={`h-7 w-7 rounded-full transition-transform cursor-pointer ${
-                color === c.hex
-                  ? "ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110"
-                  : "opacity-75 hover:opacity-100"
-              }`}
-              style="background-color: {c.hex}"
-              title={c.name}
-            ></button>
-          {/each}
-        </div>
-      </div>
-    </div>
+    <!-- Status -->
+    <FormField label={m.appt_label_status()} forId="appt-status">
+      <select
+        id="appt-status"
+        bind:value={status}
+        class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
+      >
+        {#each statuses as st}
+          <option value={st.id}>{st.label}</option>
+        {/each}
+      </select>
+    </FormField>
 
     <!-- Reason -->
     <FormField label={m.appt_label_reason()} forId="appt-reason">

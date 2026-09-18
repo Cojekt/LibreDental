@@ -46,8 +46,8 @@ func TestSeedDatabase(t *testing.T) {
 	if summary.PatientsCount != 6 {
 		t.Errorf("Expected 6 patients, got %d", summary.PatientsCount)
 	}
-	if summary.AppointmentsCount != 10 {
-		t.Errorf("Expected 10 appointments, got %d", summary.AppointmentsCount)
+	if summary.AppointmentsCount != 24 {
+		t.Errorf("Expected 24 appointments, got %d", summary.AppointmentsCount)
 	}
 	if summary.ConditionsCount != 12 {
 		t.Errorf("Expected 12 conditions, got %d", summary.ConditionsCount)
@@ -96,8 +96,8 @@ func TestSeedDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list appointments: %v", err)
 	}
-	if len(appts) != 10 {
-		t.Errorf("Expected 10 appointments in list, got %d", len(appts))
+	if len(appts) != 24 {
+		t.Errorf("Expected 24 appointments in list, got %d", len(appts))
 	}
 
 	laLoc, err := time.LoadLocation("America/Los_Angeles")
