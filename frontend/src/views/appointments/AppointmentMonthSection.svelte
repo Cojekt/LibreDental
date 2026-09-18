@@ -10,6 +10,7 @@
     oneditappointment,
     formatTime,
     getPatientName,
+    getStatusColor,
   } = $props<{
     monthGrid: {
       dateStr: string;
@@ -24,6 +25,7 @@
     oneditappointment: (appt: Appointment) => void;
     formatTime: (isoStr: string) => string;
     getPatientName: (id: string) => string;
+    getStatusColor: (status: string) => string;
   }>();
 </script>
 
@@ -87,7 +89,7 @@
               type="button"
               onclick={() => oneditappointment(appt)}
               class="w-full text-left rounded px-1.5 py-0.5 text-[11px] font-medium border border-l-2 bg-slate-800/90 hover:bg-slate-700/80 truncate flex items-center gap-1 transition-all"
-              style="border-left-color: {appt.color || '#3b82f6'};"
+              style="border-left-color: {getStatusColor(appt.status)};"
             >
               <span class="text-sky-400 text-[10px] font-semibold"
                 >{formatTime(appt.start_time)}</span

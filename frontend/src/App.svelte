@@ -171,7 +171,6 @@
   let apptEndTimeStr = $state("10:00");
   let apptStatus = $state("scheduled");
   let apptReason = $state("");
-  let apptColor = $state("#3b82f6");
   let apptNotes = $state("");
 
   async function checkConfig() {
@@ -472,7 +471,6 @@
     apptEndTimeStr = "10:00";
     apptStatus = "scheduled";
     apptReason = "Routine Dental Examination & Cleaning";
-    apptColor = "#3b82f6";
     apptNotes = "";
     showApptModal = true;
   }
@@ -494,7 +492,6 @@
     }
     apptStatus = appt.status || "scheduled";
     apptReason = appt.reason || "";
-    apptColor = appt.color || "#3b82f6";
     apptNotes = appt.notes || "";
     showApptModal = true;
   }
@@ -520,7 +517,6 @@
           existing.end_time = endTimeISO;
           existing.status = apptStatus as any;
           existing.reason = apptReason;
-          existing.color = apptColor;
           existing.notes = apptNotes;
           await AppointmentService.UpdateAppointment(auth.token, existing);
         }
@@ -534,7 +530,6 @@
           end_time: endTimeISO,
           status: apptStatus as any,
           reason: apptReason,
-          color: apptColor,
           notes: apptNotes,
           version: 1,
         };
@@ -658,6 +653,7 @@
         {patients}
         {providers}
         {operatories}
+        businessHours={practiceConfig?.business_hours}
         loading={loadingAppointments}
         bind:selectedDate
         bind:selectedProvider
@@ -741,7 +737,6 @@
   bind:endTimeStr={apptEndTimeStr}
   bind:status={apptStatus}
   bind:reason={apptReason}
-  bind:color={apptColor}
   bind:notes={apptNotes}
   onsave={handleSaveAppt}
   ondelete={() => handleDeleteAppt(editingApptId)}

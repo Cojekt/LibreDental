@@ -1,15 +1,15 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import type { Appointment } from "@bindings/domain/models.js";
-  import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import { getLocalDateString } from "$lib/date.js";
   import { m } from "../../paraglide/messages.js";
 
   let {
     selectedDate = "",
     timeSlots = [],
+    workingIntervals = null,
+    workdayStartMinute = 8 * 60,
     filteredAppointments = [],
-    getApptHour,
     formatSlotLabel,
     formatTime,
     getPatientName,
@@ -17,9 +17,9 @@
     getProviderName,
     getOperatoryName,
     statusBadges,
+    getStatusColor,
     oneditappointment,
     onupdatestatus,
-    noApptsLabel = m.appts_no_appts_slot(),
     confirmLabel = m.appts_action_confirm(),
     arrivedLabel = m.appts_action_arrived(),
     seatLabel = m.appts_action_seat(),
@@ -27,8 +27,9 @@
   } = $props<{
     selectedDate: string;
     timeSlots: string[];
+    workingIntervals?: [number, number][] | null;
+    workdayStartMinute?: number;
     filteredAppointments: Appointment[];
-    getApptHour: (isoStr: string) => string;
     formatSlotLabel: (slot: string) => string;
     formatTime: (isoStr: string) => string;
     getPatientName: (id: string) => string;
@@ -36,22 +37,33 @@
     getProviderName: (id: string) => string;
     getOperatoryName: (id: string) => string;
     statusBadges: Record<string, { label: string; bg: string; text: string; border: string }>;
+    getStatusColor: (status: string) => string;
     oneditappointment: (appt: Appointment) => void;
     onupdatestatus: (id: string, status: string) => void;
-    noApptsLabel?: string;
     confirmLabel?: string;
     arrivedLabel?: string;
     seatLabel?: string;
     completeLabel?: string;
   }>();
 
+  const PX_PER_MIN = 1.6; // 96px per hour
+  const ROW_H = PX_PER_MIN * 60;
+  const DAY_MINUTES = 24 * 60;
+  const MIN_APPT_HEIGHT = 22;
+
   let now = $state(new Date());
   let timer: any;
+  let containerEl: HTMLDivElement;
+  let expandedId = $state<string | null>(null);
 
   onMount(() => {
     timer = setInterval(() => {
       now = new Date();
     }, 60000);
+    if (containerEl) {
+      const bufferHour = Math.max(0, Math.floor(workdayStartMinute / 60) - 1);
+      containerEl.scrollTop = bufferHour * ROW_H;
+    }
   });
 
   onDestroy(() => {
@@ -59,142 +71,301 @@
   });
 
   let isToday = $derived(selectedDate === getLocalDateString(now));
+  let nowTopPx = $derived((now.getHours() * 60 + now.getMinutes()) * PX_PER_MIN);
 
-  function getIndicatorTopPos(slotStr: string): number {
-    if (!isToday) return -1;
-    try {
-      const [hStr] = slotStr.split(":");
-      const slotHour = parseInt(hStr, 10);
-      if (slotHour === now.getHours()) {
-        return (now.getMinutes() / 60) * 100;
-      }
-    } catch {
-      // ignore
+  let hours = $derived(timeSlots.map((s: string) => parseInt(s.split(":")[0], 10) || 0));
+
+  // Ranges of the day (in px, top/height) that fall outside business hours.
+  let nonWorkingSegments = $derived.by(() => {
+    if (workingIntervals == null) return [] as { top: number; height: number }[];
+    if (workingIntervals.length === 0) {
+      return [{ top: 0, height: DAY_MINUTES * PX_PER_MIN }];
     }
-    return -1;
+    const working = [...workingIntervals].sort((a, b) => a[0] - b[0]);
+    const segments: [number, number][] = [];
+    let cursor = 0;
+    for (const [s, e] of working) {
+      if (s > cursor) segments.push([cursor, s]);
+      cursor = Math.max(cursor, e);
+    }
+    if (cursor < DAY_MINUTES) segments.push([cursor, DAY_MINUTES]);
+    return segments.map(([s, e]) => ({ top: s * PX_PER_MIN, height: (e - s) * PX_PER_MIN }));
+  });
+
+  type LaidOutAppt = {
+    appt: Appointment;
+    top: number;
+    height: number;
+    leftPct: number;
+    widthPct: number;
+  };
+
+  // Lay out appointments as a continuous timeline: each block is sized/positioned by its
+  // actual start/end time, and overlapping appointments are placed in side-by-side columns.
+  let laidOutAppointments = $derived.by(() => {
+    type TimedAppt = { appt: Appointment; startMin: number; endMin: number };
+
+    const items: TimedAppt[] = [];
+    for (const appt of filteredAppointments as Appointment[]) {
+      const start = new Date(appt.start_time);
+      const end = new Date(appt.end_time);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) continue;
+      const startMin = start.getHours() * 60 + start.getMinutes();
+      const endMin = Math.max(end.getHours() * 60 + end.getMinutes(), startMin + 5);
+      items.push({ appt, startMin, endMin });
+    }
+    items.sort((a, b) => a.startMin - b.startMin);
+
+    const results: LaidOutAppt[] = [];
+    let cluster: TimedAppt[] = [];
+    let clusterEnd = -1;
+
+    function flushCluster() {
+      if (cluster.length === 0) return;
+      const colEnds: number[] = [];
+      const colByItem: number[] = [];
+      for (const it of cluster) {
+        let col = colEnds.findIndex((end) => end <= it.startMin);
+        if (col === -1) {
+          col = colEnds.length;
+          colEnds.push(it.endMin);
+        } else {
+          colEnds[col] = it.endMin;
+        }
+        colByItem.push(col);
+      }
+      const totalCols = colEnds.length;
+      cluster.forEach((it, i) => {
+        const widthPct = 100 / totalCols;
+        results.push({
+          appt: it.appt,
+          top: it.startMin * PX_PER_MIN,
+          height: Math.max((it.endMin - it.startMin) * PX_PER_MIN, MIN_APPT_HEIGHT),
+          leftPct: colByItem[i] * widthPct,
+          widthPct,
+        });
+      });
+      cluster = [];
+    }
+
+    for (const it of items) {
+      if (cluster.length > 0 && it.startMin >= clusterEnd) {
+        flushCluster();
+        clusterEnd = -1;
+      }
+      cluster.push(it);
+      clusterEnd = Math.max(clusterEnd, it.endMin);
+    }
+    flushCluster();
+
+    return results;
+  });
+
+  function toggleExpanded(id: string) {
+    expandedId = expandedId === id ? null : id;
   }
 </script>
 
-<div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">
-  <div class="divide-y divide-slate-800">
-    {#each timeSlots as slot}
-      {@const slotAppts = filteredAppointments.filter(
-        (a: Appointment) => getApptHour(a.start_time) === slot
-      )}
-      <div class="flex min-h-[96px] group hover:bg-slate-800/30 transition-colors relative">
-        {#if getIndicatorTopPos(slot) >= 0}
-          <div
-            class="absolute left-0 right-0 z-10 border-t-2 border-rose-500 pointer-events-none"
-            style="top: {getIndicatorTopPos(slot)}%;"
-          >
-            <div
-              class="absolute -top-1.5 left-[5.7rem] w-3 h-3 bg-rose-500 rounded-full shadow-md shadow-rose-500/50"
-            ></div>
-          </div>
-        {/if}
+<div
+  bind:this={containerEl}
+  class="border border-slate-700/80 bg-slate-900/80 shadow-md overflow-y-auto max-h-[70vh] relative"
+>
+  <div class="flex relative" style="height: {DAY_MINUTES * PX_PER_MIN}px;">
+    <!-- Time gutter -->
+    <div class="w-24 flex-shrink-0 border-r border-slate-800 bg-slate-900/50 relative">
+      {#each hours as h}
         <div
-          class="w-24 flex-shrink-0 border-r border-slate-800 p-3 text-xs font-semibold text-slate-400 bg-slate-900/50"
+          class="absolute left-0 right-0 border-t border-slate-800"
+          style="top: {h * ROW_H}px;"
+        ></div>
+        <div
+          class="absolute left-0 right-0 px-3 text-xs font-semibold text-slate-400"
+          style="top: {h * ROW_H + 4}px;"
         >
-          {formatSlotLabel(slot)}
+          {formatSlotLabel(`${String(h).padStart(2, "0")}:00`)}
         </div>
+        <div
+          class="absolute left-0 right-0 border-t border-dashed border-slate-700/70 pointer-events-none"
+          style="top: {h * ROW_H + ROW_H * 0.25}px;"
+        >
+          <span
+            class="absolute right-2 -translate-y-1/2 text-[10px] text-slate-600 bg-slate-900/60 px-1"
+            >:15</span
+          >
+        </div>
+        <div
+          class="absolute left-0 right-0 border-t border-dashed border-slate-700/70 pointer-events-none"
+          style="top: {h * ROW_H + ROW_H * 0.5}px;"
+        >
+          <span
+            class="absolute right-2 -translate-y-1/2 text-[10px] text-slate-600 bg-slate-900/60 px-1"
+            >:30</span
+          >
+        </div>
+        <div
+          class="absolute left-0 right-0 border-t border-dashed border-slate-700/70 pointer-events-none"
+          style="top: {h * ROW_H + ROW_H * 0.75}px;"
+        >
+          <span
+            class="absolute right-2 -translate-y-1/2 text-[10px] text-slate-600 bg-slate-900/60 px-1"
+            >:45</span
+          >
+        </div>
+      {/each}
+    </div>
 
-        <div class="flex-1 p-2 flex flex-wrap gap-3 items-start">
-          {#if slotAppts.length === 0}
-            <div
-              class="h-full w-full flex items-center justify-start text-xs text-slate-600 italic px-2 py-4"
-            >
-              {noApptsLabel}
+    <!-- Timeline -->
+    <div class="flex-1 relative">
+      {#each hours as h}
+        <div
+          class="absolute left-0 right-0 border-t border-slate-800 pointer-events-none"
+          style="top: {h * ROW_H}px;"
+        ></div>
+        <div
+          class="absolute left-0 right-0 border-t border-dashed border-slate-800 pointer-events-none"
+          style="top: {h * ROW_H + ROW_H * 0.25}px;"
+        ></div>
+        <div
+          class="absolute left-0 right-0 border-t border-dashed border-slate-800 pointer-events-none"
+          style="top: {h * ROW_H + ROW_H * 0.5}px;"
+        ></div>
+        <div
+          class="absolute left-0 right-0 border-t border-dashed border-slate-800 pointer-events-none"
+          style="top: {h * ROW_H + ROW_H * 0.75}px;"
+        ></div>
+      {/each}
+
+      {#each nonWorkingSegments as seg}
+        <div
+          class="absolute left-0 right-0 bg-slate-950/45 pointer-events-none"
+          style="top: {seg.top}px; height: {seg.height}px;"
+        ></div>
+      {/each}
+
+      {#each laidOutAppointments as item (item.appt.id)}
+        {@const appt = item.appt}
+        {@const isExpanded = expandedId === appt.id}
+        {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
+        {@const color = getStatusColor(appt.status)}
+        <div
+          class="absolute border-l-4 shadow-md transition-all bg-slate-800/95 hover:brightness-110 cursor-pointer overflow-hidden"
+          style={isExpanded
+            ? `top: ${item.top}px; left: 4px; right: 4px; min-height: ${item.height}px; height: auto; z-index: 30; border-left-color: ${color};`
+            : `top: ${item.top}px; left: calc(${item.leftPct}% + 2px); width: calc(${item.widthPct}% - 4px); height: ${item.height}px; z-index: 10; border-left-color: ${color};`}
+          onclick={() => toggleExpanded(appt.id)}
+          role="button"
+          tabindex="0"
+          onkeydown={(e) => e.key === "Enter" && toggleExpanded(appt.id)}
+        >
+          {#if isExpanded}
+            <div class="p-3">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="text-sm font-bold text-white">{getPatientName(appt.patient_id)}</div>
+                  <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                    <span>{formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span>
+                    {#if getPatientPhone(appt.patient_id)}
+                      <span>{getPatientPhone(appt.patient_id)}</span>
+                    {/if}
+                  </div>
+                </div>
+                <span
+                  class={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded border ${badge.bg} ${badge.text} ${badge.border}`}
+                >
+                  {badge.label}
+                </span>
+              </div>
+
+              {#if appt.reason}
+                <div
+                  class="mt-2 text-xs font-medium text-sky-200/90 bg-slate-900/60 rounded-lg px-2.5 py-1"
+                >
+                  {appt.reason}
+                </div>
+              {/if}
+
+              <div
+                class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-700/50"
+              >
+                <span>{getProviderName(appt.provider_id)}</span>
+                <span>{getOperatoryName(appt.operatory_id)}</span>
+              </div>
+
+              <div
+                class="mt-2.5 flex items-center gap-1.5 pt-2 border-t border-slate-700/40"
+                onclick={(e) => e.stopPropagation()}
+                role="presentation"
+              >
+                {#if appt.status === "scheduled"}
+                  <button
+                    type="button"
+                    onclick={() => onupdatestatus(appt.id, "confirmed")}
+                    class="px-2 py-0.5 text-[10px] font-semibold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 rounded border border-sky-500/30"
+                  >
+                    {confirmLabel}
+                  </button>
+                {/if}
+                {#if appt.status === "scheduled" || appt.status === "confirmed"}
+                  <button
+                    type="button"
+                    onclick={() => onupdatestatus(appt.id, "arrived")}
+                    class="px-2 py-0.5 text-[10px] font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded border border-amber-500/30"
+                  >
+                    {arrivedLabel}
+                  </button>
+                {/if}
+                {#if appt.status === "arrived"}
+                  <button
+                    type="button"
+                    onclick={() => onupdatestatus(appt.id, "in_chair")}
+                    class="px-2 py-0.5 text-[10px] font-semibold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded border border-purple-500/30"
+                  >
+                    {seatLabel}
+                  </button>
+                {/if}
+                {#if appt.status === "in_chair"}
+                  <button
+                    type="button"
+                    onclick={() => onupdatestatus(appt.id, "completed")}
+                    class="px-2 py-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/30"
+                  >
+                    {completeLabel}
+                  </button>
+                {/if}
+                <button
+                  type="button"
+                  onclick={() => oneditappointment(appt)}
+                  class="ml-auto px-2.5 py-0.5 text-[10px] font-semibold text-white bg-sky-500 hover:bg-sky-400 rounded"
+                >
+                  {m.appts_action_edit()}
+                </button>
+              </div>
             </div>
           {:else}
-            {#each slotAppts as appt}
-              {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
-              <div
-                class="group/card relative w-full sm:w-[320px] rounded-xl border border-l-4 p-3.5 shadow-md transition-all duration-150 hover:shadow-sky-500/10 hover:border-sky-500/50 bg-slate-800/90 text-left cursor-pointer"
-                style="border-left-color: {appt.color || '#3b82f6'};"
-                onclick={() => oneditappointment(appt)}
-                role="button"
-                tabindex="0"
-                onkeydown={(e) => e.key === "Enter" && oneditappointment(appt)}
-              >
-                <div class="flex items-start justify-between">
-                  <div>
-                    <div class="text-sm font-bold text-white flex items-center gap-1.5">
-                      {getPatientName(appt.patient_id)}
-                    </div>
-                    <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                      <span> {formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span>
-                      {#if getPatientPhone(appt.patient_id)}
-                        <span>{getPatientPhone(appt.patient_id)}</span>
-                      {/if}
-                    </div>
-                  </div>
-
-                  <StatusBadge variant={appt.status} label={badge.label} />
-                </div>
-
-                {#if appt.reason}
-                  <div
-                    class="mt-2 text-xs font-medium text-sky-200/90 bg-slate-900/60 rounded-lg px-2.5 py-1"
-                  >
-                    {appt.reason}
-                  </div>
-                {/if}
-
-                <div
-                  class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-700/50"
-                >
-                  <span>{getProviderName(appt.provider_id)}</span>
-                  <span>{getOperatoryName(appt.operatory_id)}</span>
-                </div>
-
-                <!-- Quick Status Actions -->
-                <div
-                  class="mt-2.5 flex items-center gap-1.5 pt-2 border-t border-slate-700/40"
-                  onclick={(e) => e.stopPropagation()}
-                  role="presentation"
-                >
-                  {#if appt.status === "scheduled"}
-                    <button
-                      type="button"
-                      onclick={() => onupdatestatus(appt.id, "confirmed")}
-                      class="px-2 py-0.5 text-[10px] font-semibold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 rounded border border-sky-500/30"
-                    >
-                      {confirmLabel}
-                    </button>
-                  {/if}
-                  {#if appt.status === "scheduled" || appt.status === "confirmed"}
-                    <button
-                      type="button"
-                      onclick={() => onupdatestatus(appt.id, "arrived")}
-                      class="px-2 py-0.5 text-[10px] font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded border border-amber-500/30"
-                    >
-                      {arrivedLabel}
-                    </button>
-                  {/if}
-                  {#if appt.status === "arrived"}
-                    <button
-                      type="button"
-                      onclick={() => onupdatestatus(appt.id, "in_chair")}
-                      class="px-2 py-0.5 text-[10px] font-semibold text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded border border-purple-500/30"
-                    >
-                      {seatLabel}
-                    </button>
-                  {/if}
-                  {#if appt.status === "in_chair"}
-                    <button
-                      type="button"
-                      onclick={() => onupdatestatus(appt.id, "completed")}
-                      class="px-2 py-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/30"
-                    >
-                      {completeLabel}
-                    </button>
-                  {/if}
-                </div>
-              </div>
-            {/each}
+            <div class="h-full px-2 py-1 flex flex-col justify-center gap-0.5">
+              <span class="text-[11px] font-bold text-white truncate leading-tight">
+                {getPatientName(appt.patient_id)}
+              </span>
+              {#if item.height >= 34}
+                <span class="text-[10px] text-slate-300/80 truncate leading-tight">
+                  {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
+                </span>
+              {/if}
+            </div>
           {/if}
         </div>
-      </div>
-    {/each}
+      {/each}
+
+      {#if isToday}
+        <div
+          class="absolute left-0 right-0 z-20 border-t-2 border-rose-500 pointer-events-none"
+          style="top: {nowTopPx}px;"
+        >
+          <div
+            class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-rose-500 shadow-md shadow-rose-500/50"
+          ></div>
+        </div>
+      {/if}
+    </div>
   </div>
 </div>

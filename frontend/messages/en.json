@@ -167,6 +167,7 @@
   "appts_action_arrived": "Arrived",
   "appts_action_seat": "Seat in Chair",
   "appts_action_complete": "Complete Visit",
+  "appts_action_edit": "Edit",
   "appts_status_scheduled": "Scheduled",
   "appts_status_confirmed": "Confirmed",
   "appts_status_arrived": "Arrived",

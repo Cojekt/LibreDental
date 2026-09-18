@@ -1,5 +1,12 @@
 <script lang="ts">
-  import type { Patient, Appointment, Provider, Operatory } from "@bindings/domain/models.js";
+  import type {
+    Patient,
+    Appointment,
+    Provider,
+    Operatory,
+    BusinessHourDay,
+    TimeSlot,
+  } from "@bindings/domain/models.js";
   import AppointmentStats from "../components/AppointmentStats.svelte";
   import AppointmentDaySection from "./appointments/AppointmentDaySection.svelte";
   import AppointmentWeekSection from "./appointments/AppointmentWeekSection.svelte";
@@ -14,6 +21,7 @@
     patients = [],
     providers = [],
     operatories = [],
+    businessHours = null,
     loading = false,
     selectedDate = $bindable(getLocalDateString()),
     selectedProvider = $bindable("all"),
@@ -26,6 +34,7 @@
     patients: Patient[];
     providers?: Provider[];
     operatories?: Operatory[];
+    businessHours?: BusinessHourDay[] | null;
     loading: boolean;
     selectedDate: string;
     selectedProvider: string;
@@ -96,32 +105,92 @@
       },
     });
 
+  const statusColors: Record<string, string> = {
+    scheduled: "#3b82f6",
+    confirmed: "#38bdf8",
+    arrived: "#f59e0b",
+    in_chair: "#a855f7",
+    completed: "#10b981",
+    cancelled: "#f43f5e",
+    no_show: "#64748b",
+  };
+
+  function getStatusColor(status: string): string {
+    return statusColors[status] || statusColors.scheduled;
+  }
+
   let timeSlots = $derived.by(() => {
-    let minH = 7;
-    let maxH = 18;
-
-    if (filteredAppointments.length > 0) {
-      for (const a of filteredAppointments) {
-        if (!a.start_time) continue;
-        try {
-          const d = new Date(a.start_time);
-          const h = d.getHours();
-          if (!isNaN(h)) {
-            if (h < minH) minH = h;
-            if (h > maxH) maxH = h;
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
-
     const slots: string[] = [];
-    for (let h = minH; h <= maxH; h++) {
+    for (let h = 0; h < 24; h++) {
       slots.push(`${String(h).padStart(2, "0")}:00`);
     }
     return slots;
   });
+
+  const WEEKDAY_NAMES = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  function parseTimeToMinutes(time: string): number {
+    if (!time) return 0;
+    const [hStr, mStr] = time.split(":");
+    const h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
+    return h * 60 + m;
+  }
+
+  let selectedDayBusinessHours = $derived.by(() => {
+    if (!businessHours || businessHours.length === 0) return null;
+    const d = parseLocalDate(selectedDate);
+    if (isNaN(d.getTime())) return null;
+    const dayName = WEEKDAY_NAMES[d.getDay()];
+    return businessHours.find((bh: BusinessHourDay) => bh.day === dayName) || null;
+  });
+
+  // Ranges of the day (in minutes since midnight) the practice is open, with breaks removed.
+  // `null` means "no business-hours data configured" - callers should not grey anything out.
+  let workingIntervals = $derived.by(() => {
+    const day = selectedDayBusinessHours;
+    if (!day) return null;
+    if (day.is_closed) return [] as [number, number][];
+
+    let intervals: [number, number][] =
+      day.slots && day.slots.length > 0
+        ? day.slots.map((s: TimeSlot): [number, number] => [
+            parseTimeToMinutes(s.open_time),
+            parseTimeToMinutes(s.close_time),
+          ])
+        : [[parseTimeToMinutes(day.open_time), parseTimeToMinutes(day.close_time)]];
+
+    for (const brk of day.breaks || []) {
+      const bStart = parseTimeToMinutes(brk.start_time);
+      const bEnd = parseTimeToMinutes(brk.end_time);
+      const next: [number, number][] = [];
+      for (const [s, e] of intervals) {
+        if (bEnd <= s || bStart >= e) {
+          next.push([s, e]);
+          continue;
+        }
+        if (bStart > s) next.push([s, bStart]);
+        if (bEnd < e) next.push([bEnd, e]);
+      }
+      intervals = next;
+    }
+
+    return intervals;
+  });
+
+  let workdayStartMinute = $derived(
+    workingIntervals && workingIntervals.length > 0
+      ? Math.min(...workingIntervals.map(([s]) => s))
+      : 8 * 60
+  );
 
   function formatSlotLabel(slot: string): string {
     try {
@@ -306,17 +375,6 @@
     }
   }
 
-  function getApptHour(isoStr: string): string {
-    if (!isoStr) return "";
-    try {
-      const d = new Date(isoStr);
-      const h = String(d.getHours()).padStart(2, "0");
-      return `${h}:00`;
-    } catch {
-      return "";
-    }
-  }
-
   function formattedDateHeading(dateStr: string): string {
     try {
       const d = parseLocalDate(dateStr);
@@ -348,9 +406,6 @@
 </script>
 
 <div class="space-y-6" data-locale={getLocaleVersion()}>
-  <!-- Stats Summary -->
-  <AppointmentStats appointments={filteredAppointments} />
-
   <!-- Control Bar -->
   <div
     class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-700/80 bg-slate-800/80 p-4 shadow-sm backdrop-blur"
@@ -513,6 +568,11 @@
     </div>
   </div>
 
+  {#if viewMode === "calendar" || viewMode === "grid"}
+    <!-- Stats Summary -->
+    <AppointmentStats appointments={filteredAppointments} compact />
+  {/if}
+
   <!-- Header Title -->
   <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
     <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -548,8 +608,9 @@
       <AppointmentDaySection
         {selectedDate}
         {timeSlots}
+        {workingIntervals}
+        {workdayStartMinute}
         {filteredAppointments}
-        {getApptHour}
         {formatSlotLabel}
         {formatTime}
         {getPatientName}
@@ -557,9 +618,9 @@
         {getProviderName}
         {getOperatoryName}
         {statusBadges}
+        {getStatusColor}
         {oneditappointment}
         {onupdatestatus}
-        noApptsLabel={m.appts_no_appts_slot()}
         confirmLabel={m.appts_action_confirm()}
         arrivedLabel={m.appts_action_arrived()}
         seatLabel={m.appts_action_seat()}
@@ -576,6 +637,7 @@
         {getPatientName}
         {getProviderName}
         {statusBadges}
+        {getStatusColor}
       />
     {:else if calendarView === "month"}
       <AppointmentMonthSection
@@ -586,6 +648,7 @@
         {oneditappointment}
         {formatTime}
         {getPatientName}
+        {getStatusColor}
       />
     {/if}
   {:else}
