@@ -24,6 +24,7 @@
     arrivedLabel = m.appts_action_arrived(),
     seatLabel = m.appts_action_seat(),
     completeLabel = m.appts_action_complete(),
+    cancelLabel = m.appts_action_cancel(),
   } = $props<{
     selectedDate: string;
     timeSlots: string[];
@@ -44,6 +45,7 @@
     arrivedLabel?: string;
     seatLabel?: string;
     completeLabel?: string;
+    cancelLabel?: string;
   }>();
 
   const PX_PER_MIN = 1.6; // 96px per hour
@@ -307,7 +309,7 @@
                   <button
                     type="button"
                     onclick={() => onupdatestatus(appt.id, "confirmed")}
-                    class="px-2 py-0.5 text-[10px] font-semibold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 rounded border border-sky-500/30"
+                    class="px-2 py-0.5 text-[10px] font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded border border-blue-500/30"
                   >
                     {confirmLabel}
                   </button>
@@ -339,6 +341,15 @@
                     {completeLabel}
                   </button>
                 {/if}
+                {#if appt.status === "scheduled" || appt.status === "confirmed" || appt.status === "arrived"}
+                  <button
+                    type="button"
+                    onclick={() => onupdatestatus(appt.id, "cancelled")}
+                    class="px-2 py-0.5 text-[10px] font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded border border-rose-500/30"
+                  >
+                    {cancelLabel}
+                  </button>
+                {/if}
                 <button
                   type="button"
                   onclick={() => oneditappointment(appt)}
@@ -367,11 +378,7 @@
         <div
           class="absolute left-0 right-0 z-20 border-t-2 border-rose-500 pointer-events-none"
           style="top: {nowTopPx}px;"
-        >
-          <div
-            class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-rose-500 shadow-md shadow-rose-500/50"
-          ></div>
-        </div>
+        ></div>
       {/if}
     </div>
   </div>

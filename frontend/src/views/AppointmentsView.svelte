@@ -63,15 +63,15 @@
     $derived({
       scheduled: {
         label: m.appts_status_scheduled(),
-        bg: "bg-blue-500/15",
-        text: "text-blue-400",
-        border: "border-blue-500/30",
+        bg: "bg-slate-500/15",
+        text: "text-slate-300",
+        border: "border-slate-500/30",
       },
       confirmed: {
         label: m.appts_status_confirmed(),
-        bg: "bg-sky-500/15",
-        text: "text-sky-400",
-        border: "border-sky-500/30",
+        bg: "bg-blue-500/15",
+        text: "text-blue-400",
+        border: "border-blue-500/30",
       },
       arrived: {
         label: m.appts_status_arrived(),
@@ -106,8 +106,8 @@
     });
 
   const statusColors: Record<string, string> = {
-    scheduled: "#3b82f6",
-    confirmed: "#38bdf8",
+    scheduled: "#94a3b8",
+    confirmed: "#3b82f6",
     arrived: "#f59e0b",
     in_chair: "#a855f7",
     completed: "#10b981",
@@ -625,6 +625,7 @@
         arrivedLabel={m.appts_action_arrived()}
         seatLabel={m.appts_action_seat()}
         completeLabel={m.appts_action_complete()}
+        cancelLabel={m.appts_action_cancel()}
       />
     {:else if calendarView === "week"}
       <AppointmentWeekSection
