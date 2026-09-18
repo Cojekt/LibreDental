@@ -25,7 +25,7 @@
   );
 </script>
 
-<div class={`grid grid-cols-5 ${compact ? "gap-2" : "gap-3"}`}>
+<div class={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 ${compact ? "gap-2" : "gap-3"}`}>
   <!-- Scheduled -->
   <div
     class={`rounded-lg border border-slate-700/80 bg-slate-800/80 shadow-sm backdrop-blur ${compact ? "p-2" : "p-3.5"}`}

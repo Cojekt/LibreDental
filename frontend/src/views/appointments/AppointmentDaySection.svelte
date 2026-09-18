@@ -50,6 +50,7 @@
   const ROW_H = PX_PER_MIN * 60;
   const DAY_MINUTES = 24 * 60;
   const MIN_APPT_HEIGHT = 22;
+  const MIN_APPT_MINUTES = MIN_APPT_HEIGHT / PX_PER_MIN;
 
   let now = $state(new Date());
   let timer: any;
@@ -60,14 +61,19 @@
     timer = setInterval(() => {
       now = new Date();
     }, 60000);
-    if (containerEl) {
-      const bufferHour = Math.max(0, Math.floor(workdayStartMinute / 60) - 1);
-      containerEl.scrollTop = bufferHour * ROW_H;
-    }
   });
 
   onDestroy(() => {
     if (timer) clearInterval(timer);
+  });
+
+  let lastScrolledWorkdayStart = -1;
+  $effect(() => {
+    if (containerEl && workdayStartMinute !== lastScrolledWorkdayStart) {
+      lastScrolledWorkdayStart = workdayStartMinute;
+      const bufferHour = Math.max(0, Math.floor(workdayStartMinute / 60) - 1);
+      containerEl.scrollTop = bufferHour * ROW_H;
+    }
   });
 
   let isToday = $derived(selectedDate === getLocalDateString(now));
@@ -111,7 +117,7 @@
       const end = new Date(appt.end_time);
       if (isNaN(start.getTime()) || isNaN(end.getTime())) continue;
       const startMin = start.getHours() * 60 + start.getMinutes();
-      const endMin = Math.max(end.getHours() * 60 + end.getMinutes(), startMin + 5);
+      const endMin = Math.max(end.getHours() * 60 + end.getMinutes(), startMin + MIN_APPT_MINUTES);
       items.push({ appt, startMin, endMin });
     }
     items.sort((a, b) => a.startMin - b.startMin);
@@ -294,6 +300,7 @@
               <div
                 class="mt-2.5 flex items-center gap-1.5 pt-2 border-t border-slate-700/40"
                 onclick={(e) => e.stopPropagation()}
+                onkeydown={(e) => e.stopPropagation()}
                 role="presentation"
               >
                 {#if appt.status === "scheduled"}
