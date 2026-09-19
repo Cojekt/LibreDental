@@ -110,7 +110,7 @@ tasks:
       - task: create:appimage
       - task: create:deb
       - task: create:rpm
-      - task: create:aur
+      - task: create:archlinux
       - task: common:build:server
 
   create:appimage:
@@ -158,8 +158,8 @@ tasks:
     vars:
       TARGET_ARCH: '{{.ARCH | default ARCH}}'
 
-  create:aur:
-    summary: Creates a arch linux packager package
+  create:archlinux:
+    summary: Creates a pacman package for Arch Linux (a local .pkg.tar.zst, not a submission to the AUR)
     deps:
       - task: build
       - task: generate:dotdesktop

@@ -20,12 +20,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # linux-arm64 uses GitHub's native arm64 runner rather than the
+          # Docker/Zig cross-compile path (build/docker/Dockerfile.cross) -
+          # it's a real arm64 host, so build:native and nfpm's arch
+          # auto-detection both just work, same as the amd64 leg.
           - os: ubuntu-latest
-            artifact_name: libredental-linux-amd64
-            platform: linux
+            platform: linux-amd64
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            arch: arm64
+          # windows-arm64 cross-compiles from the same amd64 runner (pure Go,
+          # no CGO needed on Windows) - no arm64 Windows runner required.
           - os: windows-latest
-            artifact_name: libredental-windows-amd64.exe
-            platform: windows
+            platform: windows-amd64
+            arch: amd64
+          - os: windows-latest
+            platform: windows-arm64
+            arch: arm64
 
     steps:
       - name: Checkout Code
@@ -35,22 +47,50 @@ jobs:
         uses: ./.github/actions/setup-env
 
       - name: Package Application
-        run: task -t .github/Taskfile.yml package
+        run: task -t .github/Taskfile.yml package ARCH=${{ matrix.arch }}
 
       - name: Prepare Artifacts (Linux)
         if: runner.os == 'Linux'
         run: |
+          set -eu
           mkdir -p release_assets
-          cp dist/*.deb dist/*.rpm dist/*.AppImage dist/*.pkg.tar.zst release_assets/ 2>/dev/null || true
-          cp dist/*-server release_assets/libredental-server-linux-amd64 2>/dev/null || true
+
+          # At least one installable desktop package must exist - fail loudly
+          # instead of silently shipping a release with no Linux desktop build.
+          shopt -s nullglob
+          desktop_pkgs=(dist/*.deb dist/*.rpm dist/*.AppImage dist/*.pkg.tar.zst)
+          if [ "${#desktop_pkgs[@]}" -eq 0 ]; then
+            echo "::error::No Linux desktop package (.deb/.rpm/.AppImage/.pkg.tar.zst) found in dist/ - packaging must have failed silently."
+            exit 1
+          fi
+          cp "${desktop_pkgs[@]}" release_assets/
+
+          server_bins=(dist/*-server)
+          if [ "${#server_bins[@]}" -eq 0 ]; then
+            echo "::error::No server binary found in dist/ - build:server must have failed silently."
+            exit 1
+          fi
+          cp "${server_bins[0]}" "release_assets/libredental-server-linux-${{ matrix.arch }}"
 
       - name: Prepare Artifacts (Windows)
         if: runner.os == 'Windows'
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path release_assets
-          Copy-Item dist/*-installer.exe release_assets/ -ErrorAction SilentlyContinue
-          Copy-Item dist/*-server.exe release_assets/libredental-server-windows-amd64.exe -ErrorAction SilentlyContinue
+
+          $installer = Get-ChildItem dist/*-installer.exe -ErrorAction SilentlyContinue
+          if (-not $installer) {
+            Write-Error "No Windows installer (*-installer.exe) found in dist/ - packaging must have failed silently."
+            exit 1
+          }
+          Copy-Item $installer release_assets/
+
+          $server = Get-ChildItem dist/*-server.exe -ErrorAction SilentlyContinue
+          if (-not $server) {
+            Write-Error "No server binary (*-server.exe) found in dist/ - build:server must have failed silently."
+            exit 1
+          }
+          Copy-Item $server[0] "release_assets/libredental-server-windows-${{ matrix.arch }}.exe"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
@@ -102,8 +142,58 @@ jobs:
           sha256sum * > checksums.txt
           cat checksums.txt
 
+      - name: Build Curated Downloads Table
+        run: |
+          set -eu
+          cd release_download
+          BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+
+          row() {
+            # $1 = label, $2 = filename - silently skips a row if the file isn't present
+            if [ -f "$2" ]; then
+              echo "| $1 | [$2](${BASE}/$2) |" >> ../notes.md
+            fi
+          }
+
+          {
+            echo "## Downloads"
+            echo
+            echo "Most people want the desktop app for their platform:"
+            echo
+            echo "| Platform | Download |"
+            echo "| --- | --- |"
+          } > ../notes.md
+
+          row "Windows (x64)" "libredental-windows-amd64-installer.exe"
+          row "Windows (ARM64)" "libredental-windows-arm64-installer.exe"
+          row "Linux (x64, portable)" "libredental-linux-amd64.AppImage"
+          row "Linux (ARM64, portable)" "libredental-linux-arm64.AppImage"
+
+          {
+            echo
+            echo "<details>"
+            echo "<summary>Other downloads (Linux package formats, headless server binaries, demo data, checksums)</summary>"
+            echo
+            echo "| File | Download |"
+            echo "| --- | --- |"
+          } >> ../notes.md
+
+          for f in \
+            libredental-linux-amd64.deb libredental-linux-amd64.rpm libredental-linux-amd64.pkg.tar.zst \
+            libredental-linux-arm64.deb libredental-linux-arm64.rpm libredental-linux-arm64.pkg.tar.zst \
+            libredental-server-linux-amd64 libredental-server-linux-arm64 \
+            libredental-server-windows-amd64.exe libredental-server-windows-arm64.exe \
+            libredental-demo-data.zip checksums.txt; do
+            row "$f" "$f"
+          done
+
+          echo "</details>" >> ../notes.md
+          cat ../notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           files: release_download/*
+          body_path: notes.md
+          append_body: true
           generate_release_notes: true
