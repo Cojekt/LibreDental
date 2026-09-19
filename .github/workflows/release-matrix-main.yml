@@ -1,0 +1,26 @@
+name: Full Release Build Matrix (main only)
+
+# Full packaged build (deb/rpm/AppImage/pacman, NSIS installer) across every
+# release platform - the same job release.yml runs on a version tag. This is
+# what actually proves a tag push will package cleanly, run against main
+# after every merge.
+#
+# Deliberately its own workflow (rather than a job in ci.yml gated on
+# github.ref) so it never shows up as a permanently-skipped check on pull
+# requests: a job-level `if` still lists the job (as skipped) on every PR run
+# of the workflow that contains it, whereas a workflow with no `pull_request`
+# trigger simply never appears in a PR's checks at all.
+#
+# paths-ignore keeps doc-only merges from paying for a ~10+ minute, 4-leg
+# packaging build that can't possibly be affected by the change.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - "LICENSE"
+
+jobs:
+  build-release-matrix:
+    uses: ./.github/workflows/build-matrix.yml
