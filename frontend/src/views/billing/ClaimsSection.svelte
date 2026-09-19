@@ -139,12 +139,16 @@
     claimAppointmentId = c.appointment_id;
     claimStatus = c.status;
     claimNotes = c.notes ?? "";
-    claimLineItems = (c.line_items ?? []).map((li) => ({
-      ...li,
-      fee: (li.fee || 0) / 100,
-      insurance_allowed: li.insurance_allowed != null ? li.insurance_allowed / 100 : undefined,
-      patient_portion: li.patient_portion != null ? li.patient_portion / 100 : undefined,
-    }));
+    claimLineItems = (c.line_items ?? []).map(
+      (li) =>
+        ({
+          ...li,
+          tooth_number: li.tooth_number ?? null,
+          fee: (li.fee || 0) / 100,
+          insurance_allowed: li.insurance_allowed != null ? li.insurance_allowed / 100 : null,
+          patient_portion: li.patient_portion != null ? li.patient_portion / 100 : null,
+        }) as any as ClaimLineItem
+    );
     bundleLookupInput = "";
     bundleLookupError = "";
     showClaimModal = true;
@@ -153,7 +157,14 @@
   function addLineItem() {
     claimLineItems = [
       ...claimLineItems,
-      { id: `li_${Date.now()}`, ada_code: "", description: "", fee: 0 } as any as ClaimLineItem,
+      {
+        id: `li_${Date.now()}`,
+        ada_code: "",
+        description: "",
+        fee: 0,
+        tooth_number: null,
+        insurance_allowed: null,
+      } as any as ClaimLineItem,
     ];
   }
 
@@ -176,6 +187,8 @@
               ada_code: item.ada_code,
               description: item.description,
               fee: (item.default_fee || 0) / 100,
+              tooth_number: null,
+              insurance_allowed: null,
             }) as any as ClaimLineItem
         );
         claimLineItems = [...claimLineItems, ...newItems];
@@ -320,11 +333,12 @@
         ({
           id: `li_${Date.now()}_${i}`,
           tooth_condition_id: cond.id,
-          tooth_number: cond.tooth_number,
+          tooth_number: cond.tooth_number ?? null,
           surfaces: cond.surfaces,
           ada_code: cond.ada_code || "PROC",
           description: cond.description || `Tooth #${cond.tooth_number} procedure`,
           fee: (cond.fee || 0) / 100,
+          insurance_allowed: null,
         }) as any as ClaimLineItem
     );
 
