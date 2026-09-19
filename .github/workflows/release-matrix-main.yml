@@ -1,0 +1,74 @@
+name: Full Release Build Matrix (main only)
+
+# Full packaged build (deb/rpm/AppImage/pacman, NSIS installer) across every
+# release platform - the same job release.yml runs on a version tag. This is
+# what actually proves a tag push will package cleanly, run against main
+# after every merge.
+#
+# Deliberately its own workflow (rather than a job in ci.yml gated on
+# github.ref) so it never shows up as a permanently-skipped check on pull
+# requests: a job-level `if` still lists the job (as skipped) on every PR run
+# of the workflow that contains it, whereas a workflow with no `pull_request`
+# trigger simply never appears in a PR's checks at all.
+#
+# Triggered via workflow_run off "Code Review & Build (CI)" (rather than its
+# own push trigger) so packaging only starts once go-checks/frontend-checks
+# have actually passed on main - a merge that breaks `go vet` or the tests
+# short-circuits here instead of still paying for the full ~10-minute 4-leg
+# matrix.
+on:
+  workflow_run:
+    workflows: ["Code Review & Build (CI)"]
+    types: [completed]
+    branches: [main]
+
+# A newer merge should cancel an in-progress matrix run for an older one
+# rather than burn four runners on a build that's about to be superseded.
+concurrency:
+  group: release-matrix-main
+  cancel-in-progress: true
+
+jobs:
+  changed-files:
+    name: Check for Packaging-Relevant Changes
+    # "Code Review & Build (CI)" also runs on pull_request (ci.yml:5-7); the
+    # branches:[main] filter above is evaluated against the triggering run's
+    # head branch, which for a PR is the PR's branch, not a reliable guard on
+    # its own. Require event == 'push' explicitly so a PR-triggered CI
+    # completion can never start the full packaging matrix.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.check.outputs.relevant }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 2
+
+      - name: Check for Non-Doc Changes
+        id: check
+        # Doc-only merges can't affect the packaged build, so skip the
+        # expensive matrix for them. Compares against the immediate parent
+        # commit, which assumes a squash-merged single commit per push (this
+        # repo's normal PR-merge shape) - a multi-commit push to main would
+        # only get the diff of its last commit, not the whole push.
+        run: |
+          set -eu
+          if git diff --name-only HEAD^..HEAD -- . ':!docs' ':!*.md' ':!LICENSE' | grep -q .; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-release-matrix:
+    name: Full Release Build Matrix (main only)
+    needs: changed-files
+    if: needs.changed-files.outputs.relevant == 'true'
+    uses: ./.github/workflows/build-matrix.yml
+    with:
+      # Pin to the exact commit changed-files analyzed, not this workflow's
+      # own github.sha - for a workflow_run trigger that resolves to the
+      # default branch tip, which can have moved on by the time this runs.
+      ref: ${{ github.event.workflow_run.head_sha }}

@@ -212,6 +212,11 @@ tasks:
       - '{{if eq .OBFUSCATED "true"}}garble {{.GARBLE_ARGS}} build{{else}}go build{{end}} {{.BUILD_FLAGS}} -o "{{.OUTPUT | default (printf "%s/%s-server%s" .BIN_DIR .APP_NAME exeExt)}}"'
     vars:
       BUILD_FLAGS: '-tags server{{if eq .DEV "true"}}{{if eq .OBFUSCATED "true"}},wails_obfuscated{{end}}{{if .EXTRA_TAGS}},{{.EXTRA_TAGS}}{{end}} -buildvcs=false -gcflags=all="-l"{{else}},production{{if eq .OBFUSCATED "true"}},wails_obfuscated{{end}}{{if .EXTRA_TAGS}},{{.EXTRA_TAGS}}{{end}} -trimpath -buildvcs=false -ldflags="-w -s"{{end}}'
+    env:
+      # The server binary is pure Go (no CGO), so cross-arch compilation only
+      # needs GOARCH set - matches ARCH so a cross-compiled GUI leg (e.g.
+      # windows-arm64 built on an amd64 runner) gets a same-arch server binary.
+      GOARCH: "{{.ARCH | default ARCH}}"
 
   run:server:
     summary: Builds and runs a development server (DEV=true)
