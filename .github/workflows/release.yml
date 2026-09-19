@@ -13,50 +13,9 @@ permissions:
 
 jobs:
   build:
-    name: Build (${{ matrix.platform }})
+    name: Build All Platforms
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact_name: libredental-linux-amd64
-            platform: linux
-          - os: windows-latest
-            artifact_name: libredental-windows-amd64.exe
-            platform: windows
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-
-      - name: Setup CI Environment
-        uses: ./.github/actions/setup-env
-
-      - name: Package Application
-        run: task -t .github/Taskfile.yml package
-
-      - name: Prepare Artifacts (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          mkdir -p release_assets
-          cp dist/*.deb dist/*.rpm dist/*.AppImage dist/*.pkg.tar.zst release_assets/ 2>/dev/null || true
-          cp dist/*-server release_assets/libredental-server-linux-amd64 2>/dev/null || true
-
-      - name: Prepare Artifacts (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path release_assets
-          Copy-Item dist/*-installer.exe release_assets/ -ErrorAction SilentlyContinue
-          Copy-Item dist/*-server.exe release_assets/libredental-server-windows-amd64.exe -ErrorAction SilentlyContinue
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-assets-${{ matrix.platform }}
-          path: release_assets/*
+    uses: ./.github/workflows/build-matrix.yml
 
   generate-demo:
     name: Generate Demo Database
@@ -102,8 +61,80 @@ jobs:
           sha256sum * > checksums.txt
           cat checksums.txt
 
+      - name: Build Curated Downloads Table
+        run: |
+          set -eu
+          cd release_download
+          BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+
+          row() {
+            # $1 = label, $2 = filename - silently skips a row if the file isn't present
+            if [ -f "$2" ]; then
+              echo "| $1 | [$2](${BASE}/$2) |" >> ../notes.md
+            fi
+          }
+
+          # $1 = label, $2 = filename - unlike row(), fails the workflow instead
+          # of silently omitting the row. A successful `build` job guarantees
+          # every one of these exists in the merged download, so a miss here
+          # means an artifact was lost in upload/download - the release must
+          # not publish with a downloads table quietly missing a platform.
+          require_row() {
+            if [ ! -f "$2" ]; then
+              echo "::error::Expected release asset '$2' ($1) not found in release_download/ - artifact upload/download must have failed silently."
+              exit 1
+            fi
+            row "$1" "$2"
+          }
+
+          {
+            echo "## Downloads"
+            echo
+            echo "Most people want the desktop app for their platform:"
+            echo
+            echo "| Platform | Download |"
+            echo "| --- | --- |"
+          } > ../notes.md
+
+          require_row "Windows (x64)" "libredental-windows-amd64-installer.exe"
+          require_row "Windows (ARM64)" "libredental-windows-arm64-installer.exe"
+          require_row "Linux (x64, portable)" "libredental-linux-amd64.AppImage"
+          require_row "Linux (ARM64, portable)" "libredental-linux-arm64.AppImage"
+
+          {
+            echo
+            echo "<details>"
+            echo "<summary>Other downloads (Linux package formats, headless server binaries, demo data, checksums)</summary>"
+            echo
+            echo "| File | Download |"
+            echo "| --- | --- |"
+          } >> ../notes.md
+
+          # Alternate Linux package formats (AppImage above is already the
+          # curated/required portable format) - fine to omit if one nfpm
+          # format fails, so these stay skippable via row().
+          for f in \
+            libredental-linux-amd64.deb libredental-linux-amd64.rpm libredental-linux-amd64.pkg.tar.zst \
+            libredental-linux-arm64.deb libredental-linux-arm64.rpm libredental-linux-arm64.pkg.tar.zst; do
+            row "$f" "$f"
+          done
+
+          # Server binaries, demo data, and checksums are all guaranteed by a
+          # successful build/generate-demo job, so a miss here is an artifact
+          # problem, not an expected gap - require them.
+          for f in \
+            libredental-server-linux-amd64 libredental-server-linux-arm64 \
+            libredental-server-windows-amd64.exe libredental-server-windows-arm64.exe \
+            libredental-demo-data.zip checksums.txt; do
+            require_row "$f" "$f"
+          done
+
+          echo "</details>" >> ../notes.md
+          cat ../notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           files: release_download/*
+          body_path: notes.md
           generate_release_notes: true

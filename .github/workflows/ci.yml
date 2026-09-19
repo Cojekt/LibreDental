@@ -77,3 +77,13 @@ jobs:
 
       - name: Build Desktop Application
         run: task -t .github/Taskfile.yml build
+
+  # Full packaged build (deb/rpm/AppImage/pacman, NSIS installer) across every
+  # release platform - the same job release.yml runs on a version tag. Only
+  # runs on main so PRs stay on the cheap smoke build above; this is what
+  # actually proves a tag push will package cleanly.
+  build-release-matrix:
+    name: Full Release Build Matrix (main only)
+    needs: [go-checks, frontend-checks]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/build-matrix.yml
