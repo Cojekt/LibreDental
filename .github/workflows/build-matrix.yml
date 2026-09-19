@@ -6,6 +6,15 @@ name: Build Matrix (Reusable)
 # with each other.
 on:
   workflow_call:
+    inputs:
+      ref:
+        description: >
+          Commit SHA to build. Needed by callers that run via workflow_run
+          (whose own github.sha/github.ref resolve to the default branch tip,
+          not the commit that triggered them) - leave unset to build the
+          caller's own ref (e.g. a tag push).
+        required: false
+        type: string
 
 jobs:
   build:
@@ -37,6 +46,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Setup CI Environment
         uses: ./.github/actions/setup-env

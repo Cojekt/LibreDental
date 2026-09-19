@@ -31,7 +31,12 @@ concurrency:
 jobs:
   changed-files:
     name: Check for Packaging-Relevant Changes
-    if: github.event.workflow_run.conclusion == 'success'
+    # "Code Review & Build (CI)" also runs on pull_request (ci.yml:5-7); the
+    # branches:[main] filter above is evaluated against the triggering run's
+    # head branch, which for a PR is the PR's branch, not a reliable guard on
+    # its own. Require event == 'push' explicitly so a PR-triggered CI
+    # completion can never start the full packaging matrix.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     outputs:
       relevant: ${{ steps.check.outputs.relevant }}
@@ -62,3 +67,8 @@ jobs:
     needs: changed-files
     if: needs.changed-files.outputs.relevant == 'true'
     uses: ./.github/workflows/build-matrix.yml
+    with:
+      # Pin to the exact commit changed-files analyzed, not this workflow's
+      # own github.sha - for a workflow_run trigger that resolves to the
+      # default branch tip, which can have moved on by the time this runs.
+      ref: ${{ github.event.workflow_run.head_sha }}
