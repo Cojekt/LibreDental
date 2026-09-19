@@ -19,7 +19,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "^2.25.1",
+    "@inlang/paraglide-js": "^2.25.2",
     "@inlang/plugin-m-function-matcher": "^2.2.14",
     "@inlang/plugin-message-format": "^4.4.4",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
