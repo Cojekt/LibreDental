@@ -1,0 +1,97 @@
+name: Build Matrix (Reusable)
+
+# Shared by release.yml (on version tags) and ci.yml (on push to main). Single
+# source of truth for "does the full packaged build succeed on every
+# platform" so the two pipelines can't drift out of sync with each other.
+on:
+  workflow_call:
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # linux-arm64 uses GitHub's native arm64 runner rather than the
+          # Docker/Zig cross-compile path (build/docker/Dockerfile.cross) -
+          # it's a real arm64 host, so build:native and nfpm's arch
+          # auto-detection both just work, same as the amd64 leg.
+          - os: ubuntu-latest
+            platform: linux-amd64
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            arch: arm64
+          # windows-arm64 cross-compiles from the same amd64 runner (pure Go,
+          # no CGO needed on Windows) - no arm64 Windows runner required.
+          - os: windows-latest
+            platform: windows-amd64
+            arch: amd64
+          - os: windows-latest
+            platform: windows-arm64
+            arch: arm64
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup CI Environment
+        uses: ./.github/actions/setup-env
+
+      - name: Package Application
+        # DEV=false is explicit, not just the default: it forces the
+        # -tags production, -trimpath, stripped-symbol build path (see
+        # build/linux/Taskfile.yml and build/windows/Taskfile.yml) so this
+        # matrix can never silently drift onto a dev build.
+        run: task -t .github/Taskfile.yml package ARCH=${{ matrix.arch }} DEV=false
+
+      - name: Prepare Artifacts (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          set -eu
+          mkdir -p release_assets
+
+          # At least one installable desktop package must exist - fail loudly
+          # instead of silently shipping a release with no Linux desktop build.
+          shopt -s nullglob
+          desktop_pkgs=(dist/*.deb dist/*.rpm dist/*.AppImage dist/*.pkg.tar.zst)
+          if [ "${#desktop_pkgs[@]}" -eq 0 ]; then
+            echo "::error::No Linux desktop package (.deb/.rpm/.AppImage/.pkg.tar.zst) found in dist/ - packaging must have failed silently."
+            exit 1
+          fi
+          cp "${desktop_pkgs[@]}" release_assets/
+
+          server_bins=(dist/*-server)
+          if [ "${#server_bins[@]}" -eq 0 ]; then
+            echo "::error::No server binary found in dist/ - build:server must have failed silently."
+            exit 1
+          fi
+          cp "${server_bins[0]}" "release_assets/libredental-server-linux-${{ matrix.arch }}"
+
+      - name: Prepare Artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path release_assets
+
+          $installer = Get-ChildItem dist/*-installer.exe -ErrorAction SilentlyContinue
+          if (-not $installer) {
+            Write-Error "No Windows installer (*-installer.exe) found in dist/ - packaging must have failed silently."
+            exit 1
+          }
+          Copy-Item $installer release_assets/
+
+          $server = Get-ChildItem dist/*-server.exe -ErrorAction SilentlyContinue
+          if (-not $server) {
+            Write-Error "No server binary (*-server.exe) found in dist/ - build:server must have failed silently."
+            exit 1
+          }
+          Copy-Item $server[0] "release_assets/libredental-server-windows-${{ matrix.arch }}.exe"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-assets-${{ matrix.platform }}
+          path: release_assets/*

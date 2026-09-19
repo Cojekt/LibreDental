@@ -13,90 +13,9 @@ permissions:
 
 jobs:
   build:
-    name: Build (${{ matrix.platform }})
+    name: Build All Platforms
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # linux-arm64 uses GitHub's native arm64 runner rather than the
-          # Docker/Zig cross-compile path (build/docker/Dockerfile.cross) -
-          # it's a real arm64 host, so build:native and nfpm's arch
-          # auto-detection both just work, same as the amd64 leg.
-          - os: ubuntu-latest
-            platform: linux-amd64
-            arch: amd64
-          - os: ubuntu-24.04-arm
-            platform: linux-arm64
-            arch: arm64
-          # windows-arm64 cross-compiles from the same amd64 runner (pure Go,
-          # no CGO needed on Windows) - no arm64 Windows runner required.
-          - os: windows-latest
-            platform: windows-amd64
-            arch: amd64
-          - os: windows-latest
-            platform: windows-arm64
-            arch: arm64
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-
-      - name: Setup CI Environment
-        uses: ./.github/actions/setup-env
-
-      - name: Package Application
-        run: task -t .github/Taskfile.yml package ARCH=${{ matrix.arch }}
-
-      - name: Prepare Artifacts (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          set -eu
-          mkdir -p release_assets
-
-          # At least one installable desktop package must exist - fail loudly
-          # instead of silently shipping a release with no Linux desktop build.
-          shopt -s nullglob
-          desktop_pkgs=(dist/*.deb dist/*.rpm dist/*.AppImage dist/*.pkg.tar.zst)
-          if [ "${#desktop_pkgs[@]}" -eq 0 ]; then
-            echo "::error::No Linux desktop package (.deb/.rpm/.AppImage/.pkg.tar.zst) found in dist/ - packaging must have failed silently."
-            exit 1
-          fi
-          cp "${desktop_pkgs[@]}" release_assets/
-
-          server_bins=(dist/*-server)
-          if [ "${#server_bins[@]}" -eq 0 ]; then
-            echo "::error::No server binary found in dist/ - build:server must have failed silently."
-            exit 1
-          fi
-          cp "${server_bins[0]}" "release_assets/libredental-server-linux-${{ matrix.arch }}"
-
-      - name: Prepare Artifacts (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path release_assets
-
-          $installer = Get-ChildItem dist/*-installer.exe -ErrorAction SilentlyContinue
-          if (-not $installer) {
-            Write-Error "No Windows installer (*-installer.exe) found in dist/ - packaging must have failed silently."
-            exit 1
-          }
-          Copy-Item $installer release_assets/
-
-          $server = Get-ChildItem dist/*-server.exe -ErrorAction SilentlyContinue
-          if (-not $server) {
-            Write-Error "No server binary (*-server.exe) found in dist/ - build:server must have failed silently."
-            exit 1
-          }
-          Copy-Item $server[0] "release_assets/libredental-server-windows-${{ matrix.arch }}.exe"
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-assets-${{ matrix.platform }}
-          path: release_assets/*
+    uses: ./.github/workflows/build-matrix.yml
 
   generate-demo:
     name: Generate Demo Database
@@ -155,6 +74,19 @@ jobs:
             fi
           }
 
+          # $1 = label, $2 = filename - unlike row(), fails the workflow instead
+          # of silently omitting the row. A successful `build` job guarantees
+          # every one of these exists in the merged download, so a miss here
+          # means an artifact was lost in upload/download - the release must
+          # not publish with a downloads table quietly missing a platform.
+          require_row() {
+            if [ ! -f "$2" ]; then
+              echo "::error::Expected release asset '$2' ($1) not found in release_download/ - artifact upload/download must have failed silently."
+              exit 1
+            fi
+            row "$1" "$2"
+          }
+
           {
             echo "## Downloads"
             echo
@@ -164,10 +96,10 @@ jobs:
             echo "| --- | --- |"
           } > ../notes.md
 
-          row "Windows (x64)" "libredental-windows-amd64-installer.exe"
-          row "Windows (ARM64)" "libredental-windows-arm64-installer.exe"
-          row "Linux (x64, portable)" "libredental-linux-amd64.AppImage"
-          row "Linux (ARM64, portable)" "libredental-linux-arm64.AppImage"
+          require_row "Windows (x64)" "libredental-windows-amd64-installer.exe"
+          require_row "Windows (ARM64)" "libredental-windows-arm64-installer.exe"
+          require_row "Linux (x64, portable)" "libredental-linux-amd64.AppImage"
+          require_row "Linux (ARM64, portable)" "libredental-linux-arm64.AppImage"
 
           {
             echo
@@ -178,13 +110,23 @@ jobs:
             echo "| --- | --- |"
           } >> ../notes.md
 
+          # Alternate Linux package formats (AppImage above is already the
+          # curated/required portable format) - fine to omit if one nfpm
+          # format fails, so these stay skippable via row().
           for f in \
             libredental-linux-amd64.deb libredental-linux-amd64.rpm libredental-linux-amd64.pkg.tar.zst \
-            libredental-linux-arm64.deb libredental-linux-arm64.rpm libredental-linux-arm64.pkg.tar.zst \
+            libredental-linux-arm64.deb libredental-linux-arm64.rpm libredental-linux-arm64.pkg.tar.zst; do
+            row "$f" "$f"
+          done
+
+          # Server binaries, demo data, and checksums are all guaranteed by a
+          # successful build/generate-demo job, so a miss here is an artifact
+          # problem, not an expected gap - require them.
+          for f in \
             libredental-server-linux-amd64 libredental-server-linux-arm64 \
             libredental-server-windows-amd64.exe libredental-server-windows-arm64.exe \
             libredental-demo-data.zip checksums.txt; do
-            row "$f" "$f"
+            require_row "$f" "$f"
           done
 
           echo "</details>" >> ../notes.md
@@ -195,5 +137,4 @@ jobs:
         with:
           files: release_download/*
           body_path: notes.md
-          append_body: true
           generate_release_notes: true
