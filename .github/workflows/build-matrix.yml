@@ -1,8 +1,9 @@
 name: Build Matrix (Reusable)
 
-# Shared by release.yml (on version tags) and ci.yml (on push to main). Single
-# source of truth for "does the full packaged build succeed on every
-# platform" so the two pipelines can't drift out of sync with each other.
+# Shared by release.yml (on version tags) and release-matrix-main.yml (on
+# push to main). Single source of truth for "does the full packaged build
+# succeed on every platform" so the two pipelines can't drift out of sync
+# with each other.
 on:
   workflow_call:
 

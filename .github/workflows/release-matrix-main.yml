@@ -11,16 +11,54 @@ name: Full Release Build Matrix (main only)
 # of the workflow that contains it, whereas a workflow with no `pull_request`
 # trigger simply never appears in a PR's checks at all.
 #
-# paths-ignore keeps doc-only merges from paying for a ~10+ minute, 4-leg
-# packaging build that can't possibly be affected by the change.
+# Triggered via workflow_run off "Code Review & Build (CI)" (rather than its
+# own push trigger) so packaging only starts once go-checks/frontend-checks
+# have actually passed on main - a merge that breaks `go vet` or the tests
+# short-circuits here instead of still paying for the full ~10-minute 4-leg
+# matrix.
 on:
-  push:
+  workflow_run:
+    workflows: ["Code Review & Build (CI)"]
+    types: [completed]
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-      - "LICENSE"
+
+# A newer merge should cancel an in-progress matrix run for an older one
+# rather than burn four runners on a build that's about to be superseded.
+concurrency:
+  group: release-matrix-main
+  cancel-in-progress: true
 
 jobs:
+  changed-files:
+    name: Check for Packaging-Relevant Changes
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.check.outputs.relevant }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 2
+
+      - name: Check for Non-Doc Changes
+        id: check
+        # Doc-only merges can't affect the packaged build, so skip the
+        # expensive matrix for them. Compares against the immediate parent
+        # commit, which assumes a squash-merged single commit per push (this
+        # repo's normal PR-merge shape) - a multi-commit push to main would
+        # only get the diff of its last commit, not the whole push.
+        run: |
+          set -eu
+          if git diff --name-only HEAD^..HEAD -- . ':!docs' ':!*.md' ':!LICENSE' | grep -q .; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-release-matrix:
+    name: Full Release Build Matrix (main only)
+    needs: changed-files
+    if: needs.changed-files.outputs.relevant == 'true'
     uses: ./.github/workflows/build-matrix.yml
