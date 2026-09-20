@@ -134,6 +134,35 @@ func TestClaimRepository(t *testing.T) {
 		t.Errorf("Expected total billed 32000, got %d", totalBilled)
 	}
 
+	// 5b. GetTotalBilledByPatient across multiple patients
+	otherPatient := &domain.Patient{ID: "pat_claim_2", FirstName: "John", LastName: "Roe"}
+	if err := patientRepo.Create(ctx, otherPatient); err != nil {
+		t.Fatalf("Failed to create second patient: %v", err)
+	}
+	otherClaim := &domain.Claim{
+		ID:            "clm_1002",
+		PatientID:     "pat_claim_2",
+		DateOfService: "2026-08-16",
+		Status:        domain.ClaimStatusDraft,
+		LineItems: []domain.ClaimLineItem{
+			{ID: "item_4", ADACode: "D0120", Fee: 6000},
+		},
+	}
+	if err := repo.Create(ctx, otherClaim); err != nil {
+		t.Fatalf("Failed to create second patient's claim: %v", err)
+	}
+
+	billedByPatient, err := repo.GetTotalBilledByPatient(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get total billed by patient: %v", err)
+	}
+	if billedByPatient["pat_claim_1"] != 32000 {
+		t.Errorf("Expected pat_claim_1 total billed 32000, got %d", billedByPatient["pat_claim_1"])
+	}
+	if billedByPatient["pat_claim_2"] != 6000 {
+		t.Errorf("Expected pat_claim_2 total billed 6000, got %d", billedByPatient["pat_claim_2"])
+	}
+
 	// 6. List Claims
 	claimsForPatient, err := repo.List(ctx, "pat_claim_1")
 	if err != nil {
@@ -147,8 +176,8 @@ func TestClaimRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list all claims: %v", err)
 	}
-	if len(allClaims) != 1 {
-		t.Errorf("Expected 1 claim in total list, got %d", len(allClaims))
+	if len(allClaims) != 2 {
+		t.Errorf("Expected 2 claims in total list, got %d", len(allClaims))
 	}
 
 	// 7. Delete Claim

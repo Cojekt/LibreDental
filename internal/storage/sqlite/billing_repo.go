@@ -198,6 +198,32 @@ func (r *ClaimRepository) GetTotalBilled(ctx context.Context, patientID string) 
 	return total, rows.Err()
 }
 
+// GetTotalBilledByPatient computes the sum of line item fees across all claims, grouped by patient.
+// Line items are stored as JSON, so we decode and sum in-app rather than in SQL.
+func (r *ClaimRepository) GetTotalBilledByPatient(ctx context.Context) (map[string]int64, error) {
+	rows, err := r.db.QueryContext(ctx, "SELECT patient_id, line_items FROM claims")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query claim line items: %w", err)
+	}
+	defer rows.Close()
+
+	totals := make(map[string]int64)
+	for rows.Next() {
+		var patientID, lineItemsJSON string
+		if err := rows.Scan(&patientID, &lineItemsJSON); err != nil {
+			return nil, err
+		}
+		var items []domain.ClaimLineItem
+		if err := json.Unmarshal([]byte(lineItemsJSON), &items); err != nil {
+			continue
+		}
+		for _, item := range items {
+			totals[patientID] += item.Fee
+		}
+	}
+	return totals, rows.Err()
+}
+
 func scanClaim(row rowScanner) (*domain.Claim, error) {
 	var c domain.Claim
 	var statusStr, lineItemsJSON string

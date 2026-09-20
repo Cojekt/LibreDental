@@ -76,6 +76,8 @@ type ClaimRepository interface {
 	List(ctx context.Context, patientID string) ([]*domain.Claim, error)
 	// GetTotalBilled returns the sum of all line item fees for a patient's claims.
 	GetTotalBilled(ctx context.Context, patientID string) (int64, error)
+	// GetTotalBilledByPatient returns the sum of line item fees for every patient with claims, keyed by patient ID.
+	GetTotalBilledByPatient(ctx context.Context) (map[string]int64, error)
 }
 
 // PaymentRepository defines storage operations for patient payment records.
@@ -87,6 +89,8 @@ type PaymentRepository interface {
 	ListByDateRange(ctx context.Context, startDate, endDate string) ([]*domain.Payment, error)
 	// GetTotalPaid returns the sum of all payments received for a patient.
 	GetTotalPaid(ctx context.Context, patientID string) (int64, error)
+	// GetTotalPaidByPatient returns the sum of payments received for every patient with payments, keyed by patient ID.
+	GetTotalPaidByPatient(ctx context.Context) (map[string]int64, error)
 }
 
 // TreatmentBundleRepository defines storage operations for clinic-wide procedure bundle templates.

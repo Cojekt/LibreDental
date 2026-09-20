@@ -28,8 +28,26 @@
   let claims = $state<Claim[]>([]);
   let loadingPayments = $state(false);
   let patientBalance = $state<PatientBalance | null>(null);
+  let allBalances = $state<PatientBalance[]>([]);
+  let loadingBalances = $state(false);
   let balancePatientId = $state("");
   let showPaymentModal = $state(false);
+
+  let outstandingByPatient = $derived(allBalances.filter((b) => b.outstanding > 0));
+  let allTotals = $derived({
+    billed: allBalances.reduce((s, b) => s + b.total_billed, 0),
+    paid: allBalances.reduce((s, b) => s + b.total_paid, 0),
+    outstanding: allBalances.reduce((s, b) => s + b.outstanding, 0),
+  });
+  let displayedTotals = $derived(
+    balancePatientId
+      ? {
+          billed: patientBalance?.total_billed ?? 0,
+          paid: patientBalance?.total_paid ?? 0,
+          outstanding: patientBalance?.outstanding ?? 0,
+        }
+      : allTotals
+  );
 
   // Payment form
   let payPatientId = $state("");
@@ -79,8 +97,24 @@
     const gen = ++requestGenBalance;
     if (!balancePatientId) {
       patientBalance = null;
+      loadingBalances = true;
+      try {
+        const res = await BillingService.GetAllPatientBalances(auth.token);
+        if (gen === requestGenBalance) {
+          allBalances = (res?.filter(Boolean) as PatientBalance[]) || [];
+        }
+      } catch (e) {
+        if (gen === requestGenBalance) {
+          console.error("Failed to load all patient balances:", e);
+        }
+      } finally {
+        if (gen === requestGenBalance) {
+          loadingBalances = false;
+        }
+      }
       return;
     }
+    allBalances = [];
     try {
       const bal = await BillingService.GetPatientBalance(auth.token, balancePatientId);
       if (gen === requestGenBalance) {
@@ -162,13 +196,13 @@
   <div class="space-y-4">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div class="w-full max-w-xs">
-        <FormField label="Select Patient for Ledger & Balance" forId="balance-patient">
+        <FormField label={m.billing_pay_filter_label()} forId="balance-patient">
           <select
             id="balance-patient"
             bind:value={balancePatientId}
             class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
           >
-            <option value="">— Select patient —</option>
+            <option value="">{m.billing_pay_filter_all()}</option>
             {#each patients as p}
               <option value={p.id}>{p.first_name} {p.last_name}</option>
             {/each}
@@ -188,45 +222,66 @@
       </button>
     </div>
 
-    {#if patientBalance && balancePatientId}
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
-          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {m.billing_claims_stats_billed()}
-          </div>
-          <div class="text-2xl font-extrabold text-slate-300 font-mono">
-            {formatCurrency(patientBalance.total_billed, countryMeta?.default_currency)}
-          </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          {m.billing_claims_stats_billed()}
         </div>
-        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
-          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Total Paid
-          </div>
-          <div class="text-2xl font-extrabold text-emerald-400 font-mono">
-            {formatCurrency(patientBalance.total_paid, countryMeta?.default_currency)}
-          </div>
-        </div>
-        <div
-          class={`rounded-xl border p-4 space-y-1 ${patientBalance.outstanding > 0 ? "border-amber-500/40 bg-amber-950/20" : "border-slate-800 bg-slate-900/60"}`}
-        >
-          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Outstanding Balance
-          </div>
-          <div
-            class={`text-2xl font-extrabold font-mono ${patientBalance.outstanding > 0 ? "text-amber-400" : "text-emerald-400"}`}
-          >
-            {formatCurrency(patientBalance.outstanding, countryMeta?.default_currency)}
-          </div>
+        <div class="text-2xl font-extrabold text-slate-300 font-mono">
+          {formatCurrency(displayedTotals.billed, countryMeta?.default_currency)}
         </div>
       </div>
-    {:else if balancePatientId}
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
-          <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Outstanding Balance
-          </div>
-          <div class="text-2xl font-extrabold text-emerald-400 font-mono">$0.00</div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-1">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          {m.billing_claims_stats_paid()}
         </div>
+        <div class="text-2xl font-extrabold text-emerald-400 font-mono">
+          {formatCurrency(displayedTotals.paid, countryMeta?.default_currency)}
+        </div>
+      </div>
+      <div
+        class={`rounded-xl border p-4 space-y-1 ${displayedTotals.outstanding > 0 ? "border-amber-500/40 bg-amber-950/20" : "border-slate-800 bg-slate-900/60"}`}
+      >
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          {m.billing_claims_stats_outstanding()}
+        </div>
+        <div
+          class={`text-2xl font-extrabold font-mono ${displayedTotals.outstanding > 0 ? "text-amber-400" : "text-emerald-400"}`}
+        >
+          {formatCurrency(displayedTotals.outstanding, countryMeta?.default_currency)}
+        </div>
+      </div>
+    </div>
+
+    {#if !balancePatientId}
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-bold text-slate-200 m-0">
+            {m.billing_outstanding_by_patient_title()}
+          </h4>
+          {#if loadingBalances}
+            <span class="text-slate-400 text-xs font-medium">{m.common_loading()}</span>
+          {/if}
+        </div>
+        {#if outstandingByPatient.length === 0 && !loadingBalances}
+          <EmptyState title={m.billing_outstanding_none()} />
+        {:else}
+          <div class="space-y-2">
+            {#each outstandingByPatient as bal (bal.patient_id)}
+              <button
+                type="button"
+                onclick={() => (balancePatientId = bal.patient_id)}
+                class="w-full flex items-center justify-between p-3 rounded-xl border border-amber-500/40 bg-amber-500/15 hover:border-amber-500/60 transition-colors text-left cursor-pointer"
+              >
+                <span class="text-sm font-medium text-amber-400">{patientName(bal.patient_id)}</span
+                >
+                <span class="text-sm font-bold font-mono text-amber-400"
+                  >{formatCurrency(bal.outstanding, countryMeta?.default_currency)}</span
+                >
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
