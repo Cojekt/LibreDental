@@ -132,6 +132,9 @@ func TestPaymentRepository(t *testing.T) {
 	if paidByPatient["pat_pay_2"] != 7500 {
 		t.Errorf("Expected pat_pay_2 total paid 7500, got %d", paidByPatient["pat_pay_2"])
 	}
+	if _, ok := paidByPatient["pat_no_payments"]; ok {
+		t.Errorf("Expected patient with no payments to be absent from the map, got entry %d", paidByPatient["pat_no_payments"])
+	}
 
 	// 5. List Payments
 	listPatient, err := repo.List(ctx, "pat_pay_1")

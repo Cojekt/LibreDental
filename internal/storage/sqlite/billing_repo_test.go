@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
@@ -161,6 +162,68 @@ func TestClaimRepository(t *testing.T) {
 	}
 	if billedByPatient["pat_claim_2"] != 6000 {
 		t.Errorf("Expected pat_claim_2 total billed 6000, got %d", billedByPatient["pat_claim_2"])
+	}
+
+	// 5c. A patient with a claim but no line items (or a NULL line_items column) must still
+	// get a zero entry in the map, not be omitted entirely.
+	thirdPatient := &domain.Patient{ID: "pat_claim_3", FirstName: "Amy", LastName: "Nolan"}
+	if err := patientRepo.Create(ctx, thirdPatient); err != nil {
+		t.Fatalf("Failed to create third patient: %v", err)
+	}
+	if err := repo.Create(ctx, &domain.Claim{
+		ID:            "clm_1003",
+		PatientID:     "pat_claim_3",
+		DateOfService: "2026-08-17",
+		Status:        domain.ClaimStatusDraft,
+		LineItems:     []domain.ClaimLineItem{},
+	}); err != nil {
+		t.Fatalf("Failed to create third patient's claim: %v", err)
+	}
+	// Simulate a legacy/NULL line_items column bypassing the app's Create() path.
+	fourthPatient := &domain.Patient{ID: "pat_claim_4", FirstName: "Ben", LastName: "Ortiz"}
+	if err := patientRepo.Create(ctx, fourthPatient); err != nil {
+		t.Fatalf("Failed to create fourth patient: %v", err)
+	}
+	if _, err := db.ExecContext(ctx,
+		`INSERT INTO claims (id, patient_id, date_of_service, status, line_items, created_at, updated_at)
+		 VALUES ('clm_1004', 'pat_claim_4', '2026-08-18', 'draft', NULL, ?, ?)`,
+		time.Now().UTC(), time.Now().UTC()); err != nil {
+		t.Fatalf("Failed to insert claim with NULL line_items: %v", err)
+	}
+
+	billedByPatient2, err := repo.GetTotalBilledByPatient(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get total billed by patient with empty/NULL line items present: %v", err)
+	}
+	if total, ok := billedByPatient2["pat_claim_3"]; !ok || total != 0 {
+		t.Errorf("Expected pat_claim_3 to have a zero entry, got ok=%v total=%d", ok, total)
+	}
+	if total, ok := billedByPatient2["pat_claim_4"]; !ok || total != 0 {
+		t.Errorf("Expected pat_claim_4 (NULL line_items) to have a zero entry, got ok=%v total=%d", ok, total)
+	}
+	// clm_1003/clm_1004 exist only to exercise GetTotalBilledByPatient above; scanClaim
+	// (used by GetByID/List) doesn't support a NULL line_items column, so remove them
+	// before the List assertions later in this test run.
+	if _, err := db.ExecContext(ctx, `DELETE FROM claims WHERE id IN ('clm_1003', 'clm_1004')`); err != nil {
+		t.Fatalf("Failed to clean up empty/NULL line_items claims: %v", err)
+	}
+
+	// 5d. Malformed line_items JSON must surface as an error, not be silently dropped.
+	fifthPatient := &domain.Patient{ID: "pat_claim_5", FirstName: "Cara", LastName: "Diaz"}
+	if err := patientRepo.Create(ctx, fifthPatient); err != nil {
+		t.Fatalf("Failed to create fifth patient: %v", err)
+	}
+	if _, err := db.ExecContext(ctx,
+		`INSERT INTO claims (id, patient_id, date_of_service, status, line_items, created_at, updated_at)
+		 VALUES ('clm_1005', 'pat_claim_5', '2026-08-19', 'draft', 'not-json', ?, ?)`,
+		time.Now().UTC(), time.Now().UTC()); err != nil {
+		t.Fatalf("Failed to insert claim with malformed line_items: %v", err)
+	}
+	if _, err := repo.GetTotalBilledByPatient(ctx); err == nil {
+		t.Errorf("Expected error from GetTotalBilledByPatient with malformed line_items JSON")
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM claims WHERE id = 'clm_1005'`); err != nil {
+		t.Fatalf("Failed to clean up malformed claim: %v", err)
 	}
 
 	// 6. List Claims

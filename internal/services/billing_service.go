@@ -378,11 +378,15 @@ func (s *BillingService) GetAllPatientBalances(token string) ([]*domain.PatientB
 
 	balances := make([]*domain.PatientBalance, 0, len(patientIDs))
 	for id := range patientIDs {
+		// Clamp at 0: a patient who has paid more than billed (e.g. a payment recorded
+		// without a linked claim) is credited, not outstanding, so they shouldn't pull
+		// down the aggregate total while being excluded from the outstanding-by-patient list.
+		outstanding := max(billed[id]-paid[id], 0)
 		balances = append(balances, &domain.PatientBalance{
 			PatientID:   id,
 			TotalBilled: billed[id],
 			TotalPaid:   paid[id],
-			Outstanding: billed[id] - paid[id],
+			Outstanding: outstanding,
 		})
 	}
 	sort.Slice(balances, func(i, j int) bool {

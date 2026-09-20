@@ -389,19 +389,51 @@ func TestBillingService_GetAllPatientBalances(t *testing.T) {
 		t.Fatalf("Failed to record payment for patient B: %v", err)
 	}
 
+	// Patient C: a payment recorded with no linked claim (e.g. a prepayment or credit),
+	// so billed=0, paid=3000 -> outstanding must clamp to 0, not go negative.
+	patientC := &domain.Patient{ID: "pat_bal_c", FirstName: "Cass", LastName: "C"}
+	if err := patientRepo.Create(ctx, patientC); err != nil {
+		t.Fatalf("Failed to create patient C: %v", err)
+	}
+	if _, err := billingSvc.RecordPayment(token, &domain.Payment{
+		ID: "pay_bal_c", PatientID: "pat_bal_c", Amount: 3000, Method: domain.PaymentMethodCash, Date: "2026-08-16",
+	}); err != nil {
+		t.Fatalf("Failed to record payment for patient C: %v", err)
+	}
+
 	balances, err := billingSvc.GetAllPatientBalances(token)
 	if err != nil {
 		t.Fatalf("Failed to get all patient balances: %v", err)
 	}
-	if len(balances) != 2 {
-		t.Fatalf("Expected 2 patient balances, got %d", len(balances))
+	if len(balances) != 3 {
+		t.Fatalf("Expected 3 patient balances, got %d", len(balances))
 	}
 	// Sorted by outstanding descending, so patient A (6000) comes first.
 	if balances[0].PatientID != "pat_bal_a" || balances[0].Outstanding != 6000 {
 		t.Errorf("Expected patient A first with outstanding 6000, got %+v", balances[0])
 	}
-	if balances[1].PatientID != "pat_bal_b" || balances[1].Outstanding != 0 {
-		t.Errorf("Expected patient B second with outstanding 0, got %+v", balances[1])
+
+	var patientCBalance *domain.PatientBalance
+	var outstandingSum int64
+	for _, b := range balances {
+		outstandingSum += b.Outstanding
+		if b.PatientID == "pat_bal_c" {
+			patientCBalance = b
+		}
+	}
+	if patientCBalance == nil {
+		t.Fatalf("Expected patient C to be present in balances")
+	}
+	if patientCBalance.Outstanding != 0 {
+		t.Errorf("Expected patient C's overpayment to clamp outstanding to 0, got %d", patientCBalance.Outstanding)
+	}
+	if patientCBalance.TotalPaid != 3000 {
+		t.Errorf("Expected patient C total paid 3000, got %d", patientCBalance.TotalPaid)
+	}
+	// The aggregate total must equal the sum of the (clamped) per-patient rows, so the
+	// header and the "outstanding by patient" list the frontend derives from it agree.
+	if outstandingSum != 6000 {
+		t.Errorf("Expected sum of outstanding balances to be 6000, got %d", outstandingSum)
 	}
 }
 
