@@ -148,15 +148,14 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 
 	query := `
 	INSERT INTO timecards (
-		id, provider_id, clock_in, clock_out, hourly_rate, total_minutes, total_pay, paid_at, is_manual, created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		id, provider_id, clock_in, clock_out, hourly_rate, total_minutes, paid_at, is_manual, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		provider_id = excluded.provider_id,
 		clock_in = excluded.clock_in,
 		clock_out = excluded.clock_out,
 		hourly_rate = excluded.hourly_rate,
 		total_minutes = excluded.total_minutes,
-		total_pay = excluded.total_pay,
 		paid_at = excluded.paid_at,
 		is_manual = excluded.is_manual,
 		updated_at = excluded.updated_at
@@ -174,12 +173,6 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 		totalMinutes.Int64 = t.TotalMinutes
 	}
 
-	var totalPay sql.NullInt64
-	if t.TotalPay > 0 {
-		totalPay.Valid = true
-		totalPay.Int64 = t.TotalPay
-	}
-
 	var paidAt sql.NullTime
 	if t.PaidAt != nil {
 		paidAt.Valid = true
@@ -189,7 +182,7 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 	_, err := r.db.ExecContext(
 		ctx, query,
 		t.ID, t.ProviderID, t.ClockIn, clockOut, t.HourlyRate,
-		totalMinutes, totalPay, paidAt, isManualInt, t.CreatedAt, t.UpdatedAt,
+		totalMinutes, paidAt, isManualInt, t.CreatedAt, t.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save timecard: %w", err)

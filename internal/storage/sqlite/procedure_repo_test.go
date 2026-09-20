@@ -20,6 +20,10 @@ func TestProcedureRepository(t *testing.T) {
 
 	repo := NewProcedureRepository(db)
 	ctx := context.Background()
+	configRepo := NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_dr_smith", Name: "Dr Test", IsActive: true}); err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
 
 	// 1. Test listing seeded US codes
 	codes, err := repo.List(ctx, domain.CountryUS)

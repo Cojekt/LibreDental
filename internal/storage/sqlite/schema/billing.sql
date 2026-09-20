@@ -1,34 +1,39 @@
 CREATE TABLE IF NOT EXISTS claims (
     id TEXT NOT NULL PRIMARY KEY,
     patient_id TEXT NOT NULL,
-    provider_id TEXT NOT NULL DEFAULT '',
-    appointment_id TEXT DEFAULT '',
+    provider_id TEXT,
+    appointment_id TEXT,
     insurance_carrier TEXT DEFAULT '',
     policy_number TEXT DEFAULT '',
     group_number TEXT DEFAULT '',
-    date_of_service TEXT NOT NULL,
+    date_of_service TEXT NOT NULL CHECK (date(date_of_service) IS date_of_service),
     status TEXT NOT NULL DEFAULT 'draft',
     notes TEXT DEFAULT '',
-    line_items TEXT DEFAULT '[]',
+    line_items TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(line_items)),
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
-    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
+    FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE RESTRICT,
+    FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_claims_patient ON claims(patient_id);
+CREATE INDEX IF NOT EXISTS idx_claims_provider ON claims(provider_id);
+CREATE INDEX IF NOT EXISTS idx_claims_appointment ON claims(appointment_id);
 CREATE INDEX IF NOT EXISTS idx_claims_status ON claims(status);
 CREATE INDEX IF NOT EXISTS idx_claims_date ON claims(date_of_service);
 
 CREATE TABLE IF NOT EXISTS payments (
     id TEXT NOT NULL PRIMARY KEY,
     patient_id TEXT NOT NULL,
-    claim_id TEXT DEFAULT '',
+    claim_id TEXT,
     amount INTEGER NOT NULL,
     method TEXT NOT NULL DEFAULT 'cash',
-    date TEXT NOT NULL,
+    date TEXT NOT NULL CHECK (date(date) IS date),
     notes TEXT DEFAULT '',
     created_at DATETIME NOT NULL,
-    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
+    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_payments_patient ON payments(patient_id);
@@ -40,8 +45,7 @@ CREATE TABLE IF NOT EXISTS treatment_bundles (
     shortname TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT DEFAULT '',
-    items TEXT DEFAULT '[]',
-    total_fee INTEGER NOT NULL DEFAULT 0,
+    items TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(items)),
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
 );
@@ -58,18 +62,22 @@ CREATE TABLE IF NOT EXISTS procedure_codes (
 	PRIMARY KEY (country_code, code)
 );
 
-CREATE INDEX IF NOT EXISTS idx_procedure_codes_country ON procedure_codes(country_code);
 CREATE INDEX IF NOT EXISTS idx_procedure_codes_category ON procedure_codes(country_code, category);
 
 CREATE TABLE IF NOT EXISTS fee_schedules (
 	id TEXT NOT NULL PRIMARY KEY,
 	country_code TEXT NOT NULL,
 	code TEXT NOT NULL,
-	provider_id TEXT DEFAULT '',
+	provider_id TEXT,
 	custom_fee INTEGER NOT NULL,
 	updated_at DATETIME NOT NULL,
-	UNIQUE (country_code, code, provider_id)
+	FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE,
+	FOREIGN KEY (country_code, code) REFERENCES procedure_codes(country_code, code) ON DELETE CASCADE
 );
+
+-- NULL provider_id means a practice-wide override; NULLs are distinct in a plain UNIQUE.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_fee_schedules_provider ON fee_schedules(country_code, code, provider_id) WHERE provider_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_fee_schedules_practice ON fee_schedules(country_code, code) WHERE provider_id IS NULL;
 
 -- Seed US (CDT Codes)
 INSERT OR IGNORE INTO procedure_codes (country_code, code, category, description, default_fee) VALUES

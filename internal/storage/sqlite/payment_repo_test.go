@@ -45,6 +45,10 @@ func TestPaymentRepository(t *testing.T) {
 		t.Errorf("Expected error when creating payment with Amount <= 0")
 	}
 
+	if err := sqlite.NewClaimRepository(db).Create(ctx, &domain.Claim{ID: "clm_1", PatientID: "pat_pay_1", DateOfService: "2026-08-15"}); err != nil {
+		t.Fatalf("Failed to create claim: %v", err)
+	}
+
 	// 2. Create valid payment
 	p1 := &domain.Payment{
 		ID:        "pay_101",

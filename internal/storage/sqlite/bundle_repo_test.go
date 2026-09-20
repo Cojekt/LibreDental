@@ -90,7 +90,7 @@ func TestBundleRepository(t *testing.T) {
 
 	// 5. Update
 	fetchedByID.Name = "Full Porcelain Crown Bundle"
-	fetchedByID.TotalFee = 125000
+	fetchedByID.Items[0].DefaultFee = 125000
 	if err := repo.Update(ctx, fetchedByID); err != nil {
 		t.Fatalf("Failed to update bundle: %v", err)
 	}

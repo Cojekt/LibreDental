@@ -45,6 +45,13 @@ func TestAppointmentService(t *testing.T) {
 	appointmentRepo := sqlite.NewAppointmentRepository(db)
 	service := services.NewAppointmentService(appointmentRepo, auditService)
 
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "prov_1", Name: "Dr One", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	if err := configRepo.SaveOperatory(context.Background(), &domain.Operatory{ID: "chair_1", Name: "Chair 1", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save operatory: %v", err)
+	}
+
 	p, err := patientService.CreatePatient(token, &domain.Patient{
 		ID:        "pat_001",
 		FirstName: "Alice",

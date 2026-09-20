@@ -37,6 +37,14 @@ func TestAppointmentRepository_CRUD(t *testing.T) {
 		t.Fatalf("Failed to create test patient: %v", err)
 	}
 
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_dentist_1", Name: "Dr Test", IsActive: true}); err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+	if err := configRepo.SaveOperatory(ctx, &domain.Operatory{ID: "op_chair_1", Name: "Chair 1", IsActive: true}); err != nil {
+		t.Fatalf("Failed to create operatory: %v", err)
+	}
+
 	start := time.Date(2026, 8, 3, 9, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 8, 3, 10, 0, 0, 0, time.UTC)
 
