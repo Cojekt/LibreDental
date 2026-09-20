@@ -45,6 +45,10 @@ func TestPaymentRepository(t *testing.T) {
 		t.Errorf("Expected error when creating payment with Amount <= 0")
 	}
 
+	if err := sqlite.NewClaimRepository(db).Create(ctx, &domain.Claim{ID: "clm_1", PatientID: "pat_pay_1", DateOfService: "2026-08-15"}); err != nil {
+		t.Fatalf("Failed to create claim: %v", err)
+	}
+
 	// 2. Create valid payment
 	p1 := &domain.Payment{
 		ID:        "pay_101",
@@ -106,6 +110,36 @@ func TestPaymentRepository(t *testing.T) {
 		t.Errorf("Expected total paid 0, got %d", totalPaidUnk)
 	}
 
+	// 4b. GetTotalPaidByPatient across multiple patients
+	otherPatient := &domain.Patient{ID: "pat_pay_2", FirstName: "Ann", LastName: "Lee"}
+	if err := patientRepo.Create(ctx, otherPatient); err != nil {
+		t.Fatalf("Failed to create second patient: %v", err)
+	}
+	p3 := &domain.Payment{
+		ID:        "pay_103",
+		PatientID: "pat_pay_2",
+		Amount:    7500,
+		Method:    domain.PaymentMethodCheck,
+		Date:      "2026-08-17",
+	}
+	if err := repo.Create(ctx, p3); err != nil {
+		t.Fatalf("Failed to create payment p3: %v", err)
+	}
+
+	paidByPatient, err := repo.GetTotalPaidByPatient(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get total paid by patient: %v", err)
+	}
+	if paidByPatient["pat_pay_1"] != 20000 {
+		t.Errorf("Expected pat_pay_1 total paid 20000, got %d", paidByPatient["pat_pay_1"])
+	}
+	if paidByPatient["pat_pay_2"] != 7500 {
+		t.Errorf("Expected pat_pay_2 total paid 7500, got %d", paidByPatient["pat_pay_2"])
+	}
+	if _, ok := paidByPatient["pat_no_payments"]; ok {
+		t.Errorf("Expected patient with no payments to be absent from the map, got entry %d", paidByPatient["pat_no_payments"])
+	}
+
 	// 5. List Payments
 	listPatient, err := repo.List(ctx, "pat_pay_1")
 	if err != nil {
@@ -119,8 +153,8 @@ func TestPaymentRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list all payments: %v", err)
 	}
-	if len(listAll) != 2 {
-		t.Errorf("Expected 2 payments in total list, got %d", len(listAll))
+	if len(listAll) != 3 {
+		t.Errorf("Expected 3 payments in total list, got %d", len(listAll))
 	}
 
 	// 6. Delete Payment

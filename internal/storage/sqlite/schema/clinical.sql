@@ -12,10 +12,14 @@ CREATE TABLE IF NOT EXISTS appointments (
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL,
 	version INTEGER NOT NULL DEFAULT 1,
-	FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+	FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
+	FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE RESTRICT,
+	FOREIGN KEY (operatory_id) REFERENCES operatories(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_provider ON appointments(provider_id, start_time);
+CREATE INDEX IF NOT EXISTS idx_appointments_operatory ON appointments(operatory_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time, end_time);
 
 CREATE TABLE IF NOT EXISTS dental_conditions (
@@ -26,10 +30,10 @@ CREATE TABLE IF NOT EXISTS dental_conditions (
 	ada_code TEXT DEFAULT '',
 	description TEXT DEFAULT '',
 	status TEXT NOT NULL,
-	fee INTEGER DEFAULT 0,
+	fee INTEGER NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL,
-	FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
+	FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS idx_dental_conditions_patient ON dental_conditions(patient_id);

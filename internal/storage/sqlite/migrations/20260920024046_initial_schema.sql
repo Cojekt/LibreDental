@@ -3,22 +3,30 @@
 CREATE TABLE `claims` (
   `id` text NOT NULL,
   `patient_id` text NOT NULL,
-  `provider_id` text NOT NULL DEFAULT '',
-  `appointment_id` text NULL DEFAULT '',
+  `provider_id` text NULL,
+  `appointment_id` text NULL,
   `insurance_carrier` text NULL DEFAULT '',
   `policy_number` text NULL DEFAULT '',
   `group_number` text NULL DEFAULT '',
   `date_of_service` text NOT NULL,
   `status` text NOT NULL DEFAULT 'draft',
   `notes` text NULL DEFAULT '',
-  `line_items` text NULL DEFAULT '[]',
+  `line_items` text NOT NULL DEFAULT '[]',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `0` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT `0` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON UPDATE NO ACTION ON DELETE SET NULL,
+  CONSTRAINT `1` FOREIGN KEY (`provider_id`) REFERENCES `providers` (`id`) ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT `2` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CHECK (date(date_of_service) IS date_of_service),
+  CHECK (json_valid(line_items))
 );
 -- create index "idx_claims_patient" to table: "claims"
 CREATE INDEX `idx_claims_patient` ON `claims` (`patient_id`);
+-- create index "idx_claims_provider" to table: "claims"
+CREATE INDEX `idx_claims_provider` ON `claims` (`provider_id`);
+-- create index "idx_claims_appointment" to table: "claims"
+CREATE INDEX `idx_claims_appointment` ON `claims` (`appointment_id`);
 -- create index "idx_claims_status" to table: "claims"
 CREATE INDEX `idx_claims_status` ON `claims` (`status`);
 -- create index "idx_claims_date" to table: "claims"
@@ -27,14 +35,16 @@ CREATE INDEX `idx_claims_date` ON `claims` (`date_of_service`);
 CREATE TABLE `payments` (
   `id` text NOT NULL,
   `patient_id` text NOT NULL,
-  `claim_id` text NULL DEFAULT '',
+  `claim_id` text NULL,
   `amount` integer NOT NULL,
   `method` text NOT NULL DEFAULT 'cash',
   `date` text NOT NULL,
   `notes` text NULL DEFAULT '',
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `0` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT `0` FOREIGN KEY (`claim_id`) REFERENCES `claims` (`id`) ON UPDATE NO ACTION ON DELETE SET NULL,
+  CONSTRAINT `1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CHECK (date(date) IS date)
 );
 -- create index "idx_payments_patient" to table: "payments"
 CREATE INDEX `idx_payments_patient` ON `payments` (`patient_id`);
@@ -48,13 +58,12 @@ CREATE TABLE `treatment_bundles` (
   `shortname` text NOT NULL,
   `name` text NOT NULL,
   `description` text NULL DEFAULT '',
-  `items` text NULL DEFAULT '[]',
-  `total_fee` integer NOT NULL DEFAULT 0,
+  `items` text NOT NULL DEFAULT '[]',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  CHECK (json_valid(items))
 );
-
 -- create index "idx_bundles_shortname" to table: "treatment_bundles"
 CREATE UNIQUE INDEX `idx_bundles_shortname` ON `treatment_bundles` (`shortname`);
 -- create "procedure_codes" table
@@ -67,8 +76,6 @@ CREATE TABLE `procedure_codes` (
   `is_active` integer NOT NULL DEFAULT 1,
   PRIMARY KEY (`country_code`, `code`)
 );
--- create index "idx_procedure_codes_country" to table: "procedure_codes"
-CREATE INDEX `idx_procedure_codes_country` ON `procedure_codes` (`country_code`);
 -- create index "idx_procedure_codes_category" to table: "procedure_codes"
 CREATE INDEX `idx_procedure_codes_category` ON `procedure_codes` (`country_code`, `category`);
 -- create "fee_schedules" table
@@ -76,14 +83,17 @@ CREATE TABLE `fee_schedules` (
   `id` text NOT NULL,
   `country_code` text NOT NULL,
   `code` text NOT NULL,
-  `provider_id` text NULL DEFAULT '',
+  `provider_id` text NULL,
   `custom_fee` integer NOT NULL,
   `updated_at` datetime NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  CONSTRAINT `0` FOREIGN KEY (`country_code`, `code`) REFERENCES `procedure_codes` (`country_code`, `code`) ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT `1` FOREIGN KEY (`provider_id`) REFERENCES `providers` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE
 );
--- create index "fee_schedules_country_code_code_provider_id" to table: "fee_schedules"
-CREATE UNIQUE INDEX `fee_schedules_country_code_code_provider_id` ON `fee_schedules` (`country_code`, `code`, `provider_id`);
-
+-- create index "idx_fee_schedules_provider" to table: "fee_schedules"
+CREATE UNIQUE INDEX `idx_fee_schedules_provider` ON `fee_schedules` (`country_code`, `code`, `provider_id`) WHERE provider_id IS NOT NULL;
+-- create index "idx_fee_schedules_practice" to table: "fee_schedules"
+CREATE UNIQUE INDEX `idx_fee_schedules_practice` ON `fee_schedules` (`country_code`, `code`) WHERE provider_id IS NULL;
 -- create "appointments" table
 CREATE TABLE `appointments` (
   `id` text NOT NULL,
@@ -100,10 +110,16 @@ CREATE TABLE `appointments` (
   `updated_at` datetime NOT NULL,
   `version` integer NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
-  CONSTRAINT `0` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT `0` FOREIGN KEY (`operatory_id`) REFERENCES `operatories` (`id`) ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT `1` FOREIGN KEY (`provider_id`) REFERENCES `providers` (`id`) ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT `2` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE RESTRICT
 );
 -- create index "idx_appointments_patient" to table: "appointments"
 CREATE INDEX `idx_appointments_patient` ON `appointments` (`patient_id`);
+-- create index "idx_appointments_provider" to table: "appointments"
+CREATE INDEX `idx_appointments_provider` ON `appointments` (`provider_id`, `start_time`);
+-- create index "idx_appointments_operatory" to table: "appointments"
+CREATE INDEX `idx_appointments_operatory` ON `appointments` (`operatory_id`, `start_time`);
 -- create index "idx_appointments_date" to table: "appointments"
 CREATE INDEX `idx_appointments_date` ON `appointments` (`start_time`, `end_time`);
 -- create "dental_conditions" table
@@ -115,11 +131,11 @@ CREATE TABLE `dental_conditions` (
   `ada_code` text NULL DEFAULT '',
   `description` text NULL DEFAULT '',
   `status` text NOT NULL,
-  `fee` integer NULL DEFAULT 0,
+  `fee` integer NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `0` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT `0` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE RESTRICT
 );
 -- create index "idx_dental_conditions_patient" to table: "dental_conditions"
 CREATE INDEX `idx_dental_conditions_patient` ON `dental_conditions` (`patient_id`);
@@ -181,7 +197,6 @@ CREATE TABLE `patients` (
   `id` text NOT NULL,
   `first_name` text NOT NULL,
   `last_name` text NOT NULL,
-  `middle_name` text NULL DEFAULT '',
   `preferred_name` text NULL DEFAULT '',
   `date_of_birth` text NOT NULL,
   `sex` text NOT NULL,
@@ -197,10 +212,12 @@ CREATE TABLE `patients` (
   `insurance_carrier` text NULL DEFAULT '',
   `insurance_policy_number` text NULL DEFAULT '',
   `insurance_group_number` text NULL DEFAULT '',
+  `insurance_is_subscriber` integer NOT NULL DEFAULT 0,
+  `insurance_subscriber_id` text NULL DEFAULT '',
   `preferred_contact_method` text NULL DEFAULT 'phone',
   `preferred_language` text NULL DEFAULT '',
   `reminder_opt_in` integer NOT NULL DEFAULT 1,
-  `preferred_provider_id` text NULL DEFAULT '',
+  `preferred_provider_id` text NULL,
   `referral_source` text NULL DEFAULT '',
   `address_line1` text NULL DEFAULT '',
   `address_line2` text NULL DEFAULT '',
@@ -217,7 +234,9 @@ CREATE TABLE `patients` (
   `updated_at` datetime NOT NULL,
   `version` integer NOT NULL DEFAULT 1,
   `status` text NOT NULL DEFAULT 'active',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  CONSTRAINT `0` FOREIGN KEY (`preferred_provider_id`) REFERENCES `providers` (`id`) ON UPDATE NO ACTION ON DELETE SET NULL,
+  CHECK (date(date_of_birth) IS NOT NULL)
 );
 -- create index "idx_patients_name" to table: "patients"
 CREATE INDEX `idx_patients_name` ON `patients` (`last_name`, `first_name`);
@@ -236,7 +255,7 @@ CREATE TABLE `documents` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `0` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT `0` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON UPDATE NO ACTION ON DELETE RESTRICT
 );
 -- create index "idx_documents_patient_id" to table: "documents"
 CREATE INDEX `idx_documents_patient_id` ON `documents` (`patient_id`);
@@ -250,6 +269,7 @@ CREATE TABLE `providers` (
   `email` text NULL DEFAULT '',
   `phone` text NULL DEFAULT '',
   `color` text NULL DEFAULT '#3b82f6',
+  `pin` text NULL DEFAULT '',
   `is_active` integer NOT NULL DEFAULT 1,
   `hourly_rate` integer NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL,
@@ -264,7 +284,7 @@ CREATE TABLE `timecards` (
   `clock_out` datetime NULL,
   `hourly_rate` integer NOT NULL DEFAULT 0,
   `total_minutes` integer NULL,
-  `total_pay` integer NULL,
+  `total_pay` integer NULL AS ((total_minutes * hourly_rate + 30) / 60) VIRTUAL,
   `paid_at` datetime NULL,
   `is_manual` boolean NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL,
@@ -310,24 +330,26 @@ DROP INDEX `idx_dental_conditions_patient`;
 DROP TABLE `dental_conditions`;
 -- reverse: create index "idx_appointments_date" to table: "appointments"
 DROP INDEX `idx_appointments_date`;
+-- reverse: create index "idx_appointments_operatory" to table: "appointments"
+DROP INDEX `idx_appointments_operatory`;
+-- reverse: create index "idx_appointments_provider" to table: "appointments"
+DROP INDEX `idx_appointments_provider`;
 -- reverse: create index "idx_appointments_patient" to table: "appointments"
 DROP INDEX `idx_appointments_patient`;
 -- reverse: create "appointments" table
 DROP TABLE `appointments`;
-
--- reverse: create index "fee_schedules_country_code_code_provider_id" to table: "fee_schedules"
-DROP INDEX `fee_schedules_country_code_code_provider_id`;
+-- reverse: create index "idx_fee_schedules_practice" to table: "fee_schedules"
+DROP INDEX `idx_fee_schedules_practice`;
+-- reverse: create index "idx_fee_schedules_provider" to table: "fee_schedules"
+DROP INDEX `idx_fee_schedules_provider`;
 -- reverse: create "fee_schedules" table
 DROP TABLE `fee_schedules`;
 -- reverse: create index "idx_procedure_codes_category" to table: "procedure_codes"
 DROP INDEX `idx_procedure_codes_category`;
--- reverse: create index "idx_procedure_codes_country" to table: "procedure_codes"
-DROP INDEX `idx_procedure_codes_country`;
 -- reverse: create "procedure_codes" table
 DROP TABLE `procedure_codes`;
 -- reverse: create index "idx_bundles_shortname" to table: "treatment_bundles"
 DROP INDEX `idx_bundles_shortname`;
-
 -- reverse: create "treatment_bundles" table
 DROP TABLE `treatment_bundles`;
 -- reverse: create index "idx_payments_date" to table: "payments"
@@ -342,6 +364,10 @@ DROP TABLE `payments`;
 DROP INDEX `idx_claims_date`;
 -- reverse: create index "idx_claims_status" to table: "claims"
 DROP INDEX `idx_claims_status`;
+-- reverse: create index "idx_claims_appointment" to table: "claims"
+DROP INDEX `idx_claims_appointment`;
+-- reverse: create index "idx_claims_provider" to table: "claims"
+DROP INDEX `idx_claims_provider`;
 -- reverse: create index "idx_claims_patient" to table: "claims"
 DROP INDEX `idx_claims_patient`;
 -- reverse: create "claims" table

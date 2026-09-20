@@ -27,7 +27,6 @@ type Patient struct {
 	ID                     string      `json:"id"`
 	FirstName              string      `json:"first_name"`
 	LastName               string      `json:"last_name"`
-	MiddleName             string      `json:"middle_name,omitempty"`
 	PreferredName          string      `json:"preferred_name,omitempty"`
 	DateOfBirth            time.Time   `json:"date_of_birth"`
 	Sex                    Sex         `json:"sex"`

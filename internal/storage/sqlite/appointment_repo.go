@@ -48,7 +48,7 @@ func (r *AppointmentRepository) Create(ctx context.Context, a *domain.Appointmen
 
 	_, err := r.db.ExecContext(ctx, query,
 		a.ID, a.PatientID, a.ProviderID, a.OperatoryID,
-		a.StartTime.Format(time.RFC3339), a.EndTime.Format(time.RFC3339),
+		a.StartTime.UTC().Format(time.RFC3339), a.EndTime.UTC().Format(time.RFC3339),
 		string(a.Status), a.Reason, a.Color, a.Notes,
 		a.CreatedAt, a.UpdatedAt, a.Version,
 	)
@@ -82,7 +82,7 @@ func (r *AppointmentRepository) Update(ctx context.Context, a *domain.Appointmen
 
 	res, err := r.db.ExecContext(ctx, query,
 		a.PatientID, a.ProviderID, a.OperatoryID,
-		a.StartTime.Format(time.RFC3339), a.EndTime.Format(time.RFC3339), string(a.Status),
+		a.StartTime.UTC().Format(time.RFC3339), a.EndTime.UTC().Format(time.RFC3339), string(a.Status),
 		a.Reason, a.Color, a.Notes, now,
 		a.ID, a.Version,
 	)
@@ -137,11 +137,11 @@ func (r *AppointmentRepository) List(ctx context.Context, filter domain.Appointm
 	}
 	if !filter.StartDate.IsZero() {
 		conditions = append(conditions, "end_time >= ?")
-		args = append(args, filter.StartDate.Format(time.RFC3339))
+		args = append(args, filter.StartDate.UTC().Format(time.RFC3339))
 	}
 	if !filter.EndDate.IsZero() {
 		conditions = append(conditions, "start_time <= ?")
-		args = append(args, filter.EndDate.Format(time.RFC3339))
+		args = append(args, filter.EndDate.UTC().Format(time.RFC3339))
 	}
 
 	whereClause := ""

@@ -115,3 +115,12 @@ func (db *DB) migrateAudit() error {
 type rowScanner interface {
 	Scan(dest ...any) error
 }
+
+// nullIfEmpty maps the domain's empty-string "no reference" to SQL NULL so
+// optional foreign keys stay valid.
+func nullIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}

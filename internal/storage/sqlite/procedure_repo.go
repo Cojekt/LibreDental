@@ -87,11 +87,11 @@ func (r *ProcedureRepository) Save(ctx context.Context, schedule *domain.FeeSche
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO fee_schedules (id, country_code, code, provider_id, custom_fee, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT(country_code, code, provider_id) DO UPDATE SET
+		ON CONFLICT DO UPDATE SET
 			custom_fee = excluded.custom_fee,
 			updated_at = excluded.updated_at`,
 		schedule.ID, string(schedule.CountryCode), schedule.Code,
-		schedule.ProviderID, schedule.CustomFee, schedule.UpdatedAt,
+		nullIfEmpty(schedule.ProviderID), schedule.CustomFee, schedule.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save fee schedule: %w", err)
@@ -118,7 +118,7 @@ func (r *ProcedureRepository) ListFeeSchedules(ctx context.Context, countryCode 
 	query := `
 		SELECT id, country_code, code, provider_id, custom_fee, updated_at
 		FROM fee_schedules
-		WHERE country_code = ? AND (provider_id = ? OR provider_id = '')
+		WHERE country_code = ? AND (provider_id = ? OR provider_id IS NULL)
 		ORDER BY code ASC`
 
 	rows, err := r.db.QueryContext(ctx, query, string(countryCode), providerID)
@@ -130,9 +130,11 @@ func (r *ProcedureRepository) ListFeeSchedules(ctx context.Context, countryCode 
 	var list []*domain.FeeSchedule
 	for rows.Next() {
 		var fs domain.FeeSchedule
-		if err := rows.Scan(&fs.ID, &fs.CountryCode, &fs.Code, &fs.ProviderID, &fs.CustomFee, &fs.UpdatedAt); err != nil {
+		var providerID sql.NullString
+		if err := rows.Scan(&fs.ID, &fs.CountryCode, &fs.Code, &providerID, &fs.CustomFee, &fs.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan fee schedule: %w", err)
 		}
+		fs.ProviderID = providerID.String
 		list = append(list, &fs)
 	}
 	if err := rows.Err(); err != nil {
@@ -158,11 +160,11 @@ func (r *ProcedureRepository) GetEffectiveFee(ctx context.Context, countryCode d
 		}
 	}
 
-	// 2. Check practice-wide custom fee override (provider_id = '')
+	// 2. Check practice-wide custom fee override (provider_id IS NULL)
 	var practiceFee int64
 	err := r.db.QueryRowContext(ctx, `
 		SELECT custom_fee FROM fee_schedules
-		WHERE country_code = ? AND code = ? AND provider_id = ''`,
+		WHERE country_code = ? AND code = ? AND provider_id IS NULL`,
 		string(countryCode), code,
 	).Scan(&practiceFee)
 	if err == nil {

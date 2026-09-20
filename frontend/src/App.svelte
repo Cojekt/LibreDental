@@ -393,7 +393,6 @@
           id: "pat_" + Date.now(),
           first_name: firstName,
           last_name: lastName,
-          middle_name: "",
           preferred_name: "",
           date_of_birth: dob ? new Date(dob + "T12:00:00").toISOString() : "",
           sex: sex,

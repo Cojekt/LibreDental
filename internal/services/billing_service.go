@@ -351,6 +351,52 @@ func (s *BillingService) GetPatientBalance(token string, patientID string) (*dom
 	}, nil
 }
 
+// GetAllPatientBalances computes outstanding balances for every patient with billing activity,
+// sorted by outstanding balance descending.
+func (s *BillingService) GetAllPatientBalances(token string) ([]*domain.PatientBalance, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+
+	billed, err := s.claimRepo.GetTotalBilledByPatient(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute total billed: %w", err)
+	}
+
+	paid, err := s.payRepo.GetTotalPaidByPatient(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute total paid: %w", err)
+	}
+
+	patientIDs := make(map[string]struct{}, len(billed))
+	for id := range billed {
+		patientIDs[id] = struct{}{}
+	}
+	for id := range paid {
+		patientIDs[id] = struct{}{}
+	}
+
+	balances := make([]*domain.PatientBalance, 0, len(patientIDs))
+	for id := range patientIDs {
+		// Clamp at 0: a patient who has paid more than billed (e.g. a payment recorded
+		// without a linked claim) is credited, not outstanding, so they shouldn't pull
+		// down the aggregate total while being excluded from the outstanding-by-patient list.
+		outstanding := max(billed[id]-paid[id], 0)
+		balances = append(balances, &domain.PatientBalance{
+			PatientID:   id,
+			TotalBilled: billed[id],
+			TotalPaid:   paid[id],
+			Outstanding: outstanding,
+		})
+	}
+	sort.Slice(balances, func(i, j int) bool {
+		return balances[i].Outstanding > balances[j].Outstanding
+	})
+
+	_ = s.auditService.LogAction(token, domain.AuditActionRead, "patient_balance", "Viewed all patient balances")
+	return balances, nil
+}
+
 // GetRevenueStats returns payments for a specific date range, for analytics.
 func (s *BillingService) GetRevenueStats(token string, startDate, endDate string) ([]*domain.Payment, error) {
 	if s.auditService.GetSessionUser(token) == nil {

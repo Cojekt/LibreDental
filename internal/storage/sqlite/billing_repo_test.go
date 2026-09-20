@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
@@ -30,6 +31,11 @@ func TestClaimRepository(t *testing.T) {
 	}
 	if err := patientRepo.Create(ctx, patient); err != nil {
 		t.Fatalf("Failed to create patient: %v", err)
+	}
+
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Dr Test", IsActive: true}); err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
 	}
 
 	repo := sqlite.NewClaimRepository(db)
@@ -134,6 +140,81 @@ func TestClaimRepository(t *testing.T) {
 		t.Errorf("Expected total billed 32000, got %d", totalBilled)
 	}
 
+	// 5b. GetTotalBilledByPatient across multiple patients
+	otherPatient := &domain.Patient{ID: "pat_claim_2", FirstName: "John", LastName: "Roe"}
+	if err := patientRepo.Create(ctx, otherPatient); err != nil {
+		t.Fatalf("Failed to create second patient: %v", err)
+	}
+	otherClaim := &domain.Claim{
+		ID:            "clm_1002",
+		PatientID:     "pat_claim_2",
+		DateOfService: "2026-08-16",
+		Status:        domain.ClaimStatusDraft,
+		LineItems: []domain.ClaimLineItem{
+			{ID: "item_4", ADACode: "D0120", Fee: 6000},
+		},
+	}
+	if err := repo.Create(ctx, otherClaim); err != nil {
+		t.Fatalf("Failed to create second patient's claim: %v", err)
+	}
+
+	billedByPatient, err := repo.GetTotalBilledByPatient(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get total billed by patient: %v", err)
+	}
+	if billedByPatient["pat_claim_1"] != 32000 {
+		t.Errorf("Expected pat_claim_1 total billed 32000, got %d", billedByPatient["pat_claim_1"])
+	}
+	if billedByPatient["pat_claim_2"] != 6000 {
+		t.Errorf("Expected pat_claim_2 total billed 6000, got %d", billedByPatient["pat_claim_2"])
+	}
+
+	// 5c. A patient with a claim but no line items must still get a zero entry in the map.
+	thirdPatient := &domain.Patient{ID: "pat_claim_3", FirstName: "Amy", LastName: "Nolan"}
+	if err := patientRepo.Create(ctx, thirdPatient); err != nil {
+		t.Fatalf("Failed to create third patient: %v", err)
+	}
+	if err := repo.Create(ctx, &domain.Claim{
+		ID:            "clm_1003",
+		PatientID:     "pat_claim_3",
+		DateOfService: "2026-08-17",
+		Status:        domain.ClaimStatusDraft,
+		LineItems:     []domain.ClaimLineItem{},
+	}); err != nil {
+		t.Fatalf("Failed to create third patient's claim: %v", err)
+	}
+	billedByPatient2, err := repo.GetTotalBilledByPatient(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get total billed by patient with empty line items present: %v", err)
+	}
+	if total, ok := billedByPatient2["pat_claim_3"]; !ok || total != 0 {
+		t.Errorf("Expected pat_claim_3 to have a zero entry, got ok=%v total=%d", ok, total)
+	}
+	if total, err := repo.GetTotalBilled(ctx, "pat_claim_3"); err != nil || total != 0 {
+		t.Errorf("Expected GetTotalBilled 0 for empty line items, got total=%d err=%v", total, err)
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM claims WHERE id = 'clm_1003'`); err != nil {
+		t.Fatalf("Failed to clean up empty line_items claim: %v", err)
+	}
+
+	// 5d. The schema must reject NULL or malformed line_items rather than storing them.
+	for name, lineItems := range map[string]any{"NULL": nil, "malformed JSON": "not-json"} {
+		if _, err := db.ExecContext(ctx,
+			`INSERT INTO claims (id, patient_id, date_of_service, status, line_items, created_at, updated_at)
+			 VALUES ('clm_bad', 'pat_claim_3', '2026-08-19', 'draft', ?, ?, ?)`,
+			lineItems, time.Now().UTC(), time.Now().UTC()); err == nil {
+			t.Errorf("Expected schema to reject %s line_items", name)
+		}
+	}
+
+	// 5e. A claim must not reference a nonexistent provider, and an invalid date is rejected.
+	if err := repo.Create(ctx, &domain.Claim{ID: "clm_bad_prov", PatientID: "pat_claim_3", ProviderID: "no_such_provider", DateOfService: "2026-08-19"}); err == nil {
+		t.Errorf("Expected foreign key error for nonexistent provider")
+	}
+	if err := repo.Create(ctx, &domain.Claim{ID: "clm_bad_date", PatientID: "pat_claim_3", DateOfService: "not-a-date"}); err == nil {
+		t.Errorf("Expected error for invalid date_of_service")
+	}
+
 	// 6. List Claims
 	claimsForPatient, err := repo.List(ctx, "pat_claim_1")
 	if err != nil {
@@ -147,8 +228,8 @@ func TestClaimRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list all claims: %v", err)
 	}
-	if len(allClaims) != 1 {
-		t.Errorf("Expected 1 claim in total list, got %d", len(allClaims))
+	if len(allClaims) != 2 {
+		t.Errorf("Expected 2 claims in total list, got %d", len(allClaims))
 	}
 
 	// 7. Delete Claim

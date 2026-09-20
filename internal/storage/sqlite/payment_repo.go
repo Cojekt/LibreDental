@@ -36,7 +36,7 @@ func (r *PaymentRepository) Create(ctx context.Context, p *domain.Payment) error
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO payments (id, patient_id, claim_id, amount, method, date, notes, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.ID, p.PatientID, p.ClaimID, p.Amount,
+		p.ID, p.PatientID, nullIfEmpty(p.ClaimID), p.Amount,
 		string(p.Method), p.Date, p.Notes, p.CreatedAt,
 	)
 	if err != nil {
@@ -52,11 +52,12 @@ func (r *PaymentRepository) GetByID(ctx context.Context, id string) (*domain.Pay
 
 	var p domain.Payment
 	var methodStr string
+	var claimID sql.NullString
 
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, patient_id, claim_id, amount, method, date, notes, created_at
 		FROM payments WHERE id = ?`, id,
-	).Scan(&p.ID, &p.PatientID, &p.ClaimID, &p.Amount, &methodStr, &p.Date, &p.Notes, &p.CreatedAt)
+	).Scan(&p.ID, &p.PatientID, &claimID, &p.Amount, &methodStr, &p.Date, &p.Notes, &p.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrNotFound
@@ -64,6 +65,7 @@ func (r *PaymentRepository) GetByID(ctx context.Context, id string) (*domain.Pay
 		return nil, fmt.Errorf("failed to scan payment: %w", err)
 	}
 
+	p.ClaimID = claimID.String
 	p.Method = domain.PaymentMethod(methodStr)
 	return &p, nil
 }
@@ -105,12 +107,14 @@ func (r *PaymentRepository) List(ctx context.Context, patientID string) ([]*doma
 	for rows.Next() {
 		var p domain.Payment
 		var methodStr string
+		var claimID sql.NullString
 		if err := rows.Scan(
-			&p.ID, &p.PatientID, &p.ClaimID, &p.Amount,
+			&p.ID, &p.PatientID, &claimID, &p.Amount,
 			&methodStr, &p.Date, &p.Notes, &p.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
+		p.ClaimID = claimID.String
 		p.Method = domain.PaymentMethod(methodStr)
 		payments = append(payments, &p)
 	}
@@ -136,6 +140,27 @@ func (r *PaymentRepository) GetTotalPaid(ctx context.Context, patientID string) 
 	return total, nil
 }
 
+// GetTotalPaidByPatient sums payment amounts for every patient with payments, keyed by patient ID.
+func (r *PaymentRepository) GetTotalPaidByPatient(ctx context.Context) (map[string]int64, error) {
+	rows, err := r.db.QueryContext(ctx,
+		"SELECT patient_id, SUM(amount) FROM payments GROUP BY patient_id")
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute total paid by patient: %w", err)
+	}
+	defer rows.Close()
+
+	totals := make(map[string]int64)
+	for rows.Next() {
+		var patientID string
+		var total int64
+		if err := rows.Scan(&patientID, &total); err != nil {
+			return nil, err
+		}
+		totals[patientID] = total
+	}
+	return totals, rows.Err()
+}
+
 // ListByDateRange returns payments within a specific date range (inclusive).
 func (r *PaymentRepository) ListByDateRange(ctx context.Context, startDate, endDate string) ([]*domain.Payment, error) {
 	query := `
@@ -154,12 +179,14 @@ func (r *PaymentRepository) ListByDateRange(ctx context.Context, startDate, endD
 	for rows.Next() {
 		var p domain.Payment
 		var methodStr string
+		var claimID sql.NullString
 		if err := rows.Scan(
-			&p.ID, &p.PatientID, &p.ClaimID, &p.Amount,
+			&p.ID, &p.PatientID, &claimID, &p.Amount,
 			&methodStr, &p.Date, &p.Notes, &p.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
+		p.ClaimID = claimID.String
 		p.Method = domain.PaymentMethod(methodStr)
 		payments = append(payments, &p)
 	}

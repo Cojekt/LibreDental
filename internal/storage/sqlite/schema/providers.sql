@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS timecards (
     clock_out DATETIME,
     hourly_rate INTEGER NOT NULL DEFAULT 0,
     total_minutes INTEGER,
-    total_pay INTEGER,
+    total_pay INTEGER GENERATED ALWAYS AS ((total_minutes * hourly_rate + 30) / 60) VIRTUAL,
     paid_at DATETIME,
     is_manual BOOLEAN NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL,

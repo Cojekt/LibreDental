@@ -312,6 +312,131 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	}
 }
 
+func TestBillingService_GetAllPatientBalances(t *testing.T) {
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "test_billing_service_balances.db")
+
+	db, err := sqlite.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	ctx := context.Background()
+	claimRepo := sqlite.NewClaimRepository(db)
+	paymentRepo := sqlite.NewPaymentRepository(db)
+	chartRepo := sqlite.NewChartRepository(db)
+	bundleRepo := sqlite.NewBundleRepository(db)
+	procRepo := sqlite.NewProcedureRepository(db)
+	patientRepo := sqlite.NewPatientRepository(db)
+
+	auditRepo := sqlite.NewAuditRepository(db)
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditSvc := NewAuditService(auditRepo, configRepo)
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
+	secretsSvc := NewSecretsService()
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, secretsSvc, auditSvc)
+
+	if _, err := billingSvc.GetAllPatientBalances("bogus-token"); err != ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized without a session, got %v", err)
+	}
+
+	patientA := &domain.Patient{ID: "pat_bal_a", FirstName: "Alice", LastName: "A"}
+	patientB := &domain.Patient{ID: "pat_bal_b", FirstName: "Bob", LastName: "B"}
+	if err := patientRepo.Create(ctx, patientA); err != nil {
+		t.Fatalf("Failed to create patient A: %v", err)
+	}
+	if err := patientRepo.Create(ctx, patientB); err != nil {
+		t.Fatalf("Failed to create patient B: %v", err)
+	}
+
+	// Patient A: billed 10000, paid 4000 -> outstanding 6000
+	if err := claimRepo.Create(ctx, &domain.Claim{
+		ID:            "claim_bal_a",
+		PatientID:     "pat_bal_a",
+		DateOfService: "2026-08-15",
+		Status:        domain.ClaimStatusDraft,
+		LineItems:     []domain.ClaimLineItem{{ID: "li_a", ADACode: "D0120", Fee: 10000}},
+	}); err != nil {
+		t.Fatalf("Failed to create claim for patient A: %v", err)
+	}
+	if _, err := billingSvc.RecordPayment(token, &domain.Payment{
+		ID: "pay_bal_a", PatientID: "pat_bal_a", Amount: 4000, Method: domain.PaymentMethodCash, Date: "2026-08-16",
+	}); err != nil {
+		t.Fatalf("Failed to record payment for patient A: %v", err)
+	}
+
+	// Patient B: billed 2000, paid 2000 -> outstanding 0
+	if err := claimRepo.Create(ctx, &domain.Claim{
+		ID:            "claim_bal_b",
+		PatientID:     "pat_bal_b",
+		DateOfService: "2026-08-15",
+		Status:        domain.ClaimStatusDraft,
+		LineItems:     []domain.ClaimLineItem{{ID: "li_b", ADACode: "D0120", Fee: 2000}},
+	}); err != nil {
+		t.Fatalf("Failed to create claim for patient B: %v", err)
+	}
+	if _, err := billingSvc.RecordPayment(token, &domain.Payment{
+		ID: "pay_bal_b", PatientID: "pat_bal_b", Amount: 2000, Method: domain.PaymentMethodCash, Date: "2026-08-16",
+	}); err != nil {
+		t.Fatalf("Failed to record payment for patient B: %v", err)
+	}
+
+	// Patient C: a payment recorded with no linked claim (e.g. a prepayment or credit),
+	// so billed=0, paid=3000 -> outstanding must clamp to 0, not go negative.
+	patientC := &domain.Patient{ID: "pat_bal_c", FirstName: "Cass", LastName: "C"}
+	if err := patientRepo.Create(ctx, patientC); err != nil {
+		t.Fatalf("Failed to create patient C: %v", err)
+	}
+	if _, err := billingSvc.RecordPayment(token, &domain.Payment{
+		ID: "pay_bal_c", PatientID: "pat_bal_c", Amount: 3000, Method: domain.PaymentMethodCash, Date: "2026-08-16",
+	}); err != nil {
+		t.Fatalf("Failed to record payment for patient C: %v", err)
+	}
+
+	balances, err := billingSvc.GetAllPatientBalances(token)
+	if err != nil {
+		t.Fatalf("Failed to get all patient balances: %v", err)
+	}
+	if len(balances) != 3 {
+		t.Fatalf("Expected 3 patient balances, got %d", len(balances))
+	}
+	// Sorted by outstanding descending, so patient A (6000) comes first.
+	if balances[0].PatientID != "pat_bal_a" || balances[0].Outstanding != 6000 {
+		t.Errorf("Expected patient A first with outstanding 6000, got %+v", balances[0])
+	}
+
+	var patientCBalance *domain.PatientBalance
+	var outstandingSum int64
+	for _, b := range balances {
+		outstandingSum += b.Outstanding
+		if b.PatientID == "pat_bal_c" {
+			patientCBalance = b
+		}
+	}
+	if patientCBalance == nil {
+		t.Fatalf("Expected patient C to be present in balances")
+	}
+	if patientCBalance.Outstanding != 0 {
+		t.Errorf("Expected patient C's overpayment to clamp outstanding to 0, got %d", patientCBalance.Outstanding)
+	}
+	if patientCBalance.TotalPaid != 3000 {
+		t.Errorf("Expected patient C total paid 3000, got %d", patientCBalance.TotalPaid)
+	}
+	// The aggregate total must equal the sum of the (clamped) per-patient rows, so the
+	// header and the "outstanding by patient" list the frontend derives from it agree.
+	if outstandingSum != 6000 {
+		t.Errorf("Expected sum of outstanding balances to be 6000, got %d", outstandingSum)
+	}
+}
+
 type dummyTestProvider struct {
 	submitFunc func() (*domain.ClaimSubmissionResult, error)
 }

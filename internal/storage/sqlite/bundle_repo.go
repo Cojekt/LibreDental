@@ -42,10 +42,10 @@ func (r *BundleRepository) Create(ctx context.Context, b *domain.TreatmentBundle
 	}
 
 	_, err = r.db.ExecContext(ctx, `
-		INSERT INTO treatment_bundles (id, shortname, name, description, items, total_fee, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO treatment_bundles (id, shortname, name, description, items, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		b.ID, b.Shortname, b.Name, b.Description,
-		string(itemsJSON), b.TotalFee,
+		string(itemsJSON),
 		b.CreatedAt, b.UpdatedAt,
 	)
 	if err != nil {
@@ -59,7 +59,7 @@ func (r *BundleRepository) GetByID(ctx context.Context, id string) (*domain.Trea
 		return nil, fmt.Errorf("%w: ID is required", storage.ErrInvalidInput)
 	}
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, shortname, name, description, items, total_fee, created_at, updated_at
+		SELECT id, shortname, name, description, items, created_at, updated_at
 		FROM treatment_bundles WHERE id = ?`, id)
 	return scanBundle(row)
 }
@@ -69,7 +69,7 @@ func (r *BundleRepository) GetByShortname(ctx context.Context, shortname string)
 		return nil, fmt.Errorf("%w: shortname is required", storage.ErrInvalidInput)
 	}
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, shortname, name, description, items, total_fee, created_at, updated_at
+		SELECT id, shortname, name, description, items, created_at, updated_at
 		FROM treatment_bundles WHERE shortname = ?`, shortname)
 	return scanBundle(row)
 }
@@ -92,10 +92,10 @@ func (r *BundleRepository) Update(ctx context.Context, b *domain.TreatmentBundle
 	res, err := r.db.ExecContext(ctx, `
 		UPDATE treatment_bundles SET
 			shortname = ?, name = ?, description = ?, items = ?,
-			total_fee = ?, updated_at = ?
+			updated_at = ?
 		WHERE id = ?`,
 		b.Shortname, b.Name, b.Description, string(itemsJSON),
-		b.TotalFee, b.UpdatedAt, b.ID,
+		b.UpdatedAt, b.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update treatment bundle: %w", err)
@@ -124,7 +124,7 @@ func (r *BundleRepository) Delete(ctx context.Context, id string) error {
 
 func (r *BundleRepository) List(ctx context.Context) ([]*domain.TreatmentBundle, error) {
 	query := `
-		SELECT id, shortname, name, description, items, total_fee, created_at, updated_at
+		SELECT id, shortname, name, description, items, created_at, updated_at
 		FROM treatment_bundles
 		ORDER BY shortname ASC`
 
@@ -157,7 +157,7 @@ func scanBundle(row rowScanner) (*domain.TreatmentBundle, error) {
 
 	err := row.Scan(
 		&b.ID, &b.Shortname, &b.Name, &b.Description,
-		&itemsJSON, &b.TotalFee,
+		&itemsJSON,
 		&b.CreatedAt, &b.UpdatedAt,
 	)
 	if err != nil {
@@ -172,6 +172,9 @@ func scanBundle(row rowScanner) (*domain.TreatmentBundle, error) {
 	}
 	if b.Items == nil {
 		b.Items = []domain.BundleItemTemplate{}
+	}
+	for _, item := range b.Items {
+		b.TotalFee += item.DefaultFee
 	}
 	return &b, nil
 }

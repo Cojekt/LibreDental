@@ -52,7 +52,7 @@ func (r *ClaimRepository) Create(ctx context.Context, c *domain.Claim) error {
 			date_of_service, status, notes, line_items,
 			created_at, updated_at
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		c.ID, c.PatientID, c.ProviderID, c.AppointmentID,
+		c.ID, c.PatientID, nullIfEmpty(c.ProviderID), nullIfEmpty(c.AppointmentID),
 		c.InsuranceCarrier, c.PolicyNumber, c.GroupNumber,
 		c.DateOfService, string(c.Status), c.Notes, string(lineItemsJSON),
 		c.CreatedAt, c.UpdatedAt,
@@ -104,7 +104,7 @@ func (r *ClaimRepository) Update(ctx context.Context, c *domain.Claim) error {
 			date_of_service = ?, status = ?, notes = ?, line_items = ?,
 			updated_at = ?
 		WHERE id = ?`,
-		c.PatientID, c.ProviderID, c.AppointmentID,
+		c.PatientID, nullIfEmpty(c.ProviderID), nullIfEmpty(c.AppointmentID),
 		c.InsuranceCarrier, c.PolicyNumber, c.GroupNumber,
 		c.DateOfService, string(c.Status), c.Notes, string(lineItemsJSON),
 		c.UpdatedAt, c.ID,
@@ -189,7 +189,7 @@ func (r *ClaimRepository) GetTotalBilled(ctx context.Context, patientID string) 
 		}
 		var items []domain.ClaimLineItem
 		if err := json.Unmarshal([]byte(lineItemsJSON), &items); err != nil {
-			continue
+			return 0, fmt.Errorf("failed to decode line items for patient %s: %w", patientID, err)
 		}
 		for _, item := range items {
 			total += item.Fee
@@ -198,12 +198,43 @@ func (r *ClaimRepository) GetTotalBilled(ctx context.Context, patientID string) 
 	return total, rows.Err()
 }
 
+// GetTotalBilledByPatient computes the sum of line item fees across all claims, grouped by patient.
+// Line items are stored as JSON, so we decode and sum in-app rather than in SQL.
+func (r *ClaimRepository) GetTotalBilledByPatient(ctx context.Context) (map[string]int64, error) {
+	rows, err := r.db.QueryContext(ctx, "SELECT patient_id, line_items FROM claims")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query claim line items: %w", err)
+	}
+	defer rows.Close()
+
+	totals := make(map[string]int64)
+	for rows.Next() {
+		var patientID, lineItemsJSON string
+		if err := rows.Scan(&patientID, &lineItemsJSON); err != nil {
+			return nil, err
+		}
+		// Ensure every patient with a claim gets an entry, even one with no line items yet.
+		if _, ok := totals[patientID]; !ok {
+			totals[patientID] = 0
+		}
+		var items []domain.ClaimLineItem
+		if err := json.Unmarshal([]byte(lineItemsJSON), &items); err != nil {
+			return nil, fmt.Errorf("failed to decode line items for patient %s: %w", patientID, err)
+		}
+		for _, item := range items {
+			totals[patientID] += item.Fee
+		}
+	}
+	return totals, rows.Err()
+}
+
 func scanClaim(row rowScanner) (*domain.Claim, error) {
 	var c domain.Claim
 	var statusStr, lineItemsJSON string
+	var providerID, appointmentID sql.NullString
 
 	err := row.Scan(
-		&c.ID, &c.PatientID, &c.ProviderID, &c.AppointmentID,
+		&c.ID, &c.PatientID, &providerID, &appointmentID,
 		&c.InsuranceCarrier, &c.PolicyNumber, &c.GroupNumber,
 		&c.DateOfService, &statusStr, &c.Notes, &lineItemsJSON,
 		&c.CreatedAt, &c.UpdatedAt,
@@ -215,6 +246,8 @@ func scanClaim(row rowScanner) (*domain.Claim, error) {
 		return nil, fmt.Errorf("failed to scan claim: %w", err)
 	}
 
+	c.ProviderID = providerID.String
+	c.AppointmentID = appointmentID.String
 	c.Status = domain.ClaimStatus(statusStr)
 	if err := json.Unmarshal([]byte(lineItemsJSON), &c.LineItems); err != nil {
 		c.LineItems = []domain.ClaimLineItem{}
