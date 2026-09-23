@@ -43,7 +43,7 @@ func BuildServiceGraph(db *sqlite.DB, auditDb *sqlite.DB, appDir string) *Servic
 	bundleRepo := sqlite.NewBundleRepository(db)
 	procedureRepo := sqlite.NewProcedureRepository(db)
 	secretsService := services.NewSecretsService()
-	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, secretsService, auditService)
+	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, patientRepo, secretsService, auditService)
 
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)

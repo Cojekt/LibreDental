@@ -19,6 +19,7 @@ type BillingService struct {
 	procRepo     storage.ProcedureCodeRepository
 	feeRepo      storage.FeeScheduleRepository
 	chartRepo    storage.ChartRepository
+	patientRepo  storage.PatientRepository
 	secrets      *SecretsService
 	auditService *AuditService
 	providers    map[string]domain.ClaimProvider
@@ -31,6 +32,7 @@ func NewBillingService(
 	procRepo storage.ProcedureCodeRepository,
 	feeRepo storage.FeeScheduleRepository,
 	chartRepo storage.ChartRepository,
+	patientRepo storage.PatientRepository,
 	secrets *SecretsService,
 	auditService *AuditService,
 ) *BillingService {
@@ -41,6 +43,7 @@ func NewBillingService(
 		procRepo:     procRepo,
 		feeRepo:      feeRepo,
 		chartRepo:    chartRepo,
+		patientRepo:  patientRepo,
 		secrets:      secrets,
 		auditService: auditService,
 		providers:    make(map[string]domain.ClaimProvider),
@@ -108,6 +111,7 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 			c.LineItems[i].ID = fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i)
 		}
 	}
+	s.stampInsuranceFromPatient(c)
 	if err := s.claimRepo.Create(context.Background(), c); err != nil {
 		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
@@ -115,6 +119,25 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 		return nil, fmt.Errorf("claim created but failed to log audit: %w", err)
 	}
 	return c, nil
+}
+
+// stampInsuranceFromPatient copies the patient's on-file insurance details onto
+// the claim when the caller hasn't already supplied them and the patient has
+// insurance on file.
+func (s *BillingService) stampInsuranceFromPatient(c *domain.Claim) {
+	if c.PatientID == "" || s.patientRepo == nil {
+		return
+	}
+	if c.InsuranceCarrier != "" || c.PolicyNumber != "" || c.GroupNumber != "" {
+		return
+	}
+	patient, err := s.patientRepo.GetByID(context.Background(), c.PatientID)
+	if err != nil || patient == nil || patient.InsuranceCarrier == "" {
+		return
+	}
+	c.InsuranceCarrier = patient.InsuranceCarrier
+	c.PolicyNumber = patient.InsurancePolicyNumber
+	c.GroupNumber = patient.InsuranceGroupNumber
 }
 
 // GetClaim retrieves a claim by ID.
@@ -659,6 +682,7 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		return nil, fmt.Errorf("%w: no matching conditions found to create claim", storage.ErrInvalidInput)
 	}
 
+	s.stampInsuranceFromPatient(claim)
 	if err := s.claimRepo.Create(ctx, claim); err != nil {
 		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}
