@@ -655,6 +655,10 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		UpdatedAt:     time.Now().UTC(),
 	}
 
+	if err := s.stampInsuranceFromPatient(claim); err != nil {
+		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
+	}
+
 	for i, condID := range conditionIDs {
 		cond, exists := condMap[condID]
 		if !exists {
@@ -688,9 +692,6 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		return nil, fmt.Errorf("%w: no matching conditions found to create claim", storage.ErrInvalidInput)
 	}
 
-	if err := s.stampInsuranceFromPatient(claim); err != nil {
-		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
-	}
 	if err := s.claimRepo.Create(ctx, claim); err != nil {
 		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}
