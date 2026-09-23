@@ -39,19 +39,23 @@ type ClaimLineItem struct {
 
 // Claim represents an insurance claim for one or more procedures.
 type Claim struct {
-	ID               string          `json:"id"`
-	PatientID        string          `json:"patient_id"`
-	ProviderID       string          `json:"provider_id"`
-	AppointmentID    string          `json:"appointment_id,omitempty"`
-	InsuranceCarrier string          `json:"insurance_carrier,omitempty"`
-	PolicyNumber     string          `json:"policy_number,omitempty"`
-	GroupNumber      string          `json:"group_number,omitempty"`
-	DateOfService    string          `json:"date_of_service"` // stored as YYYY-MM-DD
-	Status           ClaimStatus     `json:"status"`
-	Notes            string          `json:"notes,omitempty"`
-	LineItems        []ClaimLineItem `json:"line_items"`
-	CreatedAt        time.Time       `json:"created_at"`
-	UpdatedAt        time.Time       `json:"updated_at"`
+	ID               string `json:"id"`
+	PatientID        string `json:"patient_id"`
+	ProviderID       string `json:"provider_id"`
+	AppointmentID    string `json:"appointment_id,omitempty"`
+	InsuranceCarrier string `json:"insurance_carrier,omitempty"`
+	PolicyNumber     string `json:"policy_number,omitempty"`
+	GroupNumber      string `json:"group_number,omitempty"`
+	// InsuranceDirty signals the caller has deliberately set or cleared the
+	// insurance fields, so CreateClaim should not overwrite them with the
+	// patient's on-file insurance. Transient request field; not persisted.
+	InsuranceDirty bool            `json:"insurance_dirty,omitempty"`
+	DateOfService  string          `json:"date_of_service"` // stored as YYYY-MM-DD
+	Status         ClaimStatus     `json:"status"`
+	Notes          string          `json:"notes,omitempty"`
+	LineItems      []ClaimLineItem `json:"line_items"`
+	CreatedAt      time.Time       `json:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at"`
 }
 
 // TotalFee sums all line item fees on the claim.

@@ -19,6 +19,7 @@ type BillingService struct {
 	procRepo     storage.ProcedureCodeRepository
 	feeRepo      storage.FeeScheduleRepository
 	chartRepo    storage.ChartRepository
+	patientRepo  storage.PatientRepository
 	secrets      *SecretsService
 	auditService *AuditService
 	providers    map[string]domain.ClaimProvider
@@ -31,6 +32,7 @@ func NewBillingService(
 	procRepo storage.ProcedureCodeRepository,
 	feeRepo storage.FeeScheduleRepository,
 	chartRepo storage.ChartRepository,
+	patientRepo storage.PatientRepository,
 	secrets *SecretsService,
 	auditService *AuditService,
 ) *BillingService {
@@ -41,6 +43,7 @@ func NewBillingService(
 		procRepo:     procRepo,
 		feeRepo:      feeRepo,
 		chartRepo:    chartRepo,
+		patientRepo:  patientRepo,
 		secrets:      secrets,
 		auditService: auditService,
 		providers:    make(map[string]domain.ClaimProvider),
@@ -108,6 +111,9 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 			c.LineItems[i].ID = fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i)
 		}
 	}
+	if err := s.stampInsuranceFromPatient(c); err != nil {
+		return nil, fmt.Errorf("failed to create claim: %w", err)
+	}
 	if err := s.claimRepo.Create(context.Background(), c); err != nil {
 		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
@@ -115,6 +121,29 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 		return nil, fmt.Errorf("claim created but failed to log audit: %w", err)
 	}
 	return c, nil
+}
+
+// stampInsuranceFromPatient copies the patient's on-file insurance details onto
+// the claim when the caller hasn't already supplied or deliberately cleared
+// them, and the patient has insurance on file.
+func (s *BillingService) stampInsuranceFromPatient(c *domain.Claim) error {
+	if c.InsuranceDirty || c.PatientID == "" || s.patientRepo == nil {
+		return nil
+	}
+	if c.InsuranceCarrier != "" || c.PolicyNumber != "" || c.GroupNumber != "" {
+		return nil
+	}
+	patient, err := s.patientRepo.GetByID(context.Background(), c.PatientID)
+	if err != nil {
+		return fmt.Errorf("failed to look up patient for insurance stamping: %w", err)
+	}
+	if patient == nil || patient.InsuranceCarrier == "" {
+		return nil
+	}
+	c.InsuranceCarrier = patient.InsuranceCarrier
+	c.PolicyNumber = patient.InsurancePolicyNumber
+	c.GroupNumber = patient.InsuranceGroupNumber
+	return nil
 }
 
 // GetClaim retrieves a claim by ID.
@@ -624,6 +653,10 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		LineItems:     []domain.ClaimLineItem{},
 		CreatedAt:     time.Now().UTC(),
 		UpdatedAt:     time.Now().UTC(),
+	}
+
+	if err := s.stampInsuranceFromPatient(claim); err != nil {
+		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}
 
 	for i, condID := range conditionIDs {

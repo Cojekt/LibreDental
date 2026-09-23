@@ -45,6 +45,9 @@
   let claimInsuranceCarrier = $state("");
   let claimPolicyNumber = $state("");
   let claimGroupNumber = $state("");
+  // Set once the user manually edits an insurance field, so a later patient
+  // change doesn't clobber what they typed.
+  let claimInsuranceDirty = $state(false);
   let claimAppointmentId = $state<string | undefined>(undefined);
   let claimStatus = $state<ClaimStatus>(ClaimStatus.ClaimStatusDraft);
   let claimNotes = $state("");
@@ -73,6 +76,19 @@
   function patientName(id: string) {
     const p = patients.find((p: Patient) => p.id === id);
     return p ? `${p.first_name} ${p.last_name}` : id;
+  }
+
+  function stampInsuranceFromPatient(patientId: string) {
+    if (claimInsuranceDirty) return;
+    const p = patients.find((p: Patient) => p.id === patientId);
+    if (!p) return;
+    claimInsuranceCarrier = p.insurance_carrier ?? "";
+    claimPolicyNumber = p.insurance_policy_number ?? "";
+    claimGroupNumber = p.insurance_group_number ?? "";
+  }
+
+  function markInsuranceDirty() {
+    claimInsuranceDirty = true;
   }
 
   function providerName(id: string) {
@@ -114,13 +130,20 @@
     claimInsuranceCarrier = "";
     claimPolicyNumber = "";
     claimGroupNumber = "";
+    claimInsuranceDirty = false;
     claimAppointmentId = undefined;
     claimStatus = ClaimStatus.ClaimStatusDraft;
     claimNotes = "";
     claimLineItems = [];
     bundleLookupInput = "";
     bundleLookupError = "";
+    stampInsuranceFromPatient(claimPatientId);
     showClaimModal = true;
+  }
+
+  function onClaimPatientChange() {
+    if (isEditingClaim) return;
+    stampInsuranceFromPatient(claimPatientId);
   }
 
   async function openEditClaim(id: string) {
@@ -136,6 +159,7 @@
     claimInsuranceCarrier = c.insurance_carrier ?? "";
     claimPolicyNumber = c.policy_number ?? "";
     claimGroupNumber = c.group_number ?? "";
+    claimInsuranceDirty = true;
     claimAppointmentId = c.appointment_id;
     claimStatus = c.status;
     claimNotes = c.notes ?? "";
@@ -216,6 +240,7 @@
       insurance_carrier: claimInsuranceCarrier,
       policy_number: claimPolicyNumber,
       group_number: claimGroupNumber,
+      insurance_dirty: claimInsuranceDirty,
       status: claimStatus,
       notes: claimNotes,
       line_items: claimLineItems.map((li) => ({
@@ -521,6 +546,7 @@
         <select
           id="cl-patient"
           bind:value={claimPatientId}
+          onchange={onClaimPatientChange}
           required
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
@@ -555,6 +581,7 @@
           type="text"
           bind:value={claimInsuranceCarrier}
           placeholder="e.g. Delta Dental"
+          oninput={markInsuranceDirty}
         />
       </FormField>
       <FormField label={m.patient_insurance_policy()} forId="cl-policy">
@@ -563,6 +590,7 @@
           type="text"
           bind:value={claimPolicyNumber}
           placeholder={m.billing_claim_policy_placeholder()}
+          oninput={markInsuranceDirty}
         />
       </FormField>
       <FormField label={m.patient_insurance_group()} forId="cl-group">
@@ -571,6 +599,7 @@
           type="text"
           bind:value={claimGroupNumber}
           placeholder={m.billing_claim_group_placeholder()}
+          oninput={markInsuranceDirty}
         />
       </FormField>
     </div>
