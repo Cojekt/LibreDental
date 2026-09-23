@@ -556,5 +556,7 @@
   "integrations_btn_save": "Save Credentials",
   "integrations_btn_saving": "Saving...",
   "integrations_save_success": "Credentials saved successfully.",
-  "integrations_save_error": "Failed to save credentials."
+  "integrations_save_error": "Failed to save credentials.",
+  "integrations_section_notifications": "Patient Notifications (Email/SMS/Voice)",
+  "integrations_notifications_no_providers": "No notification providers are configured for this installation."
 }

@@ -71,6 +71,9 @@ func main() {
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
+	notificationLogRepo := sqlite.NewNotificationRepository(db)
+	notificationService := services.NewNotificationService(patientRepo, notificationLogRepo, secretsService, auditService)
+
 	serverCfg := app.LoadServerConfig()
 
 	wailsApp := application.New(application.Options{
@@ -90,6 +93,7 @@ func main() {
 			application.NewService(chartService),
 			application.NewService(billingService),
 			application.NewService(documentService),
+			application.NewService(notificationService),
 			application.NewService(timecardService),
 			application.NewService(auditService),
 		},

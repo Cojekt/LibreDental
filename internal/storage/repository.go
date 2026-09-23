@@ -116,3 +116,11 @@ type FeeScheduleRepository interface {
 	ListFeeSchedules(ctx context.Context, countryCode domain.CountryCode, providerID string) ([]*domain.FeeSchedule, error)
 	GetEffectiveFee(ctx context.Context, countryCode domain.CountryCode, code string, providerID string) (int64, error)
 }
+
+// NotificationLogRepository defines storage operations for notification delivery history
+// (appointment reminders, recalls, billing notices sent via email/SMS/voice).
+type NotificationLogRepository interface {
+	Create(ctx context.Context, entry *domain.NotificationLog) error
+	List(ctx context.Context, patientID string, limit, offset int) ([]*domain.NotificationLog, error)
+	ListByAppointment(ctx context.Context, appointmentID string) ([]*domain.NotificationLog, error)
+}
