@@ -111,7 +111,9 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 			c.LineItems[i].ID = fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i)
 		}
 	}
-	s.stampInsuranceFromPatient(c)
+	if err := s.stampInsuranceFromPatient(c); err != nil {
+		return nil, fmt.Errorf("failed to create claim: %w", err)
+	}
 	if err := s.claimRepo.Create(context.Background(), c); err != nil {
 		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
@@ -122,22 +124,26 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 }
 
 // stampInsuranceFromPatient copies the patient's on-file insurance details onto
-// the claim when the caller hasn't already supplied them and the patient has
-// insurance on file.
-func (s *BillingService) stampInsuranceFromPatient(c *domain.Claim) {
-	if c.PatientID == "" || s.patientRepo == nil {
-		return
+// the claim when the caller hasn't already supplied or deliberately cleared
+// them, and the patient has insurance on file.
+func (s *BillingService) stampInsuranceFromPatient(c *domain.Claim) error {
+	if c.InsuranceDirty || c.PatientID == "" || s.patientRepo == nil {
+		return nil
 	}
 	if c.InsuranceCarrier != "" || c.PolicyNumber != "" || c.GroupNumber != "" {
-		return
+		return nil
 	}
 	patient, err := s.patientRepo.GetByID(context.Background(), c.PatientID)
-	if err != nil || patient == nil || patient.InsuranceCarrier == "" {
-		return
+	if err != nil {
+		return fmt.Errorf("failed to look up patient for insurance stamping: %w", err)
+	}
+	if patient == nil || patient.InsuranceCarrier == "" {
+		return nil
 	}
 	c.InsuranceCarrier = patient.InsuranceCarrier
 	c.PolicyNumber = patient.InsurancePolicyNumber
 	c.GroupNumber = patient.InsuranceGroupNumber
+	return nil
 }
 
 // GetClaim retrieves a claim by ID.
@@ -682,7 +688,9 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		return nil, fmt.Errorf("%w: no matching conditions found to create claim", storage.ErrInvalidInput)
 	}
 
-	s.stampInsuranceFromPatient(claim)
+	if err := s.stampInsuranceFromPatient(claim); err != nil {
+		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
+	}
 	if err := s.claimRepo.Create(ctx, claim); err != nil {
 		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}

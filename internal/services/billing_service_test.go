@@ -184,7 +184,8 @@ func TestBillingService_CreateClaimStampsPatientInsurance(t *testing.T) {
 	}
 
 	// A claim for an insured patient with no insurance fields set should be
-	// stamped with the patient's on-file insurance.
+	// stamped with the patient's on-file insurance, and that stamping should
+	// be persisted, not just reflected in the returned object.
 	claim, err := billingSvc.CreateClaim(token, &domain.Claim{
 		PatientID:     "pat_insured",
 		ProviderID:    "prov_1",
@@ -195,6 +196,13 @@ func TestBillingService_CreateClaimStampsPatientInsurance(t *testing.T) {
 	}
 	if claim.InsuranceCarrier != "Delta Dental" || claim.PolicyNumber != "POL-123" || claim.GroupNumber != "GRP-456" {
 		t.Errorf("Expected claim to be stamped with patient insurance, got %+v", claim)
+	}
+	persistedClaim, err := claimRepo.GetByID(ctx, claim.ID)
+	if err != nil {
+		t.Fatalf("Failed to fetch persisted claim: %v", err)
+	}
+	if persistedClaim.InsuranceCarrier != "Delta Dental" || persistedClaim.PolicyNumber != "POL-123" || persistedClaim.GroupNumber != "GRP-456" {
+		t.Errorf("Expected persisted claim to be stamped with patient insurance, got %+v", persistedClaim)
 	}
 
 	// A claim with insurance fields already supplied by the caller should not
@@ -223,6 +231,28 @@ func TestBillingService_CreateClaimStampsPatientInsurance(t *testing.T) {
 	}
 	if uninsuredClaim.InsuranceCarrier != "" {
 		t.Errorf("Expected no insurance to be stamped, got %+v", uninsuredClaim)
+	}
+
+	// A claim for an insured patient with insurance fields deliberately
+	// cleared (InsuranceDirty set) should not be re-stamped.
+	clearedClaim, err := billingSvc.CreateClaim(token, &domain.Claim{
+		PatientID:      "pat_insured",
+		ProviderID:     "prov_1",
+		DateOfService:  "2026-01-01",
+		InsuranceDirty: true,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create claim with cleared insurance: %v", err)
+	}
+	if clearedClaim.InsuranceCarrier != "" || clearedClaim.PolicyNumber != "" || clearedClaim.GroupNumber != "" {
+		t.Errorf("Expected deliberately cleared insurance to be preserved, got %+v", clearedClaim)
+	}
+	persistedClearedClaim, err := claimRepo.GetByID(ctx, clearedClaim.ID)
+	if err != nil {
+		t.Fatalf("Failed to fetch persisted cleared claim: %v", err)
+	}
+	if persistedClearedClaim.InsuranceCarrier != "" || persistedClearedClaim.PolicyNumber != "" || persistedClearedClaim.GroupNumber != "" {
+		t.Errorf("Expected persisted cleared claim to have no insurance, got %+v", persistedClearedClaim)
 	}
 }
 

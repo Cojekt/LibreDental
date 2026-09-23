@@ -81,8 +81,8 @@
   function stampInsuranceFromPatient(patientId: string) {
     if (claimInsuranceDirty) return;
     const p = patients.find((p: Patient) => p.id === patientId);
-    if (!p || !p.insurance_carrier) return;
-    claimInsuranceCarrier = p.insurance_carrier;
+    if (!p) return;
+    claimInsuranceCarrier = p.insurance_carrier ?? "";
     claimPolicyNumber = p.insurance_policy_number ?? "";
     claimGroupNumber = p.insurance_group_number ?? "";
   }
@@ -240,6 +240,7 @@
       insurance_carrier: claimInsuranceCarrier,
       policy_number: claimPolicyNumber,
       group_number: claimGroupNumber,
+      insurance_dirty: claimInsuranceDirty,
       status: claimStatus,
       notes: claimNotes,
       line_items: claimLineItems.map((li) => ({
