@@ -22,7 +22,7 @@
     "@inlang/paraglide-js": "^2.25.3",
     "@inlang/plugin-m-function-matcher": "^2.2.15",
     "@inlang/plugin-message-format": "^4.4.4",
-    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^26.6.1",
     "@typescript/native": "npm:typescript@^7.0.2",
