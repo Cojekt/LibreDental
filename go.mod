@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pressly/goose/v3 v3.28.0
 	github.com/suyashkumar/dicom v1.1.0
-	github.com/wailsapp/wails/v3 v3.0.0-beta.22
+	github.com/wailsapp/wails/v3 v3.0.0-beta.25
 	github.com/zalando/go-keyring v0.2.8
 	modernc.org/sqlite v1.59.0
 )
