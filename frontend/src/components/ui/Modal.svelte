@@ -55,7 +55,10 @@
         dialogEl.focus();
       }
     });
-    return unregister;
+    return () => {
+      unregister();
+      pressStartedOnBackdrop = false;
+    };
   });
 
   function handleBackdropPointerDown(e: PointerEvent) {

@@ -737,7 +737,7 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 			if rbErr := s.rollbackChartClaim(ctx, claim.ID, completed); rbErr != nil {
 				return nil, fmt.Errorf("failed to mark condition %s completed (%v); rollback also failed: %w", cond.ID, err, rbErr)
 			}
-			return nil, fmt.Errorf("failed to mark condition %s completed; claim was not created: %w", cond.ID, err)
+			return nil, fmt.Errorf("failed to mark condition %s completed; the claim and chart changes were rolled back: %w", cond.ID, err)
 		}
 		completed = append(completed, cond)
 	}

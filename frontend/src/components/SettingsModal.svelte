@@ -124,7 +124,12 @@
   const modalId = Symbol("settings-modal");
   let pressStartedOnBackdrop = false;
   $effect(() => {
-    if (showModal) return registerOpenModal(modalId);
+    if (!showModal) return;
+    const unregister = registerOpenModal(modalId);
+    return () => {
+      unregister();
+      pressStartedOnBackdrop = false;
+    };
   });
 </script>
 
