@@ -30,16 +30,17 @@ func validAppointmentStatus(status domain.AppointmentStatus) bool {
 }
 
 // validateAppointment rejects appointments with a missing or inverted time range, or an
-// unknown status. An empty status is only accepted on create, where the repository
-// defaults it to scheduled.
-func validateAppointment(a *domain.Appointment, allowEmptyStatus bool) error {
+// unknown status. An empty status is accepted on create (the repository defaults it to
+// scheduled); on update, keptStatus is the stored status, which is accepted unchanged so
+// a legacy row with a blank or unrecognised status can still be edited.
+func validateAppointment(a *domain.Appointment, isCreate bool, keptStatus domain.AppointmentStatus) error {
 	if a.StartTime.IsZero() || a.EndTime.IsZero() {
 		return fmt.Errorf("%w: appointment start and end times are required", storage.ErrInvalidInput)
 	}
 	if !a.EndTime.After(a.StartTime) {
 		return fmt.Errorf("%w: appointment end time must be after its start time", storage.ErrInvalidInput)
 	}
-	if a.Status == "" && allowEmptyStatus {
+	if (isCreate && a.Status == "") || (!isCreate && a.Status == keptStatus) {
 		return nil
 	}
 	if !validAppointmentStatus(a.Status) {
@@ -82,7 +83,7 @@ func (s *AppointmentService) CreateAppointment(token string, a *domain.Appointme
 	if a == nil {
 		return nil, fmt.Errorf("%w: appointment cannot be nil", storage.ErrInvalidInput)
 	}
-	if err := validateAppointment(a, true); err != nil {
+	if err := validateAppointment(a, true, ""); err != nil {
 		return nil, err
 	}
 	if a.ID == "" {
@@ -105,7 +106,11 @@ func (s *AppointmentService) UpdateAppointment(token string, a *domain.Appointme
 	if a == nil {
 		return nil, fmt.Errorf("%w: appointment cannot be nil", storage.ErrInvalidInput)
 	}
-	if err := validateAppointment(a, false); err != nil {
+	existing, err := s.repo.GetByID(context.Background(), a.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get appointment: %w", err)
+	}
+	if err := validateAppointment(a, false, existing.Status); err != nil {
 		return nil, err
 	}
 	return s.update(token, a)

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { registerOpenModal, isTopModal } from "./ui/Modal.svelte";
   import { SystemSettingsService } from "@bindings/services/index.js";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion, getLanguageName, useLanguageState } from "$lib/locale.svelte.js";
@@ -117,21 +118,33 @@
   onMount(() => {
     loadAllSettings();
   });
+
+  // Shares Modal.svelte's stack so Escape closes only the topmost dialog, and only a press
+  // that starts on the backdrop dismisses (not a text selection released over it).
+  const modalId = Symbol("settings-modal");
+  let pressStartedOnBackdrop = false;
+  $effect(() => {
+    if (showModal) return registerOpenModal(modalId);
+  });
 </script>
 
 <svelte:window
   onkeydown={(e) => {
-    if (showModal && e.key === "Escape" && !e.defaultPrevented) {
-      e.preventDefault();
-      showModal = false;
-    }
+    if (!showModal || e.key !== "Escape" || e.defaultPrevented || !isTopModal(modalId)) return;
+    e.preventDefault();
+    showModal = false;
   }}
 />
 
 {#if showModal}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-fadeIn"
-    onclick={(e) => e.target === e.currentTarget && (showModal = false)}
+    onpointerdown={(e) => (pressStartedOnBackdrop = e.target === e.currentTarget)}
+    onclick={(e) => {
+      const startedOnBackdrop = pressStartedOnBackdrop;
+      pressStartedOnBackdrop = false;
+      if (startedOnBackdrop && e.target === e.currentTarget) showModal = false;
+    }}
     role="presentation"
   >
     <div

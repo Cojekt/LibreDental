@@ -8,7 +8,6 @@
   import IdInput from "./ui/IdInput.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
-  import { getTodayDateString } from "$lib/date.js";
 
   let {
     showPatientModal = $bindable(),
@@ -166,7 +165,6 @@
             type="date"
             required
             bind:value={dob}
-            max={getTodayDateString()}
             dateFormat={countryMeta?.date_format}
           />
         </FormField>

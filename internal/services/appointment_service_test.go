@@ -126,4 +126,22 @@ func TestAppointmentService(t *testing.T) {
 	if _, err := service.UpdateAppointmentStatus(token, appt.ID, "bogus"); !errors.Is(err, storage.ErrInvalidInput) {
 		t.Errorf("UpdateAppointmentStatus with unknown status: expected ErrInvalidInput, got %v", err)
 	}
+
+	// A legacy row with an unrecognised status stays editable as long as the status is left as is.
+	legacy := &domain.Appointment{ID: "appt_legacy", PatientID: p.ID, ProviderID: "prov_1", OperatoryID: "chair_1", StartTime: start, EndTime: end, Status: "legacy_status"}
+	if err := appointmentRepo.Create(context.Background(), legacy); err != nil {
+		t.Fatalf("Failed to insert legacy appointment: %v", err)
+	}
+	stored, err := service.GetAppointment(token, "appt_legacy")
+	if err != nil {
+		t.Fatalf("Failed to get legacy appointment: %v", err)
+	}
+	stored.Notes = "Edited"
+	if _, err := service.UpdateAppointment(token, stored); err != nil {
+		t.Errorf("Editing a legacy appointment without changing its status should succeed, got %v", err)
+	}
+	stored.Status = "another_bogus"
+	if _, err := service.UpdateAppointment(token, stored); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Changing to an unknown status: expected ErrInvalidInput, got %v", err)
+	}
 }

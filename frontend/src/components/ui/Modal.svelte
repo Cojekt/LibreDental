@@ -1,7 +1,19 @@
 <script module lang="ts">
   // Open modals, innermost last, so Escape only dismisses the one on top (e.g. a confirm
-  // dialog opened over an edit form).
+  // dialog opened over an edit form). Exported so hand-built dialogs can join the stack.
   const openModals: symbol[] = [];
+
+  export function registerOpenModal(id: symbol): () => void {
+    openModals.push(id);
+    return () => {
+      const idx = openModals.indexOf(id);
+      if (idx !== -1) openModals.splice(idx, 1);
+    };
+  }
+
+  export function isTopModal(id: symbol): boolean {
+    return openModals[openModals.length - 1] === id;
+  }
 </script>
 
 <script lang="ts">
@@ -36,17 +48,14 @@
 
   $effect(() => {
     if (!showModal) return;
-    openModals.push(modalId);
+    const unregister = registerOpenModal(modalId);
     // Untracked so re-binding the element never re-runs this and reorders the stack.
     untrack(() => {
       if (dialogEl && !dialogEl.contains(document.activeElement)) {
         dialogEl.focus();
       }
     });
-    return () => {
-      const idx = openModals.indexOf(modalId);
-      if (idx !== -1) openModals.splice(idx, 1);
-    };
+    return unregister;
   });
 
   function handleBackdropPointerDown(e: PointerEvent) {
@@ -62,7 +71,7 @@
 
   function handleWindowKeydown(e: KeyboardEvent) {
     if (!showModal || e.key !== "Escape" || e.defaultPrevented) return;
-    if (openModals[openModals.length - 1] !== modalId) return;
+    if (!isTopModal(modalId)) return;
     e.preventDefault();
     if (preventDismiss) return;
     showModal = false;

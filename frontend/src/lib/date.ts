@@ -55,7 +55,7 @@ export function getTodayDateString(): string {
  */
 export function getDateOnlyString(input?: string | null): string {
   if (!input) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return isValidDateOnly(input) ? input : "";
   const d = new Date(input);
   if (isNaN(d.getTime())) return "";
   const utcAnchored =
@@ -75,8 +75,23 @@ export function getDateOnlyString(input?: string | null): string {
  * getDateOnlyString reads back as the same calendar date in every timezone.
  */
 export function dateOnlyToISO(dateStr: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return "";
+  if (!isValidDateOnly(dateStr)) return "";
   return `${dateStr}T12:00:00Z`;
+}
+
+// Build a UTC date without Date.UTC's remapping of years 0-99 to 1900-1999.
+function utcDate(y: number, m: number, d: number): Date {
+  const date = new Date(0);
+  date.setUTCFullYear(y, m - 1, d);
+  return date;
+}
+
+// True for a 'YYYY-MM-DD' string naming a real calendar date (rejects e.g. 2023-02-30).
+function isValidDateOnly(dateStr: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = utcDate(y, m, d);
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
 }
 
 /**
@@ -86,7 +101,7 @@ export function formatDateOnly(input?: string | null, locale?: string): string {
   const dateStr = getDateOnlyString(input);
   if (!dateStr) return "";
   const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, { timeZone: "UTC" });
+  return utcDate(y, m, d).toLocaleDateString(locale, { timeZone: "UTC" });
 }
 
 /**

@@ -150,6 +150,9 @@
 
   let procedureCodes = $state<ProcedureCode[]>([]);
 
+  // Message of services.ErrNothingToBill (internal/services/billing_service.go); keep in sync.
+  const CHART_NOTHING_TO_BILL = "no unbilled conditions found to create claim";
+
   let procedurePresets = $derived.by((): ProcedurePreset[] => {
     getLocaleVersion();
     const presets: ProcedurePreset[] = [];
@@ -224,7 +227,7 @@
       console.error("Failed to create claim from chart:", e);
       const msg = handleError(e, "");
       alert(
-        msg.includes("no unbilled conditions")
+        msg.includes(CHART_NOTHING_TO_BILL)
           ? m.charting_billing_all_billed()
           : m.charting_billing_err_claim()
       );

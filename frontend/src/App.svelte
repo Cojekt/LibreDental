@@ -659,6 +659,12 @@
     void selectedDate;
     untrack(() => {
       if (!token) {
+        // Drop responses still in flight from the previous session.
+        patientsRequestGen++;
+        directoryRequestGen++;
+        appointmentsRequestGen++;
+        loadingPatients = false;
+        loadingAppointments = false;
         loadedToken = "";
         patients = [];
         directoryPatients = [];
