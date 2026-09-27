@@ -605,7 +605,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField label={m.appt_label_status()} forId="cl-status">
+      <FormField label={m.billing_claim_status_label()} forId="cl-status">
         <select
           id="cl-status"
           bind:value={claimStatus}

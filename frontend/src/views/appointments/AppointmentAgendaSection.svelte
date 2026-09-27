@@ -55,7 +55,7 @@
                 type="button"
                 onclick={() => jumpToDateFromAgenda(appt.start_time)}
                 class="text-left group/date focus:outline-none transition-colors"
-                title="Click to view this date in Calendar View"
+                title={m.appts_agenda_jump_hint()}
               >
                 <div
                   class="text-slate-200 font-semibold text-xs flex items-center gap-1.5 group-hover/date:text-sky-400 group-hover/date:underline"

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { untrack } from "svelte";
   import { m } from "../paraglide/messages.js";
   import { AuditService } from "@bindings/services/index.js";
   import type { Patient, AuditLogEntry } from "@bindings/domain/index.js";
@@ -20,16 +20,21 @@
     return p ? `${p.last_name}, ${p.first_name}` : id;
   }
 
+  let requestGen = 0;
+
   async function fetchLogs() {
+    const gen = ++requestGen;
     loading = true;
     try {
       const res = await AuditService.GetAuditLogs(auth.token, selectedPatient, limit, page * limit);
+      if (gen !== requestGen) return;
       logs = (res?.filter(Boolean) as AuditLogEntry[]) || [];
     } catch (e) {
+      if (gen !== requestGen) return;
       console.error("Failed to fetch audit logs", e);
       logs = [];
     } finally {
-      loading = false;
+      if (gen === requestGen) loading = false;
     }
   }
 
@@ -45,16 +50,14 @@
     fetchLogs();
   }
 
+  // Refetch from the first page when the patient filter changes (and on mount). Paging is
+  // untracked so Next/Prev don't re-trigger this and snap back to page 1.
   $effect(() => {
-    // When selectedPatient changes, reset page and fetch
-    if (selectedPatient !== undefined) {
+    void selectedPatient;
+    untrack(() => {
       page = 0;
       fetchLogs();
-    }
-  });
-
-  onMount(() => {
-    fetchLogs();
+    });
   });
 </script>
 
@@ -68,7 +71,7 @@
         bind:value={selectedPatient}
         class="input input-sm w-64 bg-slate-800 text-slate-200 border-slate-700"
       >
-        <option value="">All Patients</option>
+        <option value="">{m.audit_all_patients()}</option>
         {#each patients as p}
           <option value={p.id}>{p.last_name}, {p.first_name}</option>
         {/each}
@@ -76,17 +79,17 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <button class="btn btn-secondary btn-sm" onclick={fetchLogs} title="Refresh">
+      <button class="btn btn-secondary btn-sm" onclick={fetchLogs} title={m.audit_refresh()}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l5.67-5.67" />
         </svg>
       </button>
       <button class="btn btn-secondary btn-sm" onclick={handlePrev} disabled={page === 0}
-        >Prev</button
+        >{m.audit_prev()}</button
       >
-      <span class="text-sm text-slate-400">Page {page + 1}</span>
+      <span class="text-sm text-slate-400">{m.audit_page({ page: page + 1 })}</span>
       <button class="btn btn-secondary btn-sm" onclick={handleNext} disabled={logs.length < limit}
-        >Next</button
+        >{m.audit_next()}</button
       >
     </div>
   </div>
@@ -96,22 +99,22 @@
     <table class="w-full text-left text-sm text-slate-300">
       <thead class="sticky top-0 bg-slate-800/90 uppercase text-slate-400 backdrop-blur">
         <tr>
-          <th class="px-4 py-3 font-medium">Timestamp</th>
-          <th class="px-4 py-3 font-medium">User</th>
-          <th class="px-4 py-3 font-medium">Patient</th>
-          <th class="px-4 py-3 font-medium">Action</th>
-          <th class="px-4 py-3 font-medium">Resource</th>
-          <th class="px-4 py-3 font-medium">Details</th>
+          <th class="px-4 py-3 font-medium">{m.audit_th_timestamp()}</th>
+          <th class="px-4 py-3 font-medium">{m.audit_th_user()}</th>
+          <th class="px-4 py-3 font-medium">{m.audit_th_patient()}</th>
+          <th class="px-4 py-3 font-medium">{m.audit_th_action()}</th>
+          <th class="px-4 py-3 font-medium">{m.audit_th_resource()}</th>
+          <th class="px-4 py-3 font-medium">{m.audit_th_details()}</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-800">
         {#if loading}
           <tr>
-            <td colspan="6" class="p-8 text-center text-slate-500">Loading audit logs...</td>
+            <td colspan="6" class="p-8 text-center text-slate-500">{m.audit_loading()}</td>
           </tr>
         {:else if logs.length === 0}
           <tr>
-            <td colspan="6" class="p-8 text-center text-slate-500">No audit logs found.</td>
+            <td colspan="6" class="p-8 text-center text-slate-500">{m.audit_empty()}</td>
           </tr>
         {:else}
           {#each logs as log}

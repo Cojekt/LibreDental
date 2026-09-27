@@ -1,5 +1,12 @@
+<script module lang="ts">
+  // Open modals, innermost last, so Escape only dismisses the one on top (e.g. a confirm
+  // dialog opened over an edit form).
+  const openModals: symbol[] = [];
+</script>
+
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { untrack, type Snippet } from "svelte";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     showModal = $bindable(false),
@@ -21,31 +28,61 @@
     footer?: Snippet;
   }>();
 
-  function handleBackdropClick() {
-    if (preventDismiss) return;
+  const modalId = Symbol("modal");
+  let dialogEl = $state<HTMLDivElement | null>(null);
+  // Only a press that starts on the backdrop may dismiss: selecting text in a field and
+  // releasing over the backdrop must not throw away the form.
+  let pressStartedOnBackdrop = false;
+
+  $effect(() => {
+    if (!showModal) return;
+    openModals.push(modalId);
+    // Untracked so re-binding the element never re-runs this and reorders the stack.
+    untrack(() => {
+      if (dialogEl && !dialogEl.contains(document.activeElement)) {
+        dialogEl.focus();
+      }
+    });
+    return () => {
+      const idx = openModals.indexOf(modalId);
+      if (idx !== -1) openModals.splice(idx, 1);
+    };
+  });
+
+  function handleBackdropPointerDown(e: PointerEvent) {
+    pressStartedOnBackdrop = e.target === e.currentTarget;
+  }
+
+  function handleBackdropClick(e: MouseEvent) {
+    const startedOnBackdrop = pressStartedOnBackdrop;
+    pressStartedOnBackdrop = false;
+    if (preventDismiss || !startedOnBackdrop || e.target !== e.currentTarget) return;
     showModal = false;
   }
 
-  function handleKeydown(e: KeyboardEvent) {
+  function handleWindowKeydown(e: KeyboardEvent) {
+    if (!showModal || e.key !== "Escape" || e.defaultPrevented) return;
+    if (openModals[openModals.length - 1] !== modalId) return;
+    e.preventDefault();
     if (preventDismiss) return;
-    if (e.key === "Escape") {
-      showModal = false;
-    }
+    showModal = false;
   }
 </script>
+
+<svelte:window onkeydown={handleWindowKeydown} />
 
 {#if showModal}
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-fadeIn"
+    onpointerdown={handleBackdropPointerDown}
     onclick={handleBackdropClick}
-    onkeydown={handleKeydown}
     role="presentation"
   >
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <div
       class={`w-full ${maxWidth} rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl overflow-y-auto max-h-[90vh] text-slate-100 dark-modal-box`}
-      onclick={(e) => e.stopPropagation()}
+      bind:this={dialogEl}
       role="dialog"
       aria-modal="true"
       tabindex="-1"
@@ -56,7 +93,7 @@
           onclick={() => !preventDismiss && (showModal = false)}
           disabled={preventDismiss}
           class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="Close modal"
+          aria-label={m.common_close()}
         >
           ✕
         </button>

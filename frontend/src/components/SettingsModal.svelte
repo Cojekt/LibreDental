@@ -119,17 +119,23 @@
   });
 </script>
 
+<svelte:window
+  onkeydown={(e) => {
+    if (showModal && e.key === "Escape" && !e.defaultPrevented) {
+      e.preventDefault();
+      showModal = false;
+    }
+  }}
+/>
+
 {#if showModal}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-fadeIn"
-    onclick={() => (showModal = false)}
-    onkeydown={(e) => e.key === "Escape" && (showModal = false)}
+    onclick={(e) => e.target === e.currentTarget && (showModal = false)}
     role="presentation"
   >
     <div
       class="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl overflow-hidden text-slate-100 dark-modal-box max-h-[90vh] overflow-y-auto"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
       aria-labelledby="settings-title"
@@ -165,7 +171,7 @@
         <button
           onclick={() => (showModal = false)}
           class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
-          aria-label="Close settings"
+          aria-label={m.common_close()}
         >
           <svg
             viewBox="0 0 24 24"
@@ -251,7 +257,7 @@
               <button
                 type="button"
                 role="switch"
-                aria-label="Toggle fullscreen display mode"
+                aria-label={m.settings_fullscreen_aria()}
                 aria-checked={windowMode === "fullscreen"}
                 onclick={() =>
                   handleSelectWindowMode(windowMode === "fullscreen" ? "window" : "fullscreen")}
