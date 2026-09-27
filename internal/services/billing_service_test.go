@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/zalando/go-keyring"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
@@ -26,12 +28,18 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	}
 	defer db.Close()
 
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tmpDir, "test_billing_audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit db: %v", err)
+	}
+	defer auditDb.Close()
+
 	ctx := context.Background()
 	patientRepo := sqlite.NewPatientRepository(db)
 	chartRepo := sqlite.NewChartRepository(db)
 	claimRepo := sqlite.NewClaimRepository(db)
 
-	auditRepo := sqlite.NewAuditRepository(db)
+	auditRepo := sqlite.NewAuditRepository(auditDb)
 	configRepo := sqlite.NewPracticeConfigRepository(db)
 	err = configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
 	if err != nil {
@@ -111,6 +119,54 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	}
 	if len(chart.Conditions) == 0 || chart.Conditions[0].Status != domain.ToothStatusCompleted {
 		t.Errorf("Expected condition status to be completed, got %s", chart.Conditions[0].Status)
+	}
+
+	logs, err := auditRepo.Query(ctx, "pat_test_1", 50, 0)
+	if err != nil {
+		t.Fatalf("Failed to query audit logs: %v", err)
+	}
+	foundChartUpdate := false
+	for _, l := range logs {
+		if l.Resource == "dental_chart" && l.Action == domain.AuditActionUpdate {
+			foundChartUpdate = true
+		}
+	}
+	if !foundChartUpdate {
+		t.Errorf("Expected an audit entry for the chart condition being marked completed")
+	}
+
+	// 4. Billing the same condition again must not produce a duplicate claim
+	if _, err := billingSvc.CreateClaimFromChartConditions(token, "pat_test_1", "prov_1", []string{"cond_test_1"}); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Expected ErrInvalidInput when re-billing an already billed condition, got %v", err)
+	}
+
+	// A mix of billed and unbilled conditions only bills the new one
+	cond2 := &domain.ToothCondition{
+		ID:          "cond_test_2",
+		PatientID:   "pat_test_1",
+		ToothNumber: 3,
+		ADACode:     "D2391",
+		Description: "1-Surface Composite Resin",
+		Status:      domain.ToothStatusTreatmentPlanned,
+		Fee:         14000,
+	}
+	if _, err := chartRepo.SaveCondition(ctx, cond2); err != nil {
+		t.Fatalf("Failed to save second tooth condition: %v", err)
+	}
+	claim2, err := billingSvc.CreateClaimFromChartConditions(token, "pat_test_1", "prov_1", []string{"cond_test_1", "cond_test_2"})
+	if err != nil {
+		t.Fatalf("Failed to create claim for unbilled condition: %v", err)
+	}
+	if len(claim2.LineItems) != 1 || claim2.LineItems[0].ToothConditionID != "cond_test_2" {
+		t.Errorf("Expected only cond_test_2 to be billed, got %+v", claim2.LineItems)
+	}
+
+	claims, err := claimRepo.List(ctx, "pat_test_1")
+	if err != nil {
+		t.Fatalf("Failed to list claims: %v", err)
+	}
+	if len(claims) != 2 {
+		t.Errorf("Expected 2 claims total, got %d", len(claims))
 	}
 }
 

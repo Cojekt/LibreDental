@@ -642,6 +642,21 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		condMap[c.ID] = c
 	}
 
+	// A condition that already appears on one of the patient's claims has been billed;
+	// billing it again would double-charge the patient/insurer.
+	existingClaims, err := s.claimRepo.List(ctx, patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing claims: %w", err)
+	}
+	alreadyBilled := make(map[string]bool)
+	for _, c := range existingClaims {
+		for _, li := range c.LineItems {
+			if li.ToothConditionID != "" {
+				alreadyBilled[li.ToothConditionID] = true
+			}
+		}
+	}
+
 	nowStr := time.Now().Format("2006-01-02")
 	claim := &domain.Claim{
 		ID:            fmt.Sprintf("claim_%d", time.Now().UnixNano()),
@@ -659,9 +674,10 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}
 
+	var toComplete []domain.ToothCondition
 	for i, condID := range conditionIDs {
 		cond, exists := condMap[condID]
-		if !exists {
+		if !exists || alreadyBilled[condID] {
 			continue
 		}
 
@@ -681,20 +697,30 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		}
 		claim.LineItems = append(claim.LineItems, lineItem)
 
-		// Mark tooth condition status as completed if it was treatment planned
 		if cond.Status == domain.ToothStatusTreatmentPlanned {
-			cond.Status = domain.ToothStatusCompleted
-			_, _ = s.chartRepo.SaveCondition(ctx, &cond)
+			toComplete = append(toComplete, cond)
 		}
 	}
 
 	if len(claim.LineItems) == 0 {
-		return nil, fmt.Errorf("%w: no matching conditions found to create claim", storage.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: no unbilled conditions found to create claim", storage.ErrInvalidInput)
 	}
 
 	if err := s.claimRepo.Create(ctx, claim); err != nil {
 		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}
 	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, claim.PatientID, "claim", "Created claim from chart")
+
+	// Only mark treatment-planned conditions completed once the claim exists, so a
+	// failed claim insert can't leave the chart claiming work was billed.
+	for _, cond := range toComplete {
+		cond.Status = domain.ToothStatusCompleted
+		if _, err := s.chartRepo.SaveCondition(ctx, &cond); err != nil {
+			return nil, fmt.Errorf("claim created but failed to mark condition %s completed: %w", cond.ID, err)
+		}
+		if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, cond.PatientID, "dental_chart", fmt.Sprintf("Marked tooth condition %s completed when billed", cond.ID)); err != nil {
+			fmt.Printf("Warning: failed to log audit action: %v\n", err)
+		}
+	}
 	return claim, nil
 }
