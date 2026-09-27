@@ -2,6 +2,7 @@ package sqlite_test
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -107,5 +108,47 @@ func TestPatientRepository_CRUD(t *testing.T) {
 	_, err = repo.GetByID(ctx, "pat_123")
 	if err != storage.ErrNotFound {
 		t.Errorf("Expected ErrNotFound after deletion, got: %v", err)
+	}
+}
+
+func TestPatientRepository_ListReturnsAllWithoutLimit(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "test_list_all.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	repo := sqlite.NewPatientRepository(db)
+	ctx := context.Background()
+
+	const n = 60
+	for i := range n {
+		p := &domain.Patient{
+			ID:          fmt.Sprintf("pat_%03d", i),
+			FirstName:   "Test",
+			LastName:    fmt.Sprintf("Patient%03d", i),
+			DateOfBirth: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+			Sex:         domain.SexOther,
+			Status:      domain.StatusActive,
+		}
+		if err := repo.Create(ctx, p); err != nil {
+			t.Fatalf("Failed to create patient %d: %v", i, err)
+		}
+	}
+
+	all, total, err := repo.List(ctx, domain.PatientFilter{})
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if total != n || len(all) != n {
+		t.Errorf("Expected all %d patients without a limit, got %d (total %d)", n, len(all), total)
+	}
+
+	page, _, err := repo.List(ctx, domain.PatientFilter{Limit: 10, Offset: 55})
+	if err != nil {
+		t.Fatalf("List with limit failed: %v", err)
+	}
+	if len(page) != 5 {
+		t.Errorf("Expected explicit limit/offset to still apply (5 results), got %d", len(page))
 	}
 }
