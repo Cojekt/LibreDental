@@ -18,6 +18,36 @@ func NewAppointmentService(repo storage.AppointmentRepository, auditService *Aud
 	return &AppointmentService{repo: repo, auditService: auditService}
 }
 
+func validAppointmentStatus(status domain.AppointmentStatus) bool {
+	switch status {
+	case domain.AppointmentStatusScheduled, domain.AppointmentStatusConfirmed,
+		domain.AppointmentStatusArrived, domain.AppointmentStatusInChair,
+		domain.AppointmentStatusComplete, domain.AppointmentStatusCancelled,
+		domain.AppointmentStatusNoShow:
+		return true
+	}
+	return false
+}
+
+// validateAppointment rejects appointments with a missing or inverted time range, or an
+// unknown status. An empty status is only accepted on create, where the repository
+// defaults it to scheduled.
+func validateAppointment(a *domain.Appointment, allowEmptyStatus bool) error {
+	if a.StartTime.IsZero() || a.EndTime.IsZero() {
+		return fmt.Errorf("%w: appointment start and end times are required", storage.ErrInvalidInput)
+	}
+	if !a.EndTime.After(a.StartTime) {
+		return fmt.Errorf("%w: appointment end time must be after its start time", storage.ErrInvalidInput)
+	}
+	if a.Status == "" && allowEmptyStatus {
+		return nil
+	}
+	if !validAppointmentStatus(a.Status) {
+		return fmt.Errorf("%w: unknown appointment status %q", storage.ErrInvalidInput, a.Status)
+	}
+	return nil
+}
+
 func (s *AppointmentService) ListAppointments(token string, filter domain.AppointmentFilter) ([]*domain.Appointment, error) {
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
@@ -52,6 +82,9 @@ func (s *AppointmentService) CreateAppointment(token string, a *domain.Appointme
 	if a == nil {
 		return nil, fmt.Errorf("%w: appointment cannot be nil", storage.ErrInvalidInput)
 	}
+	if err := validateAppointment(a, true); err != nil {
+		return nil, err
+	}
 	if a.ID == "" {
 		a.ID = fmt.Sprintf("appt_%d", time.Now().UnixNano())
 	}
@@ -72,6 +105,13 @@ func (s *AppointmentService) UpdateAppointment(token string, a *domain.Appointme
 	if a == nil {
 		return nil, fmt.Errorf("%w: appointment cannot be nil", storage.ErrInvalidInput)
 	}
+	if err := validateAppointment(a, false); err != nil {
+		return nil, err
+	}
+	return s.update(token, a)
+}
+
+func (s *AppointmentService) update(token string, a *domain.Appointment) (*domain.Appointment, error) {
 	err := s.repo.Update(context.Background(), a)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update appointment: %w", err)
@@ -104,10 +144,15 @@ func (s *AppointmentService) UpdateAppointmentStatus(token string, id string, st
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
+	if !validAppointmentStatus(domain.AppointmentStatus(status)) {
+		return nil, fmt.Errorf("%w: unknown appointment status %q", storage.ErrInvalidInput, status)
+	}
 	appt, err := s.repo.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get appointment: %w", err)
 	}
 	appt.Status = domain.AppointmentStatus(status)
-	return s.UpdateAppointment(token, appt)
+	// Only the status changes here, so skip time validation: a legacy appointment with a
+	// bad time range must still be markable as completed/cancelled from the schedule.
+	return s.update(token, appt)
 }

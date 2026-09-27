@@ -2,12 +2,14 @@ package services_test
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/services"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
@@ -98,5 +100,30 @@ func TestAppointmentService(t *testing.T) {
 	}
 	if len(list) != 1 {
 		t.Errorf("Expected 1 appointment in list, got %d", len(list))
+	}
+
+	invalid := []struct {
+		name string
+		appt domain.Appointment
+	}{
+		{"end before start", domain.Appointment{PatientID: p.ID, StartTime: end, EndTime: start}},
+		{"zero length", domain.Appointment{PatientID: p.ID, StartTime: start, EndTime: start}},
+		{"missing times", domain.Appointment{PatientID: p.ID}},
+		{"unknown status", domain.Appointment{PatientID: p.ID, StartTime: start, EndTime: end, Status: "bogus"}},
+	}
+	for _, tc := range invalid {
+		appt := tc.appt
+		if _, err := service.CreateAppointment(token, &appt); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("CreateAppointment(%s): expected ErrInvalidInput, got %v", tc.name, err)
+		}
+	}
+
+	bad := *updated
+	bad.EndTime = bad.StartTime.Add(-time.Hour)
+	if _, err := service.UpdateAppointment(token, &bad); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("UpdateAppointment with inverted times: expected ErrInvalidInput, got %v", err)
+	}
+	if _, err := service.UpdateAppointmentStatus(token, appt.ID, "bogus"); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("UpdateAppointmentStatus with unknown status: expected ErrInvalidInput, got %v", err)
 	}
 }
