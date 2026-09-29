@@ -16,25 +16,28 @@ import (
 // implementations, and their credentials live in the OS keychain via SecretsService, never
 // in the SQLite database.
 type NotificationService struct {
-	patientRepo  storage.PatientRepository
-	logRepo      storage.NotificationLogRepository
-	secrets      *SecretsService
-	auditService *AuditService
-	providers    map[string]domain.NotificationProvider
+	patientRepo     storage.PatientRepository
+	appointmentRepo storage.AppointmentRepository
+	logRepo         storage.NotificationLogRepository
+	secrets         *SecretsService
+	auditService    *AuditService
+	providers       map[string]domain.NotificationProvider
 }
 
 func NewNotificationService(
 	patientRepo storage.PatientRepository,
+	appointmentRepo storage.AppointmentRepository,
 	logRepo storage.NotificationLogRepository,
 	secrets *SecretsService,
 	auditService *AuditService,
 ) *NotificationService {
 	return &NotificationService{
-		patientRepo:  patientRepo,
-		logRepo:      logRepo,
-		secrets:      secrets,
-		auditService: auditService,
-		providers:    make(map[string]domain.NotificationProvider),
+		patientRepo:     patientRepo,
+		appointmentRepo: appointmentRepo,
+		logRepo:         logRepo,
+		secrets:         secrets,
+		auditService:    auditService,
+		providers:       make(map[string]domain.NotificationProvider),
 	}
 }
 
@@ -62,8 +65,11 @@ func (s *NotificationService) ListProviders() []string {
 	return names
 }
 
-// GetProviderConfig retrieves configuration for a specific provider.
-func (s *NotificationService) GetProviderConfig(providerName string) (map[string]string, error) {
+// GetProviderConfig retrieves configuration (secrets redacted) for a specific provider.
+func (s *NotificationService) GetProviderConfig(token string, providerName string) (map[string]string, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if providerName == "" {
 		return nil, fmt.Errorf("provider name is required")
 	}
@@ -71,11 +77,21 @@ func (s *NotificationService) GetProviderConfig(providerName string) (map[string
 }
 
 // SetProviderConfig saves configuration for a specific provider.
-func (s *NotificationService) SetProviderConfig(providerName string, config map[string]string) error {
+func (s *NotificationService) SetProviderConfig(token string, providerName string, config map[string]string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	if providerName == "" {
 		return fmt.Errorf("provider name is required")
 	}
-	return s.secrets.SetProviderConfig(providerName, config)
+	if err := s.secrets.SetProviderConfig(providerName, config); err != nil {
+		return err
+	}
+	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "notification_provider_config",
+		"Updated configuration for notification provider "+providerName); err != nil {
+		return fmt.Errorf("provider config saved but failed to log audit: %w", err)
+	}
+	return nil
 }
 
 // ─── Sending ─────────────────────────────────────────────────────────────────
@@ -132,6 +148,16 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 		return nil, fmt.Errorf("patient has not opted in to reminder notifications")
 	}
 
+	if appointmentID != "" {
+		appt, err := s.appointmentRepo.GetByID(ctx, appointmentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get appointment for notification: %w", err)
+		}
+		if appt.PatientID != patientID {
+			return nil, fmt.Errorf("%w: appointment does not belong to patient", storage.ErrInvalidInput)
+		}
+	}
+
 	recipient, err := recipientFor(patient, provider.Channel())
 	if err != nil {
 		return nil, err
@@ -153,6 +179,9 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 	defer cancel()
 
 	result, sendErr := provider.Send(sendCtx, msg, config)
+	if sendErr == nil && result != nil && result.Status == domain.NotificationStatusFailed {
+		sendErr = fmt.Errorf("provider reported failed delivery")
+	}
 
 	entry := &domain.NotificationLog{
 		ID:            fmt.Sprintf("notif_%d", time.Now().UnixNano()),
@@ -165,6 +194,9 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 		Body:          body,
 		SentAt:        time.Now().UTC(),
 	}
+	if result != nil {
+		entry.ExternalMessageID = result.ExternalMessageID
+	}
 	if sendErr != nil {
 		entry.Status = domain.NotificationStatusFailed
 		entry.ErrorMessage = sendErr.Error()
@@ -175,15 +207,27 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 		}
 	}
 
-	if err := s.logRepo.Create(ctx, entry); err != nil {
-		return nil, fmt.Errorf("failed to record notification log entry: %w", err)
-	}
+	// The provider call has already happened at this point, so a log failure must not hide
+	// that from the caller: the entry is still returned and the audit trail still records the
+	// attempt, so a retry does not silently send the patient a duplicate.
+	logErr := s.logRepo.Create(ctx, entry)
 
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, patientID, "notification",
-		fmt.Sprintf("Sent %s notification via %s", provider.Channel(), providerName))
-
+	detail := fmt.Sprintf("Sent %s notification via %s", provider.Channel(), providerName)
 	if sendErr != nil {
+		detail = fmt.Sprintf("Failed to send %s notification via %s: %v", provider.Channel(), providerName, sendErr)
+	}
+	if logErr != nil {
+		detail += " (notification log entry not recorded)"
+	}
+	auditErr := s.auditService.LogPatientAction(token, domain.AuditActionCreate, patientID, "notification", detail)
+
+	switch {
+	case sendErr != nil:
 		return entry, fmt.Errorf("provider %q failed to send notification: %w", providerName, sendErr)
+	case logErr != nil:
+		return entry, fmt.Errorf("notification sent but failed to record notification log entry: %w", logErr)
+	case auditErr != nil:
+		return entry, fmt.Errorf("notification sent but failed to log audit: %w", auditErr)
 	}
 	return entry, nil
 }
@@ -219,5 +263,6 @@ func (s *NotificationService) ListNotificationLogForAppointment(token string, ap
 	if err != nil {
 		return nil, fmt.Errorf("failed to list notification log for appointment: %w", err)
 	}
+	_ = s.auditService.LogAction(token, domain.AuditActionRead, "notification", "Viewed notification history for appointment "+appointmentID)
 	return entries, nil
 }

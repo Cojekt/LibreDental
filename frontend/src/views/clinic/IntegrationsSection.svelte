@@ -2,11 +2,12 @@
   import { onMount } from "svelte";
   import { BillingService, NotificationService } from "@bindings/services/index.js";
   import { m } from "../../paraglide/messages.js";
+  import { auth } from "../../stores/auth.svelte.js";
 
   // Generic list-providers / get-config / set-config panel state, parameterized by which
   // Wails service backs it (BillingService for claims clearinghouses, NotificationService
-  // for email/SMS/voice vendors) — both expose the identical ListProviders/Get/SetProviderConfig
-  // shape backed by SecretsService on the Go side.
+  // for email/SMS/voice vendors), both backed by SecretsService on the Go side.
+  // NotificationService's config methods require a session token, so it is adapted below.
   type ProviderConfig = { [key: string]: string | undefined } | null;
   type ProviderConfigService = {
     ListProviders(): Promise<string[] | null>;
@@ -16,6 +17,8 @@
 
   function createProviderPanel(service: ProviderConfigService) {
     let providers = $state<string[]>([]);
+    let providersLoaded = $state(false);
+    let providersLoadError = $state(false);
     let selectedProvider = $state("");
     let providerApiKey = $state("");
     let isSavingConfig = $state(false);
@@ -24,11 +27,15 @@
     let isLoadingConfig = $state(false);
 
     async function loadProviders() {
+      providersLoadError = false;
       try {
         const list = await service.ListProviders();
         providers = list || [];
       } catch (e) {
         console.error("Failed to load providers:", e);
+        providersLoadError = true;
+      } finally {
+        providersLoaded = true;
       }
     }
 
@@ -79,6 +86,12 @@
       get providers() {
         return providers;
       },
+      get noProviders() {
+        return providersLoaded && !providersLoadError && providers.length === 0;
+      },
+      get providersLoadError() {
+        return providersLoadError;
+      },
       get selectedProvider() {
         return selectedProvider;
       },
@@ -107,7 +120,12 @@
   }
 
   const claimsPanel = createProviderPanel(BillingService);
-  const notificationsPanel = createProviderPanel(NotificationService);
+  const notificationsPanel = createProviderPanel({
+    ListProviders: () => NotificationService.ListProviders(),
+    GetProviderConfig: (name) => NotificationService.GetProviderConfig(auth.token, name),
+    SetProviderConfig: (name, config) =>
+      NotificationService.SetProviderConfig(auth.token, name, config),
+  });
 
   onMount(() => {
     claimsPanel.loadProviders();
@@ -128,6 +146,12 @@
         </span>
 
         <div class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
+          {#if claimsPanel.providersLoadError}
+            <p class="text-xs text-red-400">{m.integrations_providers_load_error()}</p>
+          {:else if claimsPanel.noProviders}
+            <p class="text-xs text-slate-500">{m.integrations_claims_no_providers()}</p>
+          {/if}
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label for="claims-provider-select" class="block text-xs text-slate-400 mb-1"
@@ -137,7 +161,8 @@
                 id="claims-provider-select"
                 bind:value={claimsPanel.selectedProvider}
                 onchange={claimsPanel.loadProviderConfig}
-                class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                disabled={claimsPanel.noProviders}
+                class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
               >
                 <option value="">{m.integrations_placeholder_provider()}</option>
                 {#each claimsPanel.providers as p}
@@ -184,7 +209,9 @@
         </span>
 
         <div class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
-          {#if notificationsPanel.providers.length === 0}
+          {#if notificationsPanel.providersLoadError}
+            <p class="text-xs text-red-400">{m.integrations_providers_load_error()}</p>
+          {:else if notificationsPanel.noProviders}
             <p class="text-xs text-slate-500">{m.integrations_notifications_no_providers()}</p>
           {/if}
 
@@ -197,7 +224,7 @@
                 id="notification-provider-select"
                 bind:value={notificationsPanel.selectedProvider}
                 onchange={notificationsPanel.loadProviderConfig}
-                disabled={notificationsPanel.providers.length === 0}
+                disabled={notificationsPanel.noProviders}
                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
               >
                 <option value="">{m.integrations_placeholder_provider()}</option>

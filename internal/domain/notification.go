@@ -35,7 +35,7 @@ type NotificationResult struct {
 	ExternalMessageID string             `json:"external_message_id"`
 	Status            NotificationStatus `json:"status"`
 	Messages          []string           `json:"messages,omitempty"`
-	RawResponse       []byte             `json:"raw_response,omitempty"` // Kept for audit purposes
+	RawResponse       []byte             `json:"raw_response,omitempty"` // For provider-side debugging; not persisted
 }
 
 // NotificationProvider defines the contract for any external notification integration
@@ -60,10 +60,13 @@ type NotificationLog struct {
 	AppointmentID string              `json:"appointment_id,omitempty"`
 	Channel       NotificationChannel `json:"channel"`
 	ProviderName  string              `json:"provider_name"`
-	Recipient     string              `json:"recipient"`
-	Subject       string              `json:"subject,omitempty"`
-	Body          string              `json:"body"`
-	Status        NotificationStatus  `json:"status"`
-	ErrorMessage  string              `json:"error_message,omitempty"`
-	SentAt        time.Time           `json:"sent_at"`
+	// ExternalMessageID is the vendor's message ID, used to reconcile later delivery-status
+	// updates and to reference a message when raising issues with the vendor.
+	ExternalMessageID string             `json:"external_message_id,omitempty"`
+	Recipient         string             `json:"recipient"`
+	Subject           string             `json:"subject,omitempty"`
+	Body              string             `json:"body"`
+	Status            NotificationStatus `json:"status"`
+	ErrorMessage      string             `json:"error_message,omitempty"`
+	SentAt            time.Time          `json:"sent_at"`
 }

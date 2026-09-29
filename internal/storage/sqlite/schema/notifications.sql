@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS notification_log (
     appointment_id TEXT,
     channel TEXT NOT NULL,
     provider_name TEXT NOT NULL,
+    external_message_id TEXT DEFAULT '',
     recipient TEXT NOT NULL,
     subject TEXT DEFAULT '',
     body TEXT NOT NULL DEFAULT '',

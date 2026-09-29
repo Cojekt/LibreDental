@@ -1,3 +1,4 @@
-h1:ouXh/WWypVH3QDDA0OCjyVJ9nke6Vc80/GnDRqWvM+g=
+h1:7G9WT+k6QcxQrPLwmGUSGbfLNZ2MJmvPJ8fvRq0nLXU=
 20260920024046_initial_schema.sql h1:Uca6VROTh5ZmWqF7dOca6M61paZK4kJGB/2kHH1pAQU=
 20260923003028_add_notification_log.sql h1:bFVQIYiNy/oZCmJcw2OBTqE/HfdgNNkTqLk01LCdOic=
+20260929021426_add_notification_external_message_id.sql h1:6M0CNyk7tWY8dQpmNyepaNG8G/A9QZA+uirGIA8Bz4Y=

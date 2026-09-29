@@ -558,5 +558,7 @@
   "integrations_save_success": "Credentials saved successfully.",
   "integrations_save_error": "Failed to save credentials.",
   "integrations_section_notifications": "Patient Notifications (Email/SMS/Voice)",
-  "integrations_notifications_no_providers": "No notification providers are configured for this installation."
+  "integrations_notifications_no_providers": "No notification providers are configured for this installation.",
+  "integrations_claims_no_providers": "No claims providers are configured for this installation.",
+  "integrations_providers_load_error": "Failed to load providers."
 }

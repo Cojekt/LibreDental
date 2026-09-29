@@ -72,7 +72,7 @@ func main() {
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
 	notificationLogRepo := sqlite.NewNotificationRepository(db)
-	notificationService := services.NewNotificationService(patientRepo, notificationLogRepo, secretsService, auditService)
+	notificationService := services.NewNotificationService(patientRepo, appointmentRepo, notificationLogRepo, secretsService, auditService)
 
 	serverCfg := app.LoadServerConfig()
 
