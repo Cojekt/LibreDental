@@ -212,14 +212,22 @@ func TestNotificationService_AppointmentMustBelongToPatient(t *testing.T) {
 	if _, err := svc.SendNotification(token, "pat_other", "appt_owned", "mock_email", "Reminder", "See you soon"); !errors.Is(err, storage.ErrInvalidInput) {
 		t.Errorf("Expected ErrInvalidInput when appointment belongs to another patient, got: %v", err)
 	}
-	if list, _ := svc.ListNotificationLogForAppointment(token, "appt_owned"); len(list) != 0 {
+	list, err := svc.ListNotificationLogForAppointment(token, "appt_owned")
+	if err != nil {
+		t.Fatalf("Failed to list notification log for appointment: %v", err)
+	}
+	if len(list) != 0 {
 		t.Errorf("Expected no notification recorded for mismatched appointment, got %d", len(list))
 	}
 
 	if _, err := svc.SendNotification(token, "pat_appt_owner", "appt_owned", "mock_email", "Reminder", "See you soon"); err != nil {
 		t.Fatalf("Failed to send notification for owned appointment: %v", err)
 	}
-	if list, _ := svc.ListNotificationLogForAppointment(token, "appt_owned"); len(list) != 1 {
+	list, err = svc.ListNotificationLogForAppointment(token, "appt_owned")
+	if err != nil {
+		t.Fatalf("Failed to list notification log for appointment: %v", err)
+	}
+	if len(list) != 1 {
 		t.Errorf("Expected 1 notification recorded for appointment, got %d", len(list))
 	}
 }
