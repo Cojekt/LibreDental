@@ -2,13 +2,16 @@ package services
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/zalando/go-keyring"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
@@ -26,12 +29,18 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	}
 	defer db.Close()
 
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tmpDir, "test_billing_audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit db: %v", err)
+	}
+	defer auditDb.Close()
+
 	ctx := context.Background()
 	patientRepo := sqlite.NewPatientRepository(db)
 	chartRepo := sqlite.NewChartRepository(db)
 	claimRepo := sqlite.NewClaimRepository(db)
 
-	auditRepo := sqlite.NewAuditRepository(db)
+	auditRepo := sqlite.NewAuditRepository(auditDb)
 	configRepo := sqlite.NewPracticeConfigRepository(db)
 	err = configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true})
 	if err != nil {
@@ -48,7 +57,7 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	procRepo := sqlite.NewProcedureRepository(db)
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
 
 	// Create test patient
 	patient := &domain.Patient{
@@ -112,6 +121,196 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	if len(chart.Conditions) == 0 || chart.Conditions[0].Status != domain.ToothStatusCompleted {
 		t.Errorf("Expected condition status to be completed, got %s", chart.Conditions[0].Status)
 	}
+
+	logs, err := auditRepo.Query(ctx, "pat_test_1", 50, 0)
+	if err != nil {
+		t.Fatalf("Failed to query audit logs: %v", err)
+	}
+	foundChartUpdate := false
+	for _, l := range logs {
+		if l.Resource == "dental_chart" && l.Action == domain.AuditActionUpdate {
+			foundChartUpdate = true
+		}
+	}
+	if !foundChartUpdate {
+		t.Errorf("Expected an audit entry for the chart condition being marked completed")
+	}
+
+	// 4. Billing the same condition again must not produce a duplicate claim
+	if _, err := billingSvc.CreateClaimFromChartConditions(token, "pat_test_1", "prov_1", []string{"cond_test_1"}); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Expected ErrInvalidInput when re-billing an already billed condition, got %v", err)
+	}
+
+	// A mix of billed and unbilled conditions only bills the new one
+	cond2 := &domain.ToothCondition{
+		ID:          "cond_test_2",
+		PatientID:   "pat_test_1",
+		ToothNumber: 3,
+		ADACode:     "D2391",
+		Description: "1-Surface Composite Resin",
+		Status:      domain.ToothStatusTreatmentPlanned,
+		Fee:         14000,
+	}
+	if _, err := chartRepo.SaveCondition(ctx, cond2); err != nil {
+		t.Fatalf("Failed to save second tooth condition: %v", err)
+	}
+	claim2, err := billingSvc.CreateClaimFromChartConditions(token, "pat_test_1", "prov_1", []string{"cond_test_1", "cond_test_2"})
+	if err != nil {
+		t.Fatalf("Failed to create claim for unbilled condition: %v", err)
+	}
+	if len(claim2.LineItems) != 1 || claim2.LineItems[0].ToothConditionID != "cond_test_2" {
+		t.Errorf("Expected only cond_test_2 to be billed, got %+v", claim2.LineItems)
+	}
+
+	claims, err := claimRepo.List(ctx, "pat_test_1")
+	if err != nil {
+		t.Fatalf("Failed to list claims: %v", err)
+	}
+	if len(claims) != 2 {
+		t.Errorf("Expected 2 claims total, got %d", len(claims))
+	}
+}
+
+func TestBillingService_CreateClaimStampsPatientInsurance(t *testing.T) {
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "test_billing_service_insurance.db")
+
+	db, err := sqlite.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Failed to open db: %v", err)
+	}
+	defer db.Close()
+
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tmpDir, "test_billing_service_insurance_audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit db: %v", err)
+	}
+	defer auditDb.Close()
+
+	ctx := context.Background()
+	patientRepo := sqlite.NewPatientRepository(db)
+	chartRepo := sqlite.NewChartRepository(db)
+	claimRepo := sqlite.NewClaimRepository(db)
+	paymentRepo := sqlite.NewPaymentRepository(db)
+	bundleRepo := sqlite.NewBundleRepository(db)
+	procRepo := sqlite.NewProcedureRepository(db)
+	auditRepo := sqlite.NewAuditRepository(auditDb)
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+
+	if err := configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditSvc := NewAuditService(auditRepo, configRepo)
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
+	secretsSvc := NewSecretsService()
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+
+	insuredPatient := &domain.Patient{
+		ID:                    "pat_insured",
+		FirstName:             "Insured",
+		LastName:              "Patient",
+		DateOfBirth:           time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+		Sex:                   domain.SexFemale,
+		Status:                domain.StatusActive,
+		InsuranceCarrier:      "Delta Dental",
+		InsurancePolicyNumber: "POL-123",
+		InsuranceGroupNumber:  "GRP-456",
+		CreatedAt:             time.Now().UTC(),
+		UpdatedAt:             time.Now().UTC(),
+	}
+	if err := patientRepo.Create(ctx, insuredPatient); err != nil {
+		t.Fatalf("Failed to create insured patient: %v", err)
+	}
+
+	uninsuredPatient := &domain.Patient{
+		ID:          "pat_uninsured",
+		FirstName:   "Uninsured",
+		LastName:    "Patient",
+		DateOfBirth: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
+		Sex:         domain.SexMale,
+		Status:      domain.StatusActive,
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
+	}
+	if err := patientRepo.Create(ctx, uninsuredPatient); err != nil {
+		t.Fatalf("Failed to create uninsured patient: %v", err)
+	}
+
+	// A claim for an insured patient with no insurance fields set should be
+	// stamped with the patient's on-file insurance, and that stamping should
+	// be persisted, not just reflected in the returned object.
+	claim, err := billingSvc.CreateClaim(token, &domain.Claim{
+		PatientID:     "pat_insured",
+		ProviderID:    "prov_1",
+		DateOfService: "2026-01-01",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create claim: %v", err)
+	}
+	if claim.InsuranceCarrier != "Delta Dental" || claim.PolicyNumber != "POL-123" || claim.GroupNumber != "GRP-456" {
+		t.Errorf("Expected claim to be stamped with patient insurance, got %+v", claim)
+	}
+	persistedClaim, err := claimRepo.GetByID(ctx, claim.ID)
+	if err != nil {
+		t.Fatalf("Failed to fetch persisted claim: %v", err)
+	}
+	if persistedClaim.InsuranceCarrier != "Delta Dental" || persistedClaim.PolicyNumber != "POL-123" || persistedClaim.GroupNumber != "GRP-456" {
+		t.Errorf("Expected persisted claim to be stamped with patient insurance, got %+v", persistedClaim)
+	}
+
+	// A claim with insurance fields already supplied by the caller should not
+	// be overwritten by the patient's on-file insurance.
+	explicitClaim, err := billingSvc.CreateClaim(token, &domain.Claim{
+		PatientID:        "pat_insured",
+		ProviderID:       "prov_1",
+		DateOfService:    "2026-01-01",
+		InsuranceCarrier: "Cigna",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create claim with explicit insurance: %v", err)
+	}
+	if explicitClaim.InsuranceCarrier != "Cigna" || explicitClaim.PolicyNumber != "" {
+		t.Errorf("Expected caller-supplied insurance to be preserved, got %+v", explicitClaim)
+	}
+
+	// A claim for a patient with no insurance on file should be left blank.
+	uninsuredClaim, err := billingSvc.CreateClaim(token, &domain.Claim{
+		PatientID:     "pat_uninsured",
+		ProviderID:    "prov_1",
+		DateOfService: "2026-01-01",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create claim for uninsured patient: %v", err)
+	}
+	if uninsuredClaim.InsuranceCarrier != "" {
+		t.Errorf("Expected no insurance to be stamped, got %+v", uninsuredClaim)
+	}
+
+	// A claim for an insured patient with insurance fields deliberately
+	// cleared (InsuranceDirty set) should not be re-stamped.
+	clearedClaim, err := billingSvc.CreateClaim(token, &domain.Claim{
+		PatientID:      "pat_insured",
+		ProviderID:     "prov_1",
+		DateOfService:  "2026-01-01",
+		InsuranceDirty: true,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create claim with cleared insurance: %v", err)
+	}
+	if clearedClaim.InsuranceCarrier != "" || clearedClaim.PolicyNumber != "" || clearedClaim.GroupNumber != "" {
+		t.Errorf("Expected deliberately cleared insurance to be preserved, got %+v", clearedClaim)
+	}
+	persistedClearedClaim, err := claimRepo.GetByID(ctx, clearedClaim.ID)
+	if err != nil {
+		t.Fatalf("Failed to fetch persisted cleared claim: %v", err)
+	}
+	if persistedClearedClaim.InsuranceCarrier != "" || persistedClearedClaim.PolicyNumber != "" || persistedClearedClaim.GroupNumber != "" {
+		t.Errorf("Expected persisted cleared claim to have no insurance, got %+v", persistedClearedClaim)
+	}
 }
 
 func TestBillingService_BundlesAndFeeSchedulesRequireAuth(t *testing.T) {
@@ -125,6 +324,7 @@ func TestBillingService_BundlesAndFeeSchedulesRequireAuth(t *testing.T) {
 	defer db.Close()
 
 	ctx := context.Background()
+	patientRepo := sqlite.NewPatientRepository(db)
 	chartRepo := sqlite.NewChartRepository(db)
 	claimRepo := sqlite.NewClaimRepository(db)
 	paymentRepo := sqlite.NewPaymentRepository(db)
@@ -143,7 +343,7 @@ func TestBillingService_BundlesAndFeeSchedulesRequireAuth(t *testing.T) {
 	}
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
 
 	bundle := &domain.TreatmentBundle{
 		Shortname: "crwn",
@@ -214,6 +414,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 
 	ctx := context.Background()
 	claimRepo := sqlite.NewClaimRepository(db)
+	patientRepo := sqlite.NewPatientRepository(db)
 
 	auditRepo := sqlite.NewAuditRepository(db)
 	configRepo := sqlite.NewPracticeConfigRepository(db)
@@ -235,6 +436,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 		sqlite.NewProcedureRepository(db),
 		sqlite.NewProcedureRepository(db),
 		sqlite.NewChartRepository(db),
+		patientRepo,
 		secretsSvc,
 		auditSvc,
 	)
@@ -243,7 +445,6 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	testProv := &dummyTestProvider{}
 	billingSvc.registerProvider(testProv)
 
-	patientRepo := sqlite.NewPatientRepository(db)
 	patient := &domain.Patient{
 		ID:          "pat_test_1",
 		FirstName:   "Jane",
@@ -342,7 +543,7 @@ func TestBillingService_GetAllPatientBalances(t *testing.T) {
 	}
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
 
 	if _, err := billingSvc.GetAllPatientBalances("bogus-token"); err != ErrUnauthorized {
 		t.Fatalf("Expected ErrUnauthorized without a session, got %v", err)
@@ -448,4 +649,130 @@ func (p *dummyTestProvider) SubmitClaim(ctx context.Context, claim *domain.Claim
 		return p.submitFunc()
 	}
 	return &domain.ClaimSubmissionResult{Status: domain.ClaimStatusSubmitted}, nil
+}
+
+// failingChartRepo fails SaveCondition once `failOn` saves have succeeded.
+type failingChartRepo struct {
+	storage.ChartRepository
+	saves  int
+	failOn int
+}
+
+func (r *failingChartRepo) SaveCondition(ctx context.Context, c *domain.ToothCondition) (bool, error) {
+	if r.saves == r.failOn {
+		r.saves++
+		return false, errors.New("simulated chart write failure")
+	}
+	r.saves++
+	return r.ChartRepository.SaveCondition(ctx, c)
+}
+
+func setupChartBillingTest(t *testing.T, chartRepo storage.ChartRepository) (*BillingService, string, *sqlite.ClaimRepository, *sqlite.ChartRepository) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	db, err := sqlite.Open(filepath.Join(tmpDir, "billing.db"))
+	if err != nil {
+		t.Fatalf("Failed to open db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tmpDir, "audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit db: %v", err)
+	}
+	t.Cleanup(func() { auditDb.Close() })
+
+	ctx := context.Background()
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	if err := configRepo.SaveProvider(ctx, &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditSvc := NewAuditService(sqlite.NewAuditRepository(auditDb), configRepo)
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
+	patientRepo := sqlite.NewPatientRepository(db)
+	if err := patientRepo.Create(ctx, &domain.Patient{ID: "pat_1", FirstName: "Jane", LastName: "Doe", Status: domain.StatusActive}); err != nil {
+		t.Fatalf("Failed to create patient: %v", err)
+	}
+
+	realChart := sqlite.NewChartRepository(db)
+	for i, id := range []string{"cond_a", "cond_b"} {
+		c := &domain.ToothCondition{ID: id, PatientID: "pat_1", ToothNumber: 3 + i, ADACode: "D2391", Description: "Composite", Status: domain.ToothStatusTreatmentPlanned, Fee: 14000}
+		if _, err := realChart.SaveCondition(ctx, c); err != nil {
+			t.Fatalf("Failed to save condition: %v", err)
+		}
+	}
+	if chartRepo == nil {
+		chartRepo = realChart
+	} else if f, ok := chartRepo.(*failingChartRepo); ok {
+		f.ChartRepository = realChart
+	}
+
+	claimRepo := sqlite.NewClaimRepository(db)
+	procRepo := sqlite.NewProcedureRepository(db)
+	svc := NewBillingService(claimRepo, sqlite.NewPaymentRepository(db), sqlite.NewBundleRepository(db), procRepo, procRepo, chartRepo, patientRepo, NewSecretsService(), auditSvc)
+	return svc, token, claimRepo, realChart
+}
+
+func TestBillingService_ChartClaimRollsBackOnConditionUpdateFailure(t *testing.T) {
+	// The first condition update succeeds, the second fails.
+	svc, token, claimRepo, chartRepo := setupChartBillingTest(t, &failingChartRepo{failOn: 1})
+	ctx := context.Background()
+
+	if _, err := svc.CreateClaimFromChartConditions(token, "pat_1", "prov_1", []string{"cond_a", "cond_b"}); err == nil {
+		t.Fatal("Expected an error when a condition update fails")
+	}
+
+	claims, err := claimRepo.List(ctx, "pat_1")
+	if err != nil {
+		t.Fatalf("Failed to list claims: %v", err)
+	}
+	if len(claims) != 0 {
+		t.Errorf("Expected the claim to be rolled back, found %d claims", len(claims))
+	}
+	chart, err := chartRepo.GetChart(ctx, "pat_1")
+	if err != nil {
+		t.Fatalf("Failed to get chart: %v", err)
+	}
+	for _, c := range chart.Conditions {
+		if c.Status != domain.ToothStatusTreatmentPlanned {
+			t.Errorf("Expected condition %s restored to treatment_planned, got %s", c.ID, c.Status)
+		}
+	}
+}
+
+func TestBillingService_ChartClaimIgnoresDuplicateConditionIDs(t *testing.T) {
+	svc, token, _, _ := setupChartBillingTest(t, nil)
+	claim, err := svc.CreateClaimFromChartConditions(token, "pat_1", "prov_1", []string{"cond_a", "cond_a"})
+	if err != nil {
+		t.Fatalf("Failed to create claim: %v", err)
+	}
+	if len(claim.LineItems) != 1 {
+		t.Errorf("Expected one line item for a repeated condition ID, got %d", len(claim.LineItems))
+	}
+}
+
+func TestBillingService_ChartClaimConcurrentRequestsBillOnce(t *testing.T) {
+	svc, token, claimRepo, _ := setupChartBillingTest(t, nil)
+
+	const workers = 8
+	var wg sync.WaitGroup
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, _ = svc.CreateClaimFromChartConditions(token, "pat_1", "prov_1", []string{"cond_a", "cond_b"})
+		}()
+	}
+	wg.Wait()
+
+	claims, err := claimRepo.List(context.Background(), "pat_1")
+	if err != nil {
+		t.Fatalf("Failed to list claims: %v", err)
+	}
+	if len(claims) != 1 {
+		t.Errorf("Expected exactly one claim from concurrent billing, got %d", len(claims))
+	}
 }

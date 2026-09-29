@@ -44,6 +44,7 @@
     medicalAlerts = $bindable(),
     countryMeta,
     configuredProviders = [],
+    errorMsg = "",
     onsave,
   } = $props<{
     showPatientModal: boolean;
@@ -80,13 +81,23 @@
     medicalAlerts: string;
     countryMeta?: CountryConfig | null;
     configuredProviders?: Provider[];
+    errorMsg?: string;
     onsave: (e: Event) => void;
   }>();
 
-  const idLabel = $derived(countryMeta?.national_id_name || "National ID / SSN");
+  const idLabel = $derived.by(() => {
+    getLocaleVersion();
+    return countryMeta?.national_id_name || m.patient_national_id_default();
+  });
   const idPlaceholder = $derived(countryMeta?.national_id_placeholder || "000-00-0000");
-  const stateLabel = $derived(countryMeta?.state_province_label || "State / Province");
-  const postalLabel = $derived(countryMeta?.postal_code_label || "Postal Code");
+  const stateLabel = $derived.by(() => {
+    getLocaleVersion();
+    return countryMeta?.state_province_label || m.patient_state_default();
+  });
+  const postalLabel = $derived.by(() => {
+    getLocaleVersion();
+    return countryMeta?.postal_code_label || m.patient_postal_default();
+  });
 
   const modalTitle = $derived.by(() => {
     getLocaleVersion();
@@ -110,7 +121,7 @@
       <h3
         class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3 flex items-center gap-1.5"
       >
-        Patient Identity & Demographics
+        {m.patient_section_identity()}
       </h3>
       <div
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
@@ -173,7 +184,7 @@
             bind:value={preferredProviderId}
             class="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           >
-            <option value="">-- Unassigned --</option>
+            <option value="">{m.patient_provider_unassigned()}</option>
             {#each configuredProviders as prov}
               <option value={prov.id}>{prov.name} ({prov.specialty || prov.role})</option>
             {/each}
@@ -187,7 +198,7 @@
       <h3
         class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3 flex items-center gap-1.5"
       >
-        Contact Details & Location
+        {m.patient_section_contact()}
       </h3>
       <div
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
@@ -238,7 +249,7 @@
             id="state-province"
             type="text"
             bind:value={stateProvince}
-            placeholder="e.g. CA, ON, London"
+            placeholder={m.patient_placeholder_state()}
           />
         </FormField>
 
@@ -247,7 +258,7 @@
             id="postal-code"
             type="text"
             bind:value={postalCode}
-            placeholder="e.g. 90210, M5V 2T6"
+            placeholder={m.patient_placeholder_postal()}
           />
         </FormField>
 
@@ -268,7 +279,7 @@
             id="referral"
             type="text"
             bind:value={referralSource}
-            placeholder="e.g. Doctor Referral, Online"
+            placeholder={m.patient_placeholder_referral()}
           />
         </FormField>
 
@@ -288,7 +299,7 @@
       <h3
         class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3 flex items-center gap-1.5"
       >
-        Emergency Contact & Billing Guarantor
+        {m.patient_section_emergency()}
       </h3>
       <div
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
@@ -306,7 +317,7 @@
             id="emerg-rel"
             type="text"
             bind:value={emergencyRel}
-            placeholder="e.g. Spouse, Parent"
+            placeholder={m.patient_placeholder_relationship()}
           />
         </FormField>
         <FormField label={m.patient_emergency_phone()} forId="emerg-phone">
@@ -340,7 +351,7 @@
       <h3
         class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3 flex items-center gap-1.5"
       >
-        Dental Insurance & Preferences
+        {m.patient_section_insurance()}
       </h3>
       <div
         class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800"
@@ -350,7 +361,7 @@
             id="ins-carrier"
             type="text"
             bind:value={insuranceCarrier}
-            placeholder="e.g. Delta Dental PPO"
+            placeholder={m.patient_placeholder_carrier()}
           />
         </FormField>
         <FormField label={m.patient_insurance_policy()} forId="ins-policy">
@@ -375,17 +386,17 @@
             class="flex items-center gap-2.5 cursor-pointer text-sm text-slate-200 select-none"
           >
             <input type="checkbox" bind:checked={insuranceIsSubscriber} />
-            <span>Subscriber (Head of Family)</span>
+            <span>{m.patient_insurance_is_subscriber()}</span>
           </label>
         </div>
 
         {#if !insuranceIsSubscriber}
-          <FormField label="Subscriber ID" forId="ins-subscriber">
+          <FormField label={m.patient_subscriber_id()} forId="ins-subscriber">
             <Input
               id="ins-subscriber"
               type="text"
               bind:value={insuranceSubscriberId}
-              placeholder="e.g. pat_123456"
+              placeholder={m.patient_placeholder_subscriber_id()}
             />
           </FormField>
         {/if}
@@ -399,10 +410,19 @@
           id="alerts"
           type="text"
           bind:value={medicalAlerts}
-          placeholder="e.g. Penicillin Allergy, Latex Allergy, High Blood Pressure"
+          placeholder={m.patient_placeholder_alerts()}
         />
       </FormField>
     </div>
+
+    {#if errorMsg}
+      <div
+        role="alert"
+        class="bg-rose-500/10 text-rose-400 border border-rose-500/20 p-3 rounded-lg text-sm"
+      >
+        {errorMsg}
+      </div>
+    {/if}
 
     <div class="flex justify-end gap-3 border-t border-slate-800 pt-4">
       <button

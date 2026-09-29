@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
@@ -19,10 +21,21 @@ type BillingService struct {
 	procRepo     storage.ProcedureCodeRepository
 	feeRepo      storage.FeeScheduleRepository
 	chartRepo    storage.ChartRepository
+	patientRepo  storage.PatientRepository
 	secrets      *SecretsService
 	auditService *AuditService
 	providers    map[string]domain.ClaimProvider
+
+	// chartBillingMu serializes billing from the chart. The already-billed check and the
+	// claim insert are separate statements, so without it two concurrent requests (e.g.
+	// two LAN clients) could both pass the check and bill the same conditions.
+	chartBillingMu sync.Mutex
 }
+
+// ErrNothingToBill is returned when none of the requested chart conditions can be billed,
+// typically because they are all already on a claim. The frontend matches its message
+// (see CHART_NOTHING_TO_BILL in ChartingView.svelte), so keep the text stable.
+var ErrNothingToBill = fmt.Errorf("%w: no unbilled conditions found to create claim", storage.ErrInvalidInput)
 
 func NewBillingService(
 	claimRepo storage.ClaimRepository,
@@ -31,6 +44,7 @@ func NewBillingService(
 	procRepo storage.ProcedureCodeRepository,
 	feeRepo storage.FeeScheduleRepository,
 	chartRepo storage.ChartRepository,
+	patientRepo storage.PatientRepository,
 	secrets *SecretsService,
 	auditService *AuditService,
 ) *BillingService {
@@ -41,6 +55,7 @@ func NewBillingService(
 		procRepo:     procRepo,
 		feeRepo:      feeRepo,
 		chartRepo:    chartRepo,
+		patientRepo:  patientRepo,
 		secrets:      secrets,
 		auditService: auditService,
 		providers:    make(map[string]domain.ClaimProvider),
@@ -108,6 +123,9 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 			c.LineItems[i].ID = fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i)
 		}
 	}
+	if err := s.stampInsuranceFromPatient(c); err != nil {
+		return nil, fmt.Errorf("failed to create claim: %w", err)
+	}
 	if err := s.claimRepo.Create(context.Background(), c); err != nil {
 		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
@@ -115,6 +133,29 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 		return nil, fmt.Errorf("claim created but failed to log audit: %w", err)
 	}
 	return c, nil
+}
+
+// stampInsuranceFromPatient copies the patient's on-file insurance details onto
+// the claim when the caller hasn't already supplied or deliberately cleared
+// them, and the patient has insurance on file.
+func (s *BillingService) stampInsuranceFromPatient(c *domain.Claim) error {
+	if c.InsuranceDirty || c.PatientID == "" || s.patientRepo == nil {
+		return nil
+	}
+	if c.InsuranceCarrier != "" || c.PolicyNumber != "" || c.GroupNumber != "" {
+		return nil
+	}
+	patient, err := s.patientRepo.GetByID(context.Background(), c.PatientID)
+	if err != nil {
+		return fmt.Errorf("failed to look up patient for insurance stamping: %w", err)
+	}
+	if patient == nil || patient.InsuranceCarrier == "" {
+		return nil
+	}
+	c.InsuranceCarrier = patient.InsuranceCarrier
+	c.PolicyNumber = patient.InsurancePolicyNumber
+	c.GroupNumber = patient.InsuranceGroupNumber
+	return nil
 }
 
 // GetClaim retrieves a claim by ID.
@@ -602,6 +643,9 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		return nil, fmt.Errorf("%w: at least one condition ID is required", storage.ErrInvalidInput)
 	}
 
+	s.chartBillingMu.Lock()
+	defer s.chartBillingMu.Unlock()
+
 	ctx := context.Background()
 	chart, err := s.chartRepo.GetChart(ctx, patientID)
 	if err != nil {
@@ -611,6 +655,21 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 	condMap := make(map[string]domain.ToothCondition)
 	for _, c := range chart.Conditions {
 		condMap[c.ID] = c
+	}
+
+	// A condition that already appears on one of the patient's claims has been billed;
+	// billing it again would double-charge the patient/insurer.
+	existingClaims, err := s.claimRepo.List(ctx, patientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing claims: %w", err)
+	}
+	alreadyBilled := make(map[string]bool)
+	for _, c := range existingClaims {
+		for _, li := range c.LineItems {
+			if li.ToothConditionID != "" {
+				alreadyBilled[li.ToothConditionID] = true
+			}
+		}
 	}
 
 	nowStr := time.Now().Format("2006-01-02")
@@ -626,9 +685,14 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		UpdatedAt:     time.Now().UTC(),
 	}
 
+	if err := s.stampInsuranceFromPatient(claim); err != nil {
+		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
+	}
+
+	var toComplete []domain.ToothCondition
 	for i, condID := range conditionIDs {
 		cond, exists := condMap[condID]
-		if !exists {
+		if !exists || alreadyBilled[condID] {
 			continue
 		}
 
@@ -647,21 +711,58 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 			Fee:              cond.Fee,
 		}
 		claim.LineItems = append(claim.LineItems, lineItem)
+		alreadyBilled[condID] = true // a repeated ID in the request must not bill twice
 
-		// Mark tooth condition status as completed if it was treatment planned
 		if cond.Status == domain.ToothStatusTreatmentPlanned {
-			cond.Status = domain.ToothStatusCompleted
-			_, _ = s.chartRepo.SaveCondition(ctx, &cond)
+			toComplete = append(toComplete, cond)
 		}
 	}
 
 	if len(claim.LineItems) == 0 {
-		return nil, fmt.Errorf("%w: no matching conditions found to create claim", storage.ErrInvalidInput)
+		return nil, ErrNothingToBill
 	}
 
 	if err := s.claimRepo.Create(ctx, claim); err != nil {
 		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}
+
+	// Mark treatment-planned conditions completed only once the claim exists. If any update
+	// fails, undo the ones already made and remove the claim, so the caller never sees an
+	// error while a claim or half-updated chart is left behind.
+	var completed []domain.ToothCondition
+	for _, cond := range toComplete {
+		updated := cond
+		updated.Status = domain.ToothStatusCompleted
+		if _, err := s.chartRepo.SaveCondition(ctx, &updated); err != nil {
+			if rbErr := s.rollbackChartClaim(ctx, claim.ID, completed); rbErr != nil {
+				return nil, fmt.Errorf("failed to mark condition %s completed (%v); rollback also failed: %w", cond.ID, err, rbErr)
+			}
+			return nil, fmt.Errorf("failed to mark condition %s completed; the claim and chart changes were rolled back: %w", cond.ID, err)
+		}
+		completed = append(completed, cond)
+	}
+
 	_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, claim.PatientID, "claim", "Created claim from chart")
+	for _, cond := range completed {
+		if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, cond.PatientID, "dental_chart", fmt.Sprintf("Marked tooth condition %s completed when billed", cond.ID)); err != nil {
+			fmt.Printf("Warning: failed to log audit action: %v\n", err)
+		}
+	}
 	return claim, nil
+}
+
+// rollbackChartClaim restores the given conditions to their original state and deletes the
+// claim created for them.
+func (s *BillingService) rollbackChartClaim(ctx context.Context, claimID string, originals []domain.ToothCondition) error {
+	var errs []error
+	for _, cond := range originals {
+		restored := cond
+		if _, err := s.chartRepo.SaveCondition(ctx, &restored); err != nil {
+			errs = append(errs, fmt.Errorf("restore condition %s: %w", cond.ID, err))
+		}
+	}
+	if err := s.claimRepo.Delete(ctx, claimID); err != nil {
+		errs = append(errs, fmt.Errorf("delete claim %s: %w", claimID, err))
+	}
+	return errors.Join(errs...)
 }

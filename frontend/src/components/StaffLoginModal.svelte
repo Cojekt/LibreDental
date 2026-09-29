@@ -67,7 +67,7 @@
       ) {
         errorMsg = m.staff_login_incorrect_pin();
       } else {
-        errorMsg = "Failed to create session";
+        errorMsg = m.staff_login_failed();
       }
     } finally {
       isLoggingIn = false;
@@ -146,7 +146,7 @@
           type="button"
           onclick={() => (selectedProvider = null)}
           class="text-slate-400 hover:text-white mr-2"
-          aria-label="Go back"
+          aria-label={m.common_back()}
         >
           <svg
             viewBox="0 0 24 24"

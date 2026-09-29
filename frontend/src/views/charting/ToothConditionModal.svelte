@@ -2,6 +2,8 @@
   import type { CountryConfig, ProcedureCode } from "@bindings/domain/models.js";
   import { ToothSystem, ToothSurface, ToothStatus } from "@bindings/domain/models.js";
   import { m } from "../../paraglide/messages.js";
+  import Modal from "../../components/ui/Modal.svelte";
+  import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   let {
     showConditionModal = $bindable(false),
@@ -44,52 +46,38 @@
     handleDeleteCondition: (id: string) => void;
     formatCurrency: (amount: number) => string;
   }>();
+
+  const surfaceOptions = $derived.by(() => {
+    getLocaleVersion();
+    return [
+      { id: ToothSurface.SurfaceMesial, label: m.charting_surface_mesial() },
+      { id: ToothSurface.SurfaceDistal, label: m.charting_surface_distal() },
+      { id: ToothSurface.SurfaceOcclusal, label: m.charting_surface_occlusal() },
+      { id: ToothSurface.SurfaceIncisal, label: m.charting_surface_incisal() },
+      { id: ToothSurface.SurfaceFacial, label: m.charting_surface_facial() },
+      { id: ToothSurface.SurfaceLingual, label: m.charting_surface_lingual() },
+    ];
+  });
 </script>
 
-{#if showConditionModal && selectedToothNumber}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
-  >
-    <div
-      class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl p-6 relative flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
-    >
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-        <div>
-          <h3 class="text-lg font-bold text-slate-100 m-0">
-            {m.charting_modal_title({
-              label: getToothLabel(selectedToothNumber, currentToothSystem),
-            })}
-          </h3>
-          <p class="text-xs text-slate-400 m-0">
-            {countryMeta?.name || "Practice Country"}
-            {m.charting_modal_inspector_title()}
-          </p>
-        </div>
-        <button
-          type="button"
-          onclick={() => (showConditionModal = false)}
-          class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
-          aria-label="Close modal"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            class="w-5 h-5"
-          >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
+<Modal
+  bind:showModal={showConditionModal}
+  title={selectedToothNumber
+    ? m.charting_modal_title({
+        label: getToothLabel(selectedToothNumber, currentToothSystem),
+      })
+    : ""}
+  subtitle={`${countryMeta?.name || m.charting_practice_country()} ${m.charting_modal_inspector_title()}`}
+  maxWidth="max-w-lg"
+>
+  {#if selectedToothNumber}
+    <div class="flex flex-col gap-5">
       <!-- Surface Selection Grid -->
       <div class="flex flex-col gap-2">
         <span class="text-xs font-semibold text-slate-300">{m.charting_modal_surfaces_label()}</span
         >
         <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {#each [{ id: ToothSurface.SurfaceMesial, label: "Mesial (M)" }, { id: ToothSurface.SurfaceDistal, label: "Distal (D)" }, { id: ToothSurface.SurfaceOcclusal, label: "Occlusal (O)" }, { id: ToothSurface.SurfaceIncisal, label: "Incisal (I)" }, { id: ToothSurface.SurfaceFacial, label: "Facial (F)" }, { id: ToothSurface.SurfaceLingual, label: "Lingual (L)" }] as s}
+          {#each surfaceOptions as s}
             <button
               type="button"
               onclick={() => toggleSurface(s.id)}
@@ -115,7 +103,7 @@
               onclick={() => applyPreset(preset)}
               class="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition-colors"
             >
-              {preset.code ? `[${preset.code}] ` : ""}{preset.desc.split(" - ")[0]}
+              {preset.code ? `[${preset.code}] ` : ""}{preset.desc}
             </button>
           {/each}
         </div>
@@ -126,7 +114,7 @@
         {#if procedureCodes.length > 0}
           <div class="flex flex-col gap-1">
             <label for="condition-catalog-code" class="text-xs font-semibold text-sky-400">
-              {countryMeta?.name || "Regional"}
+              {countryMeta?.name || m.charting_catalog_regional()}
               {m.charting_modal_catalog_label()}
             </label>
             <select
@@ -143,7 +131,9 @@
               class="bg-slate-950 border border-sky-500/40 text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-sky-500 cursor-pointer"
             >
               <option value=""
-                >{m.charting_modal_catalog_prompt({ name: countryMeta?.name || "Country" })}</option
+                >{m.charting_modal_catalog_prompt({
+                  name: countryMeta?.name || m.charting_catalog_country(),
+                })}</option
               >
               {#each procedureCodes as p}
                 <option value={p.code}>
@@ -242,5 +232,5 @@
         </div>
       </form>
     </div>
-  </div>
-{/if}
+  {/if}
+</Modal>

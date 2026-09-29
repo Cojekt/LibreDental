@@ -2,12 +2,14 @@ package services_test
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/services"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
@@ -98,5 +100,48 @@ func TestAppointmentService(t *testing.T) {
 	}
 	if len(list) != 1 {
 		t.Errorf("Expected 1 appointment in list, got %d", len(list))
+	}
+
+	invalid := []struct {
+		name string
+		appt domain.Appointment
+	}{
+		{"end before start", domain.Appointment{PatientID: p.ID, StartTime: end, EndTime: start}},
+		{"zero length", domain.Appointment{PatientID: p.ID, StartTime: start, EndTime: start}},
+		{"missing times", domain.Appointment{PatientID: p.ID}},
+		{"unknown status", domain.Appointment{PatientID: p.ID, StartTime: start, EndTime: end, Status: "bogus"}},
+	}
+	for _, tc := range invalid {
+		appt := tc.appt
+		if _, err := service.CreateAppointment(token, &appt); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("CreateAppointment(%s): expected ErrInvalidInput, got %v", tc.name, err)
+		}
+	}
+
+	bad := *updated
+	bad.EndTime = bad.StartTime.Add(-time.Hour)
+	if _, err := service.UpdateAppointment(token, &bad); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("UpdateAppointment with inverted times: expected ErrInvalidInput, got %v", err)
+	}
+	if _, err := service.UpdateAppointmentStatus(token, appt.ID, "bogus"); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("UpdateAppointmentStatus with unknown status: expected ErrInvalidInput, got %v", err)
+	}
+
+	// A legacy row with an unrecognised status stays editable as long as the status is left as is.
+	legacy := &domain.Appointment{ID: "appt_legacy", PatientID: p.ID, ProviderID: "prov_1", OperatoryID: "chair_1", StartTime: start, EndTime: end, Status: "legacy_status"}
+	if err := appointmentRepo.Create(context.Background(), legacy); err != nil {
+		t.Fatalf("Failed to insert legacy appointment: %v", err)
+	}
+	stored, err := service.GetAppointment(token, "appt_legacy")
+	if err != nil {
+		t.Fatalf("Failed to get legacy appointment: %v", err)
+	}
+	stored.Notes = "Edited"
+	if _, err := service.UpdateAppointment(token, stored); err != nil {
+		t.Errorf("Editing a legacy appointment without changing its status should succeed, got %v", err)
+	}
+	stored.Status = "another_bogus"
+	if _, err := service.UpdateAppointment(token, stored); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Changing to an unknown status: expected ErrInvalidInput, got %v", err)
 	}
 }

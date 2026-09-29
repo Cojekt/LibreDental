@@ -208,9 +208,11 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 		return nil, 0, err
 	}
 
+	// No limit requested means every matching patient: callers such as the schedule and
+	// billing pickers need the full list, and a silent cap hides patients past the cutoff.
 	limit := filter.Limit
 	if limit <= 0 {
-		limit = 50
+		limit = -1
 	}
 
 	selectQuery := fmt.Sprintf(`

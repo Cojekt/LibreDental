@@ -2,6 +2,7 @@
   import type { Patient, CountryConfig } from "@bindings/domain/models.js";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { formatDateOnly } from "$lib/date.js";
 
   let {
     patients,
@@ -94,7 +95,7 @@
               </div>
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm"
-              >{p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString() : "N/A"}</td
+              >{formatDateOnly(p.date_of_birth) || m.common_not_available()}</td
             >
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               {#if p.medical_alerts && p.medical_alerts.length > 0}

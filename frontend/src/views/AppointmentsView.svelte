@@ -15,6 +15,7 @@
   import { m } from "../paraglide/messages.js";
   import { getLocalDateString, isSameDay, parseLocalDate } from "$lib/date.js";
   import { currentLocale, getLocaleVersion } from "$lib/locale.svelte.js";
+  import { providerRoleLabel } from "$lib/labels.js";
 
   let {
     appointments = [],
@@ -225,7 +226,7 @@
 
   function getPatientName(patientId: string): string {
     const p = patients.find((pat: Patient) => pat.id === patientId);
-    if (!p) return "Unknown Patient";
+    if (!p) return m.appts_unknown_patient();
     return `${p.first_name} ${p.last_name}`;
   }
 
@@ -373,8 +374,13 @@
         if (filterOperatory !== "all" && a.operatory_id !== filterOperatory) return false;
         if (filterStatus !== "all" && a.status !== filterStatus) return false;
         const isCalendar = viewMode === "calendar" || viewMode === "grid";
-        if (isCalendar && calendarView === "day") {
-          return isSameDay(a.start_time, selectedDate);
+        if (isCalendar) {
+          const apptDateStr = getLocalDateString(a.start_time);
+          if (calendarView === "day") return apptDateStr === selectedDate;
+          if (calendarView === "week") {
+            return apptDateStr >= weekDays[0].dateStr && apptDateStr <= weekDays[6].dateStr;
+          }
+          return apptDateStr >= monthGrid[0].dateStr && apptDateStr <= monthGrid[41].dateStr;
         }
         if (viewMode === "agenda") {
           const apptDateStr = getLocalDateString(a.start_time);
@@ -387,6 +393,18 @@
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
       })
   );
+
+  // The month grid also renders the leading/trailing days of adjacent months; stats and the
+  // heading count only cover the month itself.
+  let countedAppointments = $derived.by(() => {
+    if ((viewMode === "calendar" || viewMode === "grid") && calendarView === "month") {
+      const monthPrefix = selectedDate.slice(0, 7);
+      return filteredAppointments.filter((a: Appointment) =>
+        getLocalDateString(a.start_time).startsWith(monthPrefix)
+      );
+    }
+    return filteredAppointments;
+  });
 
   function formatTime(isoStr: string): string {
     if (!isoStr) return "";
@@ -604,7 +622,7 @@
       >
         <option value="all">{m.appts_all_providers()}</option>
         {#each providers as p}
-          <option value={p.id}>{p.name} ({p.role})</option>
+          <option value={p.id}>{p.name} ({providerRoleLabel(p.role)})</option>
         {/each}
       </select>
     </div>
@@ -682,7 +700,7 @@
 
   {#if viewMode === "calendar" || viewMode === "grid"}
     <!-- Stats Summary -->
-    <AppointmentStats appointments={filteredAppointments} compact />
+    <AppointmentStats appointments={countedAppointments} compact />
   {/if}
 
   <!-- Header Title -->
@@ -692,7 +710,7 @@
         {#if calendarView === "day"}
           {formattedDateHeading(selectedDate)}
         {:else if calendarView === "week"}
-          Week of {weekRangeHeading}
+          {m.appts_week_of({ range: weekRangeHeading })}
         {:else if calendarView === "month"}
           {monthYearHeading}
         {/if}
@@ -701,11 +719,10 @@
       {/if}
     </h2>
     <span class="text-xs text-slate-400 font-medium">
-      {filteredAppointments.length}
       {#if viewMode === "calendar" || viewMode === "grid"}
-        appointment{filteredAppointments.length === 1 ? "" : "s"} scheduled
+        {m.appts_count_scheduled({ count: countedAppointments.length })}
       {:else}
-        total appointment{filteredAppointments.length === 1 ? "" : "s"}
+        {m.appts_count_total({ count: countedAppointments.length })}
       {/if}
     </span>
   </div>

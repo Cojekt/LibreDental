@@ -17,6 +17,8 @@
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
   import { formatCurrency } from "$lib/currency.js";
+  import { handleError } from "$lib/error.js";
+  import { calculateAge, formatDateOnly } from "$lib/date.js";
   import ConfirmModal from "../components/ui/ConfirmModal.svelte";
 
   let { patients = [], countryMeta = null } = $props<{
@@ -29,35 +31,9 @@
   let selectedPatient = $derived(patients.find((p: Patient) => p.id === selectedPatientId) || null);
 
   function getPatientLabel(p: Patient): string {
-    const dobStr = p.date_of_birth || (p as any).dob;
-    if (!dobStr) return `${p.first_name} ${p.last_name}`;
-    try {
-      const d = new Date(dobStr);
-      if (!isNaN(d.getTime())) {
-        const formattedDob = d.toLocaleDateString();
-        return `${p.first_name} ${p.last_name} (${formattedDob})`;
-      }
-    } catch {
-      // fallback
-    }
-    return `${p.first_name} ${p.last_name}`;
-  }
-
-  function calculateAge(dobStr?: string): number | null {
-    if (!dobStr) return null;
-    try {
-      const dob = new Date(dobStr);
-      if (isNaN(dob.getTime())) return null;
-      const today = new Date();
-      let age = today.getFullYear() - dob.getFullYear();
-      const monthDiff = today.getMonth() - dob.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        age--;
-      }
-      return age >= 0 ? age : null;
-    } catch {
-      return null;
-    }
+    const formattedDob = formatDateOnly(p.date_of_birth);
+    if (!formattedDob) return `${p.first_name} ${p.last_name}`;
+    return `${p.first_name} ${p.last_name} (${formattedDob})`;
   }
 
   // Dental Chart state
@@ -157,48 +133,42 @@
   const lowerPrimaryLeft = [111, 112, 113, 114, 115];
   const lowerPrimaryRight = [116, 117, 118, 119, 120];
 
-  const procedurePresets = [
-    {
-      code: "D2391",
-      desc: "1-Surface Composite Resin (Posterior)",
-      fee: 140,
-      status: "treatment_planned",
-    },
-    {
-      code: "D2392",
-      desc: "2-Surface Composite Resin (Posterior)",
-      fee: 185,
-      status: "treatment_planned",
-    },
-    {
-      code: "D2393",
-      desc: "3-Surface Composite Resin (Posterior)",
-      fee: 230,
-      status: "treatment_planned",
-    },
-    {
-      code: "D2750",
-      desc: "Crown - Porcelain Fused to High Noble Metal",
-      fee: 950,
-      status: "treatment_planned",
-    },
-    {
-      code: "D3330",
-      desc: "Endodontic Therapy - Molar Root Canal",
-      fee: 850,
-      status: "treatment_planned",
-    },
-    {
-      code: "D7140",
-      desc: "Extraction, Erupted Tooth or Exposed Root",
-      fee: 160,
-      status: "missing",
-    },
-    { code: "D1351", desc: "Dental Sealant - Per Tooth", fee: 55, status: "completed" },
-    { code: "EXISTS", desc: "Existing Restoration / Healthy Tooth", fee: 0, status: "existing" },
+  type ProcedurePreset = { code: string; desc: string; fee: number; status: string };
+
+  // Common procedures offered as one-click presets. Fees and descriptions come from the
+  // practice's own catalog (including fee schedule overrides), so a preset is only offered
+  // when its code exists in that catalog.
+  const presetDefs: { code: string; status: string }[] = [
+    { code: "D2391", status: "treatment_planned" },
+    { code: "D2392", status: "treatment_planned" },
+    { code: "D2393", status: "treatment_planned" },
+    { code: "D2750", status: "treatment_planned" },
+    { code: "D3330", status: "treatment_planned" },
+    { code: "D7140", status: "missing" },
+    { code: "D1351", status: "completed" },
   ];
 
   let procedureCodes = $state<ProcedureCode[]>([]);
+
+  // Message of services.ErrNothingToBill (internal/services/billing_service.go); keep in sync.
+  const CHART_NOTHING_TO_BILL = "no unbilled conditions found to create claim";
+
+  let procedurePresets = $derived.by((): ProcedurePreset[] => {
+    getLocaleVersion();
+    const presets: ProcedurePreset[] = [];
+    for (const def of presetDefs) {
+      const item = procedureCodes.find((p: ProcedureCode) => p.code === def.code);
+      if (!item) continue;
+      presets.push({
+        code: item.code,
+        desc: item.description,
+        fee: (item.effective_fee || item.default_fee) / 100,
+        status: def.status,
+      });
+    }
+    presets.push({ code: "", desc: m.charting_preset_existing(), fee: 0, status: "existing" });
+    return presets;
+  });
   let isCreatingClaim = $state(false);
   let claimNoticeMsg = $state("");
 
@@ -250,12 +220,17 @@
         ids
       );
       if (claim) {
-        claimNoticeMsg = `Claim created successfully! (${claim.line_items?.length || 0} line items billed)`;
+        claimNoticeMsg = m.charting_claim_created({ count: claim.line_items?.length || 0 });
         await loadChart(selectedPatientId);
       }
     } catch (e) {
       console.error("Failed to create claim from chart:", e);
-      alert(m.charting_billing_err_claim());
+      const msg = handleError(e, "");
+      alert(
+        msg.includes(CHART_NOTHING_TO_BILL)
+          ? m.charting_billing_all_billed()
+          : m.charting_billing_err_claim()
+      );
     } finally {
       isCreatingClaim = false;
     }
@@ -323,10 +298,10 @@
     isEditingCondition = false;
     editingConditionId = "";
     formSurfaces = [];
-    formADACode = "D2391";
-    formDescription = "1-Surface Composite Resin";
+    formADACode = "";
+    formDescription = "";
     formStatus = ToothStatus.ToothStatusTreatmentPlanned;
-    formFee = 140;
+    formFee = 0;
     showConditionModal = true;
   }
 
@@ -350,8 +325,8 @@
     }
   }
 
-  function applyPreset(preset: (typeof procedurePresets)[0]) {
-    formADACode = preset.code === "EXISTS" ? "" : preset.code;
+  function applyPreset(preset: ProcedurePreset) {
+    formADACode = preset.code;
     formDescription = preset.desc;
     formFee = preset.fee;
     formStatus = preset.status as ToothStatus;
@@ -367,7 +342,7 @@
       tooth_number: selectedToothNumber,
       surfaces: formSurfaces,
       ada_code: formADACode,
-      description: formDescription || "Tooth finding",
+      description: formDescription.trim() || m.charting_default_finding(),
       status: formStatus,
       fee: Math.round(Number(formFee) * 100) || 0,
     };
@@ -416,7 +391,8 @@
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <!-- Patient Select Dropdown -->
       <div class="flex items-center gap-2">
-        <label for="chart-patient-select" class="text-xs font-medium text-slate-400">Patient:</label
+        <label for="chart-patient-select" class="text-xs font-medium text-slate-400"
+          >{m.charting_patient_label()}</label
         >
         <select
           id="chart-patient-select"
@@ -435,12 +411,12 @@
         </select>
 
         {#if selectedPatient}
-          {@const age = calculateAge(selectedPatient.date_of_birth || (selectedPatient as any).dob)}
+          {@const age = calculateAge(selectedPatient.date_of_birth)}
           {#if age !== null}
             <span
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-medium text-slate-300"
             >
-              <span class="text-slate-400">Age:</span>
+              <span class="text-slate-400">{m.charting_age_label()}</span>
               <span class="font-bold text-sky-400">{age}</span>
             </span>
           {/if}
@@ -451,9 +427,9 @@
           disabled={!selectedPatientId}
           onclick={() => (showXRaysModal = true)}
           class="ml-2 btn btn-primary text-xs shadow-md shadow-sky-500/20 px-3 py-1.5 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-          title="View Patient X-Rays"
+          title={m.charting_xrays_title()}
         >
-          <span class="hidden sm:inline">X-Rays</span>
+          <span class="hidden sm:inline">{m.charting_xrays_btn()}</span>
         </button>
       </div>
     </div>
@@ -465,11 +441,11 @@
       >
         <span>
           {#if currentToothSystem === ToothSystem.ToothSystemFDI}
-            <strong class="text-sky-200">FDI (ISO 3950) Notation</strong>
+            <strong class="text-sky-200">{m.charting_notation_fdi()}</strong>
           {:else if currentToothSystem === ToothSystem.ToothSystemPalmer}
-            <strong class="text-sky-200">Palmer Notation</strong>
+            <strong class="text-sky-200">{m.charting_notation_palmer()}</strong>
           {:else}
-            <strong class="text-sky-200">Universal Numbering System (1–32)</strong>
+            <strong class="text-sky-200">{m.charting_notation_universal()}</strong>
           {/if}
         </span>
       </div>

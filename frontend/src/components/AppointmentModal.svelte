@@ -6,6 +6,7 @@
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
   import { getLocalDateString } from "$lib/date.js";
+  import { providerRoleLabel, operatoryTypeLabel } from "$lib/labels.js";
 
   let {
     showModal = $bindable(false),
@@ -22,6 +23,7 @@
     status = $bindable("scheduled"),
     reason = $bindable(""),
     notes = $bindable(""),
+    errorMsg = "",
     onsave,
     ondelete,
   } = $props<{
@@ -39,6 +41,7 @@
     status: string;
     reason: string;
     notes: string;
+    errorMsg?: string;
     onsave: (e: Event) => void;
     ondelete?: () => void;
   }>();
@@ -86,7 +89,7 @@
         <option value="" disabled>{m.appt_select_patient_placeholder()}</option>
         {#each patients as p}
           <option value={p.id}>
-            {p.last_name}, {p.first_name} ({p.phone_primary || p.email || "No contact info"})
+            {p.last_name}, {p.first_name} ({p.phone_primary || p.email || m.appt_no_contact_info()})
           </option>
         {/each}
       </select>
@@ -111,7 +114,7 @@
           {:else}
             {#each configuredProviders as prov}
               {#if prov.is_active || prov.id === providerId}
-                <option value={prov.id}>{prov.name} ({prov.role})</option>
+                <option value={prov.id}>{prov.name} ({providerRoleLabel(prov.role)})</option>
               {/if}
             {/each}
           {/if}
@@ -130,7 +133,7 @@
           {:else}
             {#each configuredOperatories as op}
               {#if op.is_active || op.id === operatoryId}
-                <option value={op.id}>{op.name} ({op.type})</option>
+                <option value={op.id}>{op.name} ({operatoryTypeLabel(op.type)})</option>
               {/if}
             {/each}
           {/if}
@@ -214,6 +217,15 @@
         class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
       ></textarea>
     </FormField>
+
+    {#if errorMsg}
+      <div
+        role="alert"
+        class="bg-rose-500/10 text-rose-400 border border-rose-500/20 p-3 rounded-lg text-sm"
+      >
+        {errorMsg}
+      </div>
+    {/if}
 
     <!-- Action buttons -->
     <div class="flex items-center justify-between border-t border-slate-800 pt-4 mt-6">

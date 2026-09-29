@@ -2,6 +2,7 @@
   import type { Patient, CountryConfig } from "@bindings/domain/models.js";
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { calculateAge, formatDateOnly } from "$lib/date.js";
 
   let {
     patient = null,
@@ -41,20 +42,11 @@
     return raw.replace(/[a-zA-Z0-9]/g, "•");
   });
 
-  function calculateAge(dobStr?: string): number | null {
-    if (!dobStr) return null;
-    const dob = new Date(dobStr);
-    if (isNaN(dob.getTime())) return null;
-    const diffMs = Date.now() - dob.getTime();
-    const ageDate = new Date(diffMs);
-    return Math.abs(ageDate.getUTCFullYear() - 1970);
-  }
-
   const age = $derived(patient?.date_of_birth ? calculateAge(patient.date_of_birth) : null);
 
   function formatSex(sex?: string): string {
     getLocaleVersion();
-    if (!sex) return "N/A";
+    if (!sex) return m.common_not_available();
     switch (sex) {
       case "male":
         return m.sex_male();
@@ -321,9 +313,7 @@
             <div class="flex justify-between">
               <span class="text-slate-400">{m.patient_dob()}:</span>
               <span class="font-medium text-slate-100">
-                {patient.date_of_birth
-                  ? new Date(patient.date_of_birth).toLocaleDateString()
-                  : "N/A"}
+                {formatDateOnly(patient.date_of_birth) || m.common_not_available()}
               </span>
             </div>
             {#if formattedAddress}
