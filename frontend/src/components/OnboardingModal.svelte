@@ -10,6 +10,7 @@
     showOnboarding = $bindable(),
     step = $bindable(1),
     supportedCountries = [],
+    savedCountry = "",
     oncomplete,
     onprovidercreated,
     onalreadyinitialized,
@@ -17,6 +18,7 @@
     showOnboarding: boolean;
     step: 1 | 2;
     supportedCountries: CountryConfig[];
+    savedCountry?: string;
     oncomplete: (countryCode: string) => Promise<void>;
     onprovidercreated: () => void;
     onalreadyinitialized: () => void;
@@ -36,6 +38,13 @@
       .split("")
       .map((char) => 127397 + char.charCodeAt(0));
     return String.fromCodePoint(...codePoints);
+  }
+
+  // When resuming at step 2, the picker never saw the saved country; seed it so going back
+  // and continuing doesn't overwrite the clinic's country with the default.
+  function backToCountryStep() {
+    if (savedCountry) selectedCountry = savedCountry;
+    step = 1;
   }
 
   async function handleSubmit(e: Event) {
@@ -74,7 +83,7 @@
 
       {#if step === 2}
         <OnboardingProviderStep
-          onback={() => (step = 1)}
+          onback={backToCountryStep}
           oncomplete={onprovidercreated}
           {onalreadyinitialized}
         />

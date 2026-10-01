@@ -417,3 +417,63 @@ func TestPracticeConfigRepository_SaveInitialConfig(t *testing.T) {
 		t.Fatalf("Expected config to remain CA after rejected save, got %s", cfg.CountryCode)
 	}
 }
+
+func TestPracticeConfigRepository_SaveInitialConfig_ConcurrentRace(t *testing.T) {
+	tempDir := t.TempDir()
+	db, err := sqlite.Open(filepath.Join(tempDir, "test_initial_config_race.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	repo := sqlite.NewPracticeConfigRepository(db)
+	ctx := context.Background()
+
+	countries := []domain.CountryCode{"US", "CA", "GB", "AU", "NZ", "IE"}
+	var wg sync.WaitGroup
+	saveErrs := make([]error, len(countries))
+	var providerErr error
+	for i, code := range countries {
+		wg.Add(1)
+		go func(i int, code domain.CountryCode) {
+			defer wg.Done()
+			saveErrs[i] = repo.SaveInitialConfig(ctx, &domain.PracticeConfig{CountryCode: code})
+		}(i, code)
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		providerErr = repo.CreateInitialProvider(ctx, &domain.Provider{ID: "prov_first", Name: "First", Role: domain.RoleDentist, Pin: "1234"})
+	}()
+	wg.Wait()
+
+	if providerErr != nil {
+		t.Fatalf("Expected initial provider creation to succeed, got %v", providerErr)
+	}
+
+	saved := map[domain.CountryCode]bool{}
+	for i, err := range saveErrs {
+		if err == nil {
+			saved[countries[i]] = true
+		} else if !errors.Is(err, storage.ErrAlreadyInitialized) {
+			t.Fatalf("Unexpected error saving %s: %v", countries[i], err)
+		}
+	}
+
+	// The provider may win before any save; otherwise a rejected save must never be the one that landed.
+	cfg, err := repo.Get(ctx)
+	switch {
+	case errors.Is(err, storage.ErrNotFound):
+		if len(saved) != 0 {
+			t.Fatalf("Expected no stored config when no save succeeded, got successes %v", saved)
+		}
+	case err != nil:
+		t.Fatalf("Failed to get config: %v", err)
+	case !saved[cfg.CountryCode]:
+		t.Fatalf("Config country %s came from a save that reported ErrAlreadyInitialized", cfg.CountryCode)
+	}
+
+	if err := repo.SaveInitialConfig(ctx, &domain.PracticeConfig{CountryCode: "DE"}); !errors.Is(err, storage.ErrAlreadyInitialized) {
+		t.Fatalf("Expected ErrAlreadyInitialized after the race, got %v", err)
+	}
+}

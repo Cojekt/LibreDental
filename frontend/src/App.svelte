@@ -820,6 +820,7 @@
   bind:showOnboarding
   bind:step={onboardingStep}
   {supportedCountries}
+  savedCountry={practiceConfig?.country_code}
   oncomplete={handleOnboardingComplete}
   onprovidercreated={handleInitialProviderCreated}
   onalreadyinitialized={handleAlreadyInitialized}
