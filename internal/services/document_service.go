@@ -446,3 +446,80 @@ func (s *DocumentService) DeleteDocument(token string, id string) error {
 	}
 	return nil
 }
+
+// bridgeExportPrefix names the temp directories that hold documents handed to a program bridge.
+const bridgeExportPrefix = "libredental_bridge_"
+
+// exportPatientDocuments copies a patient's documents into a fresh private temp directory so
+// a local program bridge can open them. Exported names are sanitized because some receiving
+// programs parse paths out of their own command strings.
+func (s *DocumentService) exportPatientDocuments(patientID string, ids []string) (string, []string, error) {
+	docs := make([]*domain.Document, 0, len(ids))
+	for _, id := range ids {
+		doc, err := s.repo.GetByID(id)
+		if err != nil {
+			return "", nil, err
+		}
+		if doc.PatientID == nil || *doc.PatientID != patientID {
+			return "", nil, fmt.Errorf("%w: document does not belong to patient", storage.ErrInvalidInput)
+		}
+		docs = append(docs, doc)
+	}
+
+	dir, err := os.MkdirTemp("", bridgeExportPrefix)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create bridge export directory: %w", err)
+	}
+
+	files := make([]string, 0, len(docs))
+	for i, doc := range docs {
+		dest := filepath.Join(dir, fmt.Sprintf("%02d_%s", i+1, bridgeSafeFileName(doc)))
+		if err := copyFile(filepath.Join(s.getDocumentsBasePath(), doc.FilePath), dest); err != nil {
+			_ = os.RemoveAll(dir)
+			return "", nil, err
+		}
+		files = append(files, dest)
+	}
+	return dir, files, nil
+}
+
+func bridgeSafeFileName(doc *domain.Document) string {
+	name := strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '.', r == '_', r == '-':
+			return r
+		default:
+			return '_'
+		}
+	}, filepath.Base(doc.Name))
+	name = strings.Trim(name, ".")
+	if name == "" {
+		name = "document"
+	}
+	if filepath.Ext(name) == "" && strings.Contains(strings.ToLower(doc.ContentType), "dicom") {
+		name += ".dcm"
+	} else if filepath.Ext(name) == "" && doc.ContentType != "" {
+		if exts, err := mime.ExtensionsByType(doc.ContentType); err == nil && len(exts) > 0 {
+			name += exts[0]
+		}
+	}
+	return name
+}
+
+func copyFile(src, dest string) error {
+	input, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open source document: %w", err)
+	}
+	defer input.Close()
+
+	output, err := os.OpenFile(dest, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return fmt.Errorf("failed to create export file: %w", err)
+	}
+	if _, err := io.Copy(output, input); err != nil {
+		output.Close()
+		return fmt.Errorf("failed to copy document: %w", err)
+	}
+	return output.Close()
+}

@@ -71,6 +71,11 @@ func main() {
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
+	bridgeService := services.NewBridgeService(appDir, patientRepo, documentService, auditService)
+	for _, b := range services.DefaultProgramBridges() {
+		services.RegisterProgramBridge(bridgeService, b)
+	}
+
 	notificationLogRepo := sqlite.NewNotificationRepository(db)
 	notificationService := services.NewNotificationService(patientRepo, appointmentRepo, notificationLogRepo, secretsService, auditService)
 
@@ -94,6 +99,7 @@ func main() {
 			application.NewService(billingService),
 			application.NewService(documentService),
 			application.NewService(notificationService),
+			application.NewService(bridgeService),
 			application.NewService(timecardService),
 			application.NewService(auditService),
 		},
