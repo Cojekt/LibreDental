@@ -73,19 +73,29 @@ func (s *BridgeService) ListBridges(token string) ([]domain.BridgeInfo, error) {
 		return []domain.BridgeInfo{}, nil
 	}
 
-	ctx := context.Background()
+	stored, err := s.repo.List(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	byName := make(map[string]domain.BridgeConfig, len(stored))
+	for _, cfg := range stored {
+		byName[cfg.Name] = *cfg
+	}
+
 	infos := make([]domain.BridgeInfo, 0)
 	for _, b := range s.registered() {
-		cfg, err := s.configFor(ctx, b)
-		if err != nil {
-			return nil, err
+		cfg, ok := byName[b.Name()]
+		if !ok {
+			cfg = defaultBridgeConfig(b)
 		}
 		infos = append(infos, domain.BridgeInfo{Capabilities: b.Capabilities(), Config: cfg})
 	}
 	return infos, nil
 }
 
-// SetBridgeConfig saves the config for the bridge named by config.Name.
+// SetBridgeConfig saves the config for the bridge named by config.Name. The change is audited
+// before it is saved, so a config that can launch programs never exists without a record of
+// who set it.
 func (s *BridgeService) SetBridgeConfig(token string, config domain.BridgeConfig) error {
 	if s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
@@ -101,7 +111,7 @@ func (s *BridgeService) SetBridgeConfig(token string, config domain.BridgeConfig
 			return err
 		}
 	}
-	if _, err := splitBridgeArgs(config.Args); err != nil {
+	if err := validateBridgeArgs(config.Args); err != nil {
 		return err
 	}
 
@@ -111,13 +121,15 @@ func (s *BridgeService) SetBridgeConfig(token string, config domain.BridgeConfig
 	} else if !errors.Is(err, storage.ErrNotFound) {
 		return fmt.Errorf("failed to load program bridge config: %w", err)
 	}
-	if err := s.repo.Save(ctx, &config); err != nil {
-		return err
-	}
 	detail := fmt.Sprintf("Updated configuration for program bridge %s (enabled: %t, path: %s, args: %s)",
 		config.Name, config.Enabled, config.Path, config.Args)
 	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "program_bridge_config", detail); err != nil {
-		return fmt.Errorf("bridge config saved but failed to log audit: %w", err)
+		return fmt.Errorf("failed to log audit, bridge config not saved: %w", err)
+	}
+	if err := s.repo.Save(ctx, &config); err != nil {
+		_ = s.auditService.LogAction(token, domain.AuditActionUpdate, "program_bridge_config",
+			fmt.Sprintf("Failed to save configuration for program bridge %s: %v", config.Name, err))
+		return err
 	}
 	return nil
 }
@@ -225,14 +237,18 @@ func (s *BridgeService) registered() []domain.ProgramBridge {
 func (s *BridgeService) configFor(ctx context.Context, b domain.ProgramBridge) (domain.BridgeConfig, error) {
 	cfg, err := s.repo.Get(ctx, b.Name())
 	if errors.Is(err, storage.ErrNotFound) {
-		def := b.DefaultConfig()
-		def.Name = b.Name()
-		return def, nil
+		return defaultBridgeConfig(b), nil
 	}
 	if err != nil {
 		return domain.BridgeConfig{}, fmt.Errorf("failed to load program bridge config: %w", err)
 	}
 	return *cfg, nil
+}
+
+func defaultBridgeConfig(b domain.ProgramBridge) domain.BridgeConfig {
+	cfg := b.DefaultConfig()
+	cfg.Name = b.Name()
+	return cfg
 }
 
 func startBridgeProcess(launch *domain.BridgeLaunch) error {

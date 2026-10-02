@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/LibreDental/libredental/internal/domain"
@@ -72,6 +73,20 @@ var (
 	ErrBridgeNotConfigured = errors.New("program bridge is not configured")
 	errBridgeTemplate      = errors.New("invalid bridge argument template")
 )
+
+// validateBridgeArgs expands a template against a fully populated sample request, so unknown
+// tokens or a misplaced {files} are rejected when the config is saved rather than at launch.
+func validateBridgeArgs(template string) error {
+	_, err := ExpandBridgeArgs(template, &domain.BridgeRequest{
+		Patient: &domain.Patient{
+			ID: "sample", FirstName: "sample", LastName: "sample",
+			DateOfBirth: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), Sex: domain.SexOther,
+		},
+		Dir:   "sample",
+		Files: []string{"sample"},
+	})
+	return err
+}
 
 func validateBridgeExecutable(path string) error {
 	if strings.TrimSpace(path) == "" {

@@ -113,11 +113,26 @@ func TestDefaultProgramBridgesTemplatesParse(t *testing.T) {
 			t.Errorf("duplicate bridge name %q", b.Name())
 		}
 		seen[b.Name()] = true
-		if _, err := splitBridgeArgs(b.DefaultConfig().Args); err != nil {
-			t.Errorf("bridge %q default args do not parse: %v", b.Name(), err)
+		if err := validateBridgeArgs(b.DefaultConfig().Args); err != nil {
+			t.Errorf("bridge %q default args do not expand: %v", b.Name(), err)
 		}
 		if b.DefaultConfig().Enabled {
 			t.Errorf("bridge %q should be disabled by default", b.Name())
+		}
+	}
+}
+
+func TestValidateBridgeArgs(t *testing.T) {
+	valid := []string{"", "{files}", `-p {patient_id} "{last_name}, {first_name}" {birth_date} {sex} -d "{dir}"`}
+	for _, tmpl := range valid {
+		if err := validateBridgeArgs(tmpl); err != nil {
+			t.Errorf("validateBridgeArgs(%q): %v", tmpl, err)
+		}
+	}
+	invalid := []string{"{dire}", "--files={files}", "{last_name", `-d "unterminated`}
+	for _, tmpl := range invalid {
+		if err := validateBridgeArgs(tmpl); !errors.Is(err, errBridgeTemplate) {
+			t.Errorf("validateBridgeArgs(%q): expected template error, got %v", tmpl, err)
 		}
 	}
 }

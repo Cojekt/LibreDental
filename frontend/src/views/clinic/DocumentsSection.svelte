@@ -88,6 +88,8 @@
   async function handleUpload(e: Event) {
     e.preventDefault();
     if (!selectedFile || !docName) return;
+    // Snapshot the owner so a patient switch while the file is read cannot reassign it.
+    const targetPatientId = patientId;
 
     isUploading = true;
     uploadError = "";
@@ -122,7 +124,7 @@
 
           await DocumentService.SaveDocumentBase64(
             auth.token,
-            patientId, // empty for clinic document
+            targetPatientId, // empty for clinic document
             docName,
             docDesc,
             docType,

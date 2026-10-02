@@ -520,6 +520,6 @@
   </div>
 </div>
 
-{#if patient}
+{#if patient && showDocuments}
   <PatientDocumentsModal bind:showModal={showDocuments} {patient} />
 {/if}

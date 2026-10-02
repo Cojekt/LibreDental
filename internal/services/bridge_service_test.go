@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -17,6 +16,7 @@ import (
 )
 
 type bridgeTestEnv struct {
+	db        *sqlite.DB
 	svc       *BridgeService
 	docs      *DocumentService
 	audit     *AuditService
@@ -67,6 +67,7 @@ func newTestBridgeService(t *testing.T) *bridgeTestEnv {
 
 	docs := NewDocumentService(sqlite.NewDocumentRepository(db), tmpDir, auditSvc)
 	env := &bridgeTestEnv{
+		db:        db,
 		svc:       NewBridgeService(sqlite.NewProgramBridgeRepository(db), patientRepo, docs, auditSvc),
 		docs:      docs,
 		audit:     auditSvc,
@@ -180,6 +181,16 @@ func TestBridgeServiceConfig(t *testing.T) {
 		Name: "weasis", Args: `-d "unterminated`,
 	}); !errors.Is(err, errBridgeTemplate) {
 		t.Errorf("expected template error, got %v", err)
+	}
+	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
+		Name: "custom", Args: "--file={files}",
+	}); !errors.Is(err, errBridgeTemplate) {
+		t.Errorf("expected template error for inline {files}, got %v", err)
+	}
+	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
+		Name: "custom", Args: "{chart_number}",
+	}); !errors.Is(err, errBridgeTemplate) {
+		t.Errorf("expected template error for unknown token, got %v", err)
 	}
 	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{Name: "nope"}); err == nil {
 		t.Error("expected error for unregistered bridge")
@@ -349,14 +360,46 @@ func TestRemoveStaleBridgeExports(t *testing.T) {
 }
 
 func TestStartBridgeProcess(t *testing.T) {
-	exe, err := exec.LookPath("true")
+	// Re-run this test binary with a filter that matches nothing, so it exits immediately on
+	// every platform without depending on a system executable.
+	exe, err := os.Executable()
 	if err != nil {
-		t.Skip("no 'true' executable on this platform")
+		t.Fatalf("os.Executable: %v", err)
 	}
-	if err := startBridgeProcess(&domain.BridgeLaunch{Executable: exe, Args: []string{"a b", `"c"`}}); err != nil {
+	if err := startBridgeProcess(&domain.BridgeLaunch{Executable: exe, Args: []string{"-test.run=^$", "a b", `"c"`}}); err != nil {
 		t.Fatalf("startBridgeProcess: %v", err)
 	}
 	if err := startBridgeProcess(&domain.BridgeLaunch{Executable: filepath.Join(t.TempDir(), "missing")}); err == nil {
 		t.Error("expected error starting a missing executable")
+	}
+}
+
+type failingAuditRepo struct{}
+
+func (failingAuditRepo) Query(context.Context, string, int, int) ([]*domain.AuditLogEntry, error) {
+	return nil, nil
+}
+
+func (failingAuditRepo) Log(context.Context, *domain.AuditLogEntry) error {
+	return errors.New("audit database unavailable")
+}
+
+func TestBridgeServiceConfigNotSavedWithoutAudit(t *testing.T) {
+	env := newTestBridgeService(t)
+	auditSvc := NewAuditService(failingAuditRepo{}, sqlite.NewPracticeConfigRepository(env.db))
+	token, err := auditSvc.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	repo := sqlite.NewProgramBridgeRepository(env.db)
+	svc := NewBridgeService(repo, nil, nil, auditSvc)
+	svc.serverMode = false
+	RegisterProgramBridge(svc, NewCommandLineBridge("weasis", "", domain.BridgeCapabilityDocuments))
+
+	if err := svc.SetBridgeConfig(token, domain.BridgeConfig{Name: "weasis", Enabled: true, Path: env.exePath}); err == nil {
+		t.Fatal("expected error when the audit entry cannot be written")
+	}
+	if _, err := repo.Get(context.Background(), "weasis"); !errors.Is(err, storage.ErrNotFound) {
+		t.Errorf("config was saved without an audit entry: %v", err)
 	}
 }
