@@ -73,15 +73,20 @@
       if (!canEdit || !selectedProvider || providerConfigError) return;
       isSavingConfig = true;
       saveStatus = null;
+      const reqProvider = selectedProvider;
       try {
-        await service.SetProviderConfig(selectedProvider, {
+        await service.SetProviderConfig(reqProvider, {
           ...providerFullConfig,
           api_key: providerApiKey,
         });
-        saveStatus = { ok: true, msg: m.integrations_save_success() };
+        if (reqProvider === selectedProvider) {
+          saveStatus = { ok: true, msg: m.integrations_save_success() };
+        }
       } catch (e) {
         console.error("Failed to save provider config:", e);
-        saveStatus = { ok: false, msg: m.integrations_save_error() };
+        if (reqProvider === selectedProvider) {
+          saveStatus = { ok: false, msg: m.integrations_save_error() };
+        }
       } finally {
         isSavingConfig = false;
       }

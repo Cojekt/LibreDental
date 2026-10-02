@@ -18,6 +18,11 @@
   }>();
 
   import { auth } from "../stores/auth.svelte.js";
+
+  const logoAlt = $derived.by(() => {
+    getLocaleVersion();
+    return m.header_logo_alt();
+  });
 </script>
 
 <header class="w-full border-b border-slate-800 bg-slate-900 shadow-sm">
@@ -26,7 +31,7 @@
     <div class="flex items-center gap-3">
       <img
         src="/sourceicon.svg"
-        alt={m.header_logo_alt()}
+        alt={logoAlt}
         class="h-9 w-9 rounded-xl shadow-md shadow-purple-500/20 object-contain"
       />
       <div class="flex items-center">

@@ -190,10 +190,12 @@ enforced in Go, not in the UI.
     END { if (n && !ok) print f": "n }' *_service.go
   ```
 
-  Known intentional exceptions: login/session creation (`CreateSession`, `VerifyProviderPin`,
-  `ListProviders` for the login picker, with PINs masked), first-run `CreateInitialProvider`
-  (gated atomically on "no active providers"), locale/theme/window settings, provider-name
-  lists, and the procedure-code/bundle catalogs. `SecretsService` is not bound (check
+  Known intentional exceptions: login/session handling (`CreateSession`, `DestroySession`,
+  `VerifyProviderPin`, `ListProviders` for the login picker, with PINs masked), first-run
+  `CreateInitialProvider` (gated atomically on "no active providers"), the clinic profile
+  and operatory list shown read-only before sign-in (`GetConfig`, `ListOperatories`),
+  country metadata (`GetSupportedCountries`, `GetCountryConfig`), locale/theme/window
+  settings, provider-name lists, and the procedure-code/bundle/fee catalogs. `SecretsService` is not bound (check
   `main.go`), so its methods don't need a token. Known open item: `TimecardService`
   reads (staff payroll) are still ungated.
 - Anything that writes to the audit log must take its user from the session, never from
@@ -280,9 +282,10 @@ Unit tests don't catch a broken bundle or a view that throws on real data.
 
 - Update `README.md` / `docs/` if setup steps, dependencies, env vars or deployment
   requirements changed.
-- Release notes are generated from merged PR titles, so give the release PR a descriptive
-  title and call out **breaking changes** (e.g. "requires a fresh data directory") in the
-  PR description.
+- Release notes are generated from merged PR titles plus the downloads table; PR
+  descriptions are not included. Give the release PR a descriptive title, and after the
+  release is published, edit its notes on GitHub to add a **Breaking changes** section
+  for anything like "requires a fresh data directory".
 - Tag the release commit on `main`: `git tag -a vX.Y.Z -m "Release vX.Y.Z"` and push the
   tag. This triggers `.github/workflows/release.yml`.
 

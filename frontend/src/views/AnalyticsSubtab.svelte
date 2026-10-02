@@ -47,6 +47,11 @@
   $effect(() => {
     if (startDate && endDate) {
       fetchRevenue();
+    } else {
+      // Invalidate any in-flight request so it can't land under an incomplete range.
+      requestGen++;
+      payments = [];
+      loading = false;
     }
   });
 </script>

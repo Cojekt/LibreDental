@@ -24,10 +24,16 @@ LibreDental offers two separate binaries for two distinct deployment models:
 
 API keys for claim clearinghouses and notification providers are stored in the operating
 system's credential store, not in the database. Windows uses Credential Manager and needs
-no setup. On Linux the server needs a running Secret Service (e.g. GNOME Keyring) on a
-D-Bus session for the user it runs as; on a headless Ubuntu Server without one, saving
-integration credentials fails with an error mentioning `dbus-launch`. Ubuntu Desktop
-installs already include this.
+no setup. On Linux the server process needs access to an unlocked Secret Service
+(e.g. GNOME Keyring) on its user's D-Bus session. Without one, saving integration
+credentials fails with an error mentioning `dbus-launch`.
+
+The system-level systemd unit in §3 runs outside any login session, so it has no keyring
+even on Ubuntu Desktop. If you use integrations on Linux, run the server inside the
+desktop user's session instead, for example as a user unit
+(`~/.config/systemd/user/libredental.service` with the same `[Service]` section minus
+`User=`, `WantedBy=default.target`, then `systemctl --user enable --now libredental`),
+and enable automatic login for that user so the keyring is unlocked after a reboot.
 
 ### Prevent System Sleep
 

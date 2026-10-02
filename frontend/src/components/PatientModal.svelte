@@ -108,6 +108,15 @@
     getLocaleVersion();
     return m.patient_modal_subtitle();
   });
+
+  const emailPlaceholder = $derived.by(() => {
+    getLocaleVersion();
+    return m.patient_placeholder_email();
+  });
+  const addr1Placeholder = $derived.by(() => {
+    getLocaleVersion();
+    return m.patient_placeholder_addr1();
+  });
 </script>
 
 <Modal
@@ -188,7 +197,8 @@
             <option value="">{m.patient_provider_unassigned()}</option>
             {#each configuredProviders as prov}
               <option value={prov.id}
-                >{prov.name} ({prov.specialty || providerRoleLabel(prov.role)})</option
+                >{prov.name} ({prov.specialty ||
+                  (getLocaleVersion(), providerRoleLabel(prov.role))})</option
               >
             {/each}
           </select>
@@ -215,7 +225,7 @@
         </FormField>
 
         <FormField label={m.patient_email()} forId="email">
-          <EmailInput id="email" bind:value={email} placeholder={m.patient_placeholder_email()} />
+          <EmailInput id="email" bind:value={email} placeholder={emailPlaceholder} />
         </FormField>
 
         <div class="sm:col-span-2">
@@ -224,7 +234,7 @@
               id="addr1"
               type="text"
               bind:value={addressLine1}
-              placeholder={m.patient_placeholder_addr1()}
+              placeholder={addr1Placeholder}
             />
           </FormField>
         </div>

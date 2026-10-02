@@ -87,7 +87,7 @@ func (s *BillingService) ListProviders() []string {
 	return names
 }
 
-// GetProviderConfig retrieves configuration (including credentials) for a specific provider.
+// GetProviderConfig retrieves configuration (secrets redacted) for a specific provider.
 func (s *BillingService) GetProviderConfig(token string, providerName string) (map[string]string, error) {
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
@@ -106,12 +106,15 @@ func (s *BillingService) SetProviderConfig(token string, providerName string, co
 	if providerName == "" {
 		return fmt.Errorf("provider name is required")
 	}
-	if err := s.secrets.SetProviderConfig(providerName, config); err != nil {
-		return err
-	}
+	// Audit first so a config change can never land without a trail (same as SetBridgeConfig).
 	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "claim_provider_config",
 		"Updated configuration for claim provider "+providerName); err != nil {
-		return fmt.Errorf("provider config saved but failed to log audit: %w", err)
+		return fmt.Errorf("failed to log audit, provider config not saved: %w", err)
+	}
+	if err := s.secrets.SetProviderConfig(providerName, config); err != nil {
+		_ = s.auditService.LogAction(token, domain.AuditActionUpdate, "claim_provider_config",
+			fmt.Sprintf("Failed to save configuration for claim provider %s: %v", providerName, err))
+		return err
 	}
 	return nil
 }

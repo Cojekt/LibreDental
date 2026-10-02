@@ -156,3 +156,49 @@ func TestAuditService(t *testing.T) {
 		t.Errorf("Pagination offset returned the same row")
 	}
 }
+
+func TestAuditService_LogPatientActionUsesSessionUser(t *testing.T) {
+	tempDir := t.TempDir()
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tempDir, "audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit sqlite db: %v", err)
+	}
+	defer auditDb.Close()
+	mainDb, err := sqlite.Open(filepath.Join(tempDir, "main.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer mainDb.Close()
+
+	configRepo := sqlite.NewPracticeConfigRepository(mainDb)
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	service := services.NewAuditService(sqlite.NewAuditRepository(auditDb), configRepo)
+
+	if err := service.LogPatientAction("bogus-token", domain.AuditActionRead, "pat_9", "dental_chart", "Viewed chart"); err != services.ErrUnauthorized {
+		t.Fatalf("Expected ErrUnauthorized without a session, got %v", err)
+	}
+
+	token, err := service.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+	if err := service.LogPatientAction(token, domain.AuditActionRead, "pat_9", "dental_chart", "Viewed chart"); err != nil {
+		t.Fatalf("LogPatientAction failed: %v", err)
+	}
+
+	logs, err := service.GetAuditLogs(token, "pat_9", 10, 0)
+	if err != nil {
+		t.Fatalf("Failed to get audit logs: %v", err)
+	}
+	if len(logs) != 1 {
+		t.Fatalf("Expected 1 audit entry for pat_9, got %d", len(logs))
+	}
+	if logs[0].UserID != "prov_1" || logs[0].UserName != "Test Prov" {
+		t.Errorf("Expected entry attributed to the session user, got %q/%q", logs[0].UserID, logs[0].UserName)
+	}
+	if logs[0].Resource != "dental_chart" || logs[0].Action != domain.AuditActionRead {
+		t.Errorf("Unexpected entry contents: %+v", logs[0])
+	}
+}

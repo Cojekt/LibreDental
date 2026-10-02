@@ -212,21 +212,25 @@
       return;
     }
 
+    // The patient selector stays usable while this runs; drop banners for a patient no
+    // longer on screen.
+    const patientId = selectedPatientId;
     isCreatingClaim = true;
     try {
       const ids = billable.map((c) => c.id);
       const claim = await BillingService.CreateClaimFromChartConditions(
         auth.token,
-        selectedPatientId,
+        patientId,
         "",
         ids
       );
-      if (claim) {
+      if (claim && patientId === selectedPatientId) {
         claimNoticeMsg = m.charting_claim_created({ count: claim.line_items?.length || 0 });
-        await loadChart(selectedPatientId);
+        await loadChart(patientId);
       }
     } catch (e) {
       console.error("Failed to create claim from chart:", e);
+      if (patientId !== selectedPatientId) return;
       const msg = handleError(e, "");
       claimErrorMsg = msg.includes(CHART_NOTHING_TO_BILL)
         ? m.charting_billing_all_billed()

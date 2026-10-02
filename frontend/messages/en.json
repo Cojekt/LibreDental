@@ -725,5 +725,10 @@
   "billing_claim_status_submitted": "Submitted",
   "billing_claim_status_accepted": "Accepted",
   "billing_claim_status_rejected": "Rejected",
-  "billing_claim_status_paid": "Paid"
+  "billing_claim_status_paid": "Paid",
+  "clinic_hours_aria_shift_opens": "{day}, shift {shift}: opens",
+  "clinic_hours_aria_shift_closes": "{day}, shift {shift}: closes",
+  "clinic_hours_aria_break_label": "{day}, break {index}: label",
+  "clinic_hours_aria_break_start": "{day}, break {index}: start",
+  "clinic_hours_aria_break_end": "{day}, break {index}: end"
 }
