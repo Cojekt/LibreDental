@@ -6,6 +6,7 @@
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { providerRoleLabel } from "$lib/labels.js";
   import TimecardsModal from "./TimecardsModal.svelte";
 
   let { providers = [] } = $props<{
@@ -82,7 +83,7 @@
             </div>
             <div>
               <h4 class="text-sm font-bold text-slate-100">{p.name}</h4>
-              <p class="text-xs text-sky-400 capitalize font-medium">{p.role}</p>
+              <p class="text-xs text-sky-400 capitalize font-medium">{providerRoleLabel(p.role)}</p>
             </div>
           </div>
 

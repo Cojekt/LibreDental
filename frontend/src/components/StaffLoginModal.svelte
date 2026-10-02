@@ -3,6 +3,7 @@
   import Modal from "./ui/Modal.svelte";
   import { auth } from "../stores/auth.svelte.js";
   import { m } from "../paraglide/messages.js";
+  import { providerRoleLabel } from "$lib/labels.js";
   import { PracticeConfigService, AuditService } from "@bindings/services/index.js";
 
   let {
@@ -129,7 +130,7 @@
           </div>
           <div>
             <h4 class="font-bold text-slate-100">{p.name}</h4>
-            <p class="text-xs font-medium text-sky-400 capitalize">{p.role}</p>
+            <p class="text-xs font-medium text-sky-400 capitalize">{providerRoleLabel(p.role)}</p>
           </div>
         </button>
       {/each}
@@ -167,7 +168,9 @@
         </div>
         <div>
           <h4 class="font-bold text-slate-100">{selectedProvider.name}</h4>
-          <p class="text-xs font-medium text-sky-400 capitalize">{selectedProvider.role}</p>
+          <p class="text-xs font-medium text-sky-400 capitalize">
+            {providerRoleLabel(selectedProvider.role)}
+          </p>
         </div>
       </div>
 

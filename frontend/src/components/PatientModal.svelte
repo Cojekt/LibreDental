@@ -7,6 +7,7 @@
   import PhoneInput from "./ui/PhoneInput.svelte";
   import IdInput from "./ui/IdInput.svelte";
   import { m } from "../paraglide/messages.js";
+  import { providerRoleLabel } from "$lib/labels.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   let {
@@ -186,7 +187,9 @@
           >
             <option value="">{m.patient_provider_unassigned()}</option>
             {#each configuredProviders as prov}
-              <option value={prov.id}>{prov.name} ({prov.specialty || prov.role})</option>
+              <option value={prov.id}
+                >{prov.name} ({prov.specialty || providerRoleLabel(prov.role)})</option
+              >
             {/each}
           </select>
         </FormField>

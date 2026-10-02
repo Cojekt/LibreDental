@@ -10,6 +10,7 @@
   import PhoneInput from "../../components/ui/PhoneInput.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { providerRoleLabel } from "$lib/labels.js";
 
   let {
     providers = [],
@@ -253,7 +254,7 @@
               <div>
                 <h4 class="text-sm font-bold text-slate-100">{p.name}</h4>
                 <p class="text-xs text-sky-400 capitalize font-medium">
-                  {p.role}
+                  {providerRoleLabel(p.role)}
                   {p.specialty ? `• ${p.specialty}` : ""}
                 </p>
               </div>
