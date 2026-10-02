@@ -16,6 +16,7 @@
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { paymentMethodLabel } from "$lib/labels.js";
   import { formatCurrency } from "$lib/currency.js";
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
 
@@ -306,7 +307,7 @@
               <span class="text-base font-bold text-slate-100 font-mono"
                 >{formatCurrency(pay.amount, countryMeta?.default_currency)}</span
               >
-              <StatusBadge variant={pay.method} label={pay.method.replace("_", " ")} />
+              <StatusBadge variant={pay.method} label={paymentMethodLabel(pay.method)} />
               {#if pay.claim_id}
                 <span
                   class="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded border border-slate-700"
@@ -390,9 +391,7 @@
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
           {#each PAYMENT_METHODS as mMethod}
-            <option value={mMethod}
-              >{mMethod.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option
-            >
+            <option value={mMethod}>{paymentMethodLabel(mMethod)}</option>
           {/each}
         </select>
       </FormField>

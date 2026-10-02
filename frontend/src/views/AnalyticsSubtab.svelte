@@ -5,6 +5,7 @@
   import type { Payment, CountryConfig } from "@bindings/domain/index.js";
   import { getTodayDateString, getLocalDateString } from "$lib/date.js";
   import { formatCurrency } from "$lib/currency.js";
+  import { paymentMethodLabel } from "$lib/labels.js";
 
   let { countryMeta = null } = $props<{
     countryMeta?: CountryConfig | null;
@@ -134,7 +135,7 @@
           {#each payments as payment}
             <tr class="hover:bg-slate-800/40">
               <td class="whitespace-nowrap px-4 py-3">{payment.date}</td>
-              <td class="px-4 py-3 capitalize">{payment.method}</td>
+              <td class="px-4 py-3">{paymentMethodLabel(payment.method)}</td>
               <td class="px-4 py-3 text-right font-medium text-slate-200"
                 >{formatCurrency(payment.amount, countryMeta?.default_currency)}</td
               >

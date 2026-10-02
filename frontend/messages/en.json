@@ -715,5 +715,10 @@
   "clinic_profile_tooth_palmer": "Palmer Notation Method",
   "clinic_profile_tooth_universal": "Universal Numbering System (#1 - #32)",
   "common_status": "Status",
-  "appts_select_date": "Select date"
+  "appts_select_date": "Select date",
+  "billing_method_cash": "Cash",
+  "billing_method_check": "Check",
+  "billing_method_credit_card": "Credit Card",
+  "billing_method_insurance": "Insurance",
+  "billing_method_write_off": "Write-off"
 }

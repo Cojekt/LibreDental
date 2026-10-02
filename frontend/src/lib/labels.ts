@@ -33,3 +33,20 @@ export function operatoryTypeLabel(type?: string): string {
       return type || "";
   }
 }
+
+export function paymentMethodLabel(method?: string): string {
+  switch (method) {
+    case "cash":
+      return m.billing_method_cash();
+    case "check":
+      return m.billing_method_check();
+    case "credit_card":
+      return m.billing_method_credit_card();
+    case "insurance":
+      return m.billing_method_insurance();
+    case "write_off":
+      return m.billing_method_write_off();
+    default:
+      return method || "";
+  }
+}
