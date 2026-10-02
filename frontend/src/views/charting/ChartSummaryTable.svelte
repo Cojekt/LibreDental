@@ -9,6 +9,7 @@
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { conditionStatusLabel } from "$lib/labels.js";
 
   let {
     selectedPatient,
@@ -159,7 +160,7 @@
                 {cond.description}
               </td>
               <td class="py-3 px-4">
-                <StatusBadge variant={cond.status} />
+                <StatusBadge variant={cond.status} label={conditionStatusLabel(cond.status)} />
               </td>
               <td class="py-3 px-4 text-right font-semibold text-slate-200">
                 {formatCurrency(cond.fee || 0)}

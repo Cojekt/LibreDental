@@ -18,6 +18,7 @@
   import StatusBadge from "../../components/ui/StatusBadge.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
+  import { claimStatusLabel } from "$lib/labels.js";
   import { formatCurrency } from "$lib/currency.js";
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import { handleError } from "$lib/error.js";
@@ -473,7 +474,7 @@
                 >{formatCurrency(claimTotal(c), countryMeta?.default_currency)}</td
               >
               <td class="px-4 py-3">
-                <StatusBadge variant={c.status} />
+                <StatusBadge variant={c.status} label={claimStatusLabel(c.status)} />
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
@@ -624,7 +625,7 @@
           class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
           {#each CLAIM_STATUSES as s}
-            <option value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            <option value={s}>{claimStatusLabel(s)}</option>
           {/each}
         </select>
       </FormField>

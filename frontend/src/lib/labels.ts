@@ -50,3 +50,35 @@ export function paymentMethodLabel(method?: string): string {
       return method || "";
   }
 }
+
+export function claimStatusLabel(status?: string): string {
+  switch (status) {
+    case "draft":
+      return m.billing_claim_status_draft();
+    case "submitted":
+      return m.billing_claim_status_submitted();
+    case "accepted":
+      return m.billing_claim_status_accepted();
+    case "rejected":
+      return m.billing_claim_status_rejected();
+    case "paid":
+      return m.billing_claim_status_paid();
+    default:
+      return status || "";
+  }
+}
+
+export function conditionStatusLabel(status?: string): string {
+  switch (status) {
+    case "treatment_planned":
+      return m.charting_modal_status_planned();
+    case "completed":
+      return m.charting_modal_status_completed();
+    case "existing":
+      return m.charting_modal_status_existing();
+    case "missing":
+      return m.charting_modal_status_missing();
+    default:
+      return status || "";
+  }
+}

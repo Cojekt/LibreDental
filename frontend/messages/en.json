@@ -720,5 +720,10 @@
   "billing_method_check": "Check",
   "billing_method_credit_card": "Credit Card",
   "billing_method_insurance": "Insurance",
-  "billing_method_write_off": "Write-off"
+  "billing_method_write_off": "Write-off",
+  "billing_claim_status_draft": "Draft",
+  "billing_claim_status_submitted": "Submitted",
+  "billing_claim_status_accepted": "Accepted",
+  "billing_claim_status_rejected": "Rejected",
+  "billing_claim_status_paid": "Paid"
 }
