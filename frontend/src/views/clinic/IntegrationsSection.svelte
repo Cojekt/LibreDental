@@ -9,7 +9,7 @@
   // Generic list-providers / get-config / set-config panel state, parameterized by which
   // Wails service backs it (BillingService for claims clearinghouses, NotificationService
   // for email/SMS/voice vendors), both backed by SecretsService on the Go side.
-  // NotificationService's config methods require a session token, so it is adapted below.
+  // Both services' config methods require a session token, so each is adapted below.
   type ProviderConfig = { [key: string]: string | undefined } | null;
   type ProviderConfigService = {
     ListProviders(): Promise<string[] | null>;
@@ -127,7 +127,11 @@
     };
   }
 
-  const claimsPanel = createProviderPanel(BillingService);
+  const claimsPanel = createProviderPanel({
+    ListProviders: () => BillingService.ListProviders(),
+    GetProviderConfig: (name) => BillingService.GetProviderConfig(auth.token, name),
+    SetProviderConfig: (name, config) => BillingService.SetProviderConfig(auth.token, name, config),
+  });
   const notificationsPanel = createProviderPanel({
     ListProviders: () => NotificationService.ListProviders(),
     GetProviderConfig: (name) => NotificationService.GetProviderConfig(auth.token, name),

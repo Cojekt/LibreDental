@@ -87,8 +87,11 @@ func (s *BillingService) ListProviders() []string {
 	return names
 }
 
-// GetProviderConfig retrieves configuration for a specific provider.
-func (s *BillingService) GetProviderConfig(providerName string) (map[string]string, error) {
+// GetProviderConfig retrieves configuration (including credentials) for a specific provider.
+func (s *BillingService) GetProviderConfig(token string, providerName string) (map[string]string, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
 	if providerName == "" {
 		return nil, fmt.Errorf("provider name is required")
 	}
@@ -96,11 +99,21 @@ func (s *BillingService) GetProviderConfig(providerName string) (map[string]stri
 }
 
 // SetProviderConfig saves configuration for a specific provider.
-func (s *BillingService) SetProviderConfig(providerName string, config map[string]string) error {
+func (s *BillingService) SetProviderConfig(token string, providerName string, config map[string]string) error {
+	if s.auditService.GetSessionUser(token) == nil {
+		return ErrUnauthorized
+	}
 	if providerName == "" {
 		return fmt.Errorf("provider name is required")
 	}
-	return s.secrets.SetProviderConfig(providerName, config)
+	if err := s.secrets.SetProviderConfig(providerName, config); err != nil {
+		return err
+	}
+	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "claim_provider_config",
+		"Updated configuration for claim provider "+providerName); err != nil {
+		return fmt.Errorf("provider config saved but failed to log audit: %w", err)
+	}
+	return nil
 }
 
 // ─── Claims ──────────────────────────────────────────────────────────────────

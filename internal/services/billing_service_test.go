@@ -776,3 +776,40 @@ func TestBillingService_ChartClaimConcurrentRequestsBillOnce(t *testing.T) {
 		t.Errorf("Expected exactly one claim from concurrent billing, got %d", len(claims))
 	}
 }
+
+func TestBillingService_ProviderConfigRequiresSessionAndAudits(t *testing.T) {
+	svc, token, _, _ := setupChartBillingTest(t, nil)
+	const provider = "test_claim_provider_auth"
+
+	if err := svc.SetProviderConfig("bad_token", provider, map[string]string{"api_key": "secret"}); err != ErrUnauthorized {
+		t.Errorf("Expected ErrUnauthorized setting config with invalid token, got: %v", err)
+	}
+	if _, err := svc.GetProviderConfig("bad_token", provider); err != ErrUnauthorized {
+		t.Errorf("Expected ErrUnauthorized getting config with invalid token, got: %v", err)
+	}
+
+	if err := svc.SetProviderConfig(token, provider, map[string]string{"api_key": "secret"}); err != nil {
+		t.Fatalf("Failed to set provider config: %v", err)
+	}
+	cfg, err := svc.GetProviderConfig(token, provider)
+	if err != nil {
+		t.Fatalf("Failed to get provider config: %v", err)
+	}
+	if cfg["api_key"] == "" || cfg["api_key"] == "secret" {
+		t.Errorf("Expected redacted api_key, got %q", cfg["api_key"])
+	}
+
+	logs, err := svc.auditService.GetAuditLogs(token, "", 50, 0)
+	if err != nil {
+		t.Fatalf("Failed to read audit logs: %v", err)
+	}
+	found := false
+	for _, l := range logs {
+		if l.Resource == "claim_provider_config" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("Expected an audit entry for the claim provider config change")
+	}
+}

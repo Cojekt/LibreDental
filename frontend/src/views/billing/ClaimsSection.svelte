@@ -380,7 +380,10 @@
       integrationProviders = (await BillingService.ListProviders()) || [];
       for (const provider of integrationProviders) {
         try {
-          const config = (await BillingService.GetProviderConfig(provider)) as Record<string, any>;
+          const config = (await BillingService.GetProviderConfig(auth.token, provider)) as Record<
+            string,
+            any
+          >;
           if (config && config["api_key"]) {
             hasConfiguredProvider = true;
             break;
