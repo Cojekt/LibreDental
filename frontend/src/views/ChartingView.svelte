@@ -171,6 +171,7 @@
   });
   let isCreatingClaim = $state(false);
   let claimNoticeMsg = $state("");
+  let claimErrorMsg = $state("");
 
   let requestGenCodes = 0;
   async function loadProcedureCodes() {
@@ -204,13 +205,14 @@
     const billable = currentChart.conditions.filter(
       (c) => c.status === "treatment_planned" || c.status === "completed"
     );
+    claimNoticeMsg = "";
+    claimErrorMsg = "";
     if (billable.length === 0) {
-      alert(m.charting_billing_no_conditions());
+      claimErrorMsg = m.charting_billing_no_conditions();
       return;
     }
 
     isCreatingClaim = true;
-    claimNoticeMsg = "";
     try {
       const ids = billable.map((c) => c.id);
       const claim = await BillingService.CreateClaimFromChartConditions(
@@ -226,11 +228,9 @@
     } catch (e) {
       console.error("Failed to create claim from chart:", e);
       const msg = handleError(e, "");
-      alert(
-        msg.includes(CHART_NOTHING_TO_BILL)
-          ? m.charting_billing_all_billed()
-          : m.charting_billing_err_claim()
-      );
+      claimErrorMsg = msg.includes(CHART_NOTHING_TO_BILL)
+        ? m.charting_billing_all_billed()
+        : m.charting_billing_err_claim();
     } finally {
       isCreatingClaim = false;
     }
@@ -274,6 +274,9 @@
   }
 
   $effect(() => {
+    // Claim banners belong to the previously selected patient.
+    claimNoticeMsg = "";
+    claimErrorMsg = "";
     loadChart(selectedPatientId);
   });
 
@@ -512,6 +515,7 @@
       {currentToothSystem}
       {isCreatingClaim}
       bind:claimNoticeMsg
+      bind:claimErrorMsg
       {getToothLabel}
       {openEditCondition}
       handleDeleteCondition={promptDeleteCondition}

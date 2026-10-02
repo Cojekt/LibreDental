@@ -17,6 +17,7 @@
     currentToothSystem,
     isCreatingClaim,
     claimNoticeMsg = $bindable(""),
+    claimErrorMsg = $bindable(""),
     getToothLabel,
     openEditCondition,
     handleDeleteCondition,
@@ -29,6 +30,7 @@
     currentToothSystem: any;
     isCreatingClaim: boolean;
     claimNoticeMsg: string;
+    claimErrorMsg: string;
     getToothLabel: (num: number, system: any) => string;
     openEditCondition: (cond: ToothCondition) => void;
     handleDeleteCondition: (id: string) => void;
@@ -91,7 +93,22 @@
         type="button"
         onclick={() => (claimNoticeMsg = "")}
         class="text-emerald-400 hover:text-white"
-        aria-label="Dismiss">✕</button
+        aria-label={m.common_dismiss()}>✕</button
+      >
+    </div>
+  {/if}
+
+  {#if claimErrorMsg}
+    <div
+      class="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center justify-between"
+      role="alert"
+    >
+      <span>{claimErrorMsg}</span>
+      <button
+        type="button"
+        onclick={() => (claimErrorMsg = "")}
+        class="text-rose-400 hover:text-white"
+        aria-label={m.common_dismiss()}>✕</button
       >
     </div>
   {/if}
@@ -109,7 +126,9 @@
             class="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-950/60"
           >
             <th class="py-3 px-4"
-              >{m.charting_th_tooth({ code: countryMeta?.code || "Universal" })}</th
+              >{m.charting_th_tooth({
+                code: countryMeta?.code || m.charting_tooth_code_fallback(),
+              })}</th
             >
             <th class="py-3 px-4">{m.charting_th_surfaces()}</th>
             <th class="py-3 px-4">{m.charting_th_code()}</th>

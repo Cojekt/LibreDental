@@ -14,6 +14,7 @@
   import { m } from "../../paraglide/messages.js";
   import { formatCurrency } from "$lib/currency.js";
   import { auth } from "../../stores/auth.svelte.js";
+  import { handleError } from "$lib/error.js";
 
   let { countryMeta = null } = $props<{
     countryMeta?: CountryConfig | null;
@@ -32,6 +33,7 @@
   let bundleDescription = $state("");
   let bundleItems = $state<BundleItemTemplate[]>([]);
   let shortnameError = $state("");
+  let bundleSaveError = $state("");
 
   let requestGenBundles = 0;
   export async function loadBundles() {
@@ -62,6 +64,7 @@
     bundleDescription = "";
     bundleItems = [];
     shortnameError = "";
+    bundleSaveError = "";
     showBundleModal = true;
   }
 
@@ -77,6 +80,7 @@
       default_fee: (i.default_fee || 0) / 100,
     }));
     shortnameError = "";
+    bundleSaveError = "";
     showBundleModal = true;
   }
 
@@ -95,6 +99,7 @@
   async function saveBundle(e: Event) {
     e.preventDefault();
     shortnameError = "";
+    bundleSaveError = "";
     const sn = bundleShortname.trim().toLowerCase();
     if (!sn || !bundleName.trim()) return;
 
@@ -127,9 +132,10 @@
     } catch (e: any) {
       const msg = String(e);
       if (msg.includes("UNIQUE") || msg.includes("unique")) {
-        shortnameError = `Shortname "${sn}" is already taken.`;
+        shortnameError = m.billing_bundle_shortname_taken({ shortname: sn });
       } else {
         console.error("Failed to save bundle:", e);
+        bundleSaveError = handleError(e, m.billing_bundle_err_save());
       }
     }
   }
@@ -176,10 +182,7 @@
   {#if loadingBundles}
     <div class="p-8 text-center text-sm text-slate-400">{m.common_loading()}</div>
   {:else if bundles.length === 0}
-    <EmptyState
-      title={m.billing_no_bundles()}
-      subtitle="Create procedure bundle templates (e.g. Crown + Build-up) to speed up claim entry."
-    />
+    <EmptyState title={m.billing_no_bundles()} subtitle={m.billing_bundle_empty_subtitle()} />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each bundles as b (b.id)}
@@ -222,7 +225,8 @@
             class="flex items-center justify-between px-4 py-3 bg-slate-950/60 border-t border-slate-800 text-xs"
           >
             <span class="text-slate-400"
-              >Total: <strong class="text-slate-100 font-mono text-sm"
+              >{m.billing_bundle_total()}
+              <strong class="text-slate-100 font-mono text-sm"
                 >{formatCurrency(b.total_fee, countryMeta?.default_currency)}</strong
               ></span
             >
@@ -273,16 +277,16 @@
 <!-- BUNDLE MODAL -->
 <Modal
   bind:showModal={showBundleModal}
-  title={isEditingBundle ? "Edit Bundle" : m.billing_bundle_btn_create()}
-  subtitle="Configure multi-code procedure templates for single-click claim entry"
+  title={isEditingBundle ? m.billing_bundle_edit_title() : m.billing_bundle_btn_create()}
+  subtitle={m.billing_bundle_modal_subtitle()}
   maxWidth="max-w-3xl"
 >
   <form onsubmit={saveBundle} class="space-y-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <FormField
-        label="Shortname"
+        label={m.billing_bundle_label_shortname()}
         forId="b-shortname"
-        helpText="Used for fast search lookup (e.g. 'crwn', 'rct-a')"
+        helpText={m.billing_bundle_shortname_help()}
         required
         error={shortnameError}
       >
@@ -290,11 +294,11 @@
           id="b-shortname"
           type="text"
           bind:value={bundleShortname}
-          placeholder="e.g. crwn"
+          placeholder={m.billing_bundle_shortname_placeholder()}
           required
         />
       </FormField>
-      <FormField label="Full Name" forId="b-name" required>
+      <FormField label={m.billing_bundle_label_name()} forId="b-name" required>
         <Input
           id="b-name"
           type="text"
@@ -320,7 +324,7 @@
           {m.billing_th_procedures()}
         </h4>
         <button type="button" class="btn btn-secondary btn-sm" onclick={addBundleItem}>
-          + Add Item
+          {m.billing_bundle_btn_add_item()}
         </button>
       </div>
 
@@ -365,13 +369,15 @@
                   type="button"
                   class="p-1 text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
                   onclick={() => removeBundleItem(i)}
-                  title="Remove item">✕</button
+                  title={m.billing_bundle_remove_item()}
+                  aria-label={m.billing_bundle_remove_item()}>✕</button
                 >
               </div>
             </div>
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
-            Total Bundle Fee: <strong class="text-white text-sm font-mono"
+            {m.billing_bundle_total_fee()}
+            <strong class="text-white text-sm font-mono"
               >{formatCurrency(
                 Math.round(bundleTotalFee() * 100),
                 countryMeta?.default_currency
@@ -383,10 +389,14 @@
         <div
           class="p-6 text-center text-xs text-slate-500 bg-slate-900/50 rounded-xl border border-dashed border-slate-800"
         >
-          No CDT procedure items yet. Click '+ Add Item' above.
+          {m.billing_bundle_no_items()}
         </div>
       {/if}
     </div>
+
+    {#if bundleSaveError}
+      <p class="m-0 text-sm font-semibold text-rose-400" role="alert">{bundleSaveError}</p>
+    {/if}
 
     <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
       <button

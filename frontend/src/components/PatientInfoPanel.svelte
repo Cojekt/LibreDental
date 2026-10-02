@@ -369,7 +369,7 @@
               class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-3 space-y-1.5 text-slate-300"
             >
               <p class="font-semibold text-slate-100">
-                {patient.insurance_carrier || "Primary Dental Insurance"}
+                {patient.insurance_carrier || m.patient_info_insurance_default()}
               </p>
               {#if patient.insurance_policy_number}
                 <div class="flex justify-between text-[11px]">
@@ -441,7 +441,7 @@
             </div>
             {#if patient.referral_source}
               <div class="flex justify-between items-center text-[11px]">
-                <span class="text-slate-400">Referral:</span>
+                <span class="text-slate-400">{m.patient_info_referral_label()}</span>
                 <span class="text-slate-200">{patient.referral_source}</span>
               </div>
             {/if}

@@ -246,12 +246,13 @@
       <span
         class="mt-1 px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-slate-800 text-sky-300 border border-slate-700"
       >
-        {conds.length}
-        {conds.length === 1 ? "entry" : "entries"}
+        {conds.length === 1
+          ? m.charting_tooth_entries_one({ count: conds.length })
+          : m.charting_tooth_entries_other({ count: conds.length })}
       </span>
     {:else}
       <span class="mt-1 text-[9px] text-slate-600 group-hover:text-slate-400 transition-colors">
-        Chart
+        {m.charting_tooth_chart_hint()}
       </span>
     {/if}
   </button>

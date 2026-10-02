@@ -212,7 +212,7 @@
         </FormField>
 
         <FormField label={m.patient_email()} forId="email">
-          <EmailInput id="email" bind:value={email} placeholder="jane.smith@example.com" />
+          <EmailInput id="email" bind:value={email} placeholder={m.patient_placeholder_email()} />
         </FormField>
 
         <div class="sm:col-span-2">
@@ -221,7 +221,7 @@
               id="addr1"
               type="text"
               bind:value={addressLine1}
-              placeholder="742 Evergreen Terrace"
+              placeholder={m.patient_placeholder_addr1()}
             />
           </FormField>
         </div>

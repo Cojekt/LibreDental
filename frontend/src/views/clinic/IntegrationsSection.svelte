@@ -27,6 +27,7 @@
     let providerConfigError = $state(false);
     let providerFullConfig = $state<{ [key: string]: string | undefined }>({});
     let isLoadingConfig = $state(false);
+    let saveStatus = $state<{ ok: boolean; msg: string } | null>(null);
 
     async function loadProviders() {
       providersLoadError = false;
@@ -42,6 +43,7 @@
     }
 
     async function loadProviderConfig() {
+      saveStatus = null;
       providerConfigError = false;
       providerFullConfig = {};
       providerApiKey = "";
@@ -70,15 +72,16 @@
     async function saveProviderConfig() {
       if (!canEdit || !selectedProvider || providerConfigError) return;
       isSavingConfig = true;
+      saveStatus = null;
       try {
         await service.SetProviderConfig(selectedProvider, {
           ...providerFullConfig,
           api_key: providerApiKey,
         });
-        alert(m.integrations_save_success());
+        saveStatus = { ok: true, msg: m.integrations_save_success() };
       } catch (e) {
         console.error("Failed to save provider config:", e);
-        alert(m.integrations_save_error());
+        saveStatus = { ok: false, msg: m.integrations_save_error() };
       } finally {
         isSavingConfig = false;
       }
@@ -114,6 +117,9 @@
       },
       get providerConfigError() {
         return providerConfigError;
+      },
+      get saveStatus() {
+        return saveStatus;
       },
       loadProviders,
       loadProviderConfig,
@@ -188,7 +194,16 @@
             </div>
           </div>
 
-          <div class="flex justify-end">
+          <div class="flex items-center justify-end gap-3">
+            {#if claimsPanel.saveStatus}
+              <span
+                class="text-xs font-semibold {claimsPanel.saveStatus.ok
+                  ? 'text-emerald-400'
+                  : 'text-rose-400'}"
+                role={claimsPanel.saveStatus.ok ? "status" : "alert"}
+                >{claimsPanel.saveStatus.msg}</span
+              >
+            {/if}
             <button
               type="button"
               class="btn btn-secondary btn-sm bg-slate-800 text-white border-slate-700 hover:bg-slate-700 px-4 py-1 rounded-md text-xs cursor-pointer"
@@ -254,7 +269,16 @@
             </div>
           </div>
 
-          <div class="flex justify-end">
+          <div class="flex items-center justify-end gap-3">
+            {#if notificationsPanel.saveStatus}
+              <span
+                class="text-xs font-semibold {notificationsPanel.saveStatus.ok
+                  ? 'text-emerald-400'
+                  : 'text-rose-400'}"
+                role={notificationsPanel.saveStatus.ok ? "status" : "alert"}
+                >{notificationsPanel.saveStatus.msg}</span
+              >
+            {/if}
             <button
               type="button"
               class="btn btn-secondary btn-sm bg-slate-800 text-white border-slate-700 hover:bg-slate-700 px-4 py-1 rounded-md text-xs cursor-pointer"

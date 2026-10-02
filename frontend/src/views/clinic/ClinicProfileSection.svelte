@@ -86,8 +86,10 @@
         <div>
           <label for="clinic-tax-id" class="block text-xs font-semibold text-slate-400 mb-1">
             {countryMeta?.national_id_type
-              ? `${countryMeta.national_id_type.toUpperCase()} / Tax ID`
-              : "Tax ID / Business Registration #"}
+              ? m.clinic_profile_tax_id_label_national({
+                  idType: countryMeta.national_id_type.toUpperCase(),
+                })
+              : m.clinic_profile_tax_id_label()}
           </label>
           <input
             id="clinic-tax-id"
@@ -243,10 +245,10 @@
           >
           <span class="text-sm font-medium text-slate-200 mt-0.5 capitalize">
             {toothSystem === "fdi"
-              ? "FDI World Dental Federation Notation (#11 - #48)"
+              ? m.clinic_profile_tooth_fdi()
               : toothSystem === "palmer"
-                ? "Palmer Notation Method"
-                : "Universal Numbering System (#1 - #32)"}
+                ? m.clinic_profile_tooth_palmer()
+                : m.clinic_profile_tooth_universal()}
           </span>
         </div>
 

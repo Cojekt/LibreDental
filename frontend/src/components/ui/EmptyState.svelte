@@ -1,8 +1,10 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { m } from "../../paraglide/messages.js";
+  import { getLocaleVersion } from "../../lib/locale.svelte.js";
 
   let {
-    title = "No data available",
+    title = undefined,
     subtitle = "",
     icon = "",
     children,
@@ -12,6 +14,11 @@
     icon?: string;
     children?: Snippet;
   }>();
+
+  const displayTitle = $derived.by(() => {
+    getLocaleVersion();
+    return title ?? m.common_no_data();
+  });
 </script>
 
 <div
@@ -33,7 +40,7 @@
     {/if}
   {/if}
 
-  <p class="text-base font-semibold text-slate-300 m-0">{title}</p>
+  <p class="text-base font-semibold text-slate-300 m-0">{displayTitle}</p>
   {#if subtitle}
     <p class="text-xs text-slate-500 mt-1 m-0 max-w-sm">{subtitle}</p>
   {/if}

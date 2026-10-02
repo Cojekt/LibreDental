@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     label,
@@ -25,7 +26,7 @@
     <label for={forId} class={`text-xs font-semibold ${labelClass} flex items-center gap-1`}>
       <span>{label}</span>
       {#if required}
-        <span class="text-sky-400 font-bold text-xs" title="Required field">*</span>
+        <span class="text-sky-400 font-bold text-xs" title={m.common_required_field()}>*</span>
       {/if}
     </label>
   {/if}

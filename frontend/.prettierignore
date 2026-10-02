@@ -3,4 +3,5 @@ dist
 bindings
 src/paraglide
 .svelte-check
-
+project.inlang/.meta.json
+project.inlang/README.md

@@ -4,6 +4,7 @@
   import type { Document, DocumentFilter } from "@bindings/domain/models.js";
   import { DocumentType } from "@bindings/domain/models.js";
   import Modal from "../../components/ui/Modal.svelte";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import * as m from "../../paraglide/messages.js";
   import { handleError } from "../../lib/error.js";
 
@@ -18,6 +19,9 @@
   // Upload state
   let isUploading = $state(false);
   let uploadError = $state("");
+  let viewerError = $state("");
+  let showConfirmDelete = $state(false);
+  let xrayToDelete = $state("");
   let docName = $state("");
   let selectedFile = $state<File | null>(null);
   let fileInput = $state<HTMLInputElement | null>(null);
@@ -123,23 +127,33 @@
     }
   }
 
-  async function handleDelete(id: string) {
-    if (confirm(m.doc_confirm_delete_xray())) {
-      try {
-        await DocumentService.DeleteDocument(auth.token, id);
-        loadXRays();
-        if (viewingDocId === id) {
-          viewingImages = [];
-          viewingSkippedCount = 0;
-          viewingDocId = null;
-        }
-      } catch (err) {
-        console.error("Failed to delete X-Ray:", err);
+  function handleDelete(id: string) {
+    viewerError = "";
+    xrayToDelete = id;
+    showConfirmDelete = true;
+  }
+
+  async function executeDelete() {
+    const id = xrayToDelete;
+    if (!id) return;
+    try {
+      await DocumentService.DeleteDocument(auth.token, id);
+      loadXRays();
+      if (viewingDocId === id) {
+        viewingImages = [];
+        viewingSkippedCount = 0;
+        viewingDocId = null;
       }
+    } catch (err) {
+      console.error("Failed to delete X-Ray:", err);
+      viewerError = handleError(err, m.doc_err_delete());
+    } finally {
+      xrayToDelete = "";
     }
   }
 
   async function handleView(doc: Document) {
+    viewerError = "";
     try {
       const result = await DocumentService.GetDocumentImagesBase64(auth.token, doc.id);
       if (result && result.image_urls && result.image_urls.length > 0) {
@@ -152,7 +166,7 @@
       }
     } catch (err) {
       console.error("Failed to fetch image data:", err);
-      alert(m.doc_err_load_img());
+      viewerError = handleError(err, m.doc_err_load_img());
     }
   }
 
@@ -298,6 +312,14 @@
     <div
       class="col-span-2 flex flex-col bg-black/40 rounded-xl border border-slate-800 overflow-hidden relative"
     >
+      {#if viewerError}
+        <p
+          class="m-0 shrink-0 bg-rose-400/10 px-4 py-2 text-sm font-semibold text-rose-400"
+          role="alert"
+        >
+          {viewerError}
+        </p>
+      {/if}
       {#if viewingImages.length > 0}
         <div
           class="absolute top-0 w-full bg-gradient-to-b from-black/80 to-transparent p-4 z-10 flex items-start justify-between"
@@ -362,3 +384,9 @@
     </div>
   </div>
 </Modal>
+
+<ConfirmModal
+  bind:showModal={showConfirmDelete}
+  message={m.doc_confirm_delete_xray()}
+  onConfirm={executeDelete}
+/>

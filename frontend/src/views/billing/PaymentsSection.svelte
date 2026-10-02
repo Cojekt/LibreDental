@@ -407,7 +407,7 @@
         <option value="">{m.billing_pay_claim_none()}</option>
         {#each claims.filter((c) => c.patient_id === payPatientId) as c}
           <option value={c.id}>
-            {c.date_of_service} — {c.insurance_carrier || "No carrier"} ({formatCurrency(
+            {c.date_of_service} — {c.insurance_carrier || m.billing_pay_no_carrier()} ({formatCurrency(
               claimTotal(c),
               countryMeta?.default_currency
             )})

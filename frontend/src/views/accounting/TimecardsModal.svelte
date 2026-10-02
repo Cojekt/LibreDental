@@ -288,14 +288,14 @@
                     onclick={() => handleSaveEdit(t)}
                     class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold mr-2"
                   >
-                    Save
+                    {m.common_save()}
                   </button>
                   <button
                     type="button"
                     onclick={() => (editingId = null)}
                     class="text-xs text-slate-400 hover:text-white"
                   >
-                    Cancel
+                    {m.common_cancel()}
                   </button>
                 {:else}
                   <button
@@ -303,7 +303,7 @@
                     onclick={() => promptDelete(t.id)}
                     class="text-xs text-rose-400 hover:text-rose-300 font-semibold mr-2"
                   >
-                    Delete
+                    {m.common_delete()}
                   </button>
                   {#if !t.paid_at && t.clock_out}
                     <button
@@ -311,7 +311,7 @@
                       onclick={() => startEdit(t)}
                       class="text-xs text-sky-400 hover:text-sky-300 font-semibold"
                     >
-                      Edit
+                      {m.common_edit()}
                     </button>
                   {/if}
                 {/if}
@@ -329,7 +329,7 @@
       onclick={() => (showModal = false)}
       class="rounded-xl bg-slate-800 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition-colors"
     >
-      Close
+      {m.common_close()}
     </button>
   </div>
 </Modal>

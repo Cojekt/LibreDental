@@ -82,7 +82,7 @@
                     <span
                       class="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1"
                     >
-                      <span>{brk.name || "Break"}:</span>
+                      <span>{brk.name || m.clinic_hours_break_default()}:</span>
                       <span class="font-semibold"
                         >{formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}</span
                       >

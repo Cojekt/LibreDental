@@ -26,7 +26,7 @@
     <div class="flex items-center gap-3">
       <img
         src="/sourceicon.svg"
-        alt="LibreDental Logo"
+        alt={m.header_logo_alt()}
         class="h-9 w-9 rounded-xl shadow-md shadow-purple-500/20 object-contain"
       />
       <div class="flex items-center">

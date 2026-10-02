@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import Modal from "./Modal.svelte";
 
   import { m } from "../../paraglide/messages.js";
@@ -11,6 +12,7 @@
     confirmText = undefined,
     cancelText = undefined,
     onConfirm,
+    children,
   } = $props<{
     showModal: boolean;
     title?: string;
@@ -18,6 +20,7 @@
     confirmText?: string;
     cancelText?: string;
     onConfirm: () => void | boolean | Promise<void | boolean>;
+    children?: Snippet;
   }>();
 
   // Defaults must re-derive when the language changes; a plain default
@@ -59,6 +62,9 @@
 <Modal bind:showModal preventDismiss={loading} title={displayTitle} maxWidth="max-w-md">
   <div class="py-4 text-slate-300 text-sm">
     {displayMessage}
+    {#if children}
+      <div class="mt-4">{@render children()}</div>
+    {/if}
   </div>
 
   {#snippet footer()}

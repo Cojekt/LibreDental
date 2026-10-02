@@ -7,6 +7,7 @@
   import FormField from "../../components/ui/FormField.svelte";
   import Input from "../../components/ui/Input.svelte";
   import EmptyState from "../../components/ui/EmptyState.svelte";
+  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import * as m from "../../paraglide/messages.js";
   import { handleError } from "../../lib/error.js";
 
@@ -20,6 +21,9 @@
   let documents = $state<Document[]>([]);
   let isLoading = $state(true);
   let exportSuccessMsg = $state("");
+  let actionError = $state("");
+  let showConfirmDelete = $state(false);
+  let docToDelete = $state("");
 
   // Modal State
   let showUploadModal = $state(false);
@@ -150,14 +154,22 @@
     }
   }
 
-  async function handleDelete(id: string) {
-    if (confirm(m.doc_confirm_delete())) {
-      try {
-        await DocumentService.DeleteDocument(auth.token, id);
-        loadDocuments();
-      } catch (err) {
-        console.error("Failed to delete document:", err);
-      }
+  function handleDelete(id: string) {
+    actionError = "";
+    docToDelete = id;
+    showConfirmDelete = true;
+  }
+
+  async function executeDelete() {
+    if (!docToDelete) return;
+    try {
+      await DocumentService.DeleteDocument(auth.token, docToDelete);
+      loadDocuments();
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      actionError = handleError(err, m.doc_err_delete());
+    } finally {
+      docToDelete = "";
     }
   }
 
@@ -177,6 +189,7 @@
   }
 
   async function handleOpen(doc: Document) {
+    actionError = "";
     const win = window.open("", "_blank");
     try {
       const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
@@ -206,11 +219,12 @@
         win.close();
       }
       console.error("Failed to open document:", err);
-      alert(m.doc_err_open());
+      actionError = handleError(err, m.doc_err_open());
     }
   }
 
   async function handleExport(doc: Document) {
+    actionError = "";
     try {
       const isDesktop = await SystemSettingsService.IsDesktopMode().catch(() => false);
       const suggestedName = doc.name || m.doc_default_export_name();
@@ -246,7 +260,7 @@
       }
     } catch (err) {
       console.error("Failed to export document:", err);
-      alert(m.doc_err_export());
+      actionError = handleError(err, m.doc_err_export());
     }
   }
 
@@ -260,6 +274,9 @@
 </script>
 
 <div class="space-y-6">
+  {#if actionError}
+    <p class="m-0 text-sm font-semibold text-rose-400" role="alert">{actionError}</p>
+  {/if}
   {#if isLoading}
     <div class="flex items-center justify-center py-12">
       <div
@@ -399,6 +416,12 @@
     </div>
   </form>
 </Modal>
+
+<ConfirmModal
+  bind:showModal={showConfirmDelete}
+  message={m.doc_confirm_delete()}
+  onConfirm={executeDelete}
+/>
 
 {#if exportSuccessMsg}
   <div

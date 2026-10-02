@@ -125,7 +125,7 @@
       </select>
     </div>
     <div class="text-xs text-sky-400 font-semibold">
-      {countryMeta?.name || "Global"}
+      {countryMeta?.name || m.billing_catalog_global()}
       {m.billing_catalog_banner()}
     </div>
   </div>

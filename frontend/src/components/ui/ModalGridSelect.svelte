@@ -1,12 +1,14 @@
 <script lang="ts" generics="T">
   import type { Snippet } from "svelte";
   import Modal from "./Modal.svelte";
+  import { m } from "../../paraglide/messages.js";
+  import { getLocaleVersion } from "../../lib/locale.svelte.js";
 
   let {
     value = $bindable(),
     options,
-    placeholder = "Select an option...",
-    modalTitle = "Select Option",
+    placeholder = undefined,
+    modalTitle = undefined,
     buttonContent,
     optionContent,
     buttonClass = "",
@@ -26,6 +28,15 @@
 
   let showModal = $state(false);
 
+  const displayPlaceholder = $derived.by(() => {
+    getLocaleVersion();
+    return placeholder ?? m.common_select_option();
+  });
+  const displayModalTitle = $derived.by(() => {
+    getLocaleVersion();
+    return modalTitle ?? m.common_select_option_title();
+  });
+
   let selectedOption = $derived(options.find((o: any) => o.value === value));
 </script>
 
@@ -39,7 +50,7 @@
   {#if selectedOption && buttonContent}
     {@render buttonContent(selectedOption)}
   {:else}
-    <span class="text-slate-400">{placeholder}</span>
+    <span class="text-slate-400">{displayPlaceholder}</span>
   {/if}
   {#if !hideChevron}
     <svg
@@ -54,7 +65,7 @@
   {/if}
 </button>
 
-<Modal bind:showModal title={modalTitle}>
+<Modal bind:showModal title={displayModalTitle}>
   <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 p-2">
     {#each options as option}
       <button
