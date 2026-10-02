@@ -237,12 +237,12 @@
       <table class="w-full text-left text-sm">
         <thead>
           <tr class="border-b border-slate-800 text-slate-400">
-            <th class="py-2 font-medium">{m.timecard_th_date()}</th>
-            <th class="py-2 font-medium">{m.timecard_th_type()}</th>
-            <th class="py-2 font-medium">{m.timecard_th_hours()}</th>
-            <th class="py-2 font-medium">{m.timecard_th_pay()}</th>
-            <th class="py-2 font-medium">{m.timecard_th_status()}</th>
-            <th class="py-2 font-medium text-right">{m.timecard_th_actions()}</th>
+            <th scope="col" class="py-2 font-medium">{m.timecard_th_date()}</th>
+            <th scope="col" class="py-2 font-medium">{m.timecard_th_type()}</th>
+            <th scope="col" class="py-2 font-medium">{m.timecard_th_hours()}</th>
+            <th scope="col" class="py-2 font-medium">{m.timecard_th_pay()}</th>
+            <th scope="col" class="py-2 font-medium">{m.timecard_th_status()}</th>
+            <th scope="col" class="py-2 font-medium text-right">{m.timecard_th_actions()}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800/60">

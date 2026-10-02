@@ -343,6 +343,7 @@
               <div class="col-span-3">
                 <Input
                   bind:value={item.ada_code}
+                  aria-label={m.charting_th_code()}
                   placeholder={m.billing_claim_code_placeholder()}
                   class="font-mono text-xs py-1.5 px-2"
                 />
@@ -350,6 +351,7 @@
               <div class="col-span-6">
                 <Input
                   bind:value={item.description}
+                  aria-label={m.charting_th_desc()}
                   placeholder={m.charting_th_desc()}
                   class="text-xs py-1.5 px-2"
                 />
@@ -358,6 +360,7 @@
                 <Input
                   type="number"
                   bind:value={item.default_fee}
+                  aria-label={m.charting_th_fee()}
                   step="0.01"
                   min="0"
                   placeholder="0.00"

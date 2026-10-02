@@ -112,6 +112,7 @@
       <span class="text-xs font-semibold text-slate-300">{m.billing_filter_provider_label()}</span>
       <select
         bind:value={feeFilterProvider}
+        aria-label={m.billing_filter_provider_label()}
         onchange={() => {
           loadProcedureCodes();
           loadFeeSchedules();
@@ -143,12 +144,12 @@
           class="bg-slate-900/80 border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400"
         >
           <tr>
-            <th class="px-4 py-3">{m.billing_th_code()}</th>
-            <th class="px-4 py-3">{m.billing_th_category()}</th>
-            <th class="px-4 py-3">{m.billing_th_desc()}</th>
-            <th class="px-4 py-3">{m.billing_th_base_fee()}</th>
-            <th class="px-4 py-3">{m.billing_th_effective_fee()}</th>
-            <th class="px-4 py-3 text-center">{m.patients_th_actions()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_code()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_category()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_desc()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_base_fee()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_effective_fee()}</th>
+            <th scope="col" class="px-4 py-3 text-center">{m.patients_th_actions()}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800/60">

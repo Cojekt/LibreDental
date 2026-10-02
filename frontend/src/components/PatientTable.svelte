@@ -49,22 +49,27 @@
       <thead>
         <tr>
           <th
+            scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
             >{m.patients_th_name()}</th
           >
           <th
+            scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
             >{m.patients_th_contact()}</th
           >
           <th
+            scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
             >{m.patients_th_dob()}</th
           >
           <th
+            scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
             >{m.patients_th_alerts()}</th
           >
           <th
+            scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
             >{m.patients_th_actions()}</th
           >

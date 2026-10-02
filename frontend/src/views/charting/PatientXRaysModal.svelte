@@ -297,8 +297,9 @@
               <button
                 type="button"
                 onclick={() => handleDelete(doc.id)}
-                class="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                class="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1"
                 title={m.doc_btn_delete()}
+                aria-label={m.doc_btn_delete()}
               >
                 ✕
               </button>

@@ -713,5 +713,7 @@
   "clinic_profile_tax_id_label_national": "{idType} / Tax ID",
   "clinic_profile_tooth_fdi": "FDI World Dental Federation Notation (#11 - #48)",
   "clinic_profile_tooth_palmer": "Palmer Notation Method",
-  "clinic_profile_tooth_universal": "Universal Numbering System (#1 - #32)"
+  "clinic_profile_tooth_universal": "Universal Numbering System (#1 - #32)",
+  "common_status": "Status",
+  "appts_select_date": "Select date"
 }

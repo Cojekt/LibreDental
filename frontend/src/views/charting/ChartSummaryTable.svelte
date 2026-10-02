@@ -125,17 +125,17 @@
           <tr
             class="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-950/60"
           >
-            <th class="py-3 px-4"
+            <th scope="col" class="py-3 px-4"
               >{m.charting_th_tooth({
                 code: countryMeta?.code || m.charting_tooth_code_fallback(),
               })}</th
             >
-            <th class="py-3 px-4">{m.charting_th_surfaces()}</th>
-            <th class="py-3 px-4">{m.charting_th_code()}</th>
-            <th class="py-3 px-4">{m.charting_th_desc()}</th>
-            <th class="py-3 px-4">{m.charting_th_status()}</th>
-            <th class="py-3 px-4 text-right">{m.charting_th_fee()}</th>
-            <th class="py-3 px-4 text-center">{m.charting_th_actions()}</th>
+            <th scope="col" class="py-3 px-4">{m.charting_th_surfaces()}</th>
+            <th scope="col" class="py-3 px-4">{m.charting_th_code()}</th>
+            <th scope="col" class="py-3 px-4">{m.charting_th_desc()}</th>
+            <th scope="col" class="py-3 px-4">{m.charting_th_status()}</th>
+            <th scope="col" class="py-3 px-4 text-right">{m.charting_th_fee()}</th>
+            <th scope="col" class="py-3 px-4 text-center">{m.charting_th_actions()}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800/60">

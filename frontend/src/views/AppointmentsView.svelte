@@ -585,6 +585,7 @@
         <input
           type="date"
           bind:value={selectedDate}
+          aria-label={m.appts_select_date()}
           class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1 text-sm text-slate-200 focus:border-sky-500 focus:outline-none"
         />
       </div>

@@ -38,13 +38,13 @@
         class="bg-slate-800/90 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-700"
       >
         <tr>
-          <th class="px-4 py-3">{m.appt_label_date_time()}</th>
-          <th class="px-4 py-3">{m.appts_th_patient_proc()}</th>
-          <th class="px-4 py-3">{m.appt_label_reason()}</th>
-          <th class="px-4 py-3">{m.appts_th_prov_chair()}</th>
-          <th class="px-4 py-3">{m.appt_label_operatory()}</th>
-          <th class="px-4 py-3">{m.appts_th_status()}</th>
-          <th class="px-4 py-3 text-right">{m.patients_th_actions()}</th>
+          <th scope="col" class="px-4 py-3">{m.appt_label_date_time()}</th>
+          <th scope="col" class="px-4 py-3">{m.appts_th_patient_proc()}</th>
+          <th scope="col" class="px-4 py-3">{m.appt_label_reason()}</th>
+          <th scope="col" class="px-4 py-3">{m.appts_th_prov_chair()}</th>
+          <th scope="col" class="px-4 py-3">{m.appt_label_operatory()}</th>
+          <th scope="col" class="px-4 py-3">{m.appts_th_status()}</th>
+          <th scope="col" class="px-4 py-3 text-right">{m.patients_th_actions()}</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-800">
@@ -82,6 +82,7 @@
             <td class="px-4 py-3">
               <select
                 value={appt.status}
+                aria-label={m.common_status()}
                 onchange={(e) => onupdatestatus(appt.id, (e.target as HTMLSelectElement).value)}
                 class="rounded-lg border px-2.5 py-1 text-xs font-semibold focus:outline-none bg-slate-900 text-slate-200 border-slate-700"
               >

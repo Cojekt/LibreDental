@@ -69,6 +69,7 @@
 
       <select
         bind:value={selectedPatient}
+        aria-label={m.appt_label_patient()}
         class="input input-sm w-64 bg-slate-800 text-slate-200 border-slate-700"
       >
         <option value="">{m.audit_all_patients()}</option>
@@ -99,12 +100,12 @@
     <table class="w-full text-left text-sm text-slate-300">
       <thead class="sticky top-0 bg-slate-800/90 uppercase text-slate-400 backdrop-blur">
         <tr>
-          <th class="px-4 py-3 font-medium">{m.audit_th_timestamp()}</th>
-          <th class="px-4 py-3 font-medium">{m.audit_th_user()}</th>
-          <th class="px-4 py-3 font-medium">{m.audit_th_patient()}</th>
-          <th class="px-4 py-3 font-medium">{m.audit_th_action()}</th>
-          <th class="px-4 py-3 font-medium">{m.audit_th_resource()}</th>
-          <th class="px-4 py-3 font-medium">{m.audit_th_details()}</th>
+          <th scope="col" class="px-4 py-3 font-medium">{m.audit_th_timestamp()}</th>
+          <th scope="col" class="px-4 py-3 font-medium">{m.audit_th_user()}</th>
+          <th scope="col" class="px-4 py-3 font-medium">{m.audit_th_patient()}</th>
+          <th scope="col" class="px-4 py-3 font-medium">{m.audit_th_action()}</th>
+          <th scope="col" class="px-4 py-3 font-medium">{m.audit_th_resource()}</th>
+          <th scope="col" class="px-4 py-3 font-medium">{m.audit_th_details()}</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-800">

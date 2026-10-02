@@ -400,6 +400,7 @@
   <div class="flex items-center justify-between gap-4">
     <select
       bind:value={claimFilterPatient}
+      aria-label={m.appt_label_patient()}
       onchange={loadClaims}
       class="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
     >
@@ -432,14 +433,14 @@
           class="bg-slate-900/80 border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400"
         >
           <tr>
-            <th class="px-4 py-3">{m.billing_th_date()}</th>
-            <th class="px-4 py-3">{m.billing_th_patient()}</th>
-            <th class="px-4 py-3">{m.billing_th_provider()}</th>
-            <th class="px-4 py-3">{m.billing_th_carrier()}</th>
-            <th class="px-4 py-3">{m.billing_th_procedures()}</th>
-            <th class="px-4 py-3">{m.billing_th_total()}</th>
-            <th class="px-4 py-3">{m.billing_th_status()}</th>
-            <th class="px-4 py-3 text-right">{m.patients_th_actions()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_date()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_patient()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_provider()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_carrier()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_procedures()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_total()}</th>
+            <th scope="col" class="px-4 py-3">{m.billing_th_status()}</th>
+            <th scope="col" class="px-4 py-3 text-right">{m.patients_th_actions()}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800/60">
@@ -651,6 +652,7 @@
               type="text"
               class="w-36 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
               bind:value={bundleLookupInput}
+              aria-label={m.billing_claim_bundle_placeholder()}
               placeholder={m.billing_claim_bundle_placeholder()}
               onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), applyBundleLookup())}
             />
@@ -693,6 +695,7 @@
               <div class="col-span-2">
                 <Input
                   bind:value={li.ada_code}
+                  aria-label={m.charting_th_code()}
                   placeholder={m.billing_claim_code_placeholder()}
                   class="font-mono text-xs py-1.5 px-2"
                 />
@@ -700,6 +703,7 @@
               <div class="col-span-3">
                 <Input
                   bind:value={li.description}
+                  aria-label={m.charting_th_desc()}
                   placeholder={m.charting_th_desc()}
                   class="text-xs py-1.5 px-2"
                 />
@@ -708,6 +712,7 @@
                 <Input
                   type="number"
                   bind:value={li.tooth_number}
+                  aria-label={m.billing_claim_tooth_label()}
                   min="1"
                   max="32"
                   placeholder="—"
@@ -718,6 +723,7 @@
                 <Input
                   type="number"
                   bind:value={li.fee}
+                  aria-label={m.charting_th_fee()}
                   step="0.01"
                   min="0"
                   placeholder="0.00"
@@ -728,6 +734,7 @@
                 <Input
                   type="number"
                   bind:value={li.insurance_allowed}
+                  aria-label={m.billing_claim_th_ins_allowed()}
                   step="0.01"
                   min="0"
                   placeholder="0.00"
