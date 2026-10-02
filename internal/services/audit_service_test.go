@@ -79,7 +79,7 @@ func TestAuditService(t *testing.T) {
 		IPAddress:  "127.0.0.1",
 	}
 
-	err = service.LogEvent(entry)
+	err = auditRepo.Log(ctx, entry)
 	if err != nil {
 		t.Fatalf("Failed to log audit event: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestAuditService(t *testing.T) {
 		Action:    domain.AuditActionUpdate,
 		Resource:  "patient_demographics",
 	}
-	err = service.LogEvent(entry2)
+	err = auditRepo.Log(ctx, entry2)
 	if err != nil {
 		t.Fatalf("Failed to log second audit event: %v", err)
 	}

@@ -119,7 +119,3 @@ func (s *AuditService) GetAuditLogs(token string, patientID string, limit int, o
 	}
 	return s.repo.Query(context.Background(), patientID, limit, offset)
 }
-
-func (s *AuditService) LogEvent(entry *domain.AuditLogEntry) error {
-	return s.repo.Log(context.Background(), entry)
-}
