@@ -20,6 +20,15 @@ LibreDental offers two separate binaries for two distinct deployment models:
 - **OS:** Windows 10/11 or Ubuntu 22.04+ LTS.
 - **Network:** Wired Ethernet with a **Static IP** (e.g. `192.168.1.100`, assigned via router DHCP reservation or OS network settings).
 
+### Credential Storage (Integrations)
+
+API keys for claim clearinghouses and notification providers are stored in the operating
+system's credential store, not in the database. Windows uses Credential Manager and needs
+no setup. On Linux the server needs a running Secret Service (e.g. GNOME Keyring) on a
+D-Bus session for the user it runs as; on a headless Ubuntu Server without one, saving
+integration credentials fails with an error mentioning `dbus-launch`. Ubuntu Desktop
+installs already include this.
+
 ### Prevent System Sleep
 
 The Server PC must **never enter sleep/suspend mode** while the practice is open (the display monitor may turn off).
