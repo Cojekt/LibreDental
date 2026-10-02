@@ -32,6 +32,16 @@ func seedDocuments(g *ServiceGraph, token string, demoDataDir string, summary *S
 		{"Modern Format Test WebP", "A modern WebP image.", string(domain.DocumentTypeXRay), "image/webp", "image-modern-format-test.webp", false, "pat_102"},
 		{"Photo Test JPEG", "A standard compressed JPEG photograph.", string(domain.DocumentTypeXRay), "image/jpeg", "image-photo-test.jpeg", false, "pat_102"},
 		{"Static Test GIF", "A static GIF file.", string(domain.DocumentTypeXRay), "image/gif", "image-static-test.gif", false, "pat_102"},
+
+		// Everyday patient paperwork, reusing the fixtures above under realistic names.
+		{"Signed Consent - Crown Preparation", "Informed consent for crown prep on #30, signed at chairside.", string(domain.DocumentTypeConsentForm), "application/pdf", "document-minimal-test.pdf", false, "pat_101"},
+		{"Medical History Questionnaire", "New patient medical history intake form.", string(domain.DocumentTypePDF), "application/pdf", "document-multipage-test.pdf", false, "pat_103"},
+		{"Referral Letter - Periodontist", "Referral for periodontal evaluation of lower anteriors.", string(domain.DocumentTypePDF), "application/pdf", "document-libreoffice-writer-test.pdf", false, "pat_103"},
+		{"Insurance Card - Front", "Scan of the primary insurance card.", string(domain.DocumentTypeImage), "image/png", "image-geometry-test.png", false, "pat_104"},
+		{"Treatment Plan Estimate", "Printed treatment plan and insurance estimate given to the patient.", string(domain.DocumentTypePDF), "application/pdf", "document-embedded-images-test.pdf", false, "pat_104"},
+		{"Signed Consent - Whitening", "Consent for in-office whitening.", string(domain.DocumentTypeConsentForm), "application/pdf", "document-minimal-test.pdf", false, "pat_105"},
+		{"Intraoral Photos", "Pre-treatment intraoral photographs.", string(domain.DocumentTypeImage), "image/jpeg", "image-photo-test.jpeg", false, "pat_106"},
+		{"Lab Prescription - Night Guard", "Lab slip sent with impressions for an occlusal guard.", string(domain.DocumentTypePDF), "application/pdf", "document-libreoffice-writer-test.pdf", false, "pat_106"},
 	}
 
 	for _, s := range seeds {

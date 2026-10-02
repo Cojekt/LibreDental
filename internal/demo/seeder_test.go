@@ -64,8 +64,8 @@ func TestSeedDatabase(t *testing.T) {
 	if summary.PaymentsCount != 2 {
 		t.Errorf("Expected 2 payments, got %d", summary.PaymentsCount)
 	}
-	if summary.DocumentsCount != 11 {
-		t.Errorf("Expected 11 documents, got %d", summary.DocumentsCount)
+	if summary.DocumentsCount != 19 {
+		t.Errorf("Expected 19 documents, got %d", summary.DocumentsCount)
 	}
 
 	ctx := context.Background()
@@ -159,8 +159,18 @@ func TestSeedDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list patient documents: %v", err)
 	}
-	if len(patDocs) != 6 {
-		t.Errorf("Expected 6 patient documents for pat_101, got %d", len(patDocs))
+	if len(patDocs) != 7 {
+		t.Errorf("Expected 7 patient documents for pat_101, got %d", len(patDocs))
+	}
+
+	for _, id := range []string{"pat_101", "pat_102", "pat_103", "pat_104", "pat_105", "pat_106"} {
+		docs, err := docRepo.ListByFilter(domain.DocumentFilter{PatientID: &id})
+		if err != nil {
+			t.Fatalf("Failed to list documents for %s: %v", id, err)
+		}
+		if len(docs) == 0 {
+			t.Errorf("Expected demo documents for %s, got none", id)
+		}
 	}
 
 	// Verify the save folder is a complete drop-in appDir: app settings were written,

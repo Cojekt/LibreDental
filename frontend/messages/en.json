@@ -652,5 +652,10 @@
   "clinic_save_success": "Clinic settings saved.",
   "clinic_save_failed": "Failed to save settings.",
   "clinic_signin_to_edit": "Sign in to make changes",
-  "prov_phone_placeholder": "e.g. 555-019-2834"
+  "prov_phone_placeholder": "e.g. 555-019-2834",
+  "doc_patient_empty_subtitle": "Upload consent forms, referrals, scans, and other records for this patient.",
+  "doc_patient_modal_subtitle": "Add a new document to this patient's record.",
+  "doc_patient_placeholder_name": "E.g. Signed Extraction Consent",
+  "patients_btn_documents": "Documents",
+  "patient_docs_title": "Patient Documents"
 }

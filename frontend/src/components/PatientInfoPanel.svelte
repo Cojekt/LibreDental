@@ -3,6 +3,7 @@
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "../lib/locale.svelte.js";
   import { calculateAge, formatDateOnly } from "$lib/date.js";
+  import PatientDocumentsModal from "./PatientDocumentsModal.svelte";
 
   let {
     patient = null,
@@ -19,12 +20,19 @@
   }>();
 
   let showSSN = $state(false);
+  let showDocuments = $state(false);
 
   // Reset SSN unhide state when switching selected patient
   $effect(() => {
     if (patient) {
       showSSN = false;
     }
+  });
+
+  // Close the documents modal if its patient is deselected or replaced
+  $effect(() => {
+    void patient?.id;
+    showDocuments = false;
   });
 
   const idLabel = $derived.by(() => {
@@ -464,6 +472,22 @@
 
         <!-- Actions -->
         <div class="pt-3 border-t border-slate-700/70 flex gap-2">
+          <button
+            class="btn btn-secondary btn-sm flex-1 justify-center cursor-pointer"
+            onclick={() => (showDocuments = true)}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="h-3.5 w-3.5"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            {m.patients_btn_documents()}
+          </button>
           {#if oneditpatient}
             <button
               class="btn btn-secondary btn-sm flex-1 justify-center cursor-pointer"
@@ -495,3 +519,7 @@
     {/if}
   </div>
 </div>
+
+{#if patient}
+  <PatientDocumentsModal bind:showModal={showDocuments} {patient} />
+{/if}

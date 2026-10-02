@@ -10,8 +10,11 @@
   import * as m from "../../paraglide/messages.js";
   import { handleError } from "../../lib/error.js";
 
-  let { openUploadModal = $bindable() } = $props<{
+  // With a patientId this lists and uploads that patient's documents; without one it manages
+  // clinic-wide documents.
+  let { openUploadModal = $bindable(), patientId = "" } = $props<{
     openUploadModal?: () => void;
+    patientId?: string;
   }>();
 
   let documents = $state<Document[]>([]);
@@ -28,19 +31,24 @@
 
   async function loadDocuments() {
     const currentToken = auth.token;
+    const currentPatientId = patientId;
     if (!currentToken) {
       isLoading = false;
       return;
     }
     isLoading = true;
     try {
-      const result = await DocumentService.ListClinicDocuments(currentToken);
-      if (auth.token === currentToken) {
+      const result = currentPatientId
+        ? await DocumentService.ListPatientDocuments(currentToken, {
+            patient_id: currentPatientId,
+          })
+        : await DocumentService.ListClinicDocuments(currentToken);
+      if (auth.token === currentToken && patientId === currentPatientId) {
         documents = result || [];
       }
     } catch (err) {
       if (auth.token === currentToken) {
-        console.error("Failed to load clinic documents:", err);
+        console.error("Failed to load documents:", err);
       }
     } finally {
       if (auth.token === currentToken) {
@@ -50,6 +58,7 @@
   }
 
   $effect(() => {
+    void patientId;
     if (auth.token) {
       loadDocuments();
     } else {
@@ -96,9 +105,16 @@
         }
 
         try {
-          const mime = selectedFile?.type || "";
+          const lowerName = selectedFile?.name.toLowerCase() || "";
+          const isDicom =
+            lowerName.endsWith(".dcm") ||
+            lowerName.endsWith(".dicom") ||
+            !!selectedFile?.type.toLowerCase().includes("dicom");
+          const mime = isDicom ? "application/dicom" : selectedFile?.type || "";
           let docType = DocumentType.DocumentTypeOther;
-          if (mime.includes("pdf")) {
+          if (isDicom) {
+            docType = DocumentType.DocumentTypeXRay;
+          } else if (mime.includes("pdf")) {
             docType = DocumentType.DocumentTypePDF;
           } else if (mime.startsWith("image/")) {
             docType = DocumentType.DocumentTypeImage;
@@ -106,7 +122,7 @@
 
           await DocumentService.SaveDocumentBase64(
             auth.token,
-            "", // empty for clinic document
+            patientId, // empty for clinic document
             docName,
             docDesc,
             docType,
@@ -249,7 +265,10 @@
       ></div>
     </div>
   {:else if documents.length === 0}
-    <EmptyState title={m.doc_empty_title()} subtitle={m.doc_empty_subtitle()} />
+    <EmptyState
+      title={m.doc_empty_title()}
+      subtitle={patientId ? m.doc_patient_empty_subtitle() : m.doc_empty_subtitle()}
+    />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each documents as doc}
@@ -312,7 +331,7 @@
 <Modal
   bind:showModal={showUploadModal}
   title={m.doc_btn_upload()}
-  subtitle={m.doc_modal_subtitle()}
+  subtitle={patientId ? m.doc_patient_modal_subtitle() : m.doc_modal_subtitle()}
   maxWidth="max-w-md"
 >
   <form onsubmit={handleUpload} class="space-y-4">
@@ -334,7 +353,7 @@
         type="text"
         bind:value={docName}
         required
-        placeholder={m.doc_placeholder_name()}
+        placeholder={patientId ? m.doc_patient_placeholder_name() : m.doc_placeholder_name()}
       />
     </FormField>
 
