@@ -1,4 +1,5 @@
-h1:7G9WT+k6QcxQrPLwmGUSGbfLNZ2MJmvPJ8fvRq0nLXU=
+h1:ceGhNzKE70dYYtLUeW0z4WuGakHETkluwxHtEcLNoHk=
 20260920024046_initial_schema.sql h1:Uca6VROTh5ZmWqF7dOca6M61paZK4kJGB/2kHH1pAQU=
 20260923003028_add_notification_log.sql h1:bFVQIYiNy/oZCmJcw2OBTqE/HfdgNNkTqLk01LCdOic=
 20260929021426_add_notification_external_message_id.sql h1:6M0CNyk7tWY8dQpmNyepaNG8G/A9QZA+uirGIA8Bz4Y=
+20261002002842_add_program_bridges.sql h1:PtmrDt0T4JeJSJl5AuDQKlu+0ld1CaEUnqKA3upncGc=

@@ -131,3 +131,11 @@ type NotificationLogRepository interface {
 	List(ctx context.Context, patientID string, limit, offset int) ([]*domain.NotificationLog, error)
 	ListByAppointment(ctx context.Context, appointmentID string) ([]*domain.NotificationLog, error)
 }
+
+// ProgramBridgeRepository defines storage operations for local program bridge configuration.
+type ProgramBridgeRepository interface {
+	// Get returns ErrNotFound when the bridge has never been configured.
+	Get(ctx context.Context, name string) (*domain.BridgeConfig, error)
+	List(ctx context.Context) ([]*domain.BridgeConfig, error)
+	Save(ctx context.Context, cfg *domain.BridgeConfig) error
+}

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -28,24 +27,23 @@ var ErrBridgesUnavailable = errors.New("program bridges are only available in th
 const bridgeExportMaxAge = 24 * time.Hour
 
 // BridgeService exposes local program bridges to the Wails frontend. It follows the same
-// registry pattern as the claim and notification integrations, but bridge config is stored
-// per-workstation in bridges.json (an executable path only makes sense on the machine it was
-// set on) rather than in the shared database or the keychain, since none of it is secret.
+// registry pattern as the claim and notification integrations. Bridge config lives in the
+// database rather than the keychain, since none of it is secret.
 type BridgeService struct {
-	appDir       string
+	repo         storage.ProgramBridgeRepository
 	patientRepo  storage.PatientRepository
 	documents    *DocumentService
 	auditService *AuditService
 	serverMode   bool
 	start        func(*domain.BridgeLaunch) error
 
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	bridges map[string]domain.ProgramBridge
 }
 
-func NewBridgeService(appDir string, patientRepo storage.PatientRepository, documents *DocumentService, auditService *AuditService) *BridgeService {
+func NewBridgeService(repo storage.ProgramBridgeRepository, patientRepo storage.PatientRepository, documents *DocumentService, auditService *AuditService) *BridgeService {
 	return &BridgeService{
-		appDir:       appDir,
+		repo:         repo,
 		patientRepo:  patientRepo,
 		documents:    documents,
 		auditService: auditService,
@@ -66,7 +64,7 @@ func RegisterProgramBridge(s *BridgeService, b domain.ProgramBridge) {
 	s.bridges[b.Name()] = b
 }
 
-// ListBridges returns the registered bridges with this workstation's config.
+// ListBridges returns the registered bridges with their current config.
 func (s *BridgeService) ListBridges(token string) ([]domain.BridgeInfo, error) {
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
@@ -75,59 +73,50 @@ func (s *BridgeService) ListBridges(token string) ([]domain.BridgeInfo, error) {
 		return []domain.BridgeInfo{}, nil
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	stored, err := s.loadConfigsLocked()
-	if err != nil {
-		return nil, err
+	ctx := context.Background()
+	infos := make([]domain.BridgeInfo, 0)
+	for _, b := range s.registered() {
+		cfg, err := s.configFor(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+		infos = append(infos, domain.BridgeInfo{Capabilities: b.Capabilities(), Config: cfg})
 	}
-	infos := make([]domain.BridgeInfo, 0, len(s.bridges))
-	for name, b := range s.bridges {
-		infos = append(infos, domain.BridgeInfo{
-			Name:         name,
-			Capabilities: b.Capabilities(),
-			Config:       mergeBridgeConfig(b, stored[name]),
-		})
-	}
-	sort.Slice(infos, func(i, j int) bool { return infos[i].Name < infos[j].Name })
 	return infos, nil
 }
 
-// SetBridgeConfig saves this workstation's config for a bridge. Unknown keys are dropped.
-func (s *BridgeService) SetBridgeConfig(token string, name string, config map[string]string) error {
+// SetBridgeConfig saves the config for the bridge named by config.Name.
+func (s *BridgeService) SetBridgeConfig(token string, config domain.BridgeConfig) error {
 	if s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
 	if s.serverMode {
 		return ErrBridgesUnavailable
 	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	b, ok := s.bridges[name]
-	if !ok {
-		return fmt.Errorf("program bridge %q not registered", name)
+	if _, ok := s.bridge(config.Name); !ok {
+		return fmt.Errorf("program bridge %q not registered", config.Name)
 	}
-	merged := mergeBridgeConfig(b, config)
-	if merged[domain.BridgeConfigEnabled] == "true" {
-		if err := validateBridgeExecutable(merged[domain.BridgeConfigPath]); err != nil {
+	if config.Enabled {
+		if err := validateBridgeExecutable(config.Path); err != nil {
 			return err
 		}
 	}
-	if _, err := splitBridgeArgs(merged[domain.BridgeConfigArgs]); err != nil {
+	if _, err := splitBridgeArgs(config.Args); err != nil {
 		return err
 	}
 
-	stored, err := s.loadConfigsLocked()
-	if err != nil {
+	ctx := context.Background()
+	if existing, err := s.repo.Get(ctx, config.Name); err == nil {
+		config.CreatedAt = existing.CreatedAt
+	} else if !errors.Is(err, storage.ErrNotFound) {
+		return fmt.Errorf("failed to load program bridge config: %w", err)
+	}
+	if err := s.repo.Save(ctx, &config); err != nil {
 		return err
 	}
-	stored[name] = merged
-	if err := s.saveConfigsLocked(stored); err != nil {
-		return err
-	}
-	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "program_bridge_config",
-		"Updated configuration for program bridge "+name); err != nil {
+	detail := fmt.Sprintf("Updated configuration for program bridge %s (enabled: %t, path: %s, args: %s)",
+		config.Name, config.Enabled, config.Path, config.Args)
+	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "program_bridge_config", detail); err != nil {
 		return fmt.Errorf("bridge config saved but failed to log audit: %w", err)
 	}
 	return nil
@@ -147,19 +136,17 @@ func (s *BridgeService) LaunchBridge(token string, name string, patientID string
 		return fmt.Errorf("%w: patient ID is required", storage.ErrInvalidInput)
 	}
 
-	s.mu.Lock()
-	b, ok := s.bridges[name]
-	stored, err := s.loadConfigsLocked()
-	s.mu.Unlock()
+	b, ok := s.bridge(name)
 	if !ok {
 		return fmt.Errorf("program bridge %q not registered", name)
 	}
+	ctx := context.Background()
+	config, err := s.configFor(ctx, b)
 	if err != nil {
 		return err
 	}
-	config := mergeBridgeConfig(b, stored[name])
-	if config[domain.BridgeConfigEnabled] != "true" {
-		return fmt.Errorf("%w: %s is not enabled on this workstation", ErrBridgeNotConfigured, name)
+	if !config.Enabled {
+		return fmt.Errorf("%w: %s is not enabled", ErrBridgeNotConfigured, name)
 	}
 
 	needed := domain.BridgeCapabilityPatient
@@ -170,7 +157,6 @@ func (s *BridgeService) LaunchBridge(token string, name string, patientID string
 		return fmt.Errorf("%w: program bridge %q does not support %s", storage.ErrInvalidInput, name, needed)
 	}
 
-	ctx := context.Background()
 	patient, err := s.patientRepo.GetByID(ctx, patientID)
 	if err != nil {
 		return fmt.Errorf("failed to get patient for program bridge: %w", err)
@@ -217,49 +203,36 @@ func (s *BridgeService) LaunchBridge(token string, name string, patientID string
 	return nil
 }
 
-func mergeBridgeConfig(b domain.ProgramBridge, config map[string]string) map[string]string {
-	merged := b.DefaultConfig()
-	for k := range merged {
-		if v, ok := config[k]; ok {
-			merged[k] = v
-		}
+func (s *BridgeService) bridge(name string) (domain.ProgramBridge, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	b, ok := s.bridges[name]
+	return b, ok
+}
+
+func (s *BridgeService) registered() []domain.ProgramBridge {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	bridges := make([]domain.ProgramBridge, 0, len(s.bridges))
+	for _, b := range s.bridges {
+		bridges = append(bridges, b)
 	}
-	return merged
+	sort.Slice(bridges, func(i, j int) bool { return bridges[i].Name() < bridges[j].Name() })
+	return bridges
 }
 
-func (s *BridgeService) configPath() string {
-	return filepath.Join(s.appDir, "bridges.json")
-}
-
-func (s *BridgeService) loadConfigsLocked() (map[string]map[string]string, error) {
-	configs := make(map[string]map[string]string)
-	data, err := os.ReadFile(s.configPath())
-	if errors.Is(err, os.ErrNotExist) || (err == nil && len(data) == 0) {
-		return configs, nil
+// configFor returns the stored config, or the bridge's defaults if it was never configured.
+func (s *BridgeService) configFor(ctx context.Context, b domain.ProgramBridge) (domain.BridgeConfig, error) {
+	cfg, err := s.repo.Get(ctx, b.Name())
+	if errors.Is(err, storage.ErrNotFound) {
+		def := b.DefaultConfig()
+		def.Name = b.Name()
+		return def, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to read bridge config: %w", err)
+		return domain.BridgeConfig{}, fmt.Errorf("failed to load program bridge config: %w", err)
 	}
-	if err := json.Unmarshal(data, &configs); err != nil {
-		return nil, fmt.Errorf("failed to parse bridge config: %w", err)
-	}
-	return configs, nil
-}
-
-func (s *BridgeService) saveConfigsLocked(configs map[string]map[string]string) error {
-	data, err := json.MarshalIndent(configs, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to encode bridge config: %w", err)
-	}
-	tmp := s.configPath() + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o600); err != nil {
-		return fmt.Errorf("failed to write bridge config: %w", err)
-	}
-	if err := os.Rename(tmp, s.configPath()); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("failed to save bridge config: %w", err)
-	}
-	return nil
+	return *cfg, nil
 }
 
 func startBridgeProcess(launch *domain.BridgeLaunch) error {

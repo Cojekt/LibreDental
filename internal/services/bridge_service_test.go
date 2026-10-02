@@ -67,7 +67,7 @@ func newTestBridgeService(t *testing.T) *bridgeTestEnv {
 
 	docs := NewDocumentService(sqlite.NewDocumentRepository(db), tmpDir, auditSvc)
 	env := &bridgeTestEnv{
-		svc:       NewBridgeService(tmpDir, patientRepo, docs, auditSvc),
+		svc:       NewBridgeService(sqlite.NewProgramBridgeRepository(db), patientRepo, docs, auditSvc),
 		docs:      docs,
 		audit:     auditSvc,
 		token:     token,
@@ -97,11 +97,13 @@ func (e *bridgeTestEnv) saveDoc(t *testing.T, patientID, name string) *domain.Do
 
 func (e *bridgeTestEnv) enable(t *testing.T, name, args string) {
 	t.Helper()
-	cfg := map[string]string{domain.BridgeConfigEnabled: "true", domain.BridgeConfigPath: e.exePath}
+	b, _ := e.svc.bridge(name)
+	cfg := b.DefaultConfig()
+	cfg.Enabled, cfg.Path = true, e.exePath
 	if args != "" {
-		cfg[domain.BridgeConfigArgs] = args
+		cfg.Args = args
 	}
-	if err := e.svc.SetBridgeConfig(e.token, name, cfg); err != nil {
+	if err := e.svc.SetBridgeConfig(e.token, cfg); err != nil {
 		t.Fatalf("SetBridgeConfig: %v", err)
 	}
 }
@@ -129,7 +131,7 @@ func TestBridgeServiceRequiresSession(t *testing.T) {
 	if _, err := env.svc.ListBridges("bad"); !errors.Is(err, ErrUnauthorized) {
 		t.Errorf("ListBridges: expected ErrUnauthorized, got %v", err)
 	}
-	if err := env.svc.SetBridgeConfig("bad", "weasis", nil); !errors.Is(err, ErrUnauthorized) {
+	if err := env.svc.SetBridgeConfig("bad", domain.BridgeConfig{Name: "weasis"}); !errors.Is(err, ErrUnauthorized) {
 		t.Errorf("SetBridgeConfig: expected ErrUnauthorized, got %v", err)
 	}
 	if err := env.svc.LaunchBridge("bad", "weasis", "pat_1", nil); !errors.Is(err, ErrUnauthorized) {
@@ -145,7 +147,7 @@ func TestBridgeServiceServerMode(t *testing.T) {
 	if err != nil || len(infos) != 0 {
 		t.Errorf("ListBridges in server mode = %v, %v; want empty", infos, err)
 	}
-	if err := env.svc.SetBridgeConfig(env.token, "weasis", nil); !errors.Is(err, ErrBridgesUnavailable) {
+	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{Name: "weasis"}); !errors.Is(err, ErrBridgesUnavailable) {
 		t.Errorf("SetBridgeConfig: expected ErrBridgesUnavailable, got %v", err)
 	}
 	if err := env.svc.LaunchBridge(env.token, "weasis", "pat_1", nil); !errors.Is(err, ErrBridgesUnavailable) {
@@ -164,45 +166,42 @@ func TestBridgeServiceConfig(t *testing.T) {
 		t.Fatalf("ListBridges returned %d bridges, want %d", len(infos), len(DefaultProgramBridges()))
 	}
 	for _, info := range infos {
-		if info.Config[domain.BridgeConfigEnabled] != "false" {
-			t.Errorf("bridge %s enabled before configuration", info.Name)
+		if info.Config.Enabled || info.Config.Name == "" {
+			t.Errorf("unexpected default config: %+v", info.Config)
 		}
 	}
 
-	if err := env.svc.SetBridgeConfig(env.token, "weasis", map[string]string{
-		domain.BridgeConfigEnabled: "true", domain.BridgeConfigPath: "relative/weasis",
+	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
+		Name: "weasis", Enabled: true, Path: "relative/weasis",
 	}); !errors.Is(err, ErrBridgeNotConfigured) {
 		t.Errorf("expected ErrBridgeNotConfigured for relative path, got %v", err)
 	}
-	if err := env.svc.SetBridgeConfig(env.token, "weasis", map[string]string{
-		domain.BridgeConfigArgs: `-d "unterminated`,
+	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
+		Name: "weasis", Args: `-d "unterminated`,
 	}); !errors.Is(err, errBridgeTemplate) {
 		t.Errorf("expected template error, got %v", err)
 	}
-	if err := env.svc.SetBridgeConfig(env.token, "nope", nil); err == nil {
+	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{Name: "nope"}); err == nil {
 		t.Error("expected error for unregistered bridge")
 	}
 
-	if err := env.svc.SetBridgeConfig(env.token, "weasis", map[string]string{
-		domain.BridgeConfigEnabled: "true", domain.BridgeConfigPath: env.exePath, "unknown_key": "x",
+	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
+		Name: "weasis", Enabled: true, Path: env.exePath, Args: "-x",
 	}); err != nil {
 		t.Fatalf("SetBridgeConfig: %v", err)
 	}
-
-	// A fresh service on the same app dir sees the saved config, as after a restart. Saved
-	// args win over a later change to the bridge's default.
-	reloaded := NewBridgeService(env.svc.appDir, nil, nil, env.audit)
-	RegisterProgramBridge(reloaded, NewCommandLineBridge("weasis", "default", domain.BridgeCapabilityDocuments))
-	infos, err = reloaded.ListBridges(env.token)
+	infos, err = env.svc.ListBridges(env.token)
 	if err != nil {
-		t.Fatalf("ListBridges after reload: %v", err)
+		t.Fatalf("ListBridges after save: %v", err)
 	}
-	cfg := infos[0].Config
-	if cfg[domain.BridgeConfigEnabled] != "true" || cfg[domain.BridgeConfigPath] != env.exePath || cfg[domain.BridgeConfigArgs] != `'$dicom:get -l "{dir}"'` {
-		t.Errorf("unexpected reloaded config: %v", cfg)
+	var cfg domain.BridgeConfig
+	for _, info := range infos {
+		if info.Config.Name == "weasis" {
+			cfg = info.Config
+		}
 	}
-	if _, ok := cfg["unknown_key"]; ok {
-		t.Error("unknown config key was persisted")
+	if !cfg.Enabled || cfg.Path != env.exePath || cfg.Args != "-x" || cfg.CreatedAt.IsZero() {
+		t.Errorf("unexpected saved config: %+v", cfg)
 	}
 
 	logs, err := env.audit.GetAuditLogs(env.token, "", 100, 0)
@@ -211,7 +210,7 @@ func TestBridgeServiceConfig(t *testing.T) {
 	}
 	found := false
 	for _, l := range logs {
-		found = found || (l.Resource == "program_bridge_config" && l.Action == domain.AuditActionUpdate)
+		found = found || (l.Resource == "program_bridge_config" && l.Action == domain.AuditActionUpdate && strings.Contains(l.Details, env.exePath))
 	}
 	if !found {
 		t.Error("config change was not audited")

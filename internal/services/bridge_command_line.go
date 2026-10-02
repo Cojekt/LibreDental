@@ -33,24 +33,19 @@ func (b *CommandLineBridge) Capabilities() []domain.BridgeCapability {
 	return append([]domain.BridgeCapability(nil), b.capabilities...)
 }
 
-func (b *CommandLineBridge) DefaultConfig() map[string]string {
-	return map[string]string{
-		domain.BridgeConfigEnabled: "false",
-		domain.BridgeConfigPath:    "",
-		domain.BridgeConfigArgs:    b.defaultArgs,
-	}
+func (b *CommandLineBridge) DefaultConfig() domain.BridgeConfig {
+	return domain.BridgeConfig{Name: b.name, Args: b.defaultArgs}
 }
 
-func (b *CommandLineBridge) BuildLaunch(_ context.Context, req *domain.BridgeRequest, config map[string]string) (*domain.BridgeLaunch, error) {
-	exe := config[domain.BridgeConfigPath]
-	if err := validateBridgeExecutable(exe); err != nil {
+func (b *CommandLineBridge) BuildLaunch(_ context.Context, req *domain.BridgeRequest, config domain.BridgeConfig) (*domain.BridgeLaunch, error) {
+	if err := validateBridgeExecutable(config.Path); err != nil {
 		return nil, err
 	}
-	args, err := ExpandBridgeArgs(config[domain.BridgeConfigArgs], req)
+	args, err := ExpandBridgeArgs(config.Args, req)
 	if err != nil {
 		return nil, err
 	}
-	return &domain.BridgeLaunch{Executable: exe, Args: args}, nil
+	return &domain.BridgeLaunch{Executable: config.Path, Args: args}, nil
 }
 
 // DefaultProgramBridges returns the bridges LibreDental ships with. The DICOM viewer presets

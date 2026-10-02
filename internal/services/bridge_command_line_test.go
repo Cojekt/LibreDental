@@ -89,7 +89,7 @@ func TestCommandLineBridgeBuildLaunch(t *testing.T) {
 	dir, _ := filepath.Abs("export")
 
 	config := b.DefaultConfig()
-	config[domain.BridgeConfigPath] = exe
+	config.Path = exe
 	launch, err := b.BuildLaunch(context.Background(), &domain.BridgeRequest{Dir: dir, Files: []string{"x"}}, config)
 	if err != nil {
 		t.Fatalf("BuildLaunch error: %v", err)
@@ -99,7 +99,7 @@ func TestCommandLineBridgeBuildLaunch(t *testing.T) {
 	}
 
 	for _, path := range []string{"", "relative/weasis", filepath.Join(filepath.Dir(exe), "run.bat"), filepath.Join(filepath.Dir(exe), "run.CMD")} {
-		config[domain.BridgeConfigPath] = path
+		config.Path = path
 		if _, err := b.BuildLaunch(context.Background(), &domain.BridgeRequest{}, config); !errors.Is(err, ErrBridgeNotConfigured) {
 			t.Errorf("path %q: expected ErrBridgeNotConfigured, got %v", path, err)
 		}
@@ -113,10 +113,10 @@ func TestDefaultProgramBridgesTemplatesParse(t *testing.T) {
 			t.Errorf("duplicate bridge name %q", b.Name())
 		}
 		seen[b.Name()] = true
-		if _, err := splitBridgeArgs(b.DefaultConfig()[domain.BridgeConfigArgs]); err != nil {
+		if _, err := splitBridgeArgs(b.DefaultConfig().Args); err != nil {
 			t.Errorf("bridge %q default args do not parse: %v", b.Name(), err)
 		}
-		if b.DefaultConfig()[domain.BridgeConfigEnabled] != "false" {
+		if b.DefaultConfig().Enabled {
 			t.Errorf("bridge %q should be disabled by default", b.Name())
 		}
 	}

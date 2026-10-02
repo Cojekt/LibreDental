@@ -71,7 +71,8 @@ func main() {
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
-	bridgeService := services.NewBridgeService(appDir, patientRepo, documentService, auditService)
+	programBridgeRepo := sqlite.NewProgramBridgeRepository(db)
+	bridgeService := services.NewBridgeService(programBridgeRepo, patientRepo, documentService, auditService)
 	for _, b := range services.DefaultProgramBridges() {
 		services.RegisterProgramBridge(bridgeService, b)
 	}

@@ -35,6 +35,7 @@ domain.ProgramBridge           interface: Name, Capabilities, DefaultConfig, Bui
 services.CommandLineBridge     generic implementation: executable + argument template
 services.DefaultProgramBridges presets: custom, weasis, radiant, microdicom
 services.BridgeService         Wails service: ListBridges, SetBridgeConfig, LaunchBridge
+storage.ProgramBridgeRepository  config persistence (program_bridges table)
 ```
 
 `ProgramBridge` mirrors `ClaimProvider` and `NotificationProvider`: bridges are registered by
@@ -43,11 +44,14 @@ effects (exporting documents, auditing, starting the process), so new bridges ca
 
 ### Configuration
 
-Config is per-workstation, stored in `bridges.json` in the app data directory, because an
-executable path only means something on the machine it was set on. It is not in the SQLite
-database (no migration needed, and it would be wrong to share it across LAN clients) and not in
-the keychain (none of it is secret). Keys: `enabled`, `path` (absolute), `args` (template).
-Every bridge is disabled until a staff member configures it.
+Config is stored in the `program_bridges` table of the main database (one row per configured
+bridge: `name`, `enabled`, `path`, `args`). A bridge with no row uses its preset defaults and is
+disabled. It is not kept in the keychain like clinic integrations, since none of it is secret.
+Every config change is audited with the new enabled state, path and arguments.
+
+Bridges currently only run in desktop builds, where the database lives on the same machine as
+the program being launched. If bridges are ever enabled for LAN server setups, executable paths
+will need a per-workstation override (as Open Dental has), since installs differ between machines.
 
 ### Argument templates
 
@@ -78,7 +82,7 @@ its own quoted command string.
   removed on the next launch.
 - Every launch is recorded in the audit log as an `EXPORT` on the patient (resource
   `program_bridge`) **before** the program starts; if the audit entry cannot be written, the
-  program is not started. Config changes are audited as `UPDATE`s.
+  program is not started. Config changes are audited as `UPDATE`s on `program_bridge_config`.
 - In server builds, bridges are unavailable: the program would start on the server, not on
   the workstation the user is at.
 

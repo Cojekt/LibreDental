@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // BridgeCapability describes what context a ProgramBridge can hand to the external program.
 type BridgeCapability string
@@ -13,13 +16,16 @@ const (
 	BridgeCapabilityDocuments BridgeCapability = "documents"
 )
 
-// Well-known config keys shared by command-line bridges. Bridge config is per-workstation,
-// since the external program is installed (and found at a path) on the local machine.
-const (
-	BridgeConfigEnabled = "enabled"
-	BridgeConfigPath    = "path" // absolute path to the external program's executable
-	BridgeConfigArgs    = "args" // argument template, see services.BridgeArgumentTokens
-)
+// BridgeConfig is the stored setup for one bridge. Every bridge starts disabled until staff
+// point it at the program's executable.
+type BridgeConfig struct {
+	Name      string    `json:"name"`
+	Enabled   bool      `json:"enabled"`
+	Path      string    `json:"path"` // absolute path to the external program's executable
+	Args      string    `json:"args"` // argument template, see services.BridgeArgumentTokens
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 // BridgeRequest is the context a user asked to hand off to an external program.
 type BridgeRequest struct {
@@ -50,17 +56,16 @@ type ProgramBridge interface {
 	// Capabilities returns which kinds of context the bridge accepts.
 	Capabilities() []BridgeCapability
 
-	// DefaultConfig returns the settings a new workstation starts from.
-	DefaultConfig() map[string]string
+	// DefaultConfig returns the settings used until the bridge is configured.
+	DefaultConfig() BridgeConfig
 
-	// BuildLaunch turns a request and this workstation's config into a launch command.
+	// BuildLaunch turns a request and the bridge's config into a launch command.
 	// It must not start the program itself.
-	BuildLaunch(ctx context.Context, req *BridgeRequest, config map[string]string) (*BridgeLaunch, error)
+	BuildLaunch(ctx context.Context, req *BridgeRequest, config BridgeConfig) (*BridgeLaunch, error)
 }
 
-// BridgeInfo describes a registered bridge and its current workstation config for the frontend.
+// BridgeInfo describes a registered bridge and its current config for the frontend.
 type BridgeInfo struct {
-	Name         string             `json:"name"`
 	Capabilities []BridgeCapability `json:"capabilities"`
-	Config       map[string]string  `json:"config"`
+	Config       BridgeConfig       `json:"config"`
 }
