@@ -1,6 +1,8 @@
 package sqlite
 
 import (
+	"database/sql"
+	"errors"
 	"path/filepath"
 	"testing"
 )
@@ -85,5 +87,46 @@ func TestOpenAudit_AuditMigrationsApplied(t *testing.T) {
 	row := db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'")
 	if err := row.Scan(&tableName); err != nil {
 		t.Errorf("Expected 'audit_logs' table to exist after audit migration, got error: %v", err)
+	}
+}
+
+func TestOpen_Reopen(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "test_reopen.db")
+
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("first Open failed: %v", err)
+	}
+	db.Close()
+
+	db, err = Open(dbPath)
+	if err != nil {
+		t.Fatalf("reopening a current database failed: %v", err)
+	}
+	db.Close()
+}
+
+func TestOpen_RejectsPreBaselineDatabase(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "test_old.db")
+
+	raw, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("sql.Open failed: %v", err)
+	}
+	// Mimic a database left behind by the squashed pre-baseline migration chain.
+	for _, stmt := range []string{
+		"CREATE TABLE goose_db_version (id INTEGER PRIMARY KEY AUTOINCREMENT, version_id INTEGER NOT NULL, is_applied INTEGER NOT NULL, tstamp TIMESTAMP DEFAULT (datetime('now')))",
+		"INSERT INTO goose_db_version (version_id, is_applied) VALUES (0, 1), (20260920024046, 1)",
+		"CREATE TABLE patients (id TEXT NOT NULL PRIMARY KEY)",
+	} {
+		if _, err := raw.Exec(stmt); err != nil {
+			t.Fatalf("setup %q failed: %v", stmt, err)
+		}
+	}
+	raw.Close()
+
+	_, err = Open(dbPath)
+	if !errors.Is(err, ErrIncompatibleDatabase) {
+		t.Fatalf("expected ErrIncompatibleDatabase, got %v", err)
 	}
 }
