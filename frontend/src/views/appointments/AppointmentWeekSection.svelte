@@ -60,7 +60,7 @@
           >
             {day.dayName}
           </div>
-          <div class="text-sm font-extrabold text-white mt-0.5">{day.label}</div>
+          <div class="text-sm font-extrabold text-slate-100 mt-0.5">{day.label}</div>
         </div>
         {#if day.isToday}
           <span
@@ -89,7 +89,7 @@
               tabindex="0"
               onkeydown={(e) => e.key === "Enter" && oneditappointment(appt)}
             >
-              <div class="text-xs font-bold text-white truncate">
+              <div class="text-xs font-bold text-slate-100 truncate">
                 {getPatientName(appt.patient_id)}
               </div>
               <div class="text-[11px] text-sky-400 font-semibold mt-1">

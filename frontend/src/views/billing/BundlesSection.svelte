@@ -380,7 +380,7 @@
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             {m.billing_bundle_total_fee()}
-            <strong class="text-white text-sm font-mono"
+            <strong class="text-slate-100 text-sm font-mono"
               >{formatCurrency(
                 Math.round(bundleTotalFee() * 100),
                 countryMeta?.default_currency

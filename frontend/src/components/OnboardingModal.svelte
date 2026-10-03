@@ -73,7 +73,7 @@
           alt={m.onboarding_logo_alt()}
           class="h-10 w-10 rounded-xl shadow-md shadow-purple-500/20 object-contain"
         />
-        <h2 class="m-0 text-2xl font-bold text-white tracking-tight">
+        <h2 class="m-0 text-2xl font-bold text-slate-100 tracking-tight">
           {(getLocaleVersion(), m.onboarding_title())}
         </h2>
         <span class="ml-auto text-sm font-semibold text-slate-400 uppercase tracking-wide">

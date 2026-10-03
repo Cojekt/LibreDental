@@ -152,7 +152,7 @@
 
 <div class="space-y-8 animate-fadeIn">
   <div>
-    <h3 class="text-lg font-bold text-white mb-1">{m.integrations_title()}</h3>
+    <h3 class="text-lg font-bold text-slate-100 mb-1">{m.integrations_title()}</h3>
     <p class="text-sm text-slate-400 mb-6">{m.integrations_subtitle()}</p>
 
     <div class="space-y-6">

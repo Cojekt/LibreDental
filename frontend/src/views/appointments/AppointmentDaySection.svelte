@@ -276,7 +276,9 @@
             <div class="p-3">
               <div class="flex items-start justify-between gap-2">
                 <div>
-                  <div class="text-sm font-bold text-white">{getPatientName(appt.patient_id)}</div>
+                  <div class="text-sm font-bold text-slate-100">
+                    {getPatientName(appt.patient_id)}
+                  </div>
                   <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
                     <span>{formatTime(appt.start_time)} - {formatTime(appt.end_time)}</span>
                     {#if getPatientPhone(appt.patient_id)}
@@ -377,7 +379,7 @@
             </div>
           {:else}
             <div class="h-full px-2 py-1 flex flex-col justify-center gap-0.5">
-              <span class="text-[11px] font-bold text-white truncate leading-tight">
+              <span class="text-[11px] font-bold text-slate-100 truncate leading-tight">
                 {getPatientName(appt.patient_id)}
               </span>
               {#if item.height >= 34}

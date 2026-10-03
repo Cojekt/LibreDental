@@ -94,7 +94,7 @@
               <span class="text-sky-400 text-[10px] font-semibold"
                 >{formatTime(appt.start_time)}</span
               >
-              <span class="font-semibold text-white truncate"
+              <span class="font-semibold text-slate-100 truncate"
                 >{getPatientName(appt.patient_id)}</span
               >
             </button>

@@ -67,7 +67,7 @@
                 </div>
               </button>
             </td>
-            <td class="px-4 py-3 font-semibold text-white">
+            <td class="px-4 py-3 font-semibold text-slate-100">
               {getPatientName(appt.patient_id)}
             </td>
             <td class="px-4 py-3 text-slate-300">

@@ -97,7 +97,7 @@
       >
         <div>
           <h4 class="text-emerald-400 font-bold text-sm">{m.staff_login_current()}</h4>
-          <p class="text-white font-semibold text-lg">
+          <p class="text-slate-100 font-semibold text-lg">
             {auth.currentStaff?.name || auth.currentStaffId}
           </p>
         </div>

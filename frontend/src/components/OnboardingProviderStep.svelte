@@ -68,7 +68,7 @@
   }
 </script>
 
-<h3 class="m-0 mb-2 text-xl font-bold text-white">{m.onboarding_provider_title()}</h3>
+<h3 class="m-0 mb-2 text-xl font-bold text-slate-100">{m.onboarding_provider_title()}</h3>
 <p class="text-base text-slate-300 leading-relaxed mb-8">{m.onboarding_provider_body()}</p>
 
 <form onsubmit={handleSubmit} class="flex flex-col gap-5">
