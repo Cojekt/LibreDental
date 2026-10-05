@@ -751,5 +751,10 @@
   "integrations_claims_test_mode_hint": "Claims are validated by the clearinghouse but never sent to payers. Turn off only when ready to bill real claims.",
   "patient_subscriber_sex": "Policyholder Sex",
   "patient_subscriber_sex_placeholder": "Select sex",
-  "patient_subscriber_address_line1": "Policyholder Address"
+  "patient_subscriber_address_line1": "Policyholder Address",
+  "clinic_err_invalid_npi": "The billing NPI must be a valid 10-digit NPI.",
+  "prov_err_invalid_npi": "The NPI must be a valid 10-digit NPI.",
+  "prov_err_invalid_taxonomy": "The taxonomy code must be 10 characters ending in X, e.g. 1223G0001X.",
+  "prov_err_save_failed": "Failed to save provider.",
+  "patient_err_subscriber_dob_future": "Policyholder date of birth cannot be in the future."
 }

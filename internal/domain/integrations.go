@@ -26,7 +26,8 @@ type ClaimProvider interface {
 	// Name returns the unique identifier for this provider (e.g., "stedi", "manual_pdf", "mock")
 	Name() string
 
-	// SupportedCountries returns the countries this provider can process claims for
+	// SupportedCountries returns the countries this provider can process claims for. Claims
+	// from practices in other countries are refused before the provider is called.
 	SupportedCountries() []CountryCode
 
 	// SubmitClaim sends the claim to the external system

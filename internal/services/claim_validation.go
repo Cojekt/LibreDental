@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 )
@@ -26,15 +27,26 @@ func ValidateDentalClaim(sub *domain.ClaimSubmission) error {
 	c, pt, pr := sub.Claim, sub.Patient, sub.Practice
 	var missing []string
 	add := func(format string, args ...any) { missing = append(missing, fmt.Sprintf(format, args...)) }
+	// Text is checked after X12 sanitizing: a value made only of delimiters ("***") would
+	// otherwise pass here and reach the clearinghouse empty.
+	blank := func(vals ...string) bool {
+		for _, v := range vals {
+			if x12Text(v) == "" {
+				return true
+			}
+		}
+		return false
+	}
+	today := time.Now().Format("2006-01-02")
 
 	// Payer and coverage.
-	if c.PayerID == "" {
+	if blank(c.PayerID) {
 		add("payer ID")
 	}
-	if c.InsuranceCarrier == "" {
+	if blank(c.InsuranceCarrier) {
 		add("insurance carrier name")
 	}
-	if c.PolicyNumber == "" {
+	if blank(c.PolicyNumber) {
 		add("subscriber member/policy ID")
 	}
 	if _, err := x12Date(c.DateOfService); err != nil {
@@ -48,10 +60,10 @@ func ValidateDentalClaim(sub *domain.ClaimSubmission) error {
 	if len(digitsOnly(pr.TaxID)) != 9 {
 		add("practice tax ID (9-digit EIN)")
 	}
-	if pr.ClinicName == "" {
+	if blank(pr.ClinicName) {
 		add("practice name")
 	}
-	if pr.AddressLine1 == "" || pr.City == "" || pr.StateProvince == "" {
+	if blank(pr.AddressLine1, pr.City, pr.StateProvince) {
 		add("practice street address, city, and state")
 	}
 	if len(digitsOnly(pr.PostalCode)) != 9 {
@@ -72,17 +84,20 @@ func ValidateDentalClaim(sub *domain.ClaimSubmission) error {
 	}
 
 	// Patient and, for dependents, the policyholder.
-	if pt.DateOfBirth.IsZero() {
-		add("patient date of birth")
+	if pt.DateOfBirth.IsZero() || pt.DateOfBirth.Format("2006-01-02") > today {
+		add("valid patient date of birth")
 	}
-	if pt.AddressLine1 == "" || pt.City == "" || pt.StateProvince == "" || pt.PostalCode == "" {
-		add("patient address")
+	if blank(pt.FirstName, pt.LastName) {
+		add("patient name")
+	}
+	if blank(pt.AddressLine1, pt.City, pt.StateProvince) || !validZIP(pt.PostalCode) {
+		add("patient address with a 5- or 9-digit ZIP code")
 	}
 	if !pt.InsuranceIsSubscriber {
-		if pt.InsuranceSubscriberFirstName == "" || pt.InsuranceSubscriberLastName == "" {
+		if blank(pt.InsuranceSubscriberFirstName, pt.InsuranceSubscriberLastName) {
 			add("policyholder name")
 		}
-		if _, err := x12Date(pt.InsuranceSubscriberDOB); err != nil {
+		if _, err := x12Date(pt.InsuranceSubscriberDOB); err != nil || pt.InsuranceSubscriberDOB > today {
 			add("policyholder date of birth")
 		}
 		if !validSubscriberRelationship(pt.InsuranceSubscriberRelationship) {
@@ -90,8 +105,8 @@ func ValidateDentalClaim(sub *domain.ClaimSubmission) error {
 		}
 		// The policyholder's address is optional in X12 for dependents, but a partial one
 		// would be rejected.
-		if hasSubscriberAddress(pt) && (pt.InsuranceSubscriberAddressLine1 == "" || pt.InsuranceSubscriberCity == "" ||
-			pt.InsuranceSubscriberState == "" || pt.InsuranceSubscriberPostalCode == "") {
+		if hasSubscriberAddress(pt) && (blank(pt.InsuranceSubscriberAddressLine1, pt.InsuranceSubscriberCity,
+			pt.InsuranceSubscriberState) || !validZIP(pt.InsuranceSubscriberPostalCode)) {
 			add("complete policyholder address (street, city, state, and ZIP), or leave it blank")
 		}
 	}
@@ -128,6 +143,11 @@ func separateRenderingProvider(sub *domain.ClaimSubmission) *domain.Provider {
 		return rp
 	}
 	return nil
+}
+
+func validZIP(zip string) bool {
+	d := digitsOnly(zip)
+	return len(d) == 5 || len(d) == 9
 }
 
 func hasSubscriberAddress(pt *domain.Patient) bool {

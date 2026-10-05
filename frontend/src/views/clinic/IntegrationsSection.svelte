@@ -152,6 +152,15 @@
       NotificationService.SetProviderConfig(auth.token, name, config),
   });
 
+  // Also locked while saving: the save payload is captured when it starts, so a toggle
+  // mid-save would show a mode that was never persisted.
+  const claimsTestModeDisabled = $derived(
+    !canEdit ||
+      !claimsPanel.selectedProvider ||
+      claimsPanel.isLoadingConfig ||
+      claimsPanel.isSavingConfig
+  );
+
   onMount(() => {
     claimsPanel.loadProviders();
     notificationsPanel.loadProviders();
@@ -212,16 +221,15 @@
           </div>
 
           <label
-            class="flex items-start gap-2.5 text-sm text-slate-200 select-none {canEdit &&
-            claimsPanel.selectedProvider
-              ? 'cursor-pointer'
-              : 'opacity-50'}"
+            class="flex items-start gap-2.5 text-sm text-slate-200 select-none {claimsTestModeDisabled
+              ? 'opacity-50'
+              : 'cursor-pointer'}"
           >
             <input
               type="checkbox"
-              class="mt-0.5"
+              class="mt-0.5 disabled:cursor-not-allowed"
               bind:checked={claimsPanel.testMode}
-              disabled={!canEdit || !claimsPanel.selectedProvider || claimsPanel.isLoadingConfig}
+              disabled={claimsTestModeDisabled}
             />
             <span>
               {m.integrations_claims_test_mode()}

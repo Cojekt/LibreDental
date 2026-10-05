@@ -24,11 +24,18 @@ func x12Text(s string) string {
 	return strings.Join(strings.Fields(x12Delimiters.Replace(s)), " ")
 }
 
+// digitsOnly strips the separators people type into numbers ("12-3456789", "(313) 555-0100",
+// "80238-3000"). It returns "" if anything else is present, so a typo like "12a3456789"
+// fails validation instead of silently becoming a different, valid-looking number.
 func digitsOnly(s string) string {
 	var b strings.Builder
 	for _, r := range s {
-		if r >= '0' && r <= '9' {
+		switch {
+		case r >= '0' && r <= '9':
 			b.WriteRune(r)
+		case strings.ContainsRune(" -.()+", r):
+		default:
+			return ""
 		}
 	}
 	return b.String()

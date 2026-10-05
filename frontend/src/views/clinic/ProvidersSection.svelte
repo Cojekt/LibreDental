@@ -28,6 +28,7 @@
     provLicense = $bindable(""),
     provNpi = $bindable(""),
     provTaxonomy = $bindable(""),
+    provError = "",
     provEmail = $bindable(""),
     provPhone = $bindable(""),
     provColor = $bindable("#3b82f6"),
@@ -50,6 +51,7 @@
     provLicense: string;
     provNpi: string;
     provTaxonomy: string;
+    provError?: string;
     provEmail: string;
     provPhone: string;
     provColor: string;
@@ -535,6 +537,10 @@
         >
       </div>
     </div>
+
+    {#if provError}
+      <p class="text-xs text-rose-400" role="alert">{provError}</p>
+    {/if}
 
     <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
       <button

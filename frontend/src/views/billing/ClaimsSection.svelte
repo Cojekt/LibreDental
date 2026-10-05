@@ -488,7 +488,7 @@
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
-                  {#if c.status === "draft"}
+                  {#if c.status === "draft" || c.status === "rejected"}
                     <button
                       type="button"
                       class="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

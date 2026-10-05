@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -293,6 +294,10 @@ func (s *BillingService) SubmitClaimToProvider(token string, claimID string, pro
 	if err != nil {
 		return nil, err
 	}
+	if !slices.Contains(provider.SupportedCountries(), submission.Practice.CountryCode) {
+		return nil, fmt.Errorf("%w: provider %q does not support claims for practices in %q",
+			storage.ErrInvalidInput, providerName, submission.Practice.CountryCode)
+	}
 
 	config, err := s.secrets.getRawProviderConfig(providerName)
 	if err != nil {
@@ -311,6 +316,8 @@ func (s *BillingService) SubmitClaimToProvider(token string, claimID string, pro
 		return nil, fmt.Errorf("provider %q failed to submit claim: %w", providerName, err)
 	}
 	if result == nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, claim.PatientID, "claim",
+			fmt.Sprintf("Claim submission to %s returned no result", providerName))
 		return nil, fmt.Errorf("provider %q returned nil result", providerName)
 	}
 	_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, claim.PatientID, "claim",
@@ -344,6 +351,15 @@ func (s *BillingService) buildClaimSubmission(claim *domain.Claim) (*domain.Clai
 	practice, err := s.practiceRepo.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get practice configuration for claim submission: %w", err)
+	}
+	// Claims created before payer IDs existed, or with the insurance edited by hand, may lack
+	// one. Fall back to the patient's only when the claim is for the same carrier, since the
+	// patient's payer ID identifies that carrier and no other. The stored claim is unchanged.
+	if claim.PayerID == "" && claim.InsuranceCarrier != "" &&
+		strings.EqualFold(strings.TrimSpace(claim.InsuranceCarrier), strings.TrimSpace(patient.InsuranceCarrier)) {
+		withPayer := *claim
+		withPayer.PayerID = patient.InsurancePayerID
+		claim = &withPayer
 	}
 	sub := &domain.ClaimSubmission{Claim: claim, Patient: patient, Practice: practice}
 	if claim.ProviderID != "" {

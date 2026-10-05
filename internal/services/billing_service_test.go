@@ -458,6 +458,9 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 		Status:      domain.StatusActive,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
+
+		InsuranceCarrier: "Delta Dental",
+		InsurancePayerID: "CDCA1",
 	}
 	if err := patientRepo.Create(ctx, patient); err != nil {
 		t.Fatalf("Failed to create patient: %v", err)
@@ -518,6 +521,45 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	_, err = billingSvc.SubmitClaimToProvider(token, "claim_test_2", "test_mock")
 	if err == nil || err.Error() != `provider "test_mock" returned nil result` {
 		t.Fatalf("Expected nil result error, got %v", err)
+	}
+	testProv.submitFunc = nil
+
+	// Test 4: A claim without a payer ID uses the patient's, but only for the same carrier.
+	for _, tc := range []struct{ id, carrier, wantPayer string }{
+		{"claim_same_carrier", " delta dental ", "CDCA1"},
+		{"claim_other_carrier", "Aetna", ""},
+	} {
+		c := &domain.Claim{ID: tc.id, PatientID: "pat_test_1", InsuranceCarrier: tc.carrier,
+			Status: domain.ClaimStatusDraft, DateOfService: "2026-08-23"}
+		if err := claimRepo.Create(ctx, c); err != nil {
+			t.Fatalf("Failed to create %s: %v", tc.id, err)
+		}
+		if _, err := billingSvc.SubmitClaimToProvider(token, tc.id, "test_mock"); err != nil {
+			t.Fatalf("Submit %s: %v", tc.id, err)
+		}
+		if got := testProv.lastSubmission.Claim.PayerID; got != tc.wantPayer {
+			t.Errorf("%s: payer ID = %q, want %q", tc.id, got, tc.wantPayer)
+		}
+		stored, _ := claimRepo.GetByID(ctx, tc.id)
+		if stored.PayerID != "" {
+			t.Errorf("%s: the fallback must not rewrite the stored claim, got %q", tc.id, stored.PayerID)
+		}
+	}
+
+	// Test 5: Providers refuse practices outside their supported countries before any call.
+	if err := configRepo.Save(ctx, &domain.PracticeConfig{ClinicName: "Test Clinic", CountryCode: domain.CountryCA, Currency: "CAD"}); err != nil {
+		t.Fatalf("Failed to switch practice country: %v", err)
+	}
+	claim3 := &domain.Claim{ID: "claim_test_3", PatientID: "pat_test_1", Status: domain.ClaimStatusDraft, DateOfService: "2026-08-23"}
+	if err := claimRepo.Create(ctx, claim3); err != nil {
+		t.Fatalf("Failed to create claim3: %v", err)
+	}
+	testProv.lastSubmission = nil
+	if _, err := billingSvc.SubmitClaimToProvider(token, "claim_test_3", "test_mock"); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Expected unsupported-country error, got %v", err)
+	}
+	if testProv.lastSubmission != nil {
+		t.Error("Provider must not be called for an unsupported country")
 	}
 }
 
@@ -651,8 +693,10 @@ type dummyTestProvider struct {
 	lastSubmission *domain.ClaimSubmission
 }
 
-func (p *dummyTestProvider) Name() string                             { return "test_mock" }
-func (p *dummyTestProvider) SupportedCountries() []domain.CountryCode { return nil }
+func (p *dummyTestProvider) Name() string { return "test_mock" }
+func (p *dummyTestProvider) SupportedCountries() []domain.CountryCode {
+	return []domain.CountryCode{domain.CountryUS}
+}
 func (p *dummyTestProvider) SubmitClaim(ctx context.Context, sub *domain.ClaimSubmission, config map[string]string) (*domain.ClaimSubmissionResult, error) {
 	p.lastSubmission = sub
 	if p.submitFunc != nil {

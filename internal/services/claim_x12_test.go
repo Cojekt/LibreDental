@@ -38,6 +38,12 @@ func TestX12ValueFormatting(t *testing.T) {
 	if got := x12Phone("+1 (313) 123-4567"); got != "3131234567" {
 		t.Errorf("x12Phone = %q", got)
 	}
+	if got := digitsOnly("12-3456789"); got != "123456789" {
+		t.Errorf("digitsOnly should drop separators, got %q", got)
+	}
+	if got := digitsOnly("12a3456789"); got != "" {
+		t.Errorf("digitsOnly should reject stray characters, got %q", got)
+	}
 	if got := x12Phone("123-4567"); got != "" {
 		t.Errorf("x12Phone should reject short numbers, got %q", got)
 	}

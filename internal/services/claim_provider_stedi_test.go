@@ -170,7 +170,16 @@ func checkStediType(path, typ string, v any) string {
 	ok := true
 	switch {
 	case strings.HasPrefix(typ, "array"):
-		_, ok = v.([]any)
+		var items []any
+		items, ok = v.([]any)
+		// Object items are checked when the walker descends into them; primitive items only here.
+		if elem := strings.TrimPrefix(typ, "array of "); ok && (elem == "strings" || elem == "numbers") {
+			for i, item := range items {
+				if msg := checkStediType(fmt.Sprintf("%s[%d]", path, i), strings.TrimSuffix(elem, "s"), item); msg != "" {
+					return msg
+				}
+			}
+		}
 	case typ == "string":
 		_, ok = v.(string)
 	case typ == "number" || typ == "integer":
@@ -197,13 +206,14 @@ func TestStediSchemaChecker_AcceptsDocumentedExample(t *testing.T) {
 	}
 
 	// And the checker must actually catch problems.
-	bad := []byte(`{"tradingPartnerServiceId": 52133, "madeUp": true, "submitter": {"organizationName": "X"}}`)
+	bad := []byte(`{"tradingPartnerServiceId": 52133, "madeUp": true, "submitter": {"organizationName": "X"},
+		"claimInformation": {"claimNotes": [1]}}`)
 	got := strings.Join(checkAgainstStediSchema(fields, bad), "\n")
 	for _, want := range []string{
 		"undocumented property madeUp",
 		"property tradingPartnerServiceId should be string",
 		"missing required property submitter.contactInformation",
-		"missing required property claimInformation",
+		"property claimInformation.claimNotes[0] should be string",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("checker missed %q; got:\n%s", want, got)
@@ -381,11 +391,11 @@ func TestStediSubmitClaim_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var sentUsage string
+	sentUsage := make(chan any, 1)
 	p := newFakeStedi(t, func(w http.ResponseWriter, body []byte) {
 		var req map[string]any
 		_ = json.Unmarshal(body, &req)
-		sentUsage, _ = req["usageIndicator"].(string)
+		sentUsage <- req["usageIndicator"]
 		w.Write(documented)
 	})
 
@@ -393,8 +403,8 @@ func TestStediSubmitClaim_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SubmitClaim: %v", err)
 	}
-	if sentUsage != "T" {
-		t.Errorf("claims must default to test mode, sent usageIndicator %q", sentUsage)
+	if got := <-sentUsage; got != "T" {
+		t.Errorf("claims must default to test mode, sent usageIndicator %v", got)
 	}
 	if result.Status != domain.ClaimStatusSubmitted || result.ExternalClaimID != "01JDQMX92Q1T561BH8NKX750TQ" || len(result.Messages) != 0 {
 		t.Errorf("result = %+v", result)
@@ -405,11 +415,11 @@ func TestStediSubmitClaim_Success(t *testing.T) {
 }
 
 func TestStediSubmitClaim_ProductionMode(t *testing.T) {
-	var sentUsage any = "unset"
+	sentUsage := make(chan any, 1)
 	p := newFakeStedi(t, func(w http.ResponseWriter, body []byte) {
 		var req map[string]any
 		_ = json.Unmarshal(body, &req)
-		sentUsage = req["usageIndicator"]
+		sentUsage <- req["usageIndicator"]
 		w.Write([]byte(`{"status":"SUCCESS","claimReference":{"correlationId":"X"}}`))
 	})
 	_, err := p.SubmitClaim(context.Background(), testClaimSubmission(),
@@ -417,8 +427,8 @@ func TestStediSubmitClaim_ProductionMode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if sentUsage != nil {
-		t.Errorf("production submissions should omit usageIndicator, sent %v", sentUsage)
+	if got := <-sentUsage; got != nil {
+		t.Errorf("production submissions should omit usageIndicator, sent %v", got)
 	}
 }
 

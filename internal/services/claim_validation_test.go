@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 )
@@ -68,5 +69,28 @@ func TestValidateDentalClaim_RenderingProvider(t *testing.T) {
 	}
 	if separateRenderingProvider(sub) != nil {
 		t.Error("rendering provider sharing the billing NPI should not be reported separately")
+	}
+}
+
+func TestValidateDentalClaim_RejectsMalformedValues(t *testing.T) {
+	sub := testClaimSubmission()
+	sub.Patient.FirstName = "***"    // empty once X12 delimiters are stripped
+	sub.Practice.TaxID = "12a456789" // a typo must not be dropped into a different valid EIN
+	sub.Patient.PostalCode = "K1A 0B1"
+	sub.Patient.DateOfBirth = time.Now().AddDate(0, 0, 2)
+	sub.Patient.InsuranceIsSubscriber = false
+	sub.Patient.InsuranceSubscriberFirstName = "Mary"
+	sub.Patient.InsuranceSubscriberLastName = "Doe"
+	sub.Patient.InsuranceSubscriberDOB = time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+	sub.Patient.InsuranceSubscriberRelationship = domain.SubscriberRelationshipSpouse
+
+	err := ValidateDentalClaim(sub)
+	for _, want := range []string{
+		"patient name", "practice tax ID", "5- or 9-digit ZIP", "valid patient date of birth",
+		"policyholder date of birth",
+	} {
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("error should mention %q: %v", want, err)
+		}
 	}
 }

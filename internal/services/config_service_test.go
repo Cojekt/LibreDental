@@ -316,3 +316,40 @@ func TestPracticeConfigService_OnboardingAndSessionGating(t *testing.T) {
 		t.Fatalf("Expected a READ audit entry for the PIN reveal, got %+v", logs)
 	}
 }
+
+func TestPracticeConfigService_RejectsMalformedClaimIdentifiers(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "test_config_identifiers.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+	service := services.NewPracticeConfigService(sqlite.NewPracticeConfigRepository(db), nil)
+
+	cfg, err := service.SetConfig("", "US")
+	if err != nil {
+		t.Fatalf("Failed to set practice config: %v", err)
+	}
+	cfg.NPI = "1234567890" // bad check digit
+	if _, err := service.UpdatePracticeConfig("", *cfg); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Expected invalid practice NPI to be rejected, got %v", err)
+	}
+	cfg.NPI = " 1234567893 "
+	saved, err := service.UpdatePracticeConfig("", *cfg)
+	if err != nil || saved.NPI != "1234567893" {
+		t.Errorf("Expected a valid NPI to be trimmed and saved, got %+v, %v", saved, err)
+	}
+
+	for _, p := range []domain.Provider{
+		{Name: "Dr. A", Pin: "1111", IsActive: true, NPI: "12345"},
+		{Name: "Dr. B", Pin: "2222", IsActive: true, NPI: "1234567893", TaxonomyCode: "dentist"},
+	} {
+		if _, err := service.SaveProvider("", p); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("Expected %s to be rejected, got %v", p.Name, err)
+		}
+	}
+	saved2, err := service.SaveProvider("", domain.Provider{Name: "Dr. C", Pin: "3333", IsActive: true,
+		NPI: "1234567893", TaxonomyCode: " 1223g0001x "})
+	if err != nil || saved2.TaxonomyCode != "1223G0001X" {
+		t.Errorf("Expected taxonomy to be normalized and saved, got %+v, %v", saved2, err)
+	}
+}

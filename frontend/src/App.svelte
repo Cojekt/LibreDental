@@ -490,6 +490,10 @@
       patientError = m.patient_err_dob_future();
       return;
     }
+    if (!insuranceIsSubscriber && insuranceSubscriberDob > getTodayDateString()) {
+      patientError = m.patient_err_subscriber_dob_future();
+      return;
+    }
     patientError = "";
 
     try {

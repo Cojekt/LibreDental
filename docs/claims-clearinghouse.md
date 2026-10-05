@@ -34,6 +34,7 @@ everything that's missing, before any data leaves the machine.
 | Clinic profile | Name, phone, street address, city, state, **ZIP+4** (all 9 digits), tax ID (EIN), **billing NPI** |
 | Provider on the claim | **NPI** and **taxonomy code** (only sent when the NPI differs from the practice's) |
 | Patient | Date of birth, address, insurance carrier, member/policy ID, **payer ID** |
+| Claim | Date of service and at least one procedure, each with a valid CDT code (`D` plus four digits) and, when it applies to a tooth, a valid tooth number |
 | Patient, if not the policyholder | Policyholder name, date of birth, and relationship to the patient. Sex and address are optional for 837D but required on the paper ADA claim form (items 12 and 14), so record them when known. |
 
 The payer ID is the clearinghouse's identifier for the insurer (for example `52133` for
