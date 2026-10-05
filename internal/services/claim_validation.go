@@ -78,8 +78,13 @@ func ValidateDentalClaim(sub *domain.ClaimSubmission) error {
 	if rp := sub.RenderingProvider; rp != nil {
 		if !validNPI(rp.NPI) {
 			add("valid NPI for provider %s", rp.Name)
-		} else if rp.NPI != pr.NPI && !taxonomyPattern.MatchString(rp.TaxonomyCode) {
-			add("taxonomy code for provider %s", rp.Name)
+		} else if rp.NPI != pr.NPI {
+			if !taxonomyPattern.MatchString(rp.TaxonomyCode) {
+				add("taxonomy code for provider %s", rp.Name)
+			}
+			if _, last := splitProviderName(x12Text(rp.Name)); last == "" {
+				add("name for the provider on the claim")
+			}
 		}
 	}
 
@@ -97,7 +102,9 @@ func ValidateDentalClaim(sub *domain.ClaimSubmission) error {
 		if blank(pt.InsuranceSubscriberFirstName, pt.InsuranceSubscriberLastName) {
 			add("policyholder name")
 		}
-		if _, err := x12Date(pt.InsuranceSubscriberDOB); err != nil || pt.InsuranceSubscriberDOB > today {
+		// The lower bound catches placeholder dates such as 0001-01-01.
+		if _, err := x12Date(pt.InsuranceSubscriberDOB); err != nil ||
+			pt.InsuranceSubscriberDOB < "1900-01-01" || pt.InsuranceSubscriberDOB > today {
 			add("policyholder date of birth")
 		}
 		if !validSubscriberRelationship(pt.InsuranceSubscriberRelationship) {

@@ -295,6 +295,9 @@ func (s *BillingService) SubmitClaimToProvider(token string, claimID string, pro
 		return nil, err
 	}
 	if !slices.Contains(provider.SupportedCountries(), submission.Practice.CountryCode) {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, claim.PatientID, "claim",
+			fmt.Sprintf("Refused claim submission to %s: practice country %q not supported",
+				providerName, submission.Practice.CountryCode))
 		return nil, fmt.Errorf("%w: provider %q does not support claims for practices in %q",
 			storage.ErrInvalidInput, providerName, submission.Practice.CountryCode)
 	}

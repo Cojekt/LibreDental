@@ -99,10 +99,11 @@ func validSubscriberRelationship(code string) bool {
 	return false
 }
 
-// validNPI checks the NPI's Luhn check digit (computed with the 80840 card-issuer prefix),
-// which catches most typos before a payer rejects the claim for them.
+// validNPI checks the NPI's shape (CMS issues them starting with 1 or 2) and its Luhn check
+// digit (computed with the 80840 card-issuer prefix), which catches most typos before a
+// payer rejects the claim for them.
 func validNPI(npi string) bool {
-	if len(npi) != 10 || digitsOnly(npi) != npi {
+	if len(npi) != 10 || (npi[0] != '1' && npi[0] != '2') || digitsOnly(npi) != npi {
 		return false
 	}
 	sum := 24 // the 80840 prefix's contribution to the Luhn sum
@@ -119,6 +120,11 @@ func validNPI(npi string) bool {
 	return (10-sum%10)%10 == int(npi[9]-'0')
 }
 
+// providerCredentials are degree suffixes that may follow a provider's name without a comma.
+var providerCredentials = map[string]bool{
+	"DDS": true, "DMD": true, "RDH": true, "RDA": true, "MS": true, "MSD": true, "PHD": true, "MD": true,
+}
+
 // splitProviderName splits a single display name like "Dr. Jane Smith, DDS" into
 // first and last name, since providers are stored with one name field.
 func splitProviderName(name string) (first, last string) {
@@ -128,6 +134,9 @@ func splitProviderName(name string) (first, last string) {
 	fields := strings.Fields(name)
 	if len(fields) > 0 && strings.EqualFold(strings.TrimSuffix(fields[0], "."), "dr") {
 		fields = fields[1:]
+	}
+	for len(fields) > 1 && providerCredentials[strings.ToUpper(strings.ReplaceAll(fields[len(fields)-1], ".", ""))] {
+		fields = fields[:len(fields)-1]
 	}
 	switch len(fields) {
 	case 0:

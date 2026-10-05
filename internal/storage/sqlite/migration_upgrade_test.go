@@ -63,16 +63,7 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	if name != "Jane" || carrier != "Delta Dental" || policy != "POL-1" {
 		t.Errorf("patient data changed in upgrade: %s / %s / %s", name, carrier, policy)
 	}
-	for table, id := range map[string]string{"claims": "claim_1", "dental_conditions": "cond_1"} {
-		var n int
-		if err := db.QueryRow("SELECT COUNT(*) FROM "+table+" WHERE id = ? AND patient_id = 'pat_1'", id).Scan(&n); err != nil || n != 1 {
-			t.Errorf("%s row lost in upgrade (count %d, err %v)", table, n, err)
-		}
-	}
-	var violations int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_foreign_key_check`).Scan(&violations); err != nil || violations != 0 {
-		t.Errorf("foreign key violations after upgrade: %d (err %v)", violations, err)
-	}
+	assertLinkedRowsIntact(t, db.DB, "upgrade")
 
 	// Rolling back and re-applying must also work on a populated database.
 	gooseMu.Lock()
@@ -86,5 +77,22 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	}
 	if err := db.QueryRow(`SELECT first_name FROM patients WHERE id = 'pat_1'`).Scan(&name); err != nil || name != "Jane" {
 		t.Errorf("patient lost across rollback: %q (err %v)", name, err)
+	}
+	assertLinkedRowsIntact(t, db.DB, "rollback and re-apply")
+}
+
+// assertLinkedRowsIntact checks the claim and chart rows referencing pat_1 survived and that no
+// foreign key is left dangling.
+func assertLinkedRowsIntact(t *testing.T, db *sql.DB, stage string) {
+	t.Helper()
+	for table, id := range map[string]string{"claims": "claim_1", "dental_conditions": "cond_1"} {
+		var n int
+		if err := db.QueryRow("SELECT COUNT(*) FROM "+table+" WHERE id = ? AND patient_id = 'pat_1'", id).Scan(&n); err != nil || n != 1 {
+			t.Errorf("%s: %s row lost (count %d, err %v)", stage, table, n, err)
+		}
+	}
+	var violations int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_foreign_key_check`).Scan(&violations); err != nil || violations != 0 {
+		t.Errorf("%s: foreign key violations: %d (err %v)", stage, violations, err)
 	}
 }

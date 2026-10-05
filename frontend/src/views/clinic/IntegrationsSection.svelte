@@ -214,7 +214,10 @@
                 id="claims-provider-api-key"
                 bind:value={claimsPanel.providerApiKey}
                 placeholder={m.integrations_placeholder_api_key()}
-                disabled={!canEdit || !claimsPanel.selectedProvider || claimsPanel.isLoadingConfig}
+                disabled={!canEdit ||
+                  !claimsPanel.selectedProvider ||
+                  claimsPanel.isLoadingConfig ||
+                  claimsPanel.isSavingConfig}
                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
               />
             </div>

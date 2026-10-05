@@ -81,13 +81,14 @@ func TestValidateDentalClaim_RejectsMalformedValues(t *testing.T) {
 	sub.Patient.InsuranceIsSubscriber = false
 	sub.Patient.InsuranceSubscriberFirstName = "Mary"
 	sub.Patient.InsuranceSubscriberLastName = "Doe"
-	sub.Patient.InsuranceSubscriberDOB = time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+	sub.Patient.InsuranceSubscriberDOB = "0001-01-01"
+	sub.RenderingProvider.Name = "Dr."
 	sub.Patient.InsuranceSubscriberRelationship = domain.SubscriberRelationshipSpouse
 
 	err := ValidateDentalClaim(sub)
 	for _, want := range []string{
 		"patient name", "practice tax ID", "5- or 9-digit ZIP", "valid patient date of birth",
-		"policyholder date of birth",
+		"policyholder date of birth", "name for the provider on the claim",
 	} {
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("error should mention %q: %v", want, err)

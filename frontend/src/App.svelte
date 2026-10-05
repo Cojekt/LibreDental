@@ -157,7 +157,7 @@
   let insurancePolicy = $state("");
   let insuranceGroup = $state("");
   let insuranceIsSubscriber = $state(true);
-  let insuranceSubscriberSex = $state<any>("");
+  let insuranceSubscriberSex = $state<string>("");
   let insuranceSubscriberAddressLine1 = $state("");
   let insuranceSubscriberAddressLine2 = $state("");
   let insuranceSubscriberCity = $state("");
@@ -525,7 +525,7 @@
           p.insurance_policy_number = insurancePolicy;
           p.insurance_group_number = insuranceGroup;
           p.insurance_is_subscriber = insuranceIsSubscriber;
-          p.insurance_subscriber_sex = insuranceSubscriberSex;
+          p.insurance_subscriber_sex = insuranceSubscriberSex as Sex;
           p.insurance_subscriber_address_line1 = insuranceSubscriberAddressLine1;
           p.insurance_subscriber_address_line2 = insuranceSubscriberAddressLine2;
           p.insurance_subscriber_city = insuranceSubscriberCity;
@@ -565,7 +565,7 @@
           insurance_policy_number: insurancePolicy,
           insurance_group_number: insuranceGroup,
           insurance_is_subscriber: insuranceIsSubscriber,
-          insurance_subscriber_sex: insuranceSubscriberSex,
+          insurance_subscriber_sex: insuranceSubscriberSex as Sex,
           insurance_subscriber_address_line1: insuranceSubscriberAddressLine1,
           insurance_subscriber_address_line2: insuranceSubscriberAddressLine2,
           insurance_subscriber_city: insuranceSubscriberCity,

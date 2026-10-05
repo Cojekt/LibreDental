@@ -12,6 +12,7 @@ func TestValidNPI(t *testing.T) {
 		testBillingNPI:   true,
 		testRenderingNPI: true,
 		"1234567890":     false,
+		"3123456782":     false, // Luhn-valid, but no NPI starts with 3
 		"123456789":      false,
 		"12345678a3":     false,
 	} {
@@ -64,6 +65,8 @@ func TestX12ValueFormatting(t *testing.T) {
 func TestSplitProviderName(t *testing.T) {
 	for name, want := range map[string][2]string{
 		"Dr. Jane Q. Smith, DDS": {"Jane Q.", "Smith"},
+		"Jane Smith DDS":         {"Jane", "Smith"},
+		"Ana Lopez D.M.D. MS":    {"Ana", "Lopez"},
 		"dr Lee":                 {"", "Lee"},
 		"Ana Maria Lopez":        {"Ana Maria", "Lopez"},
 		"":                       {"", ""},

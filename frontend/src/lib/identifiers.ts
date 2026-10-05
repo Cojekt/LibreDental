@@ -1,7 +1,8 @@
 // Mirrors validNPI and taxonomyPattern in internal/services/claim_x12.go so staff see a bad
 // identifier when they enter it, not when a claim fails to submit.
 export function isValidNpi(npi: string): boolean {
-  if (!/^\d{10}$/.test(npi)) return false;
+  // Every NPI CMS issues starts with 1 or 2.
+  if (!/^[12]\d{9}$/.test(npi)) return false;
   let sum = 24; // the 80840 prefix's contribution to the Luhn sum
   for (let i = 0; i < 9; i++) {
     let d = Number(npi[8 - i]);
