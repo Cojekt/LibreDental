@@ -95,3 +95,16 @@ func TestValidateDentalClaim_RejectsMalformedValues(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateDentalClaim_RejectsFuturePolicyholderDOB(t *testing.T) {
+	sub := testClaimSubmission()
+	sub.Patient.InsuranceIsSubscriber = false
+	sub.Patient.InsuranceSubscriberFirstName = "Mary"
+	sub.Patient.InsuranceSubscriberLastName = "Doe"
+	sub.Patient.InsuranceSubscriberDOB = time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+	sub.Patient.InsuranceSubscriberRelationship = domain.SubscriberRelationshipSpouse
+
+	if err := ValidateDentalClaim(sub); err == nil || !strings.Contains(err.Error(), "policyholder date of birth") {
+		t.Errorf("a future policyholder birth date should be rejected, got %v", err)
+	}
+}
