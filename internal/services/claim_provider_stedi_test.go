@@ -30,7 +30,7 @@ const (
 	testRenderingNPI = "1999999984"
 )
 
-func stediTestSubmission() *domain.ClaimSubmission {
+func testClaimSubmission() *domain.ClaimSubmission {
 	return &domain.ClaimSubmission{
 		Claim: &domain.Claim{
 			ID:               "claim_1759632000000000000",
@@ -229,14 +229,19 @@ func marshalStediRequest(t *testing.T, sub *domain.ClaimSubmission, testMode boo
 func TestStediRequest_ConformsToDocumentedSchema(t *testing.T) {
 	fields := loadStediFields(t)
 
-	subscriberSub := stediTestSubmission()
-	dependentSub := stediTestSubmission()
+	subscriberSub := testClaimSubmission()
+	dependentSub := testClaimSubmission()
 	dependentSub.Patient.InsuranceIsSubscriber = false
 	dependentSub.Patient.InsuranceSubscriberFirstName = "Mary"
 	dependentSub.Patient.InsuranceSubscriberLastName = "Doe"
 	dependentSub.Patient.InsuranceSubscriberDOB = "1983-02-01"
 	dependentSub.Patient.InsuranceSubscriberRelationship = domain.SubscriberRelationshipChild
-	soloSub := stediTestSubmission()
+	dependentSub.Patient.InsuranceSubscriberSex = domain.SexFemale
+	dependentSub.Patient.InsuranceSubscriberAddressLine1 = "99 Other Rd"
+	dependentSub.Patient.InsuranceSubscriberCity = "Phoenix"
+	dependentSub.Patient.InsuranceSubscriberState = "AZ"
+	dependentSub.Patient.InsuranceSubscriberPostalCode = "85001"
+	soloSub := testClaimSubmission()
 	soloSub.RenderingProvider.NPI = testBillingNPI
 
 	for name, sub := range map[string]*domain.ClaimSubmission{
@@ -254,7 +259,7 @@ func TestStediRequest_ConformsToDocumentedSchema(t *testing.T) {
 }
 
 func TestStediRequest_Mapping(t *testing.T) {
-	_, req := marshalStediRequest(t, stediTestSubmission(), true)
+	_, req := marshalStediRequest(t, testClaimSubmission(), true)
 
 	if req.UsageIndicator != "T" {
 		t.Errorf("usageIndicator = %q, want T", req.UsageIndicator)
@@ -279,7 +284,7 @@ func TestStediRequest_Mapping(t *testing.T) {
 	if ci.ClaimChargeAmount != "305.50" {
 		t.Errorf("claimChargeAmount = %q, want 305.50 (sum of lines)", ci.ClaimChargeAmount)
 	}
-	if ci.PatientControlNumber != stediTestSubmission().Claim.PatientControlNumber() {
+	if ci.PatientControlNumber != testClaimSubmission().Claim.PatientControlNumber() {
 		t.Errorf("patientControlNumber = %q", ci.PatientControlNumber)
 	}
 	if len(ci.ServiceLines) != 3 {
@@ -301,7 +306,7 @@ func TestStediRequest_Mapping(t *testing.T) {
 }
 
 func TestStediRequest_DependentAndSoloPractice(t *testing.T) {
-	sub := stediTestSubmission()
+	sub := testClaimSubmission()
 	sub.Patient.InsuranceIsSubscriber = false
 	sub.Patient.InsuranceSubscriberFirstName = "Mary"
 	sub.Patient.InsuranceSubscriberLastName = "Doe"
@@ -314,8 +319,9 @@ func TestStediRequest_DependentAndSoloPractice(t *testing.T) {
 	if req.UsageIndicator != "" {
 		t.Errorf("production claims should omit usageIndicator, got %q", req.UsageIndicator)
 	}
-	if req.Subscriber.FirstName != "Mary" || req.Subscriber.DateOfBirth != "19830201" || req.Subscriber.Address != nil {
-		t.Errorf("subscriber = %+v", req.Subscriber)
+	if req.Subscriber.FirstName != "Mary" || req.Subscriber.DateOfBirth != "19830201" ||
+		req.Subscriber.Gender != "" || req.Subscriber.Address != nil {
+		t.Errorf("subscriber without sex/address on file should omit them: %+v", req.Subscriber)
 	}
 	d := req.Dependent
 	if d == nil || d.FirstName != "John" || d.DateOfBirth != "19850615" || d.RelationshipToSubscriberCode != "19" || d.Address == nil {
@@ -324,63 +330,24 @@ func TestStediRequest_DependentAndSoloPractice(t *testing.T) {
 	if req.Rendering != nil {
 		t.Errorf("rendering loop must be omitted when it matches the billing NPI, got %+v", req.Rendering)
 	}
-}
 
-func TestStediRequest_ReportsAllMissingData(t *testing.T) {
-	sub := stediTestSubmission()
-	sub.Claim.PayerID = ""
-	sub.Practice.NPI = "1234567890" // bad check digit
-	sub.Practice.PostalCode = "80238"
-	sub.Patient.InsuranceIsSubscriber = false
-	sub.Claim.LineItems[0].ADACode = "0120"
-	sub.Claim.LineItems[1].ToothNumber = 33
-
-	_, err := buildStediDentalClaim(sub, true)
-	if !errors.Is(err, ErrClaimDataIncomplete) {
-		t.Fatalf("want ErrClaimDataIncomplete, got %v", err)
-	}
-	for _, want := range []string{
-		"payer ID", "valid practice NPI", "ZIP+4", "policyholder name",
-		"policyholder date of birth", "relationship to the policyholder",
-		`valid CDT code on line 1 (got "0120")`, "valid tooth number on line 2",
-	} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("error should mention %q: %v", want, err)
-		}
+	sub.Patient.InsuranceSubscriberSex = domain.SexFemale
+	sub.Patient.InsuranceSubscriberAddressLine1 = "99 Other Rd"
+	sub.Patient.InsuranceSubscriberCity = "Phoenix"
+	sub.Patient.InsuranceSubscriberState = "AZ"
+	sub.Patient.InsuranceSubscriberPostalCode = "85001-1234"
+	_, req = marshalStediRequest(t, sub, false)
+	if a := req.Subscriber.Address; req.Subscriber.Gender != "F" || a == nil || a.Address1 != "99 Other Rd" || a.PostalCode != "850011234" {
+		t.Errorf("subscriber sex/address not mapped: %+v %+v", req.Subscriber, a)
 	}
 }
 
 func TestStediRequest_StripsX12Delimiters(t *testing.T) {
-	sub := stediTestSubmission()
+	sub := testClaimSubmission()
 	sub.Practice.ClinicName = "Smile*Care ~ Dental:Group^>"
 	_, req := marshalStediRequest(t, sub, true)
 	if got := req.Billing.OrganizationName; strings.ContainsAny(got, "~*:^>") || got != "Smile Care Dental Group" {
 		t.Errorf("organizationName = %q", got)
-	}
-}
-
-func TestValidNPI(t *testing.T) {
-	for npi, want := range map[string]bool{
-		"1234567893":     true, // CMS's published example
-		testBillingNPI:   true,
-		testRenderingNPI: true,
-		"1234567890":     false,
-		"123456789":      false,
-		"12345678a3":     false,
-	} {
-		if got := validNPI(npi); got != want {
-			t.Errorf("validNPI(%q) = %v, want %v", npi, got, want)
-		}
-	}
-}
-
-func TestControlNumber_FitsX12Constraints(t *testing.T) {
-	pcn := domain.ControlNumber("claim_1759632000000000000")
-	if !regexp.MustCompile(`^[A-Z2-7]{16}$`).MatchString(pcn) {
-		t.Errorf("control number %q should be 16 uppercase base32 characters", pcn)
-	}
-	if pcn != domain.ControlNumber("claim_1759632000000000000") || pcn == domain.ControlNumber("claim_1759632000000000001") {
-		t.Error("control numbers must be deterministic and distinct per ID")
 	}
 }
 
@@ -422,7 +389,7 @@ func TestStediSubmitClaim_Success(t *testing.T) {
 		w.Write(documented)
 	})
 
-	result, err := p.SubmitClaim(context.Background(), stediTestSubmission(), map[string]string{StediConfigAPIKey: "test-key"})
+	result, err := p.SubmitClaim(context.Background(), testClaimSubmission(), map[string]string{StediConfigAPIKey: "test-key"})
 	if err != nil {
 		t.Fatalf("SubmitClaim: %v", err)
 	}
@@ -445,7 +412,7 @@ func TestStediSubmitClaim_ProductionMode(t *testing.T) {
 		sentUsage = req["usageIndicator"]
 		w.Write([]byte(`{"status":"SUCCESS","claimReference":{"correlationId":"X"}}`))
 	})
-	_, err := p.SubmitClaim(context.Background(), stediTestSubmission(),
+	_, err := p.SubmitClaim(context.Background(), testClaimSubmission(),
 		map[string]string{StediConfigAPIKey: "test-key", StediConfigTestMode: "false"})
 	if err != nil {
 		t.Fatal(err)
@@ -463,7 +430,7 @@ func TestStediSubmitClaim_ClaimEditRejection(t *testing.T) {
 			"errors": [{"code": "33", "description": "Subscriber/Insured ID is invalid", "location": "subscriber.memberId", "followupAction": "Please correct and resubmit"}]
 		}`))
 	})
-	result, err := p.SubmitClaim(context.Background(), stediTestSubmission(), map[string]string{StediConfigAPIKey: "test-key"})
+	result, err := p.SubmitClaim(context.Background(), testClaimSubmission(), map[string]string{StediConfigAPIKey: "test-key"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -487,7 +454,7 @@ func TestStediSubmitClaim_HTTPErrors(t *testing.T) {
 			w.WriteHeader(tc.status)
 			w.Write([]byte(tc.body))
 		})
-		_, err := p.SubmitClaim(context.Background(), stediTestSubmission(), map[string]string{StediConfigAPIKey: "test-key"})
+		_, err := p.SubmitClaim(context.Background(), testClaimSubmission(), map[string]string{StediConfigAPIKey: "test-key"})
 		if err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("HTTP %d: err = %v, want %q", tc.status, err, tc.want)
 		}
@@ -496,10 +463,10 @@ func TestStediSubmitClaim_HTTPErrors(t *testing.T) {
 
 func TestStediSubmitClaim_NothingSentWithoutKeyOrData(t *testing.T) {
 	p := &StediClaimProvider{baseURL: "http://127.0.0.1:0", client: http.DefaultClient}
-	if _, err := p.SubmitClaim(context.Background(), stediTestSubmission(), map[string]string{}); err == nil || !strings.Contains(err.Error(), "API key") {
+	if _, err := p.SubmitClaim(context.Background(), testClaimSubmission(), map[string]string{}); err == nil || !strings.Contains(err.Error(), "API key") {
 		t.Errorf("missing key: err = %v", err)
 	}
-	sub := stediTestSubmission()
+	sub := testClaimSubmission()
 	sub.Claim.PayerID = ""
 	if _, err := p.SubmitClaim(context.Background(), sub, map[string]string{StediConfigAPIKey: "k"}); !errors.Is(err, ErrClaimDataIncomplete) {
 		t.Errorf("incomplete claim: err = %v", err)
@@ -518,7 +485,7 @@ func TestStediLiveTestMode(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	sub := stediTestSubmission()
+	sub := testClaimSubmission()
 	sub.Claim.ID = fmt.Sprintf("claim_live_%d", time.Now().UnixNano())
 
 	result, err := NewStediClaimProvider().SubmitClaim(ctx, sub, map[string]string{StediConfigAPIKey: key})

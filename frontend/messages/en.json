@@ -611,8 +611,6 @@
   "patient_placeholder_relationship": "e.g. Spouse, Parent",
   "patient_placeholder_carrier": "e.g. Delta Dental PPO",
   "patient_insurance_is_subscriber": "Subscriber (Head of Family)",
-  "patient_subscriber_id": "Subscriber ID",
-  "patient_placeholder_subscriber_id": "e.g. pat_123456",
   "patient_placeholder_alerts": "e.g. Penicillin Allergy, Latex Allergy, High Blood Pressure",
   "patient_section_identity": "Patient Identity & Demographics",
   "patient_section_contact": "Contact Details & Location",
@@ -750,5 +748,8 @@
   "patient_subscriber_relationship_other": "Other",
   "billing_claim_rejected_by_clearinghouse": "The clearinghouse rejected this claim: {reasons}",
   "integrations_claims_test_mode": "Test mode",
-  "integrations_claims_test_mode_hint": "Claims are validated by the clearinghouse but never sent to payers. Turn off only when ready to bill real claims."
+  "integrations_claims_test_mode_hint": "Claims are validated by the clearinghouse but never sent to payers. Turn off only when ready to bill real claims.",
+  "patient_subscriber_sex": "Policyholder Sex",
+  "patient_subscriber_sex_placeholder": "Select sex",
+  "patient_subscriber_address_line1": "Policyholder Address"
 }

@@ -46,15 +46,17 @@ func (r *PatientRepository) Create(ctx context.Context, p *domain.Patient) error
 		emergency_contact_name, emergency_contact_rel, emergency_contact_phone,
 		guarantor_name, guarantor_rel, guarantor_phone,
 		insurance_carrier, insurance_policy_number, insurance_group_number,
-		insurance_is_subscriber, insurance_subscriber_id,
+		insurance_is_subscriber,
 		insurance_payer_id, insurance_subscriber_first_name, insurance_subscriber_last_name,
-		insurance_subscriber_dob, insurance_subscriber_relationship,
+		insurance_subscriber_dob, insurance_subscriber_sex, insurance_subscriber_relationship,
+		insurance_subscriber_address_line1, insurance_subscriber_address_line2, insurance_subscriber_city,
+		insurance_subscriber_state_province, insurance_subscriber_postal_code,
 		preferred_contact_method, preferred_language, reminder_opt_in,
 		preferred_provider_id, referral_source,
 		address_line1, address_line2, city, state_province, postal_code, country_code,
 		national_id_type, national_id,
 		medical_alerts, allergies, notes, created_at, updated_at, version, status
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	isSubInt := 0
 	if p.InsuranceIsSubscriber {
@@ -73,9 +75,11 @@ func (r *PatientRepository) Create(ctx context.Context, p *domain.Patient) error
 		p.EmergencyContactName, p.EmergencyContactRel, p.EmergencyContactPhone,
 		p.GuarantorName, p.GuarantorRel, p.GuarantorPhone,
 		p.InsuranceCarrier, p.InsurancePolicyNumber, p.InsuranceGroupNumber,
-		isSubInt, p.InsuranceSubscriberID,
+		isSubInt,
 		p.InsurancePayerID, p.InsuranceSubscriberFirstName, p.InsuranceSubscriberLastName,
-		p.InsuranceSubscriberDOB, p.InsuranceSubscriberRelationship,
+		p.InsuranceSubscriberDOB, p.InsuranceSubscriberSex, p.InsuranceSubscriberRelationship,
+		p.InsuranceSubscriberAddressLine1, p.InsuranceSubscriberAddressLine2, p.InsuranceSubscriberCity,
+		p.InsuranceSubscriberState, p.InsuranceSubscriberPostalCode,
 		p.PreferredContactMethod, p.PreferredLanguage, reminderInt,
 		nullIfEmpty(p.PreferredProviderID), p.ReferralSource,
 		p.AddressLine1, p.AddressLine2, p.City, p.StateProvince, p.PostalCode, p.CountryCode,
@@ -95,10 +99,13 @@ func (r *PatientRepository) GetByID(ctx context.Context, id string) (*domain.Pat
 	       emergency_contact_name, emergency_contact_rel, emergency_contact_phone,
 	       guarantor_name, guarantor_rel, guarantor_phone,
 	       insurance_carrier, insurance_policy_number, insurance_group_number,
-	       insurance_is_subscriber, insurance_subscriber_id,
+	       insurance_is_subscriber,
 	       COALESCE(insurance_payer_id, ''), COALESCE(insurance_subscriber_first_name, ''),
 	       COALESCE(insurance_subscriber_last_name, ''), COALESCE(insurance_subscriber_dob, ''),
-	       COALESCE(insurance_subscriber_relationship, ''),
+	       COALESCE(insurance_subscriber_sex, ''), COALESCE(insurance_subscriber_relationship, ''),
+	       COALESCE(insurance_subscriber_address_line1, ''), COALESCE(insurance_subscriber_address_line2, ''),
+	       COALESCE(insurance_subscriber_city, ''), COALESCE(insurance_subscriber_state_province, ''),
+	       COALESCE(insurance_subscriber_postal_code, ''),
 	       preferred_contact_method, preferred_language, reminder_opt_in,
 	       preferred_provider_id, referral_source,
 	       address_line1, address_line2, city, state_province, postal_code, country_code,
@@ -132,9 +139,11 @@ func (r *PatientRepository) Update(ctx context.Context, p *domain.Patient) error
 		emergency_contact_name = ?, emergency_contact_rel = ?, emergency_contact_phone = ?,
 		guarantor_name = ?, guarantor_rel = ?, guarantor_phone = ?,
 		insurance_carrier = ?, insurance_policy_number = ?, insurance_group_number = ?,
-		insurance_is_subscriber = ?, insurance_subscriber_id = ?,
+		insurance_is_subscriber = ?,
 		insurance_payer_id = ?, insurance_subscriber_first_name = ?, insurance_subscriber_last_name = ?,
-		insurance_subscriber_dob = ?, insurance_subscriber_relationship = ?,
+		insurance_subscriber_dob = ?, insurance_subscriber_sex = ?, insurance_subscriber_relationship = ?,
+		insurance_subscriber_address_line1 = ?, insurance_subscriber_address_line2 = ?, insurance_subscriber_city = ?,
+		insurance_subscriber_state_province = ?, insurance_subscriber_postal_code = ?,
 		preferred_contact_method = ?, preferred_language = ?, reminder_opt_in = ?,
 		preferred_provider_id = ?, referral_source = ?,
 		address_line1 = ?, address_line2 = ?, city = ?, state_province = ?, postal_code = ?, country_code = ?,
@@ -149,9 +158,11 @@ func (r *PatientRepository) Update(ctx context.Context, p *domain.Patient) error
 		p.EmergencyContactName, p.EmergencyContactRel, p.EmergencyContactPhone,
 		p.GuarantorName, p.GuarantorRel, p.GuarantorPhone,
 		p.InsuranceCarrier, p.InsurancePolicyNumber, p.InsuranceGroupNumber,
-		isSubInt, p.InsuranceSubscriberID,
+		isSubInt,
 		p.InsurancePayerID, p.InsuranceSubscriberFirstName, p.InsuranceSubscriberLastName,
-		p.InsuranceSubscriberDOB, p.InsuranceSubscriberRelationship,
+		p.InsuranceSubscriberDOB, p.InsuranceSubscriberSex, p.InsuranceSubscriberRelationship,
+		p.InsuranceSubscriberAddressLine1, p.InsuranceSubscriberAddressLine2, p.InsuranceSubscriberCity,
+		p.InsuranceSubscriberState, p.InsuranceSubscriberPostalCode,
 		p.PreferredContactMethod, p.PreferredLanguage, reminderInt,
 		nullIfEmpty(p.PreferredProviderID), p.ReferralSource,
 		p.AddressLine1, p.AddressLine2, p.City, p.StateProvince, p.PostalCode, p.CountryCode,
@@ -232,10 +243,13 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 	       emergency_contact_name, emergency_contact_rel, emergency_contact_phone,
 	       guarantor_name, guarantor_rel, guarantor_phone,
 	       insurance_carrier, insurance_policy_number, insurance_group_number,
-	       insurance_is_subscriber, insurance_subscriber_id,
+	       insurance_is_subscriber,
 	       COALESCE(insurance_payer_id, ''), COALESCE(insurance_subscriber_first_name, ''),
 	       COALESCE(insurance_subscriber_last_name, ''), COALESCE(insurance_subscriber_dob, ''),
-	       COALESCE(insurance_subscriber_relationship, ''),
+	       COALESCE(insurance_subscriber_sex, ''), COALESCE(insurance_subscriber_relationship, ''),
+	       COALESCE(insurance_subscriber_address_line1, ''), COALESCE(insurance_subscriber_address_line2, ''),
+	       COALESCE(insurance_subscriber_city, ''), COALESCE(insurance_subscriber_state_province, ''),
+	       COALESCE(insurance_subscriber_postal_code, ''),
 	       preferred_contact_method, preferred_language, reminder_opt_in,
 	       preferred_provider_id, referral_source,
 	       address_line1, address_line2, city, state_province, postal_code, country_code,
@@ -272,6 +286,7 @@ func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 	var dobStr, alertsJSON, allergiesJSON string
 	var sexStr, statusStr, countryStr string
 	var reminderInt, isSubInt int
+	var subscriberSexStr string
 	var preferredProviderID sql.NullString
 
 	err := scanner.Scan(
@@ -280,9 +295,11 @@ func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 		&p.EmergencyContactName, &p.EmergencyContactRel, &p.EmergencyContactPhone,
 		&p.GuarantorName, &p.GuarantorRel, &p.GuarantorPhone,
 		&p.InsuranceCarrier, &p.InsurancePolicyNumber, &p.InsuranceGroupNumber,
-		&isSubInt, &p.InsuranceSubscriberID,
+		&isSubInt,
 		&p.InsurancePayerID, &p.InsuranceSubscriberFirstName, &p.InsuranceSubscriberLastName,
-		&p.InsuranceSubscriberDOB, &p.InsuranceSubscriberRelationship,
+		&p.InsuranceSubscriberDOB, &subscriberSexStr, &p.InsuranceSubscriberRelationship,
+		&p.InsuranceSubscriberAddressLine1, &p.InsuranceSubscriberAddressLine2, &p.InsuranceSubscriberCity,
+		&p.InsuranceSubscriberState, &p.InsuranceSubscriberPostalCode,
 		&p.PreferredContactMethod, &p.PreferredLanguage, &reminderInt,
 		&preferredProviderID, &p.ReferralSource,
 		&p.AddressLine1, &p.AddressLine2, &p.City, &p.StateProvince, &p.PostalCode, &countryStr,
@@ -302,6 +319,7 @@ func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 	p.PreferredProviderID = preferredProviderID.String
 	p.ReminderOptIn = reminderInt != 0
 	p.InsuranceIsSubscriber = isSubInt != 0
+	p.InsuranceSubscriberSex = domain.Sex(subscriberSexStr)
 	p.DateOfBirth, _ = time.Parse(time.RFC3339, dobStr)
 	json.Unmarshal([]byte(alertsJSON), &p.MedicalAlerts)
 	json.Unmarshal([]byte(allergiesJSON), &p.Allergies)

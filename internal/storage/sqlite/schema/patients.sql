@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS patients (
 	insurance_policy_number TEXT DEFAULT '',
 	insurance_group_number TEXT DEFAULT '',
 	insurance_is_subscriber INTEGER NOT NULL DEFAULT 0,
-	insurance_subscriber_id TEXT DEFAULT '',
 	preferred_contact_method TEXT DEFAULT 'phone',
 	preferred_language TEXT DEFAULT '',
 	reminder_opt_in INTEGER NOT NULL DEFAULT 1,
@@ -45,6 +44,11 @@ CREATE TABLE IF NOT EXISTS patients (
 	insurance_subscriber_dob TEXT DEFAULT '',
 	insurance_subscriber_sex TEXT DEFAULT '',
 	insurance_subscriber_relationship TEXT DEFAULT '',
+	insurance_subscriber_address_line1 TEXT DEFAULT '',
+	insurance_subscriber_address_line2 TEXT DEFAULT '',
+	insurance_subscriber_city TEXT DEFAULT '',
+	insurance_subscriber_state_province TEXT DEFAULT '',
+	insurance_subscriber_postal_code TEXT DEFAULT '',
 	CHECK (date(date_of_birth) IS NOT NULL),
 	FOREIGN KEY (preferred_provider_id) REFERENCES providers(id) ON DELETE SET NULL
 );

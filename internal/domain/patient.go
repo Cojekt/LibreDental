@@ -43,13 +43,18 @@ type Patient struct {
 	InsurancePolicyNumber string    `json:"insurance_policy_number,omitempty"`
 	InsuranceGroupNumber  string    `json:"insurance_group_number,omitempty"`
 	InsuranceIsSubscriber bool      `json:"insurance_is_subscriber"`
-	InsuranceSubscriberID string    `json:"insurance_subscriber_id,omitempty"`
 	InsurancePayerID      string    `json:"insurance_payer_id,omitempty"` // clearinghouse payer ID, e.g. "52133"
 	// Policyholder details, used only when InsuranceIsSubscriber is false.
 	InsuranceSubscriberFirstName    string      `json:"insurance_subscriber_first_name,omitempty"`
 	InsuranceSubscriberLastName     string      `json:"insurance_subscriber_last_name,omitempty"`
-	InsuranceSubscriberDOB          string      `json:"insurance_subscriber_dob,omitempty"`          // YYYY-MM-DD
+	InsuranceSubscriberDOB          string      `json:"insurance_subscriber_dob,omitempty"` // YYYY-MM-DD
+	InsuranceSubscriberSex          Sex         `json:"insurance_subscriber_sex,omitempty"`
 	InsuranceSubscriberRelationship string      `json:"insurance_subscriber_relationship,omitempty"` // see SubscriberRelationship*
+	InsuranceSubscriberAddressLine1 string      `json:"insurance_subscriber_address_line1,omitempty"`
+	InsuranceSubscriberAddressLine2 string      `json:"insurance_subscriber_address_line2,omitempty"`
+	InsuranceSubscriberCity         string      `json:"insurance_subscriber_city,omitempty"`
+	InsuranceSubscriberState        string      `json:"insurance_subscriber_state_province,omitempty"`
+	InsuranceSubscriberPostalCode   string      `json:"insurance_subscriber_postal_code,omitempty"`
 	PreferredContactMethod          string      `json:"preferred_contact_method,omitempty"`
 	PreferredLanguage               string      `json:"preferred_language,omitempty"`
 	ReminderOptIn                   bool        `json:"reminder_opt_in"`

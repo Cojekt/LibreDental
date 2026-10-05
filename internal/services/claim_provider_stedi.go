@@ -6,13 +6,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"strings"
-	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 )
@@ -49,10 +46,6 @@ func (p *StediClaimProvider) Name() string { return "stedi" }
 func (p *StediClaimProvider) SupportedCountries() []domain.CountryCode {
 	return []domain.CountryCode{domain.CountryUS}
 }
-
-// ErrClaimDataIncomplete is returned before anything is sent when the claim, patient, or
-// practice records are missing data the clearinghouse requires.
-var ErrClaimDataIncomplete = errors.New("claim is missing data required for electronic submission")
 
 func (p *StediClaimProvider) SubmitClaim(ctx context.Context, sub *domain.ClaimSubmission, config map[string]string) (*domain.ClaimSubmissionResult, error) {
 	apiKey := config[StediConfigAPIKey]
@@ -274,104 +267,34 @@ func nonEmpty(vals ...string) []string {
 	return out
 }
 
-// missingFields collects every problem with a submission so staff can fix them all at once
-// instead of discovering them one failed submission at a time.
-type missingFields []string
-
-func (m *missingFields) add(format string, args ...any) {
-	*m = append(*m, fmt.Sprintf(format, args...))
-}
-
-func (m missingFields) err() error {
-	if len(m) == 0 {
-		return nil
-	}
-	return fmt.Errorf("%w: %s", ErrClaimDataIncomplete, strings.Join(m, "; "))
-}
-
+// buildStediDentalClaim validates the submission against the shared 837D requirements, then
+// maps it to Stedi's JSON rendering of the 837D.
 func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDentalClaimRequest, error) {
-	if sub == nil || sub.Claim == nil || sub.Patient == nil || sub.Practice == nil {
-		return nil, fmt.Errorf("%w: claim, patient, and practice records are required", ErrClaimDataIncomplete)
+	if err := ValidateDentalClaim(sub); err != nil {
+		return nil, err
 	}
 	c, pt, pr := sub.Claim, sub.Patient, sub.Practice
-	var missing missingFields
-
-	if c.PayerID == "" {
-		missing.add("payer ID")
-	}
-	if c.InsuranceCarrier == "" {
-		missing.add("insurance carrier name")
-	}
-	if c.PolicyNumber == "" {
-		missing.add("subscriber member/policy ID")
-	}
-
-	serviceDate, err := x12Date(c.DateOfService)
-	if err != nil {
-		missing.add("valid date of service")
-	}
-
-	// Billing provider (the practice).
-	if !validNPI(pr.NPI) {
-		missing.add("valid practice NPI")
-	}
-	ein := digitsOnly(pr.TaxID)
-	if len(ein) != 9 {
-		missing.add("practice tax ID (9-digit EIN)")
-	}
-	if pr.ClinicName == "" {
-		missing.add("practice name")
-	}
-	if pr.AddressLine1 == "" || pr.City == "" || pr.StateProvince == "" {
-		missing.add("practice street address, city, and state")
-	}
-	billingZip := digitsOnly(pr.PostalCode)
-	if len(billingZip) != 9 {
-		missing.add("practice ZIP+4 (payers require all 9 digits for the billing address)")
-	}
+	serviceDate, _ := x12Date(c.DateOfService)
 	practicePhone := x12Phone(pr.Phone)
-	if practicePhone == "" {
-		missing.add("practice phone number")
-	}
 
-	// Rendering provider: only sent when it differs from the billing NPI (X12 loop 2310B).
 	var rendering *stediRenderingProvider
-	if rp := sub.RenderingProvider; rp != nil {
-		switch {
-		case !validNPI(rp.NPI):
-			missing.add("valid NPI for provider %s", rp.Name)
-		case rp.NPI != pr.NPI:
-			if !taxonomyPattern.MatchString(rp.TaxonomyCode) {
-				missing.add("taxonomy code for provider %s", rp.Name)
-			}
-			first, last := splitProviderName(rp.Name)
-			rendering = &stediRenderingProvider{
-				NPI:          rp.NPI,
-				TaxonomyCode: rp.TaxonomyCode,
-				FirstName:    x12Text(first),
-				LastName:     x12Text(last),
-			}
+	if rp := separateRenderingProvider(sub); rp != nil {
+		first, last := splitProviderName(rp.Name)
+		rendering = &stediRenderingProvider{
+			NPI:          rp.NPI,
+			TaxonomyCode: rp.TaxonomyCode,
+			FirstName:    x12Text(first),
+			LastName:     x12Text(last),
 		}
 	}
 
-	// Patient and, for dependents, the policyholder.
-	patientDOB := ""
-	if pt.DateOfBirth.IsZero() {
-		missing.add("patient date of birth")
-	} else {
-		patientDOB = pt.DateOfBirth.Format("20060102")
-	}
-	var patientAddr *stediAddress
-	if pt.AddressLine1 == "" || pt.City == "" || pt.StateProvince == "" || pt.PostalCode == "" {
-		missing.add("patient address")
-	} else {
-		patientAddr = &stediAddress{
-			Address1:   x12Text(pt.AddressLine1),
-			Address2:   x12Text(pt.AddressLine2),
-			City:       x12Text(pt.City),
-			State:      x12Text(pt.StateProvince),
-			PostalCode: digitsOnly(pt.PostalCode),
-		}
+	patientDOB := pt.DateOfBirth.Format("20060102")
+	patientAddr := &stediAddress{
+		Address1:   x12Text(pt.AddressLine1),
+		Address2:   x12Text(pt.AddressLine2),
+		City:       x12Text(pt.City),
+		State:      x12Text(pt.StateProvince),
+		PostalCode: digitsOnly(pt.PostalCode),
 	}
 
 	subscriber := stediSubscriber{
@@ -387,19 +310,21 @@ func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDe
 		subscriber.Gender = x12Gender(pt.Sex)
 		subscriber.Address = patientAddr
 	} else {
-		if pt.InsuranceSubscriberFirstName == "" || pt.InsuranceSubscriberLastName == "" {
-			missing.add("policyholder name")
-		}
-		subDOB, err := x12Date(pt.InsuranceSubscriberDOB)
-		if err != nil {
-			missing.add("policyholder date of birth")
-		}
-		if !validSubscriberRelationship(pt.InsuranceSubscriberRelationship) {
-			missing.add("patient's relationship to the policyholder")
-		}
 		subscriber.FirstName = x12Text(pt.InsuranceSubscriberFirstName)
 		subscriber.LastName = x12Text(pt.InsuranceSubscriberLastName)
-		subscriber.DateOfBirth = subDOB
+		subscriber.DateOfBirth, _ = x12Date(pt.InsuranceSubscriberDOB)
+		if pt.InsuranceSubscriberSex != "" {
+			subscriber.Gender = x12Gender(pt.InsuranceSubscriberSex)
+		}
+		if hasSubscriberAddress(pt) {
+			subscriber.Address = &stediAddress{
+				Address1:   x12Text(pt.InsuranceSubscriberAddressLine1),
+				Address2:   x12Text(pt.InsuranceSubscriberAddressLine2),
+				City:       x12Text(pt.InsuranceSubscriberCity),
+				State:      x12Text(pt.InsuranceSubscriberState),
+				PostalCode: digitsOnly(pt.InsuranceSubscriberPostalCode),
+			}
+		}
 		dependent = &stediDependent{
 			FirstName:                    x12Text(pt.FirstName),
 			LastName:                     x12Text(pt.LastName),
@@ -410,20 +335,8 @@ func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDe
 		}
 	}
 
-	// Service lines.
-	if len(c.LineItems) == 0 {
-		missing.add("at least one procedure")
-	}
 	lines := make([]stediServiceLine, 0, len(c.LineItems))
-	var total int64
-	for i, li := range c.LineItems {
-		if !cdtPattern.MatchString(li.ADACode) {
-			missing.add("valid CDT code on line %d (got %q)", i+1, li.ADACode)
-		}
-		if li.Fee < 0 {
-			missing.add("non-negative fee on line %d", i+1)
-		}
-		total += li.Fee
+	for _, li := range c.LineItems {
 		line := stediServiceLine{
 			ServiceDate:           serviceDate,
 			ProviderControlNumber: domain.ControlNumber(li.ID),
@@ -434,10 +347,7 @@ func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDe
 			},
 		}
 		if li.ToothNumber != 0 {
-			tooth, ok := x12ToothCode(li.ToothNumber)
-			if !ok {
-				missing.add("valid tooth number on line %d", i+1)
-			}
+			tooth, _ := x12ToothCode(li.ToothNumber)
 			row := stediToothInfoRow{ToothCode: tooth}
 			for _, s := range li.Surfaces {
 				row.ToothSurfaceCodes = append(row.ToothSurfaceCodes, string(s))
@@ -445,10 +355,6 @@ func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDe
 			line.TeethInformation = []stediToothInfoRow{row}
 		}
 		lines = append(lines, line)
-	}
-
-	if err := missing.err(); err != nil {
-		return nil, err
 	}
 
 	req := &stediDentalClaimRequest{
@@ -463,14 +369,14 @@ func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDe
 		Dependent:  dependent,
 		Billing: stediBillingProvider{
 			NPI:              pr.NPI,
-			EmployerID:       ein,
+			EmployerID:       digitsOnly(pr.TaxID),
 			OrganizationName: x12Text(pr.ClinicName),
 			Address: stediAddress{
 				Address1:   x12Text(pr.AddressLine1),
 				Address2:   x12Text(pr.AddressLine2),
 				City:       x12Text(pr.City),
 				State:      x12Text(pr.StateProvince),
-				PostalCode: billingZip,
+				PostalCode: digitsOnly(pr.PostalCode),
 			},
 			ContactInformation: stediContact{Name: x12Text(pr.ClinicName), PhoneNumber: practicePhone},
 		},
@@ -478,7 +384,7 @@ func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDe
 		ClaimInformation: stediClaimInformation{
 			ClaimFilingCode:                          "CI", // commercial insurance
 			PatientControlNumber:                     c.PatientControlNumber(),
-			ClaimChargeAmount:                        centsToDecimal(total),
+			ClaimChargeAmount:                        centsToDecimal(c.TotalFee()),
 			PlaceOfServiceCode:                       "11", // office
 			ClaimFrequencyCode:                       "1",  // original claim
 			SignatureIndicator:                       "Y",
@@ -492,124 +398,4 @@ func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDe
 		req.UsageIndicator = "T"
 	}
 	return req, nil
-}
-
-// ─── X12 value helpers ───────────────────────────────────────────────────────
-
-var (
-	cdtPattern      = regexp.MustCompile(`^D\d{4}$`)
-	taxonomyPattern = regexp.MustCompile(`^[0-9A-Z]{9}X$`)
-)
-
-// x12Delimiters are reserved by the X12 envelope Stedi generates and cannot be escaped.
-var x12Delimiters = strings.NewReplacer("~", " ", "*", " ", ":", " ", "^", " ", ">", " ")
-
-func x12Text(s string) string {
-	return strings.Join(strings.Fields(x12Delimiters.Replace(s)), " ")
-}
-
-func digitsOnly(s string) string {
-	var b strings.Builder
-	for _, r := range s {
-		if r >= '0' && r <= '9' {
-			b.WriteRune(r)
-		}
-	}
-	return b.String()
-}
-
-// x12Phone returns a 10-digit phone number, or "" when s isn't a US number.
-func x12Phone(s string) string {
-	d := digitsOnly(s)
-	if len(d) == 11 && d[0] == '1' {
-		d = d[1:]
-	}
-	if len(d) != 10 {
-		return ""
-	}
-	return d
-}
-
-func x12Date(isoDate string) (string, error) {
-	t, err := time.Parse("2006-01-02", isoDate)
-	if err != nil {
-		return "", err
-	}
-	return t.Format("20060102"), nil
-}
-
-func x12Gender(s domain.Sex) string {
-	switch s {
-	case domain.SexMale:
-		return "M"
-	case domain.SexFemale:
-		return "F"
-	default:
-		return "U"
-	}
-}
-
-func centsToDecimal(cents int64) string {
-	return fmt.Sprintf("%d.%02d", cents/100, cents%100)
-}
-
-// x12ToothCode converts LibreDental's internal Universal numbering (1-32 permanent,
-// 101-120 for primary A-T) to the ADA Universal designation X12 expects.
-func x12ToothCode(n int) (string, bool) {
-	switch {
-	case n >= 1 && n <= 32:
-		return fmt.Sprint(n), true
-	case n >= 101 && n <= 120:
-		return string(rune('A' + n - 101)), true
-	default:
-		return "", false
-	}
-}
-
-func validSubscriberRelationship(code string) bool {
-	switch code {
-	case domain.SubscriberRelationshipSpouse, domain.SubscriberRelationshipChild,
-		domain.SubscriberRelationshipLifePartner, domain.SubscriberRelationshipOther:
-		return true
-	}
-	return false
-}
-
-// validNPI checks the NPI's Luhn check digit (computed with the 80840 card-issuer prefix),
-// which catches most typos before a payer rejects the claim for them.
-func validNPI(npi string) bool {
-	if len(npi) != 10 || digitsOnly(npi) != npi {
-		return false
-	}
-	sum := 24 // the 80840 prefix's contribution to the Luhn sum
-	for i := 0; i < 9; i++ {
-		d := int(npi[8-i] - '0')
-		if i%2 == 0 {
-			d *= 2
-			if d > 9 {
-				d -= 9
-			}
-		}
-		sum += d
-	}
-	return (10-sum%10)%10 == int(npi[9]-'0')
-}
-
-// splitProviderName splits a single display name like "Dr. Jane Smith, DDS" into
-// first and last name, since providers are stored with one name field.
-func splitProviderName(name string) (first, last string) {
-	if i := strings.Index(name, ","); i >= 0 {
-		name = name[:i]
-	}
-	fields := strings.Fields(name)
-	if len(fields) > 0 && strings.EqualFold(strings.TrimSuffix(fields[0], "."), "dr") {
-		fields = fields[1:]
-	}
-	switch len(fields) {
-	case 0:
-		return "", ""
-	case 1:
-		return "", fields[0]
-	}
-	return strings.Join(fields[:len(fields)-1], " "), fields[len(fields)-1]
 }

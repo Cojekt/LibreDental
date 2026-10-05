@@ -157,7 +157,12 @@
   let insurancePolicy = $state("");
   let insuranceGroup = $state("");
   let insuranceIsSubscriber = $state(true);
-  let insuranceSubscriberId = $state("");
+  let insuranceSubscriberSex = $state<any>("");
+  let insuranceSubscriberAddressLine1 = $state("");
+  let insuranceSubscriberAddressLine2 = $state("");
+  let insuranceSubscriberCity = $state("");
+  let insuranceSubscriberState = $state("");
+  let insuranceSubscriberPostalCode = $state("");
   let insurancePayerId = $state("");
   let insuranceSubscriberFirstName = $state("");
   let insuranceSubscriberLastName = $state("");
@@ -405,7 +410,12 @@
     insurancePolicy = "";
     insuranceGroup = "";
     insuranceIsSubscriber = true;
-    insuranceSubscriberId = "";
+    insuranceSubscriberSex = "";
+    insuranceSubscriberAddressLine1 = "";
+    insuranceSubscriberAddressLine2 = "";
+    insuranceSubscriberCity = "";
+    insuranceSubscriberState = "";
+    insuranceSubscriberPostalCode = "";
     insurancePayerId = "";
     insuranceSubscriberFirstName = "";
     insuranceSubscriberLastName = "";
@@ -447,7 +457,12 @@
     insurancePolicy = p.insurance_policy_number || "";
     insuranceGroup = p.insurance_group_number || "";
     insuranceIsSubscriber = p.insurance_is_subscriber;
-    insuranceSubscriberId = p.insurance_subscriber_id || "";
+    insuranceSubscriberSex = p.insurance_subscriber_sex || "";
+    insuranceSubscriberAddressLine1 = p.insurance_subscriber_address_line1 || "";
+    insuranceSubscriberAddressLine2 = p.insurance_subscriber_address_line2 || "";
+    insuranceSubscriberCity = p.insurance_subscriber_city || "";
+    insuranceSubscriberState = p.insurance_subscriber_state_province || "";
+    insuranceSubscriberPostalCode = p.insurance_subscriber_postal_code || "";
     insurancePayerId = p.insurance_payer_id || "";
     insuranceSubscriberFirstName = p.insurance_subscriber_first_name || "";
     insuranceSubscriberLastName = p.insurance_subscriber_last_name || "";
@@ -506,7 +521,12 @@
           p.insurance_policy_number = insurancePolicy;
           p.insurance_group_number = insuranceGroup;
           p.insurance_is_subscriber = insuranceIsSubscriber;
-          p.insurance_subscriber_id = insuranceSubscriberId;
+          p.insurance_subscriber_sex = insuranceSubscriberSex;
+          p.insurance_subscriber_address_line1 = insuranceSubscriberAddressLine1;
+          p.insurance_subscriber_address_line2 = insuranceSubscriberAddressLine2;
+          p.insurance_subscriber_city = insuranceSubscriberCity;
+          p.insurance_subscriber_state_province = insuranceSubscriberState;
+          p.insurance_subscriber_postal_code = insuranceSubscriberPostalCode;
           p.insurance_payer_id = insurancePayerId;
           p.insurance_subscriber_first_name = insuranceSubscriberFirstName;
           p.insurance_subscriber_last_name = insuranceSubscriberLastName;
@@ -541,7 +561,12 @@
           insurance_policy_number: insurancePolicy,
           insurance_group_number: insuranceGroup,
           insurance_is_subscriber: insuranceIsSubscriber,
-          insurance_subscriber_id: insuranceSubscriberId,
+          insurance_subscriber_sex: insuranceSubscriberSex,
+          insurance_subscriber_address_line1: insuranceSubscriberAddressLine1,
+          insurance_subscriber_address_line2: insuranceSubscriberAddressLine2,
+          insurance_subscriber_city: insuranceSubscriberCity,
+          insurance_subscriber_state_province: insuranceSubscriberState,
+          insurance_subscriber_postal_code: insuranceSubscriberPostalCode,
           insurance_payer_id: insurancePayerId,
           insurance_subscriber_first_name: insuranceSubscriberFirstName,
           insurance_subscriber_last_name: insuranceSubscriberLastName,
@@ -877,7 +902,12 @@
   bind:insurancePolicy
   bind:insuranceGroup
   bind:insuranceIsSubscriber
-  bind:insuranceSubscriberId
+  bind:insuranceSubscriberSex
+  bind:insuranceSubscriberAddressLine1
+  bind:insuranceSubscriberAddressLine2
+  bind:insuranceSubscriberCity
+  bind:insuranceSubscriberState
+  bind:insuranceSubscriberPostalCode
   bind:insurancePayerId
   bind:insuranceSubscriberFirstName
   bind:insuranceSubscriberLastName

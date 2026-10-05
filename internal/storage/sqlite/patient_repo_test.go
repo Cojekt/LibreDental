@@ -43,7 +43,10 @@ func TestPatientRepository_CRUD(t *testing.T) {
 		InsuranceSubscriberFirstName:    "Mary",
 		InsuranceSubscriberLastName:     "Doe",
 		InsuranceSubscriberDOB:          "1983-02-01",
+		InsuranceSubscriberSex:          domain.SexFemale,
 		InsuranceSubscriberRelationship: domain.SubscriberRelationshipSpouse,
+		InsuranceSubscriberCity:         "Buckeye",
+		InsuranceSubscriberPostalCode:   "85326",
 		StateProvince:                   "CA",
 		PostalCode:                      "90210",
 		CountryCode:                     domain.CountryUS,
@@ -74,7 +77,9 @@ func TestPatientRepository_CRUD(t *testing.T) {
 	}
 	if fetched.InsurancePayerID != "CDCA1" || fetched.InsuranceSubscriberFirstName != "Mary" ||
 		fetched.InsuranceSubscriberLastName != "Doe" || fetched.InsuranceSubscriberDOB != "1983-02-01" ||
-		fetched.InsuranceSubscriberRelationship != domain.SubscriberRelationshipSpouse {
+		fetched.InsuranceSubscriberRelationship != domain.SubscriberRelationshipSpouse ||
+		fetched.InsuranceSubscriberSex != domain.SexFemale || fetched.InsuranceSubscriberCity != "Buckeye" ||
+		fetched.InsuranceSubscriberPostalCode != "85326" {
 		t.Errorf("Unexpected payer/policyholder fields: %+v", fetched)
 	}
 
