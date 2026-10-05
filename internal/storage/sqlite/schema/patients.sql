@@ -39,6 +39,12 @@ CREATE TABLE IF NOT EXISTS patients (
 	updated_at DATETIME NOT NULL,
 	version INTEGER NOT NULL DEFAULT 1,
 	status TEXT NOT NULL DEFAULT 'active',
+	insurance_payer_id TEXT DEFAULT '',
+	insurance_subscriber_first_name TEXT DEFAULT '',
+	insurance_subscriber_last_name TEXT DEFAULT '',
+	insurance_subscriber_dob TEXT DEFAULT '',
+	insurance_subscriber_sex TEXT DEFAULT '',
+	insurance_subscriber_relationship TEXT DEFAULT '',
 	CHECK (date(date_of_birth) IS NOT NULL),
 	FOREIGN KEY (preferred_provider_id) REFERENCES providers(id) ON DELETE SET NULL
 );

@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS practice_config (
 	date_format TEXT NOT NULL DEFAULT 'YYYY-MM-DD',
 	business_hours TEXT DEFAULT '[]',
 	created_at DATETIME NOT NULL,
-	updated_at DATETIME NOT NULL
+	updated_at DATETIME NOT NULL,
+	npi TEXT DEFAULT '',
+	taxonomy_code TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS operatories (

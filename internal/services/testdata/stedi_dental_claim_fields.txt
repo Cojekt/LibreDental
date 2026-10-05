@@ -1,0 +1,548 @@
+# Request properties of Stedi's Dental Claims (837D) JSON endpoint, extracted from
+# https://www.stedi.com/docs/healthcare/api-reference/post-healthcare-dental-claims.md
+# (fetched 2026-10-05). Format: <path> <type> [required]. "required" applies when the
+# parent object is present.
+assistantSurgeon	object
+assistantSurgeon.address	object
+assistantSurgeon.address.address1	string	required
+assistantSurgeon.address.address2	string
+assistantSurgeon.address.city	string	required
+assistantSurgeon.address.countryCode	string
+assistantSurgeon.address.countrySubDivisionCode	string
+assistantSurgeon.address.postalCode	string
+assistantSurgeon.address.state	string
+assistantSurgeon.commercialNumber	string
+assistantSurgeon.contactInformation	object
+assistantSurgeon.contactInformation.email	string
+assistantSurgeon.contactInformation.faxNumber	string
+assistantSurgeon.contactInformation.name	string
+assistantSurgeon.contactInformation.phoneExtension	string
+assistantSurgeon.contactInformation.phoneNumber	string
+assistantSurgeon.firstName	string
+assistantSurgeon.lastName	string	required
+assistantSurgeon.locationNumber	string
+assistantSurgeon.middleName	string
+assistantSurgeon.npi	string
+assistantSurgeon.providerUpinNumber	string
+assistantSurgeon.stateLicenseNumber	string
+assistantSurgeon.suffix	string
+assistantSurgeon.taxonomyCode	string	required
+billing	object	required
+billing.address	object
+billing.address.address1	string	required
+billing.address.address2	string
+billing.address.city	string	required
+billing.address.countryCode	string
+billing.address.countrySubDivisionCode	string
+billing.address.postalCode	string
+billing.address.state	string
+billing.claimOfficeNumber	string
+billing.commercialNumber	string
+billing.contactInformation	object
+billing.contactInformation.email	string
+billing.contactInformation.faxNumber	string
+billing.contactInformation.name	string
+billing.contactInformation.phoneExtension	string
+billing.contactInformation.phoneNumber	string
+billing.employerId	string
+billing.firstName	string
+billing.lastName	string
+billing.locationNumber	string
+billing.middleName	string
+billing.naic	string
+billing.npi	string
+billing.organizationName	string
+billing.payerIdentificationNumber	string
+billing.providerType	string
+billing.providerUpinNumber	string
+billing.ssn	string
+billing.stateLicenseNumber	string
+billing.suffix	string
+billing.taxonomyCode	string
+claimIdentifier	string
+claimInformation	object	required
+claimInformation.autoAccidentCountryCode	string
+claimInformation.autoAccidentStateCode	string
+claimInformation.benefitsAssignmentCertificationIndicator	string	required
+claimInformation.claimChargeAmount	string	required
+claimInformation.claimContractInformation	object
+claimInformation.claimContractInformation.contractAmount	string
+claimInformation.claimContractInformation.contractCode	string
+claimInformation.claimContractInformation.contractPercentage	string
+claimInformation.claimContractInformation.contractTypeCode	string	required
+claimInformation.claimContractInformation.contractVersionIdentifier	string
+claimInformation.claimContractInformation.termsDiscountPercentage	string
+claimInformation.claimDateInformation	object
+claimInformation.claimDateInformation.accidentDate	string
+claimInformation.claimDateInformation.appliancePlacementDate	string
+claimInformation.claimDateInformation.repricerReceivedDate	string
+claimInformation.claimDateInformation.serviceDate	string
+claimInformation.claimFilingCode	string
+claimInformation.claimFrequencyCode	string	required
+claimInformation.claimNotes	array of strings
+claimInformation.claimPricingRepricingInformation	object
+claimInformation.claimPricingRepricingInformation.exceptionCode	string
+claimInformation.claimPricingRepricingInformation.policyComplianceCode	string
+claimInformation.claimPricingRepricingInformation.pricingMethodologyCode	string	required
+claimInformation.claimPricingRepricingInformation.rejectReasonCode	string
+claimInformation.claimPricingRepricingInformation.repricedAllowedAmount	string	required
+claimInformation.claimPricingRepricingInformation.repricedApprovedAmbulatoryPatientGroupAmount	string
+claimInformation.claimPricingRepricingInformation.repricedApprovedAmbulatoryPatientGroupCode	string
+claimInformation.claimPricingRepricingInformation.repricedSavingAmount	string
+claimInformation.claimPricingRepricingInformation.repricingOrganizationIdentifier	string
+claimInformation.claimPricingRepricingInformation.repricingPerDiemOrFlatRateAmount	string
+claimInformation.claimSupplementalInformation	object
+claimInformation.claimSupplementalInformation.adjustedRepricedClaimNumber	string
+claimInformation.claimSupplementalInformation.claimControlNumber	string
+claimInformation.claimSupplementalInformation.claimNumber	string
+claimInformation.claimSupplementalInformation.predeterminationOfBenefitsIdentifier	string
+claimInformation.claimSupplementalInformation.priorAuthorizationNumber	string
+claimInformation.claimSupplementalInformation.referralNumber	string
+claimInformation.claimSupplementalInformation.reportInformation	object
+claimInformation.claimSupplementalInformation.reportInformation.attachmentControlNumber	string
+claimInformation.claimSupplementalInformation.reportInformation.attachmentId	string
+claimInformation.claimSupplementalInformation.reportInformation.attachmentReportTypeCode	string	required
+claimInformation.claimSupplementalInformation.reportInformation.attachmentTransmissionCode	string	required
+claimInformation.claimSupplementalInformation.reportInformations	array of DentalReportInformation objects
+claimInformation.claimSupplementalInformation.reportInformations[].attachmentControlNumber	string
+claimInformation.claimSupplementalInformation.reportInformations[].attachmentId	string
+claimInformation.claimSupplementalInformation.reportInformations[].attachmentReportTypeCode	string	required
+claimInformation.claimSupplementalInformation.reportInformations[].attachmentTransmissionCode	string	required
+claimInformation.claimSupplementalInformation.repricedClaimNumber	string
+claimInformation.claimSupplementalInformation.serviceAuthorizationExceptionCode	string
+claimInformation.delayReasonCode	string
+claimInformation.fileInformation	string
+claimInformation.fileInformationList	array of strings
+claimInformation.healthCareCodeInformation	array of DentalHealthCareInformation objects
+claimInformation.healthCareCodeInformation[].diagnosisCode	string	required
+claimInformation.healthCareCodeInformation[].diagnosisTypeCode	string	required
+claimInformation.orthodonticTotalMonthsOfTreatment	object
+claimInformation.orthodonticTotalMonthsOfTreatment.monthsCount	number
+claimInformation.orthodonticTotalMonthsOfTreatment.monthsRemaining	number
+claimInformation.orthodonticTotalMonthsOfTreatment.treatmentIndicator	string
+claimInformation.otherSubscriberInformation	array of DentalOtherSubscriberInformation objects
+claimInformation.otherSubscriberInformation[].benefitsAssignmentCertificationIndicator	string	required
+claimInformation.otherSubscriberInformation[].claimFilingIndicatorCode	string
+claimInformation.otherSubscriberInformation[].claimLevelAdjustments	array of ClaimAdjustment objects
+claimInformation.otherSubscriberInformation[].claimLevelAdjustments[].adjustmentDetails	array of ClaimAdjustmentDetails objects	required
+claimInformation.otherSubscriberInformation[].claimLevelAdjustments[].adjustmentDetails[].adjustmentAmount	string	required
+claimInformation.otherSubscriberInformation[].claimLevelAdjustments[].adjustmentDetails[].adjustmentQuantity	string
+claimInformation.otherSubscriberInformation[].claimLevelAdjustments[].adjustmentDetails[].adjustmentReasonCode	string	required
+claimInformation.otherSubscriberInformation[].claimLevelAdjustments[].adjustmentGroupCode	string	required
+claimInformation.otherSubscriberInformation[].individualRelationshipCode	string	required
+claimInformation.otherSubscriberInformation[].insuranceGroupOrPolicyNumber	string
+claimInformation.otherSubscriberInformation[].insuranceTypeCode	string
+claimInformation.otherSubscriberInformation[].medicareOutpatientAdjudication	object
+claimInformation.otherSubscriberInformation[].medicareOutpatientAdjudication.claimPaymentRemarkCode	array of strings
+claimInformation.otherSubscriberInformation[].medicareOutpatientAdjudication.hcpcsPayableAmount	string
+claimInformation.otherSubscriberInformation[].medicareOutpatientAdjudication.nonPayableProfessionalComponentBilledAmount	string
+claimInformation.otherSubscriberInformation[].medicareOutpatientAdjudication.reimbursementRate	string
+claimInformation.otherSubscriberInformation[].nonCoveredChargeAmount	string
+claimInformation.otherSubscriberInformation[].otherInsuredGroupName	string
+claimInformation.otherSubscriberInformation[].otherPayerAssistantSurgeon	object
+claimInformation.otherSubscriberInformation[].otherPayerAssistantSurgeon.entityTypeQualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerAssistantSurgeon.otherPayerAssistantSurgeonIdentifier	array of OtherPayerAssistantSurgeonIdentifierItem objects	required
+claimInformation.otherSubscriberInformation[].otherPayerAssistantSurgeon.otherPayerAssistantSurgeonIdentifier[].identifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerAssistantSurgeon.otherPayerAssistantSurgeonIdentifier[].otherIdentifier	string
+claimInformation.otherSubscriberInformation[].otherPayerAssistantSurgeon.otherPayerAssistantSurgeonIdentifier[].qualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerBillingProvider	array of OtherPayerBillingProvider objects
+claimInformation.otherSubscriberInformation[].otherPayerBillingProvider[].entityTypeQualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerBillingProvider[].otherPayerBillingProviderIdentifier	array of OtherPayerBillingProviderIdentifierItem objects	required
+claimInformation.otherSubscriberInformation[].otherPayerBillingProvider[].otherPayerBillingProviderIdentifier[].identifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerBillingProvider[].otherPayerBillingProviderIdentifier[].otherIdentifier	string
+claimInformation.otherSubscriberInformation[].otherPayerBillingProvider[].otherPayerBillingProviderIdentifier[].qualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerName	object	required
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAddress	object
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAddress.address1	string	required
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAddress.address2	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAddress.city	string	required
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAddress.countryCode	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAddress.countrySubDivisionCode	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAddress.postalCode	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAddress.state	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerAdjudicationOrPaymentDate	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerClaimAdjustmentIndicator	boolean
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerClaimControlNumber	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerIdentifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerIdentifierTypeCode	string	required
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerOrganizationName	string	required
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerPredeterminationIdentification	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerPriorAuthorizationNumber	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerPriorAuthorizationOrReferralNumber	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerSecondaryIdentifier	array of OtherPayerSecondaryIdentifierItem objects
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerSecondaryIdentifier[].identifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerSecondaryIdentifier[].otherIdentifier	string
+claimInformation.otherSubscriberInformation[].otherPayerName.otherPayerSecondaryIdentifier[].qualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerReferringProvider	array of OtherPayerReferringProvider objects
+claimInformation.otherSubscriberInformation[].otherPayerReferringProvider[].otherPayerReferringProviderIdentifier	array of OtherPayerReferringProviderIdentifierItem objects	required
+claimInformation.otherSubscriberInformation[].otherPayerReferringProvider[].otherPayerReferringProviderIdentifier[].identifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerReferringProvider[].otherPayerReferringProviderIdentifier[].otherIdentifier	string
+claimInformation.otherSubscriberInformation[].otherPayerReferringProvider[].otherPayerReferringProviderIdentifier[].qualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerRenderingProvider	array of OtherPayerRenderingProvider objects
+claimInformation.otherSubscriberInformation[].otherPayerRenderingProvider[].entityTypeQualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerRenderingProvider[].otherPayerRenderingProviderSecondaryIdentifier	array of OtherPayerRenderingProviderIdentifierItem objects
+claimInformation.otherSubscriberInformation[].otherPayerRenderingProvider[].otherPayerRenderingProviderSecondaryIdentifier[].identifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerRenderingProvider[].otherPayerRenderingProviderSecondaryIdentifier[].otherIdentifier	string
+claimInformation.otherSubscriberInformation[].otherPayerRenderingProvider[].otherPayerRenderingProviderSecondaryIdentifier[].qualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerServiceFacilityLocation	array of OtherPayerServiceFacilityLocation objects
+claimInformation.otherSubscriberInformation[].otherPayerServiceFacilityLocation[].otherPayerServiceFacilityLocationSecondaryIdentifier	array of OtherPayerServiceFacilityLocationSecondaryIdentifierItem objects	required
+claimInformation.otherSubscriberInformation[].otherPayerServiceFacilityLocation[].otherPayerServiceFacilityLocationSecondaryIdentifier[].identifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerServiceFacilityLocation[].otherPayerServiceFacilityLocationSecondaryIdentifier[].otherIdentifier	string
+claimInformation.otherSubscriberInformation[].otherPayerServiceFacilityLocation[].otherPayerServiceFacilityLocationSecondaryIdentifier[].qualifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerSupervisingProvider	array of OtherPayerSupervisingProvider objects
+claimInformation.otherSubscriberInformation[].otherPayerSupervisingProvider[].otherPayerSupervisingProviderIdentifier	array of OtherPayerSupervisingProviderIdentifierItem objects	required
+claimInformation.otherSubscriberInformation[].otherPayerSupervisingProvider[].otherPayerSupervisingProviderIdentifier[].identifier	string	required
+claimInformation.otherSubscriberInformation[].otherPayerSupervisingProvider[].otherPayerSupervisingProviderIdentifier[].otherIdentifier	string
+claimInformation.otherSubscriberInformation[].otherPayerSupervisingProvider[].otherPayerSupervisingProviderIdentifier[].qualifier	string	required
+claimInformation.otherSubscriberInformation[].otherSubscriberName	object	required
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAdditionalIdentifiers	array of strings
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAddress	object
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAddress.address1	string	required
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAddress.address2	string
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAddress.city	string	required
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAddress.countryCode	string
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAddress.countrySubDivisionCode	string
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAddress.postalCode	string
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredAddress.state	string
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredFirstName	string
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredIdentifier	string	required
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredIdentifierTypeCode	string	required
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredLastName	string	required
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredMiddleName	string
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredNameSuffix	string
+claimInformation.otherSubscriberInformation[].otherSubscriberName.otherInsuredQualifier	string	required
+claimInformation.otherSubscriberInformation[].payerPaidAmount	string
+claimInformation.otherSubscriberInformation[].paymentResponsibilityLevelCode	string	required
+claimInformation.otherSubscriberInformation[].releaseOfInformationCode	string	required
+claimInformation.otherSubscriberInformation[].remainingPatientLiability	string
+claimInformation.patientAmountPaid	string
+claimInformation.patientControlNumber	string	required
+claimInformation.placeOfServiceCode	string	required
+claimInformation.planParticipationCode	string
+claimInformation.predeterminationOfBenefits	boolean
+claimInformation.propertyCasualtyClaimNumber	string
+claimInformation.relatedCausesCode	array of strings
+claimInformation.releaseInformationCode	string	required
+claimInformation.serviceFacilityLocation	object
+claimInformation.serviceFacilityLocation.address	object	required
+claimInformation.serviceFacilityLocation.address.address1	string	required
+claimInformation.serviceFacilityLocation.address.address2	string
+claimInformation.serviceFacilityLocation.address.city	string	required
+claimInformation.serviceFacilityLocation.address.countryCode	string
+claimInformation.serviceFacilityLocation.address.countrySubDivisionCode	string
+claimInformation.serviceFacilityLocation.address.postalCode	string
+claimInformation.serviceFacilityLocation.address.state	string
+claimInformation.serviceFacilityLocation.npi	string
+claimInformation.serviceFacilityLocation.organizationName	string	required
+claimInformation.serviceFacilityLocation.phoneExtension	string
+claimInformation.serviceFacilityLocation.phoneName	string
+claimInformation.serviceFacilityLocation.phoneNumber	string
+claimInformation.serviceFacilityLocation.secondaryIdentifier	array of ClaimServiceFacilityLocationSecondaryIdentifierItem objects
+claimInformation.serviceFacilityLocation.secondaryIdentifier[].identifier	string	required
+claimInformation.serviceFacilityLocation.secondaryIdentifier[].otherIdentifier	string
+claimInformation.serviceFacilityLocation.secondaryIdentifier[].qualifier	string	required
+claimInformation.serviceLines	array of DentalServiceLine objects	required
+claimInformation.serviceLines[].assistantSurgeon	object
+claimInformation.serviceLines[].assistantSurgeon.commercialNumber	string
+claimInformation.serviceLines[].assistantSurgeon.firstName	string
+claimInformation.serviceLines[].assistantSurgeon.lastName	string
+claimInformation.serviceLines[].assistantSurgeon.locationNumber	string
+claimInformation.serviceLines[].assistantSurgeon.middleName	string
+claimInformation.serviceLines[].assistantSurgeon.npi	string
+claimInformation.serviceLines[].assistantSurgeon.organizationName	string
+claimInformation.serviceLines[].assistantSurgeon.providerUpinNumber	string
+claimInformation.serviceLines[].assistantSurgeon.stateLicenseNumber	string
+claimInformation.serviceLines[].assistantSurgeon.suffix	string
+claimInformation.serviceLines[].assistantSurgeon.taxonomyCode	string
+claimInformation.serviceLines[].contractInformation	object
+claimInformation.serviceLines[].contractInformation.contractAmount	string
+claimInformation.serviceLines[].contractInformation.contractCode	string
+claimInformation.serviceLines[].contractInformation.contractPercentage	string
+claimInformation.serviceLines[].contractInformation.contractTypeCode	string	required
+claimInformation.serviceLines[].contractInformation.contractVersionIdentifier	string
+claimInformation.serviceLines[].contractInformation.termsDiscountPercentage	string
+claimInformation.serviceLines[].dentalService	object	required
+claimInformation.serviceLines[].dentalService.compositeDiagnosisCodePointers	object
+claimInformation.serviceLines[].dentalService.compositeDiagnosisCodePointers.diagnosisCodePointers	array of strings	required
+claimInformation.serviceLines[].dentalService.description	string
+claimInformation.serviceLines[].dentalService.lineItemChargeAmount	string	required
+claimInformation.serviceLines[].dentalService.oralCavityDesignation	array of strings
+claimInformation.serviceLines[].dentalService.placeOfServiceCode	string
+claimInformation.serviceLines[].dentalService.procedureCode	string	required
+claimInformation.serviceLines[].dentalService.procedureCount	number
+claimInformation.serviceLines[].dentalService.procedureModifiers	array of strings
+claimInformation.serviceLines[].dentalService.prosthesisCrownOrInlayCode	string
+claimInformation.serviceLines[].fileInformation	array of strings
+claimInformation.serviceLines[].lineAdjudicationInformation	array of DentalLineAdjudicationInformation objects
+claimInformation.serviceLines[].lineAdjudicationInformation[].adjudicationOrPaymentDate	string	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].bundledOrUnbundledLineNumber	string
+claimInformation.serviceLines[].lineAdjudicationInformation[].claimAdjustmentInformation	array of ClaimAdjustment objects
+claimInformation.serviceLines[].lineAdjudicationInformation[].claimAdjustmentInformation[].adjustmentDetails	array of ClaimAdjustmentDetails objects	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].claimAdjustmentInformation[].adjustmentDetails[].adjustmentAmount	string	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].claimAdjustmentInformation[].adjustmentDetails[].adjustmentQuantity	string
+claimInformation.serviceLines[].lineAdjudicationInformation[].claimAdjustmentInformation[].adjustmentDetails[].adjustmentReasonCode	string	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].claimAdjustmentInformation[].adjustmentGroupCode	string	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].otherPayerPrimaryIdentifier	string	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].paidServiceUnitCount	string	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].procedureCode	string	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].procedureCodeDescription	string
+claimInformation.serviceLines[].lineAdjudicationInformation[].procedureModifier	array of strings
+claimInformation.serviceLines[].lineAdjudicationInformation[].remainingPatientLiability	string
+claimInformation.serviceLines[].lineAdjudicationInformation[].serviceIdQualifier	string	required
+claimInformation.serviceLines[].lineAdjudicationInformation[].serviceLinePaidAmount	string	required
+claimInformation.serviceLines[].linePricingRepricingInformation	object
+claimInformation.serviceLines[].linePricingRepricingInformation.exceptionCode	string
+claimInformation.serviceLines[].linePricingRepricingInformation.measurementUnitCode	string
+claimInformation.serviceLines[].linePricingRepricingInformation.policyComplianceCode	string
+claimInformation.serviceLines[].linePricingRepricingInformation.pricingMethodologyCode	string	required
+claimInformation.serviceLines[].linePricingRepricingInformation.rejectReasonCode	string
+claimInformation.serviceLines[].linePricingRepricingInformation.repricedAllowedAmount	string	required
+claimInformation.serviceLines[].linePricingRepricingInformation.repricedApprovedHCPCSCode	string
+claimInformation.serviceLines[].linePricingRepricingInformation.repricedApprovedServiceUnitCount	number
+claimInformation.serviceLines[].linePricingRepricingInformation.repricedSavingAmount	string
+claimInformation.serviceLines[].linePricingRepricingInformation.repricingOrganizationIdentifier	string
+claimInformation.serviceLines[].linePricingRepricingInformation.repricingPerDiemOrFlatRateAmount	string
+claimInformation.serviceLines[].linePricingRepricingInformation.serviceIdQualifier	string
+claimInformation.serviceLines[].postageTaxAmount	string
+claimInformation.serviceLines[].providerControlNumber	string
+claimInformation.serviceLines[].renderingProvider	object
+claimInformation.serviceLines[].renderingProvider.commercialNumber	string
+claimInformation.serviceLines[].renderingProvider.firstName	string
+claimInformation.serviceLines[].renderingProvider.lastName	string
+claimInformation.serviceLines[].renderingProvider.locationNumber	string
+claimInformation.serviceLines[].renderingProvider.middleName	string
+claimInformation.serviceLines[].renderingProvider.npi	string
+claimInformation.serviceLines[].renderingProvider.organizationName	string
+claimInformation.serviceLines[].renderingProvider.providerUpinNumber	string
+claimInformation.serviceLines[].renderingProvider.stateLicenseNumber	string
+claimInformation.serviceLines[].renderingProvider.suffix	string
+claimInformation.serviceLines[].renderingProvider.taxonomyCode	string	required
+claimInformation.serviceLines[].salesTaxAmount	string
+claimInformation.serviceLines[].serviceDate	string
+claimInformation.serviceLines[].serviceFacilityLocation	object
+claimInformation.serviceLines[].serviceFacilityLocation.address	object
+claimInformation.serviceLines[].serviceFacilityLocation.address.address1	string	required
+claimInformation.serviceLines[].serviceFacilityLocation.address.address2	string
+claimInformation.serviceLines[].serviceFacilityLocation.address.city	string	required
+claimInformation.serviceLines[].serviceFacilityLocation.address.countryCode	string
+claimInformation.serviceLines[].serviceFacilityLocation.address.countrySubDivisionCode	string
+claimInformation.serviceLines[].serviceFacilityLocation.address.postalCode	string
+claimInformation.serviceLines[].serviceFacilityLocation.address.state	string
+claimInformation.serviceLines[].serviceFacilityLocation.commercialNumber	string
+claimInformation.serviceLines[].serviceFacilityLocation.locationNumber	string
+claimInformation.serviceLines[].serviceFacilityLocation.npi	string
+claimInformation.serviceLines[].serviceFacilityLocation.organizationName	string	required
+claimInformation.serviceLines[].serviceFacilityLocation.providerUpinNumber	string
+claimInformation.serviceLines[].serviceLineDateInformation	object
+claimInformation.serviceLines[].serviceLineDateInformation.applianceDate	string
+claimInformation.serviceLines[].serviceLineDateInformation.estimatedPriorPlacementDate	string
+claimInformation.serviceLines[].serviceLineDateInformation.priorPlacementDate	string
+claimInformation.serviceLines[].serviceLineDateInformation.replacementDate	string
+claimInformation.serviceLines[].serviceLineDateInformation.treatmentCompletionDate	string
+claimInformation.serviceLines[].serviceLineDateInformation.treatmentStartDate	string
+claimInformation.serviceLines[].serviceLineReferenceInformation	object
+claimInformation.serviceLines[].serviceLineReferenceInformation.adjustedRepricedLineItemReferenceNumber	string
+claimInformation.serviceLines[].serviceLineReferenceInformation.predeterminationOfBenefits	array of PredeterminationOfBenefits objects
+claimInformation.serviceLines[].serviceLineReferenceInformation.predeterminationOfBenefits[].otherPayerPrimaryIdentifier	string
+claimInformation.serviceLines[].serviceLineReferenceInformation.predeterminationOfBenefits[].predeterminationOfBenefits	string	required
+claimInformation.serviceLines[].serviceLineReferenceInformation.priorAuthorization	array of PriorAuthorization objects
+claimInformation.serviceLines[].serviceLineReferenceInformation.priorAuthorization[].otherPayerPrimaryIdentifier	string
+claimInformation.serviceLines[].serviceLineReferenceInformation.priorAuthorization[].priorAuthorizationOrReferralNumber	string	required
+claimInformation.serviceLines[].serviceLineReferenceInformation.referralNumber	array of strings
+claimInformation.serviceLines[].serviceLineReferenceInformation.repricedLineItemReferenceNumber	string
+claimInformation.serviceLines[].supervisingProvider	object
+claimInformation.serviceLines[].supervisingProvider.commercialNumber	string
+claimInformation.serviceLines[].supervisingProvider.firstName	string
+claimInformation.serviceLines[].supervisingProvider.lastName	string
+claimInformation.serviceLines[].supervisingProvider.locationNumber	string
+claimInformation.serviceLines[].supervisingProvider.middleName	string
+claimInformation.serviceLines[].supervisingProvider.npi	string
+claimInformation.serviceLines[].supervisingProvider.organizationName	string
+claimInformation.serviceLines[].supervisingProvider.providerUpinNumber	string
+claimInformation.serviceLines[].supervisingProvider.stateLicenseNumber	string
+claimInformation.serviceLines[].supervisingProvider.suffix	string
+claimInformation.serviceLines[].supervisingProvider.taxonomyCode	string
+claimInformation.serviceLines[].teethInformation	array of ToothInformation objects
+claimInformation.serviceLines[].teethInformation[].toothCode	string	required
+claimInformation.serviceLines[].teethInformation[].toothSurfaceCodes	array of strings
+claimInformation.signatureIndicator	string	required
+claimInformation.specialProgramCode	string
+claimInformation.toothStatus	array of ToothStatus objects
+claimInformation.toothStatus[].toothNumber	string	required
+claimInformation.toothStatus[].toothStatusCode	string	required
+dependent	object
+dependent.address	object
+dependent.address.address1	string	required
+dependent.address.address2	string
+dependent.address.city	string	required
+dependent.address.countryCode	string
+dependent.address.countrySubDivisionCode	string
+dependent.address.postalCode	string
+dependent.address.state	string
+dependent.dateOfBirth	string	required
+dependent.firstName	string	required
+dependent.gender	string	required
+dependent.lastName	string	required
+dependent.memberId	string
+dependent.middleName	string
+dependent.relationshipToSubscriberCode	string	required
+dependent.ssn	string
+dependent.suffix	string
+payToAddress	object
+payToAddress.address1	string	required
+payToAddress.address2	string
+payToAddress.city	string	required
+payToAddress.countryCode	string
+payToAddress.countrySubDivisionCode	string
+payToAddress.postalCode	string
+payToAddress.state	string
+payToPlan	object
+payToPlan.address	object	required
+payToPlan.address.address1	string	required
+payToPlan.address.address2	string
+payToPlan.address.city	string	required
+payToPlan.address.countryCode	string
+payToPlan.address.countrySubDivisionCode	string
+payToPlan.address.postalCode	string
+payToPlan.address.state	string
+payToPlan.organizationName	string	required
+payToPlan.primaryIdentifier	string	required
+payToPlan.primaryIdentifierTypeCode	string	required
+payToPlan.secondaryIdentifier	string
+payToPlan.secondaryIdentifierTypeCode	string
+payToPlan.taxIdentificationNumber	string	required
+payerAddress	object
+payerAddress.address1	string	required
+payerAddress.address2	string
+payerAddress.city	string	required
+payerAddress.countryCode	string
+payerAddress.countrySubDivisionCode	string
+payerAddress.postalCode	string
+payerAddress.state	string
+receiver	object	required
+receiver.organizationName	string	required
+referring	object
+referring.address	object
+referring.address.address1	string	required
+referring.address.address2	string
+referring.address.city	string	required
+referring.address.countryCode	string
+referring.address.countrySubDivisionCode	string
+referring.address.postalCode	string
+referring.address.state	string
+referring.commercialNumber	string
+referring.contactInformation	object
+referring.contactInformation.email	string
+referring.contactInformation.faxNumber	string
+referring.contactInformation.name	string
+referring.contactInformation.phoneExtension	string
+referring.contactInformation.phoneNumber	string
+referring.firstName	string
+referring.lastName	string
+referring.middleName	string
+referring.npi	string
+referring.organizationName	string
+referring.providerType	string
+referring.providerUpinNumber	string
+referring.stateLicenseNumber	string
+referring.suffix	string
+referring.taxonomyCode	string
+rendering	object
+rendering.address	object
+rendering.address.address1	string	required
+rendering.address.address2	string
+rendering.address.city	string	required
+rendering.address.countryCode	string
+rendering.address.countrySubDivisionCode	string
+rendering.address.postalCode	string
+rendering.address.state	string
+rendering.commercialNumber	string
+rendering.contactInformation	object
+rendering.contactInformation.email	string
+rendering.contactInformation.faxNumber	string
+rendering.contactInformation.name	string
+rendering.contactInformation.phoneExtension	string
+rendering.contactInformation.phoneNumber	string
+rendering.firstName	string
+rendering.lastName	string
+rendering.locationNumber	string
+rendering.middleName	string
+rendering.npi	string
+rendering.organizationName	string
+rendering.providerType	string
+rendering.providerUpinNumber	string
+rendering.stateLicenseNumber	string
+rendering.suffix	string
+rendering.taxonomyCode	string
+submitter	object	required
+submitter.contactInformation	object	required
+submitter.contactInformation.email	string
+submitter.contactInformation.faxNumber	string
+submitter.contactInformation.name	string
+submitter.contactInformation.phoneExtension	string
+submitter.contactInformation.phoneNumber	string
+submitter.firstName	string
+submitter.lastName	string
+submitter.middleName	string
+submitter.organizationName	string
+submitter.submitterIdentification	string
+subscriber	object	required
+subscriber.address	object
+subscriber.address.address1	string	required
+subscriber.address.address2	string
+subscriber.address.city	string	required
+subscriber.address.countryCode	string
+subscriber.address.countrySubDivisionCode	string
+subscriber.address.postalCode	string
+subscriber.address.state	string
+subscriber.dateOfBirth	string
+subscriber.firstName	string
+subscriber.gender	string
+subscriber.groupNumber	string
+subscriber.insuranceTypeCode	string
+subscriber.lastName	string
+subscriber.memberId	string
+subscriber.middleName	string
+subscriber.organizationName	string
+subscriber.paymentResponsibilityLevelCode	string
+subscriber.policyNumber	string
+subscriber.ssn	string
+subscriber.subscriberGroupName	string
+subscriber.suffix	string
+supervising	object
+supervising.address	object
+supervising.address.address1	string	required
+supervising.address.address2	string
+supervising.address.city	string	required
+supervising.address.countryCode	string
+supervising.address.countrySubDivisionCode	string
+supervising.address.postalCode	string
+supervising.address.state	string
+supervising.commercialNumber	string
+supervising.contactInformation	object
+supervising.contactInformation.email	string
+supervising.contactInformation.faxNumber	string
+supervising.contactInformation.name	string
+supervising.contactInformation.phoneExtension	string
+supervising.contactInformation.phoneNumber	string
+supervising.employerId	string
+supervising.firstName	string
+supervising.lastName	string
+supervising.locationNumber	string
+supervising.middleName	string
+supervising.npi	string
+supervising.organizationName	string
+supervising.providerType	string
+supervising.providerUpinNumber	string
+supervising.ssn	string
+supervising.stateLicenseNumber	string
+supervising.suffix	string
+supervising.taxonomyCode	string
+tradingPartnerName	string
+tradingPartnerSecondaryIdentifiers	object
+tradingPartnerSecondaryIdentifiers.claimOfficeNumber	string
+tradingPartnerSecondaryIdentifiers.employerIdentificationNumber	string
+tradingPartnerSecondaryIdentifiers.naic	string
+tradingPartnerSecondaryIdentifiers.payerIdentificationNumber	string
+tradingPartnerServiceId	string	required
+usageIndicator	string

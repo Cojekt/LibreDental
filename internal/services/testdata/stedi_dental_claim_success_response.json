@@ -1,0 +1,27 @@
+{
+  "claimReference": {
+    "correlationId": "01JDQMX92Q1T561BH8NKX750TQ",
+    "formatVersion": "5010",
+    "patientControlNumber": "0U1LBRS4",
+    "payerId": "52133",
+    "rhclaimNumber": "01JDQMX92Q1T561BH8NKX750TQ",
+    "serviceLines": [
+      {
+        "lineItemControlNumber": "a0UDo000000dd2dMAA"
+      }
+    ],
+    "timeOfResponse": "2024-11-27T20:27:27.077Z"
+  },
+  "controlNumber": "1",
+  "httpStatusCode": "200 OK",
+  "meta": {
+    "traceId": "9b491769-052e-4738-93d6-e0b5f6d83f53"
+  },
+  "payer": {
+    "payerId": "52133",
+    "payerName": "United HealthCare Dental"
+  },
+  "status": "SUCCESS",
+  "tradingPartnerServiceId": "52133",
+  "x12": "ISA*00*          *00*          *ZZ*STEDITEST      *ZZ*574183004559   *260213*1956*^*00501*343800641*0*T*>~GS*HN*STEDITEST*574183004559*20260213*195613*1*X*005010X214~ST*277*0001*005010X214~BHT*0085*08*01KHC96JC6ZRRJ3PB88T7JR7S8*20260213*195613*TH~HL*1**20*1~NM1*AY*2*STEDI INC*****46*117151744~TRN*1*01KHC96JC6ZRRJ3PB88T7JR7S8~DTP*050*D8*20260213~DTP*009*D8*20260213~HL*2*1*21*1~NM1*41*2*ABA Inc*****46*123456789~TRN*2*01KHC96GBNYA14YRBRJGFR13P7~STC*A0>17>AY*20260213*WQ*832.0~QTY*90*1~AMT*YU*832.0~HL*3*2*19*1~NM1*85*2*ABA Inc*****XX*1999999992~TRN*1*0~REF*TJ*123456789~QTY*QA*1~AMT*YU*832.0~HL*4*3*PT*0~NM1*QC*1*Doe*John****MI*123412345~TRN*2*12345~STC*A1>20*20260213*WQ*832.0~DTP*472*RD8*20230428-20230428~SE*25*0001~GE*1*1~IEA*1*343800641~"
+}

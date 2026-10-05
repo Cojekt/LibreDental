@@ -57,7 +57,7 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	procRepo := sqlite.NewProcedureRepository(db)
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), secretsSvc, auditSvc)
 
 	// Create test patient
 	patient := &domain.Patient{
@@ -207,7 +207,7 @@ func TestBillingService_CreateClaimStampsPatientInsurance(t *testing.T) {
 	}
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), secretsSvc, auditSvc)
 
 	insuredPatient := &domain.Patient{
 		ID:                    "pat_insured",
@@ -343,7 +343,7 @@ func TestBillingService_BundlesAndFeeSchedulesRequireAuth(t *testing.T) {
 	}
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), secretsSvc, auditSvc)
 
 	bundle := &domain.TreatmentBundle{
 		Shortname: "crwn",
@@ -422,6 +422,9 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to save provider: %v", err)
 	}
+	if err := configRepo.Save(ctx, &domain.PracticeConfig{ClinicName: "Test Clinic", CountryCode: domain.CountryUS, Currency: "USD"}); err != nil {
+		t.Fatalf("Failed to save practice config: %v", err)
+	}
 	auditSvc := NewAuditService(auditRepo, configRepo)
 	token, err := auditSvc.CreateSession("prov_1", "1234")
 	if err != nil {
@@ -437,6 +440,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 		sqlite.NewProcedureRepository(db),
 		sqlite.NewChartRepository(db),
 		patientRepo,
+		sqlite.NewPracticeConfigRepository(db),
 		secretsSvc,
 		auditSvc,
 	)
@@ -477,6 +481,10 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	}
 	if result.Status != domain.ClaimStatusSubmitted {
 		t.Errorf("Expected status %v, got %v", domain.ClaimStatusSubmitted, result.Status)
+	}
+	sub := testProv.lastSubmission
+	if sub == nil || sub.Claim.ID != "claim_test_1" || sub.Patient.ID != "pat_test_1" || sub.Practice.ClinicName != "Test Clinic" {
+		t.Fatalf("Provider did not receive the claim's patient and practice records: %+v", sub)
 	}
 
 	// Verify the claim status in the database was updated
@@ -543,7 +551,7 @@ func TestBillingService_GetAllPatientBalances(t *testing.T) {
 	}
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), secretsSvc, auditSvc)
 
 	if _, err := billingSvc.GetAllPatientBalances("bogus-token"); err != ErrUnauthorized {
 		t.Fatalf("Expected ErrUnauthorized without a session, got %v", err)
@@ -639,12 +647,14 @@ func TestBillingService_GetAllPatientBalances(t *testing.T) {
 }
 
 type dummyTestProvider struct {
-	submitFunc func() (*domain.ClaimSubmissionResult, error)
+	submitFunc     func() (*domain.ClaimSubmissionResult, error)
+	lastSubmission *domain.ClaimSubmission
 }
 
 func (p *dummyTestProvider) Name() string                             { return "test_mock" }
 func (p *dummyTestProvider) SupportedCountries() []domain.CountryCode { return nil }
-func (p *dummyTestProvider) SubmitClaim(ctx context.Context, claim *domain.Claim, config map[string]string) (*domain.ClaimSubmissionResult, error) {
+func (p *dummyTestProvider) SubmitClaim(ctx context.Context, sub *domain.ClaimSubmission, config map[string]string) (*domain.ClaimSubmissionResult, error) {
+	p.lastSubmission = sub
 	if p.submitFunc != nil {
 		return p.submitFunc()
 	}
@@ -712,7 +722,7 @@ func setupChartBillingTest(t *testing.T, chartRepo storage.ChartRepository) (*Bi
 
 	claimRepo := sqlite.NewClaimRepository(db)
 	procRepo := sqlite.NewProcedureRepository(db)
-	svc := NewBillingService(claimRepo, sqlite.NewPaymentRepository(db), sqlite.NewBundleRepository(db), procRepo, procRepo, chartRepo, patientRepo, NewSecretsService(), auditSvc)
+	svc := NewBillingService(claimRepo, sqlite.NewPaymentRepository(db), sqlite.NewBundleRepository(db), procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), NewSecretsService(), auditSvc)
 	return svc, token, claimRepo, realChart
 }
 

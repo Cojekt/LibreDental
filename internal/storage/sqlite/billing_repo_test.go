@@ -53,6 +53,7 @@ func TestClaimRepository(t *testing.T) {
 		ProviderID:       "prov_1",
 		InsuranceCarrier: "Delta Dental",
 		PolicyNumber:     "POL-99",
+		PayerID:          "CDCA1",
 		DateOfService:    "2026-08-15",
 		Status:           domain.ClaimStatusDraft,
 		Notes:            "Routine clean and exam",
@@ -81,7 +82,7 @@ func TestClaimRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get claim by ID: %v", err)
 	}
-	if fetched.PatientID != "pat_claim_1" || fetched.InsuranceCarrier != "Delta Dental" {
+	if fetched.PatientID != "pat_claim_1" || fetched.InsuranceCarrier != "Delta Dental" || fetched.PayerID != "CDCA1" {
 		t.Errorf("Unexpected claim data: %+v", fetched)
 	}
 	if len(fetched.LineItems) != 2 {

@@ -22,6 +22,7 @@ type BillingService struct {
 	feeRepo      storage.FeeScheduleRepository
 	chartRepo    storage.ChartRepository
 	patientRepo  storage.PatientRepository
+	practiceRepo storage.PracticeConfigRepository
 	secrets      *SecretsService
 	auditService *AuditService
 	providers    map[string]domain.ClaimProvider
@@ -45,6 +46,7 @@ func NewBillingService(
 	feeRepo storage.FeeScheduleRepository,
 	chartRepo storage.ChartRepository,
 	patientRepo storage.PatientRepository,
+	practiceRepo storage.PracticeConfigRepository,
 	secrets *SecretsService,
 	auditService *AuditService,
 ) *BillingService {
@@ -56,6 +58,7 @@ func NewBillingService(
 		feeRepo:      feeRepo,
 		chartRepo:    chartRepo,
 		patientRepo:  patientRepo,
+		practiceRepo: practiceRepo,
 		secrets:      secrets,
 		auditService: auditService,
 		providers:    make(map[string]domain.ClaimProvider),
@@ -158,7 +161,7 @@ func (s *BillingService) stampInsuranceFromPatient(c *domain.Claim) error {
 	if c.InsuranceDirty || c.PatientID == "" || s.patientRepo == nil {
 		return nil
 	}
-	if c.InsuranceCarrier != "" || c.PolicyNumber != "" || c.GroupNumber != "" {
+	if c.InsuranceCarrier != "" || c.PolicyNumber != "" || c.GroupNumber != "" || c.PayerID != "" {
 		return nil
 	}
 	patient, err := s.patientRepo.GetByID(context.Background(), c.PatientID)
@@ -171,6 +174,7 @@ func (s *BillingService) stampInsuranceFromPatient(c *domain.Claim) error {
 	c.InsuranceCarrier = patient.InsuranceCarrier
 	c.PolicyNumber = patient.InsurancePolicyNumber
 	c.GroupNumber = patient.InsuranceGroupNumber
+	c.PayerID = patient.InsurancePayerID
 	return nil
 }
 
@@ -285,6 +289,11 @@ func (s *BillingService) SubmitClaimToProvider(token string, claimID string, pro
 		return nil, fmt.Errorf("claim cannot be submitted in status: %s", claim.Status)
 	}
 
+	submission, err := s.buildClaimSubmission(claim)
+	if err != nil {
+		return nil, err
+	}
+
 	config, err := s.secrets.getRawProviderConfig(providerName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve config for provider %q: %w", providerName, err)
@@ -293,14 +302,20 @@ func (s *BillingService) SubmitClaimToProvider(token string, claimID string, pro
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	result, err := provider.SubmitClaim(ctx, claim, config)
+	result, err := provider.SubmitClaim(ctx, submission, config)
+	// Audit every attempt, not just successes: a failed request may still have carried
+	// PHI to the clearinghouse.
 	if err != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, claim.PatientID, "claim",
+			fmt.Sprintf("Claim submission to %s failed: %v", providerName, err))
 		return nil, fmt.Errorf("provider %q failed to submit claim: %w", providerName, err)
 	}
-
 	if result == nil {
 		return nil, fmt.Errorf("provider %q returned nil result", providerName)
 	}
+	_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, claim.PatientID, "claim",
+		fmt.Sprintf("Submitted claim to %s (status %s, PCN %s, reference %s)",
+			providerName, result.Status, claim.PatientControlNumber(), result.ExternalClaimID))
 
 	// Update claim status based on result
 	if result.Status != "" {
@@ -315,8 +330,38 @@ func (s *BillingService) SubmitClaimToProvider(token string, claimID string, pro
 		}
 	}
 
-	_ = s.auditService.LogPatientAction(token, domain.AuditActionExport, claim.PatientID, "claim", "Submitted claim to provider")
 	return result, nil
+}
+
+// buildClaimSubmission gathers the patient, practice, and rendering provider records a
+// clearinghouse needs alongside the claim itself.
+func (s *BillingService) buildClaimSubmission(claim *domain.Claim) (*domain.ClaimSubmission, error) {
+	ctx := context.Background()
+	patient, err := s.patientRepo.GetByID(ctx, claim.PatientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get patient for claim submission: %w", err)
+	}
+	practice, err := s.practiceRepo.Get(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get practice configuration for claim submission: %w", err)
+	}
+	sub := &domain.ClaimSubmission{Claim: claim, Patient: patient, Practice: practice}
+	if claim.ProviderID != "" {
+		providers, err := s.practiceRepo.ListProviders(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get providers for claim submission: %w", err)
+		}
+		for _, p := range providers {
+			if p.ID == claim.ProviderID {
+				sub.RenderingProvider = p
+				break
+			}
+		}
+		if sub.RenderingProvider == nil {
+			return nil, fmt.Errorf("provider %q on claim not found", claim.ProviderID)
+		}
+	}
+	return sub, nil
 }
 
 // ─── Payments ────────────────────────────────────────────────────────────────

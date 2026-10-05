@@ -123,6 +123,14 @@
       get providerConfigError() {
         return providerConfigError;
       },
+      // Claim providers treat anything but an explicit "false" as test mode, so an unset
+      // value shows as on.
+      get testMode() {
+        return providerFullConfig["test_mode"] !== "false";
+      },
+      set testMode(v: boolean) {
+        providerFullConfig = { ...providerFullConfig, test_mode: v ? "true" : "false" };
+      },
       get saveStatus() {
         return saveStatus;
       },
@@ -202,6 +210,26 @@
               />
             </div>
           </div>
+
+          <label
+            class="flex items-start gap-2.5 text-sm text-slate-200 select-none {canEdit &&
+            claimsPanel.selectedProvider
+              ? 'cursor-pointer'
+              : 'opacity-50'}"
+          >
+            <input
+              type="checkbox"
+              class="mt-0.5"
+              bind:checked={claimsPanel.testMode}
+              disabled={!canEdit || !claimsPanel.selectedProvider || claimsPanel.isLoadingConfig}
+            />
+            <span>
+              {m.integrations_claims_test_mode()}
+              <span class="block text-xs text-slate-500"
+                >{m.integrations_claims_test_mode_hint()}</span
+              >
+            </span>
+          </label>
 
           <div class="flex items-center justify-end gap-3">
             {#if claimsPanel.saveStatus}

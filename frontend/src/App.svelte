@@ -158,6 +158,11 @@
   let insuranceGroup = $state("");
   let insuranceIsSubscriber = $state(true);
   let insuranceSubscriberId = $state("");
+  let insurancePayerId = $state("");
+  let insuranceSubscriberFirstName = $state("");
+  let insuranceSubscriberLastName = $state("");
+  let insuranceSubscriberDob = $state("");
+  let insuranceSubscriberRelationship = $state("");
   let preferredContactMethod = $state("phone");
   let preferredLanguage = $state("en");
   let reminderOptIn = $state(true);
@@ -401,6 +406,11 @@
     insuranceGroup = "";
     insuranceIsSubscriber = true;
     insuranceSubscriberId = "";
+    insurancePayerId = "";
+    insuranceSubscriberFirstName = "";
+    insuranceSubscriberLastName = "";
+    insuranceSubscriberDob = "";
+    insuranceSubscriberRelationship = "";
     preferredContactMethod = "phone";
     preferredLanguage = "en";
     reminderOptIn = true;
@@ -438,6 +448,11 @@
     insuranceGroup = p.insurance_group_number || "";
     insuranceIsSubscriber = p.insurance_is_subscriber;
     insuranceSubscriberId = p.insurance_subscriber_id || "";
+    insurancePayerId = p.insurance_payer_id || "";
+    insuranceSubscriberFirstName = p.insurance_subscriber_first_name || "";
+    insuranceSubscriberLastName = p.insurance_subscriber_last_name || "";
+    insuranceSubscriberDob = p.insurance_subscriber_dob || "";
+    insuranceSubscriberRelationship = p.insurance_subscriber_relationship || "";
     preferredContactMethod = p.preferred_contact_method || "phone";
     preferredLanguage = p.preferred_language || "en";
     reminderOptIn = p.reminder_opt_in !== false;
@@ -492,6 +507,11 @@
           p.insurance_group_number = insuranceGroup;
           p.insurance_is_subscriber = insuranceIsSubscriber;
           p.insurance_subscriber_id = insuranceSubscriberId;
+          p.insurance_payer_id = insurancePayerId;
+          p.insurance_subscriber_first_name = insuranceSubscriberFirstName;
+          p.insurance_subscriber_last_name = insuranceSubscriberLastName;
+          p.insurance_subscriber_dob = insuranceSubscriberDob;
+          p.insurance_subscriber_relationship = insuranceSubscriberRelationship;
           p.preferred_contact_method = preferredContactMethod;
           p.preferred_language = preferredLanguage;
           p.reminder_opt_in = reminderOptIn;
@@ -522,6 +542,11 @@
           insurance_group_number: insuranceGroup,
           insurance_is_subscriber: insuranceIsSubscriber,
           insurance_subscriber_id: insuranceSubscriberId,
+          insurance_payer_id: insurancePayerId,
+          insurance_subscriber_first_name: insuranceSubscriberFirstName,
+          insurance_subscriber_last_name: insuranceSubscriberLastName,
+          insurance_subscriber_dob: insuranceSubscriberDob,
+          insurance_subscriber_relationship: insuranceSubscriberRelationship,
           preferred_contact_method: preferredContactMethod,
           preferred_language: preferredLanguage,
           reminder_opt_in: reminderOptIn,
@@ -853,6 +878,11 @@
   bind:insuranceGroup
   bind:insuranceIsSubscriber
   bind:insuranceSubscriberId
+  bind:insurancePayerId
+  bind:insuranceSubscriberFirstName
+  bind:insuranceSubscriberLastName
+  bind:insuranceSubscriberDob
+  bind:insuranceSubscriberRelationship
   bind:preferredContactMethod
   bind:preferredLanguage
   bind:reminderOptIn

@@ -26,6 +26,8 @@
     provRole = $bindable("dentist"),
     provSpecialty = $bindable(""),
     provLicense = $bindable(""),
+    provNpi = $bindable(""),
+    provTaxonomy = $bindable(""),
     provEmail = $bindable(""),
     provPhone = $bindable(""),
     provColor = $bindable("#3b82f6"),
@@ -46,6 +48,8 @@
     provRole: string;
     provSpecialty: string;
     provLicense: string;
+    provNpi: string;
+    provTaxonomy: string;
     provEmail: string;
     provPhone: string;
     provColor: string;
@@ -437,6 +441,28 @@
         placeholder={m.prov_license_placeholder()}
       />
     </FormField>
+
+    <div class="grid grid-cols-2 gap-3">
+      <FormField label={m.prov_npi_label()} forId="prov-npi">
+        <Input
+          id="prov-npi"
+          type="text"
+          inputmode="numeric"
+          maxlength={10}
+          bind:value={provNpi}
+          placeholder={m.prov_npi_placeholder()}
+        />
+      </FormField>
+      <FormField label={m.prov_taxonomy_label()} forId="prov-taxonomy">
+        <Input
+          id="prov-taxonomy"
+          type="text"
+          maxlength={10}
+          bind:value={provTaxonomy}
+          placeholder={m.prov_taxonomy_placeholder()}
+        />
+      </FormField>
+    </div>
 
     <div class="grid grid-cols-2 gap-3">
       <FormField label={m.prov_email_label()} forId="prov-email">

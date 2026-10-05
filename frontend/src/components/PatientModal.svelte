@@ -37,6 +37,11 @@
     insuranceGroup = $bindable(),
     insuranceIsSubscriber = $bindable(),
     insuranceSubscriberId = $bindable(),
+    insurancePayerId = $bindable(),
+    insuranceSubscriberFirstName = $bindable(),
+    insuranceSubscriberLastName = $bindable(),
+    insuranceSubscriberDob = $bindable(),
+    insuranceSubscriberRelationship = $bindable(),
     preferredContactMethod = $bindable(),
     preferredLanguage = $bindable(),
     reminderOptIn = $bindable(),
@@ -74,6 +79,11 @@
     insuranceGroup: string;
     insuranceIsSubscriber: boolean;
     insuranceSubscriberId: string;
+    insurancePayerId: string;
+    insuranceSubscriberFirstName: string;
+    insuranceSubscriberLastName: string;
+    insuranceSubscriberDob: string;
+    insuranceSubscriberRelationship: string;
     preferredContactMethod: string;
     preferredLanguage: string;
     reminderOptIn: boolean;
@@ -393,6 +403,14 @@
             placeholder={m.patient_placeholder_ins_group()}
           />
         </FormField>
+        <FormField label={m.patient_insurance_payer_id()} forId="ins-payer-id">
+          <Input
+            id="ins-payer-id"
+            type="text"
+            bind:value={insurancePayerId}
+            placeholder={m.patient_placeholder_payer_id()}
+          />
+        </FormField>
 
         <div class="flex items-center pt-6">
           <label
@@ -411,6 +429,33 @@
               bind:value={insuranceSubscriberId}
               placeholder={m.patient_placeholder_subscriber_id()}
             />
+          </FormField>
+          <FormField label={m.patient_subscriber_first_name()} forId="ins-sub-first">
+            <Input id="ins-sub-first" type="text" bind:value={insuranceSubscriberFirstName} />
+          </FormField>
+          <FormField label={m.patient_subscriber_last_name()} forId="ins-sub-last">
+            <Input id="ins-sub-last" type="text" bind:value={insuranceSubscriberLastName} />
+          </FormField>
+          <FormField label={m.patient_subscriber_dob()} forId="ins-sub-dob">
+            <Input
+              id="ins-sub-dob"
+              type="date"
+              bind:value={insuranceSubscriberDob}
+              dateFormat={countryMeta?.date_format}
+            />
+          </FormField>
+          <FormField label={m.patient_subscriber_relationship()} forId="ins-sub-rel">
+            <select
+              id="ins-sub-rel"
+              bind:value={insuranceSubscriberRelationship}
+              class="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            >
+              <option value="">{m.patient_subscriber_relationship_placeholder()}</option>
+              <option value="01">{m.patient_subscriber_relationship_spouse()}</option>
+              <option value="19">{m.patient_subscriber_relationship_child()}</option>
+              <option value="53">{m.patient_subscriber_relationship_life_partner()}</option>
+              <option value="G8">{m.patient_subscriber_relationship_other()}</option>
+            </select>
           </FormField>
         {/if}
       </div>

@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS claims (
     line_items TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(line_items)),
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
+    payer_id TEXT DEFAULT '',
+    patient_control_number TEXT DEFAULT '',
+    external_claim_id TEXT DEFAULT '',
     FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
     FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE RESTRICT,
     FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL
