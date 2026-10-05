@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"crypto/sha256"
+	"encoding/base32"
+	"time"
+)
 
 // ClaimStatus represents the lifecycle of an insurance claim.
 type ClaimStatus string
@@ -46,6 +50,7 @@ type Claim struct {
 	InsuranceCarrier string `json:"insurance_carrier,omitempty"`
 	PolicyNumber     string `json:"policy_number,omitempty"`
 	GroupNumber      string `json:"group_number,omitempty"`
+	PayerID          string `json:"payer_id,omitempty"` // clearinghouse payer ID, stamped from the patient like the fields above
 	// InsuranceDirty signals the caller has deliberately set or cleared the
 	// insurance fields, so CreateClaim should not overwrite them with the
 	// patient's on-file insurance. Transient request field; not persisted.
@@ -65,6 +70,21 @@ func (c *Claim) TotalFee() int64 {
 		total += item.Fee
 	}
 	return total
+}
+
+// PatientControlNumber is the identifier sent with an electronic claim (X12 CLM01) and
+// echoed back on the payer's 277CA and 835. It is derived from the claim ID rather than
+// stored, so responses can always be matched by recomputing it.
+func (c *Claim) PatientControlNumber() string {
+	return ControlNumber(c.ID)
+}
+
+// ControlNumber derives a 16-character identifier from an ID, using only uppercase letters
+// and digits: payers may truncate past 17 characters and may only return X12's basic
+// character set (no lowercase or underscores).
+func ControlNumber(id string) string {
+	sum := sha256.Sum256([]byte(id))
+	return base32.StdEncoding.EncodeToString(sum[:10])
 }
 
 // Payment represents a single payment event (from a patient or insurance).

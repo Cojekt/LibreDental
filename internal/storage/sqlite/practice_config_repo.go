@@ -25,7 +25,7 @@ func (r *PracticeConfigRepository) Get(ctx context.Context) (*domain.PracticeCon
 	SELECT id, clinic_name, tagline, tax_id, license_number, phone, email, website,
 	       address_line1, address_line2, city, state_province, postal_code,
 	       country_code, currency, tooth_system, date_format, business_hours,
-	       created_at, updated_at
+	       created_at, updated_at, COALESCE(npi, '')
 	FROM practice_config WHERE id = 1`
 
 	row := r.db.QueryRowContext(ctx, query)
@@ -54,6 +54,7 @@ func (r *PracticeConfigRepository) Get(ctx context.Context) (*domain.PracticeCon
 		&hoursJSON,
 		&cfg.CreatedAt,
 		&cfg.UpdatedAt,
+		&cfg.NPI,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -111,9 +112,9 @@ func (r *PracticeConfigRepository) save(ctx context.Context, cfg *domain.Practic
 		return 0, fmt.Errorf("failed to marshal business hours: %w", err)
 	}
 
-	source := `VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	source := `VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	if onlyWithoutProvider {
-		source = `SELECT 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+		source = `SELECT 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 	WHERE NOT EXISTS (SELECT 1 FROM providers WHERE is_active = 1)`
 	}
 
@@ -122,7 +123,7 @@ func (r *PracticeConfigRepository) save(ctx context.Context, cfg *domain.Practic
 		id, clinic_name, tagline, tax_id, license_number, phone, email, website,
 		address_line1, address_line2, city, state_province, postal_code,
 		country_code, currency, tooth_system, date_format, business_hours,
-		created_at, updated_at
+		created_at, updated_at, npi
 	) ` + source + `
 	ON CONFLICT(id) DO UPDATE SET
 		clinic_name = excluded.clinic_name,
@@ -142,14 +143,15 @@ func (r *PracticeConfigRepository) save(ctx context.Context, cfg *domain.Practic
 		tooth_system = excluded.tooth_system,
 		date_format = excluded.date_format,
 		business_hours = excluded.business_hours,
-		updated_at = excluded.updated_at`
+		updated_at = excluded.updated_at,
+		npi = excluded.npi`
 
 	res, err := r.db.ExecContext(
 		ctx, query,
 		cfg.ClinicName, cfg.Tagline, cfg.TaxID, cfg.LicenseNumber, cfg.Phone, cfg.Email, cfg.Website,
 		cfg.AddressLine1, cfg.AddressLine2, cfg.City, cfg.StateProvince, cfg.PostalCode,
 		cfg.CountryCode, cfg.Currency, cfg.ToothSystem, cfg.DateFormat, string(hoursJSON),
-		cfg.CreatedAt, cfg.UpdatedAt,
+		cfg.CreatedAt, cfg.UpdatedAt, cfg.NPI,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save practice config: %w", err)
@@ -165,7 +167,8 @@ func (r *PracticeConfigRepository) save(ctx context.Context, cfg *domain.Practic
 
 func (r *PracticeConfigRepository) ListProviders(ctx context.Context) ([]*domain.Provider, error) {
 	query := `
-	SELECT id, name, role, specialty, license_number, email, phone, color, pin, is_active, hourly_rate, created_at, updated_at
+	SELECT id, name, role, specialty, license_number, email, phone, color, pin, is_active, hourly_rate, created_at, updated_at,
+	       COALESCE(npi, ''), COALESCE(taxonomy_code, '')
 	FROM providers ORDER BY name ASC`
 
 	rows, err := r.db.QueryContext(ctx, query)
@@ -183,6 +186,7 @@ func (r *PracticeConfigRepository) ListProviders(ctx context.Context) ([]*domain
 		err := rows.Scan(
 			&p.ID, &p.Name, &roleStr, &p.Specialty, &p.LicenseNumber,
 			&p.Email, &p.Phone, &p.Color, &p.Pin, &isActiveInt, &p.HourlyRate, &p.CreatedAt, &p.UpdatedAt,
+			&p.NPI, &p.TaxonomyCode,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan provider: %w", err)
@@ -214,8 +218,9 @@ func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.P
 
 	query := `
 	INSERT INTO providers (
-		id, name, role, specialty, license_number, email, phone, color, pin, is_active, hourly_rate, created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		id, name, role, specialty, license_number, email, phone, color, pin, is_active, hourly_rate, created_at, updated_at,
+		npi, taxonomy_code
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		name = excluded.name,
 		role = excluded.role,
@@ -227,7 +232,9 @@ func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.P
 		pin = excluded.pin,
 		is_active = excluded.is_active,
 		hourly_rate = excluded.hourly_rate,
-		updated_at = excluded.updated_at
+		updated_at = excluded.updated_at,
+		npi = excluded.npi,
+		taxonomy_code = excluded.taxonomy_code
 	WHERE excluded.is_active = 1
 	   OR providers.is_active = 0
 	   OR (SELECT COUNT(*) FROM providers WHERE is_active = 1) > 1`
@@ -238,6 +245,7 @@ func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.P
 		ctx, query,
 		p.ID, p.Name, p.Role, p.Specialty, p.LicenseNumber,
 		p.Email, p.Phone, p.Color, p.Pin, isActiveInt, p.HourlyRate, p.CreatedAt, p.UpdatedAt,
+		p.NPI, p.TaxonomyCode,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save provider: %w", err)
@@ -266,15 +274,17 @@ func (r *PracticeConfigRepository) CreateInitialProvider(ctx context.Context, p 
 
 	query := `
 	INSERT INTO providers (
-		id, name, role, specialty, license_number, email, phone, color, pin, is_active, hourly_rate, created_at, updated_at
+		id, name, role, specialty, license_number, email, phone, color, pin, is_active, hourly_rate, created_at, updated_at,
+		npi, taxonomy_code
 	)
-	SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?
+	SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?
 	WHERE NOT EXISTS (SELECT 1 FROM providers WHERE is_active = 1)`
 
 	res, err := r.db.ExecContext(
 		ctx, query,
 		p.ID, p.Name, p.Role, p.Specialty, p.LicenseNumber,
 		p.Email, p.Phone, p.Color, p.Pin, p.HourlyRate, p.CreatedAt, p.UpdatedAt,
+		p.NPI, p.TaxonomyCode,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create initial provider: %w", err)

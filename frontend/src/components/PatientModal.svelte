@@ -36,7 +36,17 @@
     insurancePolicy = $bindable(),
     insuranceGroup = $bindable(),
     insuranceIsSubscriber = $bindable(),
-    insuranceSubscriberId = $bindable(),
+    insuranceSubscriberSex = $bindable(),
+    insuranceSubscriberAddressLine1 = $bindable(),
+    insuranceSubscriberAddressLine2 = $bindable(),
+    insuranceSubscriberCity = $bindable(),
+    insuranceSubscriberState = $bindable(),
+    insuranceSubscriberPostalCode = $bindable(),
+    insurancePayerId = $bindable(),
+    insuranceSubscriberFirstName = $bindable(),
+    insuranceSubscriberLastName = $bindable(),
+    insuranceSubscriberDob = $bindable(),
+    insuranceSubscriberRelationship = $bindable(),
     preferredContactMethod = $bindable(),
     preferredLanguage = $bindable(),
     reminderOptIn = $bindable(),
@@ -73,7 +83,17 @@
     insurancePolicy: string;
     insuranceGroup: string;
     insuranceIsSubscriber: boolean;
-    insuranceSubscriberId: string;
+    insuranceSubscriberSex: string;
+    insuranceSubscriberAddressLine1: string;
+    insuranceSubscriberAddressLine2: string;
+    insuranceSubscriberCity: string;
+    insuranceSubscriberState: string;
+    insuranceSubscriberPostalCode: string;
+    insurancePayerId: string;
+    insuranceSubscriberFirstName: string;
+    insuranceSubscriberLastName: string;
+    insuranceSubscriberDob: string;
+    insuranceSubscriberRelationship: string;
     preferredContactMethod: string;
     preferredLanguage: string;
     reminderOptIn: boolean;
@@ -393,6 +413,14 @@
             placeholder={m.patient_placeholder_ins_group()}
           />
         </FormField>
+        <FormField label={m.patient_insurance_payer_id()} forId="ins-payer-id">
+          <Input
+            id="ins-payer-id"
+            type="text"
+            bind:value={insurancePayerId}
+            placeholder={m.patient_placeholder_payer_id()}
+          />
+        </FormField>
 
         <div class="flex items-center pt-6">
           <label
@@ -404,13 +432,71 @@
         </div>
 
         {#if !insuranceIsSubscriber}
-          <FormField label={m.patient_subscriber_id()} forId="ins-subscriber">
+          <FormField label={m.patient_subscriber_first_name()} forId="ins-sub-first">
+            <Input id="ins-sub-first" type="text" bind:value={insuranceSubscriberFirstName} />
+          </FormField>
+          <FormField label={m.patient_subscriber_last_name()} forId="ins-sub-last">
+            <Input id="ins-sub-last" type="text" bind:value={insuranceSubscriberLastName} />
+          </FormField>
+          <FormField label={m.patient_subscriber_dob()} forId="ins-sub-dob">
             <Input
-              id="ins-subscriber"
-              type="text"
-              bind:value={insuranceSubscriberId}
-              placeholder={m.patient_placeholder_subscriber_id()}
+              id="ins-sub-dob"
+              type="date"
+              bind:value={insuranceSubscriberDob}
+              dateFormat={countryMeta?.date_format}
             />
+          </FormField>
+          <FormField label={m.patient_subscriber_relationship()} forId="ins-sub-rel">
+            <select
+              id="ins-sub-rel"
+              bind:value={insuranceSubscriberRelationship}
+              class="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            >
+              <option value="">{m.patient_subscriber_relationship_placeholder()}</option>
+              <option value="01">{m.patient_subscriber_relationship_spouse()}</option>
+              <option value="19">{m.patient_subscriber_relationship_child()}</option>
+              <option value="53">{m.patient_subscriber_relationship_life_partner()}</option>
+              <option value="G8">{m.patient_subscriber_relationship_other()}</option>
+            </select>
+          </FormField>
+          <FormField label={m.patient_subscriber_sex()} forId="ins-sub-sex">
+            <select
+              id="ins-sub-sex"
+              bind:value={insuranceSubscriberSex}
+              class="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            >
+              <option value="">{m.patient_subscriber_sex_placeholder()}</option>
+              <option value="male">{m.sex_male()}</option>
+              <option value="female">{m.sex_female()}</option>
+              <option value="undisclosed">{m.sex_undisclosed()}</option>
+            </select>
+          </FormField>
+          <div class="sm:col-span-2">
+            <FormField label={m.patient_subscriber_address_line1()} forId="ins-sub-addr1">
+              <Input
+                id="ins-sub-addr1"
+                type="text"
+                bind:value={insuranceSubscriberAddressLine1}
+                placeholder={addr1Placeholder}
+              />
+            </FormField>
+          </div>
+          <FormField label={m.patient_address_line2()} forId="ins-sub-addr2">
+            <Input
+              id="ins-sub-addr2"
+              type="text"
+              bind:value={insuranceSubscriberAddressLine2}
+              placeholder={m.patient_placeholder_addr2()}
+            />
+          </FormField>
+          <FormField label={m.patient_city()} forId="ins-sub-city">
+            <Input id="ins-sub-city" type="text" bind:value={insuranceSubscriberCity} />
+          </FormField>
+          <FormField label={stateLabel} forId="ins-sub-state">
+            <Input id="ins-sub-state" type="text" bind:value={insuranceSubscriberState} />
+          </FormField>
+          <FormField label={postalLabel} forId="ins-sub-postal">
+            <Input id="ins-sub-postal" type="text" bind:value={insuranceSubscriberPostalCode} />
           </FormField>
         {/if}
       </div>

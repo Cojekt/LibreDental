@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS providers (
 	is_active INTEGER NOT NULL DEFAULT 1,
 	hourly_rate INTEGER NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL,
-	updated_at DATETIME NOT NULL
+	updated_at DATETIME NOT NULL,
+	npi TEXT DEFAULT '',
+	taxonomy_code TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS timecards (

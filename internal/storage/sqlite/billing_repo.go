@@ -48,12 +48,12 @@ func (r *ClaimRepository) Create(ctx context.Context, c *domain.Claim) error {
 		ctx, `
 		INSERT INTO claims (
 			id, patient_id, provider_id, appointment_id,
-			insurance_carrier, policy_number, group_number,
+			insurance_carrier, policy_number, group_number, payer_id,
 			date_of_service, status, notes, line_items,
 			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		c.ID, c.PatientID, nullIfEmpty(c.ProviderID), nullIfEmpty(c.AppointmentID),
-		c.InsuranceCarrier, c.PolicyNumber, c.GroupNumber,
+		c.InsuranceCarrier, c.PolicyNumber, c.GroupNumber, c.PayerID,
 		c.DateOfService, string(c.Status), c.Notes, string(lineItemsJSON),
 		c.CreatedAt, c.UpdatedAt,
 	)
@@ -70,7 +70,7 @@ func (r *ClaimRepository) GetByID(ctx context.Context, id string) (*domain.Claim
 
 	row := r.db.QueryRowContext(ctx, `
 		SELECT id, patient_id, provider_id, appointment_id,
-			insurance_carrier, policy_number, group_number,
+			insurance_carrier, policy_number, group_number, COALESCE(payer_id, ''),
 			date_of_service, status, notes, line_items, created_at, updated_at
 		FROM claims WHERE id = ?`, id)
 
@@ -100,12 +100,12 @@ func (r *ClaimRepository) Update(ctx context.Context, c *domain.Claim) error {
 		ctx, `
 		UPDATE claims SET
 			patient_id = ?, provider_id = ?, appointment_id = ?,
-			insurance_carrier = ?, policy_number = ?, group_number = ?,
+			insurance_carrier = ?, policy_number = ?, group_number = ?, payer_id = ?,
 			date_of_service = ?, status = ?, notes = ?, line_items = ?,
 			updated_at = ?
 		WHERE id = ?`,
 		c.PatientID, nullIfEmpty(c.ProviderID), nullIfEmpty(c.AppointmentID),
-		c.InsuranceCarrier, c.PolicyNumber, c.GroupNumber,
+		c.InsuranceCarrier, c.PolicyNumber, c.GroupNumber, c.PayerID,
 		c.DateOfService, string(c.Status), c.Notes, string(lineItemsJSON),
 		c.UpdatedAt, c.ID,
 	)
@@ -137,7 +137,7 @@ func (r *ClaimRepository) Delete(ctx context.Context, id string) error {
 func (r *ClaimRepository) List(ctx context.Context, patientID string) ([]*domain.Claim, error) {
 	query := `
 		SELECT id, patient_id, provider_id, appointment_id,
-			insurance_carrier, policy_number, group_number,
+			insurance_carrier, policy_number, group_number, COALESCE(payer_id, ''),
 			date_of_service, status, notes, line_items, created_at, updated_at
 		FROM claims`
 
@@ -235,7 +235,7 @@ func scanClaim(row rowScanner) (*domain.Claim, error) {
 
 	err := row.Scan(
 		&c.ID, &c.PatientID, &providerID, &appointmentID,
-		&c.InsuranceCarrier, &c.PolicyNumber, &c.GroupNumber,
+		&c.InsuranceCarrier, &c.PolicyNumber, &c.GroupNumber, &c.PayerID,
 		&c.DateOfService, &statusStr, &c.Notes, &lineItemsJSON,
 		&c.CreatedAt, &c.UpdatedAt,
 	)

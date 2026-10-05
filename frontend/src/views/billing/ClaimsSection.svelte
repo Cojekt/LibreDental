@@ -47,6 +47,7 @@
   let claimInsuranceCarrier = $state("");
   let claimPolicyNumber = $state("");
   let claimGroupNumber = $state("");
+  let claimPayerId = $state("");
   // Set once the user manually edits an insurance field, so a later patient
   // change doesn't clobber what they typed.
   let claimInsuranceDirty = $state(false);
@@ -90,6 +91,7 @@
     claimInsuranceCarrier = p.insurance_carrier ?? "";
     claimPolicyNumber = p.insurance_policy_number ?? "";
     claimGroupNumber = p.insurance_group_number ?? "";
+    claimPayerId = p.insurance_payer_id ?? "";
   }
 
   function markInsuranceDirty() {
@@ -135,6 +137,7 @@
     claimInsuranceCarrier = "";
     claimPolicyNumber = "";
     claimGroupNumber = "";
+    claimPayerId = "";
     claimInsuranceDirty = false;
     claimAppointmentId = undefined;
     claimStatus = ClaimStatus.ClaimStatusDraft;
@@ -165,6 +168,7 @@
     claimInsuranceCarrier = c.insurance_carrier ?? "";
     claimPolicyNumber = c.policy_number ?? "";
     claimGroupNumber = c.group_number ?? "";
+    claimPayerId = c.payer_id ?? "";
     claimInsuranceDirty = true;
     claimAppointmentId = c.appointment_id;
     claimStatus = c.status;
@@ -247,6 +251,7 @@
       insurance_carrier: claimInsuranceCarrier,
       policy_number: claimPolicyNumber,
       group_number: claimGroupNumber,
+      payer_id: claimPayerId,
       insurance_dirty: claimInsuranceDirty,
       status: claimStatus,
       notes: claimNotes,
@@ -318,8 +323,13 @@
     if (!id || !submitProvider) return;
     try {
       submittingClaims[id] = true;
-      await BillingService.SubmitClaimToProvider(auth.token, id, submitProvider);
+      const result = await BillingService.SubmitClaimToProvider(auth.token, id, submitProvider);
       await loadClaims();
+      if (result?.status === ClaimStatus.ClaimStatusRejected) {
+        claimsError = m.billing_claim_rejected_by_clearinghouse({
+          reasons: (result.messages || []).join("; "),
+        });
+      }
     } catch (e) {
       console.error("Failed to submit claim:", e);
       claimsError = handleError(e, m.billing_claim_submit_failed());
@@ -478,7 +488,7 @@
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
-                  {#if c.status === "draft"}
+                  {#if c.status === "draft" || c.status === "rejected"}
                     <button
                       type="button"
                       class="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -587,7 +597,7 @@
       </FormField>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <FormField label={m.patient_insurance_carrier()} forId="cl-carrier">
         <Input
           id="cl-carrier"
@@ -612,6 +622,15 @@
           type="text"
           bind:value={claimGroupNumber}
           placeholder={m.billing_claim_group_placeholder()}
+          oninput={markInsuranceDirty}
+        />
+      </FormField>
+      <FormField label={m.patient_insurance_payer_id()} forId="cl-payer-id">
+        <Input
+          id="cl-payer-id"
+          type="text"
+          bind:value={claimPayerId}
+          placeholder={m.patient_placeholder_payer_id()}
           oninput={markInsuranceDirty}
         />
       </FormField>

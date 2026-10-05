@@ -27,25 +27,33 @@ func TestPatientRepository_CRUD(t *testing.T) {
 
 	// 1. Create Patient
 	patient := &domain.Patient{
-		ID:                    "pat_123",
-		FirstName:             "John",
-		LastName:              "Doe",
-		DateOfBirth:           time.Date(1985, 5, 20, 0, 0, 0, 0, time.UTC),
-		Sex:                   domain.SexMale,
-		Email:                 "john.doe@example.com",
-		PhonePrimary:          "555-0199",
-		EmergencyContactName:  "Mary Doe",
-		EmergencyContactRel:   "Spouse",
-		EmergencyContactPhone: "555-0188",
-		InsuranceCarrier:      "Delta Dental",
-		InsurancePolicyNumber: "DEL-12345",
-		StateProvince:         "CA",
-		PostalCode:            "90210",
-		CountryCode:           domain.CountryUS,
-		NationalIDType:        "ssn",
-		NationalID:            "123-45-6789",
-		MedicalAlerts:         []string{"Penicillin Allergy", "High Blood Pressure"},
-		Allergies:             []string{"Latex"},
+		ID:                              "pat_123",
+		FirstName:                       "John",
+		LastName:                        "Doe",
+		DateOfBirth:                     time.Date(1985, 5, 20, 0, 0, 0, 0, time.UTC),
+		Sex:                             domain.SexMale,
+		Email:                           "john.doe@example.com",
+		PhonePrimary:                    "555-0199",
+		EmergencyContactName:            "Mary Doe",
+		EmergencyContactRel:             "Spouse",
+		EmergencyContactPhone:           "555-0188",
+		InsuranceCarrier:                "Delta Dental",
+		InsurancePolicyNumber:           "DEL-12345",
+		InsurancePayerID:                "CDCA1",
+		InsuranceSubscriberFirstName:    "Mary",
+		InsuranceSubscriberLastName:     "Doe",
+		InsuranceSubscriberDOB:          "1983-02-01",
+		InsuranceSubscriberSex:          domain.SexFemale,
+		InsuranceSubscriberRelationship: domain.SubscriberRelationshipSpouse,
+		InsuranceSubscriberCity:         "Buckeye",
+		InsuranceSubscriberPostalCode:   "85326",
+		StateProvince:                   "CA",
+		PostalCode:                      "90210",
+		CountryCode:                     domain.CountryUS,
+		NationalIDType:                  "ssn",
+		NationalID:                      "123-45-6789",
+		MedicalAlerts:                   []string{"Penicillin Allergy", "High Blood Pressure"},
+		Allergies:                       []string{"Latex"},
 	}
 
 	err = repo.Create(ctx, patient)
@@ -66,6 +74,13 @@ func TestPatientRepository_CRUD(t *testing.T) {
 	}
 	if len(fetched.MedicalAlerts) != 2 {
 		t.Errorf("Expected 2 medical alerts, got %d", len(fetched.MedicalAlerts))
+	}
+	if fetched.InsurancePayerID != "CDCA1" || fetched.InsuranceSubscriberFirstName != "Mary" ||
+		fetched.InsuranceSubscriberLastName != "Doe" || fetched.InsuranceSubscriberDOB != "1983-02-01" ||
+		fetched.InsuranceSubscriberRelationship != domain.SubscriberRelationshipSpouse ||
+		fetched.InsuranceSubscriberSex != domain.SexFemale || fetched.InsuranceSubscriberCity != "Buckeye" ||
+		fetched.InsuranceSubscriberPostalCode != "85326" {
+		t.Errorf("Unexpected payer/policyholder fields: %+v", fetched)
 	}
 
 	// 3. Update Patient (Optimistic Concurrency)

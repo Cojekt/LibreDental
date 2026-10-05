@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
@@ -117,6 +118,10 @@ func (s *PracticeConfigService) UpdatePracticeConfig(token string, cfg domain.Pr
 	if err := s.requireSession(token); err != nil {
 		return nil, err
 	}
+	cfg.NPI = strings.TrimSpace(cfg.NPI)
+	if cfg.NPI != "" && !validNPI(cfg.NPI) {
+		return nil, fmt.Errorf("%w: practice NPI is not a valid 10-digit NPI", storage.ErrInvalidInput)
+	}
 	err := s.repo.Save(context.Background(), &cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update practice config: %w", err)
@@ -211,6 +216,9 @@ func (s *PracticeConfigService) CreateInitialProvider(p domain.Provider) (string
 	if p.ID == "" {
 		p.ID = fmt.Sprintf("prov_%d", time.Now().UnixNano())
 	}
+	if err := normalizeProviderIdentifiers(&p); err != nil {
+		return "", err
+	}
 
 	if err := s.repo.CreateInitialProvider(context.Background(), &p); err != nil {
 		return "", err
@@ -254,6 +262,9 @@ func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*
 		}
 	}
 
+	if err := normalizeProviderIdentifiers(&p); err != nil {
+		return nil, err
+	}
 	err := s.repo.SaveProvider(context.Background(), &p)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save provider: %w", err)
@@ -267,6 +278,20 @@ func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*
 
 	p.Pin = "****"
 	return &p, nil
+}
+
+// normalizeProviderIdentifiers trims the claim identifiers on a provider and rejects malformed
+// ones at entry, rather than letting them surface later as a failed claim submission.
+func normalizeProviderIdentifiers(p *domain.Provider) error {
+	p.NPI = strings.TrimSpace(p.NPI)
+	p.TaxonomyCode = strings.ToUpper(strings.TrimSpace(p.TaxonomyCode))
+	if p.NPI != "" && !validNPI(p.NPI) {
+		return fmt.Errorf("%w: provider NPI is not a valid 10-digit NPI", storage.ErrInvalidInput)
+	}
+	if p.TaxonomyCode != "" && !taxonomyPattern.MatchString(p.TaxonomyCode) {
+		return fmt.Errorf("%w: provider taxonomy code must be 10 characters ending in X", storage.ErrInvalidInput)
+	}
+	return nil
 }
 
 // DeleteProvider deactivates a provider record by ID. At least one provider must

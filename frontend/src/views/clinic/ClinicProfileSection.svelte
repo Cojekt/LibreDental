@@ -12,6 +12,7 @@
     tagline = $bindable(""),
     taxId = $bindable(""),
     licenseNumber = $bindable(""),
+    npi = $bindable(""),
     phone = $bindable(""),
     email = $bindable(""),
     website = $bindable(""),
@@ -31,6 +32,7 @@
     tagline: string;
     taxId: string;
     licenseNumber: string;
+    npi: string;
     phone: string;
     email: string;
     website: string;
@@ -112,6 +114,22 @@
             disabled={!isEditingProfile}
             class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
             placeholder={m.clinic_profile_license_placeholder()}
+          />
+        </div>
+
+        <div>
+          <label for="clinic-npi" class="block text-xs font-semibold text-slate-400 mb-1"
+            >{m.clinic_profile_npi_label()}</label
+          >
+          <input
+            id="clinic-npi"
+            type="text"
+            inputmode="numeric"
+            maxlength="10"
+            bind:value={npi}
+            disabled={!isEditingProfile}
+            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50 disabled:bg-slate-950/40 disabled:cursor-not-allowed"
+            placeholder={m.clinic_profile_npi_placeholder()}
           />
         </div>
 

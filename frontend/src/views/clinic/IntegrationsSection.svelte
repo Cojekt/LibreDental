@@ -123,6 +123,14 @@
       get providerConfigError() {
         return providerConfigError;
       },
+      // Claim providers treat anything but an explicit "false" as test mode, so an unset
+      // value shows as on.
+      get testMode() {
+        return providerFullConfig["test_mode"] !== "false";
+      },
+      set testMode(v: boolean) {
+        providerFullConfig = { ...providerFullConfig, test_mode: v ? "true" : "false" };
+      },
       get saveStatus() {
         return saveStatus;
       },
@@ -143,6 +151,15 @@
     SetProviderConfig: (name, config) =>
       NotificationService.SetProviderConfig(auth.token, name, config),
   });
+
+  // Also locked while saving: the save payload is captured when it starts, so a toggle
+  // mid-save would show a mode that was never persisted.
+  const claimsTestModeDisabled = $derived(
+    !canEdit ||
+      !claimsPanel.selectedProvider ||
+      claimsPanel.isLoadingConfig ||
+      claimsPanel.isSavingConfig
+  );
 
   onMount(() => {
     claimsPanel.loadProviders();
@@ -197,11 +214,33 @@
                 id="claims-provider-api-key"
                 bind:value={claimsPanel.providerApiKey}
                 placeholder={m.integrations_placeholder_api_key()}
-                disabled={!canEdit || !claimsPanel.selectedProvider || claimsPanel.isLoadingConfig}
+                disabled={!canEdit ||
+                  !claimsPanel.selectedProvider ||
+                  claimsPanel.isLoadingConfig ||
+                  claimsPanel.isSavingConfig}
                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
               />
             </div>
           </div>
+
+          <label
+            class="flex items-start gap-2.5 text-sm text-slate-200 select-none {claimsTestModeDisabled
+              ? 'opacity-50'
+              : 'cursor-pointer'}"
+          >
+            <input
+              type="checkbox"
+              class="mt-0.5 disabled:cursor-not-allowed"
+              bind:checked={claimsPanel.testMode}
+              disabled={claimsTestModeDisabled}
+            />
+            <span>
+              {m.integrations_claims_test_mode()}
+              <span class="block text-xs text-slate-500"
+                >{m.integrations_claims_test_mode_hint()}</span
+              >
+            </span>
+          </label>
 
           <div class="flex items-center justify-end gap-3">
             {#if claimsPanel.saveStatus}

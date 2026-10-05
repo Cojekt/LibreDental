@@ -57,7 +57,7 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 	procRepo := sqlite.NewProcedureRepository(db)
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), secretsSvc, auditSvc)
 
 	// Create test patient
 	patient := &domain.Patient{
@@ -207,7 +207,7 @@ func TestBillingService_CreateClaimStampsPatientInsurance(t *testing.T) {
 	}
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), secretsSvc, auditSvc)
 
 	insuredPatient := &domain.Patient{
 		ID:                    "pat_insured",
@@ -343,7 +343,7 @@ func TestBillingService_BundlesAndFeeSchedulesRequireAuth(t *testing.T) {
 	}
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), secretsSvc, auditSvc)
 
 	bundle := &domain.TreatmentBundle{
 		Shortname: "crwn",
@@ -422,6 +422,9 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to save provider: %v", err)
 	}
+	if err := configRepo.Save(ctx, &domain.PracticeConfig{ClinicName: "Test Clinic", CountryCode: domain.CountryUS, Currency: "USD"}); err != nil {
+		t.Fatalf("Failed to save practice config: %v", err)
+	}
 	auditSvc := NewAuditService(auditRepo, configRepo)
 	token, err := auditSvc.CreateSession("prov_1", "1234")
 	if err != nil {
@@ -437,6 +440,7 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 		sqlite.NewProcedureRepository(db),
 		sqlite.NewChartRepository(db),
 		patientRepo,
+		sqlite.NewPracticeConfigRepository(db),
 		secretsSvc,
 		auditSvc,
 	)
@@ -454,6 +458,9 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 		Status:      domain.StatusActive,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
+
+		InsuranceCarrier: "Delta Dental",
+		InsurancePayerID: "CDCA1",
 	}
 	if err := patientRepo.Create(ctx, patient); err != nil {
 		t.Fatalf("Failed to create patient: %v", err)
@@ -477,6 +484,10 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	}
 	if result.Status != domain.ClaimStatusSubmitted {
 		t.Errorf("Expected status %v, got %v", domain.ClaimStatusSubmitted, result.Status)
+	}
+	sub := testProv.lastSubmission
+	if sub == nil || sub.Claim.ID != "claim_test_1" || sub.Patient.ID != "pat_test_1" || sub.Practice.ClinicName != "Test Clinic" {
+		t.Fatalf("Provider did not receive the claim's patient and practice records: %+v", sub)
 	}
 
 	// Verify the claim status in the database was updated
@@ -511,6 +522,45 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	if err == nil || err.Error() != `provider "test_mock" returned nil result` {
 		t.Fatalf("Expected nil result error, got %v", err)
 	}
+	testProv.submitFunc = nil
+
+	// Test 4: A claim without a payer ID uses the patient's, but only for the same carrier.
+	for _, tc := range []struct{ id, carrier, wantPayer string }{
+		{"claim_same_carrier", " delta dental ", "CDCA1"},
+		{"claim_other_carrier", "Aetna", ""},
+	} {
+		c := &domain.Claim{ID: tc.id, PatientID: "pat_test_1", InsuranceCarrier: tc.carrier,
+			Status: domain.ClaimStatusDraft, DateOfService: "2026-08-23"}
+		if err := claimRepo.Create(ctx, c); err != nil {
+			t.Fatalf("Failed to create %s: %v", tc.id, err)
+		}
+		if _, err := billingSvc.SubmitClaimToProvider(token, tc.id, "test_mock"); err != nil {
+			t.Fatalf("Submit %s: %v", tc.id, err)
+		}
+		if got := testProv.lastSubmission.Claim.PayerID; got != tc.wantPayer {
+			t.Errorf("%s: payer ID = %q, want %q", tc.id, got, tc.wantPayer)
+		}
+		stored, _ := claimRepo.GetByID(ctx, tc.id)
+		if stored.PayerID != "" {
+			t.Errorf("%s: the fallback must not rewrite the stored claim, got %q", tc.id, stored.PayerID)
+		}
+	}
+
+	// Test 5: Providers refuse practices outside their supported countries before any call.
+	if err := configRepo.Save(ctx, &domain.PracticeConfig{ClinicName: "Test Clinic", CountryCode: domain.CountryCA, Currency: "CAD"}); err != nil {
+		t.Fatalf("Failed to switch practice country: %v", err)
+	}
+	claim3 := &domain.Claim{ID: "claim_test_3", PatientID: "pat_test_1", Status: domain.ClaimStatusDraft, DateOfService: "2026-08-23"}
+	if err := claimRepo.Create(ctx, claim3); err != nil {
+		t.Fatalf("Failed to create claim3: %v", err)
+	}
+	testProv.lastSubmission = nil
+	if _, err := billingSvc.SubmitClaimToProvider(token, "claim_test_3", "test_mock"); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Expected unsupported-country error, got %v", err)
+	}
+	if testProv.lastSubmission != nil {
+		t.Error("Provider must not be called for an unsupported country")
+	}
 }
 
 func TestBillingService_GetAllPatientBalances(t *testing.T) {
@@ -543,7 +593,7 @@ func TestBillingService_GetAllPatientBalances(t *testing.T) {
 	}
 
 	secretsSvc := NewSecretsService()
-	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, secretsSvc, auditSvc)
+	billingSvc := NewBillingService(claimRepo, paymentRepo, bundleRepo, procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), secretsSvc, auditSvc)
 
 	if _, err := billingSvc.GetAllPatientBalances("bogus-token"); err != ErrUnauthorized {
 		t.Fatalf("Expected ErrUnauthorized without a session, got %v", err)
@@ -639,12 +689,16 @@ func TestBillingService_GetAllPatientBalances(t *testing.T) {
 }
 
 type dummyTestProvider struct {
-	submitFunc func() (*domain.ClaimSubmissionResult, error)
+	submitFunc     func() (*domain.ClaimSubmissionResult, error)
+	lastSubmission *domain.ClaimSubmission
 }
 
-func (p *dummyTestProvider) Name() string                             { return "test_mock" }
-func (p *dummyTestProvider) SupportedCountries() []domain.CountryCode { return nil }
-func (p *dummyTestProvider) SubmitClaim(ctx context.Context, claim *domain.Claim, config map[string]string) (*domain.ClaimSubmissionResult, error) {
+func (p *dummyTestProvider) Name() string { return "test_mock" }
+func (p *dummyTestProvider) SupportedCountries() []domain.CountryCode {
+	return []domain.CountryCode{domain.CountryUS}
+}
+func (p *dummyTestProvider) SubmitClaim(ctx context.Context, sub *domain.ClaimSubmission, config map[string]string) (*domain.ClaimSubmissionResult, error) {
+	p.lastSubmission = sub
 	if p.submitFunc != nil {
 		return p.submitFunc()
 	}
@@ -712,7 +766,7 @@ func setupChartBillingTest(t *testing.T, chartRepo storage.ChartRepository) (*Bi
 
 	claimRepo := sqlite.NewClaimRepository(db)
 	procRepo := sqlite.NewProcedureRepository(db)
-	svc := NewBillingService(claimRepo, sqlite.NewPaymentRepository(db), sqlite.NewBundleRepository(db), procRepo, procRepo, chartRepo, patientRepo, NewSecretsService(), auditSvc)
+	svc := NewBillingService(claimRepo, sqlite.NewPaymentRepository(db), sqlite.NewBundleRepository(db), procRepo, procRepo, chartRepo, patientRepo, sqlite.NewPracticeConfigRepository(db), NewSecretsService(), auditSvc)
 	return svc, token, claimRepo, realChart
 }
 

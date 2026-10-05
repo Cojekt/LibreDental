@@ -17,6 +17,8 @@
   import DocumentsSection from "./clinic/DocumentsSection.svelte";
   import IntegrationsSection from "./clinic/IntegrationsSection.svelte";
   import { m } from "../paraglide/messages.js";
+  import { isValidNpi, isValidTaxonomyCode } from "$lib/identifiers.js";
+  import { handleError } from "$lib/error.js";
   import { untrack } from "svelte";
   import ConfirmModal from "../components/ui/ConfirmModal.svelte";
 
@@ -120,6 +122,7 @@
   let tagline = $state(practiceConfig?.tagline || "");
   let taxId = $state(practiceConfig?.tax_id || "");
   let licenseNumber = $state(practiceConfig?.license_number || "");
+  let npi = $state(practiceConfig?.npi || "");
   let phone = $state(practiceConfig?.phone || "");
   let email = $state(practiceConfig?.email || "");
   let website = $state(practiceConfig?.website || "");
@@ -201,6 +204,7 @@
       tagline = practiceConfig.tagline || "";
       taxId = practiceConfig.tax_id || "";
       licenseNumber = practiceConfig.license_number || "";
+      npi = practiceConfig.npi || "";
       phone = practiceConfig.phone || "";
       email = practiceConfig.email || "";
       website = practiceConfig.website || "";
@@ -232,6 +236,9 @@
   let provRole = $state<string>("dentist");
   let provSpecialty = $state("");
   let provLicense = $state("");
+  let provNpi = $state("");
+  let provTaxonomy = $state("");
+  let provError = $state("");
   let provEmail = $state("");
   let provPhone = $state("");
   let provColor = $state("#3b82f6");
@@ -267,6 +274,7 @@
       tagline = practiceConfig.tagline || "";
       taxId = practiceConfig.tax_id || "";
       licenseNumber = practiceConfig.license_number || "";
+      npi = practiceConfig.npi || "";
       phone = practiceConfig.phone || "";
       email = practiceConfig.email || "";
       website = practiceConfig.website || "";
@@ -304,6 +312,11 @@
   });
 
   async function handleSaveConfig() {
+    npi = npi.trim();
+    if (npi && !isValidNpi(npi)) {
+      setProfileMessage(m.clinic_err_invalid_npi(), "error");
+      return;
+    }
     savingProfile = true;
     profileMessage = null;
 
@@ -316,6 +329,7 @@
         tagline: tagline,
         tax_id: taxId,
         license_number: licenseNumber,
+        npi: npi,
         phone: phone,
         email: email,
         website: website,
@@ -361,6 +375,9 @@
     provRole = "dentist";
     provSpecialty = "General Dentistry";
     provLicense = "";
+    provNpi = "";
+    provTaxonomy = "";
+    provError = "";
     provEmail = "";
     provPhone = "";
     provColor = "#3b82f6";
@@ -377,6 +394,9 @@
     provRole = p.role || "dentist";
     provSpecialty = p.specialty || "";
     provLicense = p.license_number || "";
+    provNpi = p.npi || "";
+    provTaxonomy = p.taxonomy_code || "";
+    provError = "";
     provEmail = p.email || "";
     provPhone = p.phone || "";
     provColor = p.color || "#3b82f6";
@@ -389,6 +409,17 @@
   async function handleSaveProvider(e: Event) {
     e.preventDefault();
     if (!provName) return;
+    provNpi = provNpi.trim();
+    provTaxonomy = provTaxonomy.trim().toUpperCase();
+    if (provNpi && !isValidNpi(provNpi)) {
+      provError = m.prov_err_invalid_npi();
+      return;
+    }
+    if (provTaxonomy && !isValidTaxonomyCode(provTaxonomy)) {
+      provError = m.prov_err_invalid_taxonomy();
+      return;
+    }
+    provError = "";
 
     try {
       const p: Omit<Provider, "created_at" | "updated_at"> = {
@@ -397,6 +428,8 @@
         role: provRole as any,
         specialty: provSpecialty,
         license_number: provLicense,
+        npi: provNpi,
+        taxonomy_code: provTaxonomy,
         email: provEmail,
         phone: provPhone,
         color: provColor,
@@ -410,6 +443,7 @@
       await onrefresh();
     } catch (err) {
       console.error("Failed to save provider:", err);
+      provError = handleError(err, m.prov_err_save_failed());
     }
   }
 
@@ -659,6 +693,7 @@
         bind:tagline
         bind:taxId
         bind:licenseNumber
+        bind:npi
         bind:phone
         bind:email
         bind:website
@@ -697,6 +732,9 @@
         bind:provRole
         bind:provSpecialty
         bind:provLicense
+        bind:provNpi
+        bind:provTaxonomy
+        {provError}
         bind:provEmail
         bind:provPhone
         bind:provColor

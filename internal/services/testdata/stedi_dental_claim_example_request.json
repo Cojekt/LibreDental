@@ -1,0 +1,135 @@
+{
+  "usageIndicator": "T",
+  "tradingPartnerServiceId": "52133",
+  "tradingPartnerName": "United HealthCare Dental",
+  "subscriber": {
+    "paymentResponsibilityLevelCode": "P",
+    "memberId": "123412345",
+    "firstName": "John",
+    "lastName": "Doe",
+    "groupNumber": "1234567890",
+    "gender": "F",
+    "address": {
+      "address1": "1234 Some St",
+      "city": "Buckeye",
+      "state": "AZ",
+      "postalCode": "85326"
+    },
+    "dateOfBirth": "20180615"
+  },
+  "submitter": {
+    "organizationName": "ABA Inc",
+    "submitterIdentification": "<YOUR-SUBMITTER-ID>",
+    "contactInformation": {
+      "phoneNumber": "3131234567",
+      "name": "BILLING DEPARTMENT"
+    }
+  },
+  "rendering": {
+    "npi": "1999999992",
+    "taxonomyCode": "106S00000X",
+    "providerType": "RenderingProvider",
+    "lastName": "Doe",
+    "firstName": "Jane"
+  },
+  "receiver": {
+    "organizationName": "United HealthCare Dental"
+  },
+  "payerAddress": {
+    "address1": "PO Box 7000",
+    "city": "Camden",
+    "state": "SC",
+    "postalCode": "29000"
+  },
+  "claimInformation": {
+    "signatureIndicator": "Y",
+    "toothStatus": [
+      {
+        "toothNumber": "3",
+        "toothStatusCode": "E"
+      }
+    ],
+    "serviceLines": [
+      {
+        "serviceDate": "20230428",
+        "renderingProvider": {
+          "npi": "1999999992",
+          "taxonomyCode": "122300000X",
+          "lastName": "Doe",
+          "firstName": "Jane"
+        },
+        "providerControlNumber": "a0UDo000000dd2dMAA",
+        "dentalService": {
+          "procedureCode": "D7140",
+          "lineItemChargeAmount": "832.00",
+          "placeOfServiceCode": "12",
+          "oralCavityDesignation": [
+            "1",
+            "2"
+          ],
+          "prosthesisCrownOrInlayCode": "I",
+          "procedureCount": 2,
+          "compositeDiagnosisCodePointers": {
+            "diagnosisCodePointers": [
+              "1"
+            ]
+          }
+        },
+        "teethInformation": [
+          {
+            "toothCode": "3",
+            "toothSurfaceCodes": [
+              "M",
+              "O"
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceFacilityLocation": {
+      "phoneNumber": "3131234567",
+      "organizationName": "ABA Inc",
+      "npi": "1999999992",
+      "address": {
+        "address1": "ABA Inc 123 Some St",
+        "city": "Denver",
+        "state": "CO",
+        "postalCode": "802383100"
+      }
+    },
+    "releaseInformationCode": "Y",
+    "planParticipationCode": "A",
+    "placeOfServiceCode": "12",
+    "patientControlNumber": "<YOUR-CLAIM-ID>",
+    "healthCareCodeInformation": [
+      {
+        "diagnosisTypeCode": "ABK",
+        "diagnosisCode": "K081"
+      }
+    ],
+    "claimSupplementalInformation": {
+      "priorAuthorizationNumber": "20231010012345678"
+    },
+    "claimFrequencyCode": "1",
+    "claimFilingCode": "FI",
+    "claimChargeAmount": "832.00",
+    "benefitsAssignmentCertificationIndicator": "Y"
+  },
+  "billing": {
+    "taxonomyCode": "106S00000X",
+    "providerType": "BillingProvider",
+    "organizationName": "ABA Inc",
+    "npi": "1999999992",
+    "employerId": "123456789",
+    "contactInformation": {
+      "phoneNumber": "3134893157",
+      "name": "ABA Inc"
+    },
+    "address": {
+      "address1": "ABA Inc 123 Some St",
+      "city": "Denver",
+      "state": "CO",
+      "postalCode": "802383000"
+    }
+  }
+}

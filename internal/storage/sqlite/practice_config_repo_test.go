@@ -37,6 +37,7 @@ func TestPracticeConfigRepository_SaveAndGet(t *testing.T) {
 		t.Fatalf("Failed to fetch CA country config from DB: %v", err)
 	}
 	cfg := domain.NewPracticeConfig(*caMeta)
+	cfg.NPI = "1234567893"
 	err = repo.Save(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to save practice config: %v", err)
@@ -50,6 +51,9 @@ func TestPracticeConfigRepository_SaveAndGet(t *testing.T) {
 
 	if fetched.CountryCode != domain.CountryCA {
 		t.Errorf("Expected country code 'CA', got '%s'", fetched.CountryCode)
+	}
+	if fetched.NPI != "1234567893" {
+		t.Errorf("Expected NPI '1234567893', got '%s'", fetched.NPI)
 	}
 	if fetched.Currency != "CAD" {
 		t.Errorf("Expected currency 'CAD', got '%s'", fetched.Currency)
@@ -119,6 +123,8 @@ func TestPracticeConfigRepository_ProvidersAndOperatories(t *testing.T) {
 		Role:          domain.RoleDentist,
 		Specialty:     "Endodontics",
 		LicenseNumber: "DEN-99281",
+		NPI:           "1234567893",
+		TaxonomyCode:  "1223E0200X",
 		Email:         "jane.doe@example.com",
 		Phone:         "555-0199",
 		Color:         "#10b981",
@@ -139,6 +145,9 @@ func TestPracticeConfigRepository_ProvidersAndOperatories(t *testing.T) {
 	}
 	if providers[0].Name != "Dr. Jane Doe" {
 		t.Errorf("Expected provider name 'Dr. Jane Doe', got '%s'", providers[0].Name)
+	}
+	if providers[0].NPI != "1234567893" || providers[0].TaxonomyCode != "1223E0200X" {
+		t.Errorf("Unexpected provider NPI/taxonomy: %s / %s", providers[0].NPI, providers[0].TaxonomyCode)
 	}
 
 	// Operatory testing

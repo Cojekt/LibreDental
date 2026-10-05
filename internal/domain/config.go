@@ -70,6 +70,8 @@ type Provider struct {
 	Role          ProviderRole `json:"role"`
 	Specialty     string       `json:"specialty"`
 	LicenseNumber string       `json:"license_number"`
+	NPI           string       `json:"npi"`
+	TaxonomyCode  string       `json:"taxonomy_code"` // NUCC provider taxonomy, e.g. 1223G0001X
 	Email         string       `json:"email"`
 	Phone         string       `json:"phone"`
 	Color         string       `json:"color"`
@@ -110,6 +112,7 @@ type PracticeConfig struct {
 	Tagline       string            `json:"tagline"`
 	TaxID         string            `json:"tax_id"`
 	LicenseNumber string            `json:"license_number"`
+	NPI           string            `json:"npi"` // billing provider (organization) NPI
 	Phone         string            `json:"phone"`
 	Email         string            `json:"email"`
 	Website       string            `json:"website"`
