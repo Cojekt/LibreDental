@@ -1,8 +1,24 @@
 package domain
 
 import (
+	"strings"
 	"time"
 )
+
+// System actors are reserved, non-human identities for actions LibreDental takes on its own
+// with no staff member logged in, such as sending automatic appointment reminders. Each
+// background job gets its own ID so the audit trail shows which process acted. Staff IDs can
+// never use the prefix.
+const (
+	SystemActorPrefix    = "system:"
+	SystemActorReminders = "system:reminders"
+	SystemActorName      = "LibreDental"
+)
+
+// IsSystemActorID reports whether id is a system actor ID.
+func IsSystemActorID(id string) bool {
+	return len(id) > len(SystemActorPrefix) && strings.HasPrefix(id, SystemActorPrefix)
+}
 
 // AuditAction represents the type of operation performed on ePHI.
 type AuditAction string

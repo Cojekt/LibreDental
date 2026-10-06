@@ -3,6 +3,8 @@ package services_test
 import (
 	"context"
 	"path/filepath"
+	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -200,5 +202,21 @@ func TestAuditService_LogPatientActionUsesSessionUser(t *testing.T) {
 	}
 	if logs[0].Resource != "dental_chart" || logs[0].Action != domain.AuditActionRead {
 		t.Errorf("Unexpected entry contents: %+v", logs[0])
+	}
+}
+
+// Wails binds every exported AuditService method for the frontend, and in LAN server mode for
+// any client on the network. This list is deliberately fixed: a newly exported method, such as
+// one that logs as a system actor, must be reviewed for what it lets a client write.
+func TestAuditService_BoundMethods(t *testing.T) {
+	want := []string{"CreateSession", "DestroySession", "GetAuditLogs", "GetSessionUser", "LogAction", "LogPatientAction"}
+
+	typ := reflect.TypeOf(&services.AuditService{})
+	var got []string
+	for i := range typ.NumMethod() {
+		got = append(got, typ.Method(i).Name)
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("AuditService exported methods changed:\n got  %v\n want %v", got, want)
 	}
 }

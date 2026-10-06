@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -98,19 +99,40 @@ func (s *AuditService) LogPatientAction(token string, action domain.AuditAction,
 	if user == nil {
 		return ErrUnauthorized
 	}
+	return s.logPatientActionAs(auditActor{id: user.ID, name: user.Name}, action, patientID, resource, "", details)
+}
 
+// auditActor is who an audit entry is attributed to: a logged-in staff member, or a system
+// actor (see domain.SystemActorPrefix).
+type auditActor struct {
+	id   string
+	name string
+}
+
+func (s *AuditService) logPatientActionAs(actor auditActor, action domain.AuditAction, patientID, resource, resourceID, details string) error {
 	entry := &domain.AuditLogEntry{
-		ID:        uuid.NewString(),
-		Timestamp: time.Now().UTC(),
-		UserID:    user.ID,
-		UserName:  user.Name,
-		PatientID: patientID,
-		Action:    action,
-		Resource:  resource,
-		Details:   details,
+		ID:         uuid.NewString(),
+		Timestamp:  time.Now().UTC(),
+		UserID:     actor.id,
+		UserName:   actor.name,
+		PatientID:  patientID,
+		Action:     action,
+		Resource:   resource,
+		ResourceID: resourceID,
+		Details:    details,
 	}
 
 	return s.repo.Log(context.Background(), entry)
+}
+
+// logSystemPatientAction records an action LibreDental took on its own, with no staff member
+// logged in. It is unexported so Wails does not bind it: in LAN server mode any client could
+// otherwise write audit entries attributed to the system.
+func (s *AuditService) logSystemPatientAction(actorID string, action domain.AuditAction, patientID, resource, resourceID, details string) error {
+	if !domain.IsSystemActorID(actorID) {
+		return fmt.Errorf("%w: %q is not a system actor ID", storage.ErrInvalidInput, actorID)
+	}
+	return s.logPatientActionAs(auditActor{id: actorID, name: domain.SystemActorName}, action, patientID, resource, resourceID, details)
 }
 
 func (s *AuditService) GetAuditLogs(token string, patientID string, limit int, offset int) ([]*domain.AuditLogEntry, error) {
