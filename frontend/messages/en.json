@@ -601,6 +601,7 @@
   "audit_th_details": "Details",
   "audit_loading": "Loading audit logs...",
   "audit_empty": "No audit logs found.",
+  "audit_system_actor": "LibreDental (automatic)",
   "patient_national_id_default": "National ID / SSN",
   "patient_state_default": "State / Province",
   "patient_postal_default": "Postal Code",
