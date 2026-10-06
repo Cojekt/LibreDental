@@ -3,6 +3,7 @@ package services_test
 import (
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/LibreDental/libredental/internal/domain"
@@ -351,5 +352,67 @@ func TestPracticeConfigService_RejectsMalformedClaimIdentifiers(t *testing.T) {
 		NPI: "1234567893", TaxonomyCode: " 1223g0001x "})
 	if err != nil || saved2.TaxonomyCode != "1223G0001X" {
 		t.Errorf("Expected taxonomy to be normalized and saved, got %+v, %v", saved2, err)
+	}
+}
+
+// System actor IDs are reserved for the audit trail: a staff account holding one would make its
+// actions look like they were taken automatically.
+func TestPracticeConfigService_RejectsReservedProviderIDs(t *testing.T) {
+	tempDir := t.TempDir()
+	db, err := sqlite.Open(filepath.Join(tempDir, "main.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tempDir, "audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit sqlite db: %v", err)
+	}
+	defer auditDb.Close()
+
+	repo := sqlite.NewPracticeConfigRepository(db)
+	auditService := services.NewAuditService(sqlite.NewAuditRepository(auditDb), repo)
+	service := services.NewPracticeConfigService(repo, auditService)
+	if _, err := service.SetConfig("", "US"); err != nil {
+		t.Fatalf("Failed to set practice config: %v", err)
+	}
+
+	reserved := []string{domain.SystemActorReminders, "system:other", "SYSTEM:reminders", " system:reminders"}
+
+	for _, id := range reserved {
+		if _, err := service.CreateInitialProvider(domain.Provider{ID: id, Name: "Imposter", Pin: "1234", IsActive: true}); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("Expected CreateInitialProvider to reject %q, got %v", id, err)
+		}
+	}
+	if needs, err := service.NeedsInitialProvider(); err != nil || !needs {
+		t.Fatalf("Expected no provider to have been created, got needs=%v err=%v", needs, err)
+	}
+
+	token, err := service.CreateInitialProvider(domain.Provider{Name: "Dr. Owner", Pin: "1234", IsActive: true})
+	if err != nil {
+		t.Fatalf("Failed to create initial provider: %v", err)
+	}
+
+	for _, id := range reserved {
+		if _, err := service.SaveProvider(token, domain.Provider{ID: id, Name: "Imposter", Pin: "5678", IsActive: true}); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("Expected SaveProvider to reject %q, got %v", id, err)
+		}
+	}
+
+	// IDs that merely contain "system" are ordinary staff IDs.
+	for _, id := range []string{"", "prov_system", "systemadmin"} {
+		if _, err := service.SaveProvider(token, domain.Provider{ID: id, Name: "Dr. Real", Pin: "5678", IsActive: true}); err != nil {
+			t.Errorf("Expected SaveProvider to accept %q, got %v", id, err)
+		}
+	}
+
+	providers, err := service.ListProviders()
+	if err != nil {
+		t.Fatalf("Failed to list providers: %v", err)
+	}
+	for _, p := range providers {
+		if domain.IsSystemActorID(strings.ToLower(strings.TrimSpace(p.ID))) {
+			t.Errorf("Reserved provider ID %q was saved", p.ID)
+		}
 	}
 }
