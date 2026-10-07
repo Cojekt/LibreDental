@@ -9,6 +9,12 @@ import (
 
 const keyringServiceName = "LibreDental"
 
+const redactedSecret = "********"
+
+// secretConfigKeys are the provider config fields that hold credentials. Their values are never
+// returned to the frontend; it gets redactedSecret instead and sends that back to keep them.
+var secretConfigKeys = []string{"api_key", "password", "secret_access_key"}
+
 // SecretsService manages secure storage of external credentials (like API keys)
 // using the host OS's native keychain/credential vault.
 type SecretsService struct{}
@@ -34,9 +40,10 @@ func (s *SecretsService) GetProviderConfig(providerName string) (map[string]stri
 		return nil, fmt.Errorf("failed to parse secret config: %w", err)
 	}
 
-	// Redact the API key for the frontend
-	if apiKey, ok := config["api_key"]; ok && apiKey != "" {
-		config["api_key"] = "********"
+	for _, k := range secretConfigKeys {
+		if config[k] != "" {
+			config[k] = redactedSecret
+		}
 	}
 
 	return config, nil
@@ -46,13 +53,23 @@ func (s *SecretsService) GetProviderConfig(providerName string) (map[string]stri
 func (s *SecretsService) SetProviderConfig(providerName string, config map[string]string) error {
 	key := fmt.Sprintf("provider_config_%s", providerName)
 
-	// If the frontend sent back the redacted string, restore the real API key
-	if config["api_key"] == "********" {
-		oldConfig, err := s.getRawProviderConfig(providerName)
-		if err != nil {
-			return fmt.Errorf("failed to retrieve existing config to restore api_key: %w", err)
+	// If the frontend sent back a redacted placeholder, keep the stored secret.
+	var oldConfig map[string]string
+	for _, k := range secretConfigKeys {
+		if config[k] != redactedSecret {
+			continue
 		}
-		config["api_key"] = oldConfig["api_key"]
+		if oldConfig == nil {
+			var err error
+			if oldConfig, err = s.getRawProviderConfig(providerName); err != nil {
+				return fmt.Errorf("failed to retrieve existing config to restore %s: %w", k, err)
+			}
+		}
+		if old := oldConfig[k]; old != "" {
+			config[k] = old
+		} else {
+			delete(config, k)
+		}
 	}
 
 	bytes, err := json.Marshal(config)

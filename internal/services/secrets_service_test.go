@@ -120,3 +120,64 @@ func TestSecretsService_DeleteProviderConfig_Idempotent(t *testing.T) {
 		t.Errorf("Expected no error deleting nonexistent provider, got: %v", err)
 	}
 }
+
+func TestSecretsService_RedactsEverySecretField(t *testing.T) {
+	keyring.MockInit()
+	svc := NewSecretsService()
+	providerName := "test_integration_secrets"
+
+	if err := svc.SetProviderConfig(providerName, map[string]string{
+		"api_key":           "key-1",
+		"password":          "smtp-password",
+		"secret_access_key": "aws-secret",
+		"host":              "smtp.example.com",
+	}); err != nil {
+		t.Fatalf("SetProviderConfig failed: %v", err)
+	}
+
+	cfg, err := svc.GetProviderConfig(providerName)
+	if err != nil {
+		t.Fatalf("GetProviderConfig failed: %v", err)
+	}
+	for _, k := range []string{"api_key", "password", "secret_access_key"} {
+		if cfg[k] != redactedSecret {
+			t.Errorf("Expected %s to be redacted, got %q", k, cfg[k])
+		}
+	}
+	if cfg["host"] != "smtp.example.com" {
+		t.Errorf("Expected non-secret host to pass through, got %q", cfg["host"])
+	}
+
+	// The frontend sends back what it was given, plus its edits: placeholders keep the stored
+	// secrets, a typed value replaces one, and a placeholder for a secret that was never
+	// stored must not be saved as the literal placeholder.
+	if err := svc.SetProviderConfig("test_integration_secrets_empty", map[string]string{"host": "h"}); err != nil {
+		t.Fatalf("SetProviderConfig failed: %v", err)
+	}
+	cfg["host"] = "smtp2.example.com"
+	cfg["password"] = "new-password"
+	if err := svc.SetProviderConfig(providerName, cfg); err != nil {
+		t.Fatalf("SetProviderConfig with placeholders failed: %v", err)
+	}
+	raw, err := svc.getRawProviderConfig(providerName)
+	if err != nil {
+		t.Fatalf("getRawProviderConfig failed: %v", err)
+	}
+	want := map[string]string{"api_key": "key-1", "password": "new-password", "secret_access_key": "aws-secret", "host": "smtp2.example.com"}
+	for k, v := range want {
+		if raw[k] != v {
+			t.Errorf("Stored %s = %q; want %q", k, raw[k], v)
+		}
+	}
+
+	if err := svc.SetProviderConfig("test_integration_secrets_empty", map[string]string{"host": "h", "password": redactedSecret}); err != nil {
+		t.Fatalf("SetProviderConfig failed: %v", err)
+	}
+	raw, err = svc.getRawProviderConfig("test_integration_secrets_empty")
+	if err != nil {
+		t.Fatalf("getRawProviderConfig failed: %v", err)
+	}
+	if v, ok := raw["password"]; ok {
+		t.Errorf("Expected no password to be stored, got %q", v)
+	}
+}
