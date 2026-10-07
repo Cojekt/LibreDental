@@ -3,6 +3,7 @@
   import { BillingService, NotificationService } from "@bindings/services/index.js";
   import { m } from "../../paraglide/messages.js";
   import { auth } from "../../stores/auth.svelte.js";
+  import { handleError } from "$lib/error.js";
 
   let { canEdit = false } = $props<{ canEdit: boolean }>();
 
@@ -17,7 +18,9 @@
     SetProviderConfig(name: string, config: ProviderConfig): Promise<void>;
   };
 
-  function createProviderPanel(service: ProviderConfigService) {
+  // apiKey: whether the panel has the single API key field (claims) or only provider-specific
+  // fields edited through fieldValue/setFieldValue (notifications).
+  function createProviderPanel(service: ProviderConfigService, options: { apiKey: boolean }) {
     let providers = $state<string[]>([]);
     let providersLoaded = $state(false);
     let providersLoadError = $state(false);
@@ -75,10 +78,12 @@
       saveStatus = null;
       const reqProvider = selectedProvider;
       try {
-        await service.SetProviderConfig(reqProvider, {
-          ...providerFullConfig,
-          api_key: providerApiKey,
-        });
+        await service.SetProviderConfig(
+          reqProvider,
+          options.apiKey
+            ? { ...providerFullConfig, api_key: providerApiKey }
+            : { ...providerFullConfig }
+        );
         if (reqProvider === selectedProvider) {
           saveStatus = { ok: true, msg: m.integrations_save_success() };
         }
@@ -134,23 +139,126 @@
       get saveStatus() {
         return saveStatus;
       },
+      fieldValue(key: string): string {
+        return providerFullConfig[key] ?? "";
+      },
+      setFieldValue(key: string, value: string) {
+        providerFullConfig = { ...providerFullConfig, [key]: value };
+      },
       loadProviders,
       loadProviderConfig,
       saveProviderConfig,
     };
   }
 
-  const claimsPanel = createProviderPanel({
-    ListProviders: () => BillingService.ListProviders(),
-    GetProviderConfig: (name) => BillingService.GetProviderConfig(auth.token, name),
-    SetProviderConfig: (name, config) => BillingService.SetProviderConfig(auth.token, name, config),
-  });
-  const notificationsPanel = createProviderPanel({
-    ListProviders: () => NotificationService.ListProviders(),
-    GetProviderConfig: (name) => NotificationService.GetProviderConfig(auth.token, name),
-    SetProviderConfig: (name, config) =>
-      NotificationService.SetProviderConfig(auth.token, name, config),
-  });
+  const claimsPanel = createProviderPanel(
+    {
+      ListProviders: () => BillingService.ListProviders(),
+      GetProviderConfig: (name) => BillingService.GetProviderConfig(auth.token, name),
+      SetProviderConfig: (name, config) =>
+        BillingService.SetProviderConfig(auth.token, name, config),
+    },
+    { apiKey: true }
+  );
+  const notificationsPanel = createProviderPanel(
+    {
+      ListProviders: () => NotificationService.ListProviders(),
+      GetProviderConfig: (name) => NotificationService.GetProviderConfig(auth.token, name),
+      SetProviderConfig: (name, config) =>
+        NotificationService.SetProviderConfig(auth.token, name, config),
+    },
+    { apiKey: false }
+  );
+
+  // Settings each notification provider reads, keyed by provider name. Keys must match the Go
+  // providers; secret fields come back from the backend redacted.
+  type NotificationField = {
+    key: string;
+    label: () => string;
+    placeholder?: () => string;
+    type?: "text" | "password" | "number";
+    options?: { value: string; label: () => string }[];
+  };
+  const notificationFields: Record<string, NotificationField[]> = {
+    smtp_email: [
+      {
+        key: "host",
+        label: m.integrations_smtp_host,
+        placeholder: m.integrations_smtp_host_placeholder,
+      },
+      {
+        key: "tls_mode",
+        label: m.integrations_smtp_tls_mode,
+        options: [
+          { value: "starttls", label: m.integrations_smtp_tls_starttls },
+          { value: "implicit", label: m.integrations_smtp_tls_implicit },
+        ],
+      },
+      {
+        key: "port",
+        label: m.integrations_smtp_port,
+        placeholder: m.integrations_smtp_port_placeholder,
+        type: "number",
+      },
+      { key: "username", label: m.integrations_smtp_username },
+      { key: "password", label: m.integrations_smtp_password, type: "password" },
+      {
+        key: "from_address",
+        label: m.integrations_smtp_from_address,
+        placeholder: m.integrations_smtp_from_address_placeholder,
+      },
+      {
+        key: "from_name",
+        label: m.integrations_smtp_from_name,
+        placeholder: m.integrations_smtp_from_name_placeholder,
+      },
+    ],
+    aws_sms: [
+      { key: "access_key_id", label: m.integrations_aws_access_key_id },
+      { key: "secret_access_key", label: m.integrations_aws_secret_access_key, type: "password" },
+      {
+        key: "region",
+        label: m.integrations_aws_region,
+        placeholder: m.integrations_aws_region_placeholder,
+      },
+      {
+        key: "origination_identity",
+        label: m.integrations_aws_origination_identity,
+        placeholder: m.integrations_aws_origination_identity_placeholder,
+      },
+      { key: "configuration_set", label: m.integrations_aws_configuration_set },
+    ],
+  };
+  const selectedNotificationFields = $derived(
+    notificationFields[notificationsPanel.selectedProvider] ?? []
+  );
+
+  let testRecipient = $state("");
+  let isSendingTest = $state(false);
+  let testStatus = $state<{ ok: boolean; msg: string } | null>(null);
+
+  // Sends with the saved settings, not the ones being edited, so it checks what reminders use.
+  async function sendTestMessage() {
+    const provider = notificationsPanel.selectedProvider;
+    if (!canEdit || !provider || !testRecipient.trim()) return;
+    isSendingTest = true;
+    testStatus = null;
+    try {
+      await NotificationService.SendTestMessage(
+        auth.token,
+        provider,
+        testRecipient,
+        m.integrations_test_subject(),
+        m.integrations_test_body()
+      );
+      testStatus = { ok: true, msg: m.integrations_test_success() };
+    } catch (e) {
+      console.error("Failed to send test message:", e);
+      testStatus = { ok: false, msg: handleError(e, m.integrations_test_error()) };
+    } finally {
+      isSendingTest = false;
+    }
+  }
 
   // Also locked while saving: the save payload is captured when it starts, so a toggle
   // mid-save would show a mode that was never persisted.
@@ -289,7 +397,10 @@
               <select
                 id="notification-provider-select"
                 bind:value={notificationsPanel.selectedProvider}
-                onchange={notificationsPanel.loadProviderConfig}
+                onchange={() => {
+                  testStatus = null;
+                  notificationsPanel.loadProviderConfig();
+                }}
                 disabled={notificationsPanel.noProviders}
                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
               >
@@ -299,23 +410,50 @@
                 {/each}
               </select>
             </div>
-
-            <div>
-              <label for="notification-provider-api-key" class="block text-xs text-slate-400 mb-1"
-                >{m.integrations_label_api_key()}</label
-              >
-              <input
-                type="password"
-                id="notification-provider-api-key"
-                bind:value={notificationsPanel.providerApiKey}
-                placeholder={m.integrations_placeholder_api_key()}
-                disabled={!canEdit ||
-                  !notificationsPanel.selectedProvider ||
-                  notificationsPanel.isLoadingConfig}
-                class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
-              />
-            </div>
           </div>
+
+          {#if selectedNotificationFields.length > 0}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {#each selectedNotificationFields as field (field.key)}
+                <div>
+                  <label
+                    for="notification-field-{field.key}"
+                    class="block text-xs text-slate-400 mb-1">{field.label()}</label
+                  >
+                  {#if field.options}
+                    <select
+                      id="notification-field-{field.key}"
+                      value={notificationsPanel.fieldValue(field.key) || field.options[0].value}
+                      onchange={(e) =>
+                        notificationsPanel.setFieldValue(field.key, e.currentTarget.value)}
+                      disabled={!canEdit ||
+                        notificationsPanel.isLoadingConfig ||
+                        notificationsPanel.isSavingConfig}
+                      class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
+                    >
+                      {#each field.options as option}
+                        <option value={option.value}>{option.label()}</option>
+                      {/each}
+                    </select>
+                  {:else}
+                    <input
+                      type={field.type ?? "text"}
+                      id="notification-field-{field.key}"
+                      value={notificationsPanel.fieldValue(field.key)}
+                      oninput={(e) =>
+                        notificationsPanel.setFieldValue(field.key, e.currentTarget.value)}
+                      placeholder={field.placeholder?.()}
+                      autocomplete="off"
+                      disabled={!canEdit ||
+                        notificationsPanel.isLoadingConfig ||
+                        notificationsPanel.isSavingConfig}
+                      class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
+                    />
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
 
           <div class="flex items-center justify-end gap-3">
             {#if notificationsPanel.saveStatus}
@@ -342,6 +480,43 @@
                 : m.integrations_btn_save()}
             </button>
           </div>
+
+          {#if notificationsPanel.selectedProvider}
+            <div class="space-y-2 border-t border-slate-800 pt-3">
+              <label for="notification-test-recipient" class="block text-xs text-slate-400"
+                >{m.integrations_test_recipient()}</label
+              >
+              <p class="text-xs text-slate-500">{m.integrations_test_hint()}</p>
+              <div class="flex flex-col gap-2 md:flex-row md:items-center">
+                <input
+                  type="text"
+                  id="notification-test-recipient"
+                  bind:value={testRecipient}
+                  placeholder={m.integrations_test_recipient_placeholder()}
+                  disabled={!canEdit || isSendingTest}
+                  class="w-full md:flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm bg-slate-800 text-white border-slate-700 hover:bg-slate-700 px-4 py-1 rounded-md text-xs cursor-pointer"
+                  disabled={!canEdit || isSendingTest || !testRecipient.trim()}
+                  onclick={sendTestMessage}
+                >
+                  {isSendingTest ? m.integrations_test_sending() : m.integrations_test_send()}
+                </button>
+              </div>
+              {#if testStatus}
+                <p
+                  class="text-xs font-semibold {testStatus.ok
+                    ? 'text-emerald-400'
+                    : 'text-rose-400'}"
+                  role={testStatus.ok ? "status" : "alert"}
+                >
+                  {testStatus.msg}
+                </p>
+              {/if}
+            </div>
+          {/if}
         </div>
       </div>
     </div>
