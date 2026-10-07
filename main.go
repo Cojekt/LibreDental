@@ -79,7 +79,9 @@ func main() {
 	}
 
 	notificationLogRepo := sqlite.NewNotificationRepository(db)
-	notificationService := services.NewNotificationService(patientRepo, appointmentRepo, notificationLogRepo, secretsService, auditService)
+	notificationService := services.NewNotificationService(patientRepo, appointmentRepo, practiceConfigRepo, notificationLogRepo, secretsService, auditService)
+	services.RegisterNotificationProvider(notificationService, services.NewSMTPEmailProvider())
+	services.RegisterNotificationProvider(notificationService, services.NewAWSSMSProvider())
 
 	serverCfg := app.LoadServerConfig()
 

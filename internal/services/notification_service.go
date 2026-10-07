@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
@@ -18,6 +19,7 @@ import (
 type NotificationService struct {
 	patientRepo     storage.PatientRepository
 	appointmentRepo storage.AppointmentRepository
+	practiceRepo    storage.PracticeConfigRepository
 	logRepo         storage.NotificationLogRepository
 	secrets         *SecretsService
 	auditService    *AuditService
@@ -27,6 +29,7 @@ type NotificationService struct {
 func NewNotificationService(
 	patientRepo storage.PatientRepository,
 	appointmentRepo storage.AppointmentRepository,
+	practiceRepo storage.PracticeConfigRepository,
 	logRepo storage.NotificationLogRepository,
 	secrets *SecretsService,
 	auditService *AuditService,
@@ -34,6 +37,7 @@ func NewNotificationService(
 	return &NotificationService{
 		patientRepo:     patientRepo,
 		appointmentRepo: appointmentRepo,
+		practiceRepo:    practiceRepo,
 		logRepo:         logRepo,
 		secrets:         secrets,
 		auditService:    auditService,
@@ -97,8 +101,9 @@ func (s *NotificationService) SetProviderConfig(token string, providerName strin
 // ─── Sending ─────────────────────────────────────────────────────────────────
 
 // recipientFor resolves the destination address/number for a patient and channel,
-// based on the patient's stored contact details.
-func recipientFor(patient *domain.Patient, channel domain.NotificationChannel) (string, error) {
+// based on the patient's stored contact details. Phone numbers are stored as typed, so they
+// are normalized here; country is the practice's, for numbers without a country code.
+func recipientFor(patient *domain.Patient, channel domain.NotificationChannel, country domain.CountryCode) (string, error) {
 	switch channel {
 	case domain.NotificationChannelEmail:
 		if patient.Email == "" {
@@ -109,10 +114,27 @@ func recipientFor(patient *domain.Patient, channel domain.NotificationChannel) (
 		if patient.PhonePrimary == "" {
 			return "", fmt.Errorf("patient has no phone number on file")
 		}
-		return patient.PhonePrimary, nil
+		return normalizePhoneFor(channel, patient.PhonePrimary, country)
 	default:
 		return "", fmt.Errorf("unsupported notification channel: %s", channel)
 	}
+}
+
+func normalizePhoneFor(channel domain.NotificationChannel, phone string, country domain.CountryCode) (string, error) {
+	if channel == domain.NotificationChannelSMS {
+		return toSMSNumber(phone, country)
+	}
+	return toE164(phone, country)
+}
+
+// practiceCountry returns the practice's country, used to read phone numbers that have no
+// country code. Before onboarding sets it, only numbers with a country code can be used.
+func (s *NotificationService) practiceCountry(ctx context.Context) domain.CountryCode {
+	cfg, err := s.practiceRepo.Get(ctx)
+	if err != nil || cfg == nil {
+		return ""
+	}
+	return cfg.CountryCode
 }
 
 // SendNotification sends a message to a patient through the given provider, subject to the
@@ -158,7 +180,7 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 		}
 	}
 
-	recipient, err := recipientFor(patient, provider.Channel())
+	recipient, err := recipientFor(patient, provider.Channel(), s.practiceCountry(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -230,6 +252,66 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 		return entry, fmt.Errorf("notification sent but failed to log audit: %w", auditErr)
 	}
 	return entry, nil
+}
+
+// SendTestMessage sends a message through a provider to an address or number staff type in,
+// to check the provider's saved settings. It isn't tied to a patient, so it writes no
+// notification log entry, but every attempt is audited.
+func (s *NotificationService) SendTestMessage(token string, providerName string, to string, subject string, body string) (*domain.NotificationResult, error) {
+	if s.auditService.GetSessionUser(token) == nil {
+		return nil, ErrUnauthorized
+	}
+	provider, ok := s.providers[providerName]
+	if !ok {
+		return nil, fmt.Errorf("provider %q not registered", providerName)
+	}
+	to = strings.TrimSpace(to)
+	if to == "" {
+		return nil, fmt.Errorf("%w: recipient is required", storage.ErrInvalidInput)
+	}
+	if body == "" {
+		return nil, fmt.Errorf("%w: message body is required", storage.ErrInvalidInput)
+	}
+
+	ctx := context.Background()
+	if provider.Channel() != domain.NotificationChannelEmail {
+		normalized, err := normalizePhoneFor(provider.Channel(), to, s.practiceCountry(ctx))
+		if err != nil {
+			return nil, err
+		}
+		to = normalized
+	}
+
+	config, err := s.secrets.getRawProviderConfig(providerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve config for provider %q: %w", providerName, err)
+	}
+
+	sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	result, sendErr := provider.Send(sendCtx, &domain.NotificationMessage{
+		Channel: provider.Channel(),
+		To:      to,
+		Subject: subject,
+		Body:    body,
+	}, config)
+	if sendErr == nil && result != nil && result.Status == domain.NotificationStatusFailed {
+		sendErr = fmt.Errorf("provider reported failed delivery")
+	}
+
+	detail := fmt.Sprintf("Sent test %s message via %s to %s", provider.Channel(), providerName, to)
+	if sendErr != nil {
+		detail = fmt.Sprintf("Failed to send test %s message via %s to %s: %v", provider.Channel(), providerName, to, sendErr)
+	}
+	auditErr := s.auditService.LogAction(token, domain.AuditActionCreate, "notification_test", detail)
+
+	switch {
+	case sendErr != nil:
+		return result, fmt.Errorf("provider %q failed to send test message: %w", providerName, sendErr)
+	case auditErr != nil:
+		return result, fmt.Errorf("test message sent but failed to log audit: %w", auditErr)
+	}
+	return result, nil
 }
 
 // ListNotificationLog returns notification history, optionally filtered by patient.

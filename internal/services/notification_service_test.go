@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,11 +20,13 @@ type dummyNotificationProvider struct {
 	channel    domain.NotificationChannel
 	sendErr    error
 	sendStatus domain.NotificationStatus
+	sent       []*domain.NotificationMessage
 }
 
 func (p *dummyNotificationProvider) Name() string                        { return p.name }
 func (p *dummyNotificationProvider) Channel() domain.NotificationChannel { return p.channel }
 func (p *dummyNotificationProvider) Send(ctx context.Context, msg *domain.NotificationMessage, config map[string]string) (*domain.NotificationResult, error) {
+	p.sent = append(p.sent, msg)
 	if p.sendErr != nil {
 		return nil, p.sendErr
 	}
@@ -72,7 +75,7 @@ func newTestNotificationService(t *testing.T) (*NotificationService, *AuditServi
 	}
 
 	secretsSvc := NewSecretsService()
-	notificationSvc := NewNotificationService(patientRepo, appointmentRepo, logRepo, secretsSvc, auditSvc)
+	notificationSvc := NewNotificationService(patientRepo, appointmentRepo, configRepo, logRepo, secretsSvc, auditSvc)
 
 	return notificationSvc, auditSvc, token
 }
@@ -93,7 +96,7 @@ func TestNotificationService_SendNotification(t *testing.T) {
 		Sex:           domain.SexFemale,
 		Status:        domain.StatusActive,
 		Email:         "jane@example.com",
-		PhonePrimary:  "+15555550100",
+		PhonePrimary:  "+1 (202) 555-0123",
 		ReminderOptIn: true,
 	}
 	if err := svc.patientRepo.Create(ctx, optedIn); err != nil {
@@ -149,6 +152,9 @@ func TestNotificationService_SendNotification(t *testing.T) {
 	}
 	if failedEntry == nil || failedEntry.Status != domain.NotificationStatusFailed {
 		t.Errorf("Expected failed notification log entry to be recorded, got %+v", failedEntry)
+	}
+	if failedEntry != nil && failedEntry.Recipient != "+12025550123" {
+		t.Errorf("Expected the phone number normalized to E.164, got %q", failedEntry.Recipient)
 	}
 
 	// A provider reporting failure without an error must still surface as an error.
@@ -251,5 +257,90 @@ func TestNotificationService_ProviderConfigRequiresSession(t *testing.T) {
 	}
 	if cfg["api_key"] == "" || cfg["api_key"] == "secret" {
 		t.Errorf("Expected redacted api_key, got %q", cfg["api_key"])
+	}
+}
+
+func TestNotificationService_SendTestMessage(t *testing.T) {
+	svc, auditSvc, token := newTestNotificationService(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	if err := svc.practiceRepo.Save(ctx, &domain.PracticeConfig{
+		ID: 1, ClinicName: "Smile Dental", CountryCode: domain.CountryUS, Currency: "USD",
+		ToothSystem: domain.ToothSystemUniversal, DateFormat: "YYYY-MM-DD", CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatalf("Failed to save practice config: %v", err)
+	}
+
+	email := &dummyNotificationProvider{name: "mock_email", channel: domain.NotificationChannelEmail}
+	sms := &dummyNotificationProvider{name: "mock_sms", channel: domain.NotificationChannelSMS}
+	failing := &dummyNotificationProvider{name: "mock_failing", channel: domain.NotificationChannelEmail, sendErr: errors.New("server said no")}
+	for _, p := range []*dummyNotificationProvider{email, sms, failing} {
+		RegisterNotificationProvider(svc, p)
+	}
+
+	if _, err := svc.SendTestMessage("bad_token", "mock_email", "me@example.com", "Test", "Hello"); err != ErrUnauthorized {
+		t.Errorf("Expected ErrUnauthorized, got %v", err)
+	}
+	if _, err := svc.SendTestMessage(token, "nope", "me@example.com", "Test", "Hello"); err == nil {
+		t.Errorf("Expected an unregistered provider to be rejected")
+	}
+	for _, args := range [][2]string{{" ", "Hello"}, {"me@example.com", ""}} {
+		if _, err := svc.SendTestMessage(token, "mock_email", args[0], "Test", args[1]); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("Expected to=%q body=%q to be rejected, got %v", args[0], args[1], err)
+		}
+	}
+
+	result, err := svc.SendTestMessage(token, "mock_email", " me@example.com ", "Test", "Hello")
+	if err != nil || result.Status != domain.NotificationStatusSent {
+		t.Fatalf("Test email failed: %+v, %v", result, err)
+	}
+	if got := email.sent[len(email.sent)-1]; got.To != "me@example.com" || got.Subject != "Test" || got.Body != "Hello" {
+		t.Errorf("Unexpected message passed to provider: %+v", got)
+	}
+
+	// Phone numbers are read in the practice's country and normalized before sending.
+	if _, err := svc.SendTestMessage(token, "mock_sms", "(202) 555-0123", "", "Hello"); err != nil {
+		t.Fatalf("Test SMS failed: %v", err)
+	}
+	if got := sms.sent[len(sms.sent)-1].To; got != "+12025550123" {
+		t.Errorf("Expected normalized number +12025550123, got %q", got)
+	}
+	if _, err := svc.SendTestMessage(token, "mock_sms", "555-0123", "", "Hello"); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Expected an invalid number to be rejected, got %v", err)
+	}
+	if len(sms.sent) != 1 {
+		t.Errorf("Expected the invalid number never to reach the provider, got %d sends", len(sms.sent))
+	}
+
+	if _, err := svc.SendTestMessage(token, "mock_failing", "me@example.com", "Test", "Hello"); err == nil || !strings.Contains(err.Error(), "server said no") {
+		t.Errorf("Expected the provider's error to be returned, got %v", err)
+	}
+
+	logs, err := auditSvc.GetAuditLogs(token, "", 50, 0)
+	if err != nil {
+		t.Fatalf("Failed to read audit log: %v", err)
+	}
+	var sent, failed int
+	for _, l := range logs {
+		if l.Resource != "notification_test" {
+			continue
+		}
+		if l.UserID != "prov_1" || l.PatientID != "" {
+			t.Errorf("Expected test sends attributed to the staff member with no patient, got %+v", l)
+		}
+		switch {
+		case strings.HasPrefix(l.Details, "Sent test"):
+			sent++
+		case strings.HasPrefix(l.Details, "Failed to send test") && strings.Contains(l.Details, "server said no"):
+			failed++
+		}
+	}
+	if sent != 2 || failed != 1 {
+		t.Errorf("Expected 2 successful and 1 failed test send audited, got %d and %d", sent, failed)
+	}
+
+	// Test sends aren't tied to a patient, so they leave no delivery history.
+	if entries, err := svc.ListNotificationLog(token, "", 50, 0); err != nil || len(entries) != 0 {
+		t.Errorf("Expected no notification log entries, got %d, %v", len(entries), err)
 	}
 }
