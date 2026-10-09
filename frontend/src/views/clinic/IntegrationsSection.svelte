@@ -18,6 +18,12 @@
     SetProviderConfig(name: string, config: ProviderConfig): Promise<void>;
   };
 
+  // Credential fields the backend never returns: it sends REDACTED in their place and swaps
+  // REDACTED back for the stored value on save. Must match secretConfigKeys in
+  // secrets_service.go.
+  const SECRET_KEYS = ["api_key", "password", "secret_access_key"];
+  const REDACTED = "********";
+
   // apiKey: whether the panel has the single API key field (claims) or only provider-specific
   // fields edited through fieldValue/setFieldValue (notifications).
   function createProviderPanel(service: ProviderConfigService, options: { apiKey: boolean }) {
@@ -29,6 +35,9 @@
     let isSavingConfig = $state(false);
     let providerConfigError = $state(false);
     let providerFullConfig = $state<{ [key: string]: string | undefined }>({});
+    // Secret fields with a stored value. They're shown empty rather than as REDACTED, which
+    // would otherwise be saved as part of the credential if someone typed after it.
+    let savedSecrets = $state<{ [key: string]: boolean }>({});
     let isLoadingConfig = $state(false);
     let saveStatus = $state<{ ok: boolean; msg: string } | null>(null);
 
@@ -49,6 +58,7 @@
       saveStatus = null;
       providerConfigError = false;
       providerFullConfig = {};
+      savedSecrets = {};
       providerApiKey = "";
       if (!selectedProvider) {
         isLoadingConfig = false;
@@ -59,7 +69,16 @@
       try {
         const config = await service.GetProviderConfig(reqProvider);
         if (reqProvider !== selectedProvider) return;
-        providerFullConfig = config || {};
+        const loaded = { ...(config || {}) };
+        const saved: { [key: string]: boolean } = {};
+        for (const key of SECRET_KEYS) {
+          if (loaded[key] === REDACTED) {
+            saved[key] = true;
+            loaded[key] = "";
+          }
+        }
+        providerFullConfig = loaded;
+        savedSecrets = saved;
         providerApiKey = (config && config["api_key"]) || "";
       } catch (e) {
         if (reqProvider !== selectedProvider) return;
@@ -78,13 +97,27 @@
       saveStatus = null;
       const reqProvider = selectedProvider;
       try {
+        const config: { [key: string]: string | undefined } = { ...providerFullConfig };
+        // An empty secret field means "keep the saved one".
+        for (const key of SECRET_KEYS) {
+          if (!config[key] && savedSecrets[key]) config[key] = REDACTED;
+        }
         await service.SetProviderConfig(
           reqProvider,
-          options.apiKey
-            ? { ...providerFullConfig, api_key: providerApiKey }
-            : { ...providerFullConfig }
+          options.apiKey ? { ...config, api_key: providerApiKey } : config
         );
         if (reqProvider === selectedProvider) {
+          // Typed secrets are now stored; don't keep them in the form as plain text.
+          const cleared = { ...providerFullConfig };
+          const saved = { ...savedSecrets };
+          for (const key of SECRET_KEYS) {
+            if (cleared[key]) {
+              saved[key] = true;
+              cleared[key] = "";
+            }
+          }
+          providerFullConfig = cleared;
+          savedSecrets = saved;
           saveStatus = { ok: true, msg: m.integrations_save_success() };
         }
       } catch (e) {
@@ -141,6 +174,9 @@
       },
       fieldValue(key: string): string {
         return providerFullConfig[key] ?? "";
+      },
+      secretSaved(key: string): boolean {
+        return !!savedSecrets[key];
       },
       setFieldValue(key: string, value: string) {
         providerFullConfig = { ...providerFullConfig, [key]: value };
@@ -447,7 +483,9 @@
                       value={notificationsPanel.fieldValue(field.key)}
                       oninput={(e) =>
                         notificationsPanel.setFieldValue(field.key, e.currentTarget.value)}
-                      placeholder={field.placeholder?.()}
+                      placeholder={notificationsPanel.secretSaved(field.key)
+                        ? m.integrations_secret_saved_placeholder()
+                        : field.placeholder?.()}
                       autocomplete="off"
                       disabled={!canEdit ||
                         notificationsPanel.isLoadingConfig ||
