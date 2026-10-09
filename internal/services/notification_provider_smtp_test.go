@@ -434,7 +434,6 @@ func TestSMTPEmailProvider_Send(t *testing.T) {
 
 func TestSMTPEmailProvider_SendFailsBeforeConnecting(t *testing.T) {
 	provider := NewSMTPEmailProvider()
-	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -457,8 +456,9 @@ func TestSMTPEmailProvider_SendFailsBeforeConnecting(t *testing.T) {
 		t.Errorf("Expected missing settings to be rejected, got %v", err)
 	}
 
-	// Nothing listens on port 1, so this is a connection failure: definitely not sent.
-	_, err := provider.Send(ctx, &domain.NotificationMessage{To: "a@example.com", Subject: "s", Body: "b"}, config)
+	// Nothing listens on the port that was just closed, so this is a connection failure:
+	// definitely not sent.
+	_, err = provider.Send(ctx, &domain.NotificationMessage{To: "a@example.com", Subject: "s", Body: "b"}, config)
 	if err == nil || errors.Is(err, domain.ErrDeliveryUnknown) {
 		t.Errorf("Expected a connection failure that is not uncertain, got %v", err)
 	}
