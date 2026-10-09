@@ -4,6 +4,7 @@
   import { getLocaleVersion } from "../lib/locale.svelte.js";
   import { calculateAge, formatDateOnly } from "$lib/date.js";
   import PatientDocumentsModal from "./PatientDocumentsModal.svelte";
+  import NotificationHistory from "./NotificationHistory.svelte";
 
   let {
     patient = null,
@@ -450,6 +451,8 @@
             {/if}
           </div>
         </div>
+
+        <NotificationHistory patientId={patient.id} />
 
         <!-- Medical Alerts -->
         <div class="space-y-2 text-xs">

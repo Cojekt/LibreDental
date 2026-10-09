@@ -3,6 +3,7 @@
   import { m } from "../../paraglide/messages.js";
   import PhoneInput from "../../components/ui/PhoneInput.svelte";
   import EmailInput from "../../components/ui/EmailInput.svelte";
+  import { getComputerTimezone, timezoneOptions } from "$lib/timezones.js";
 
   let {
     practiceConfig = null,
@@ -24,6 +25,7 @@
     currency = $bindable(""),
     toothSystem = $bindable(""),
     dateFormat = $bindable(""),
+    timezone = $bindable(""),
   } = $props<{
     practiceConfig: PracticeConfig | null;
     countryMeta?: CountryConfig | null;
@@ -44,7 +46,16 @@
     currency: string;
     toothSystem: string;
     dateFormat: string;
+    timezone: string;
   }>();
+
+  const computerTimezone = getComputerTimezone();
+  const zones = $derived(timezoneOptions(countryCode, timezone, computerTimezone));
+  // Appointment times are entered in this computer's timezone, so reminders only show the
+  // right time when the practice timezone matches it.
+  const timezoneMismatch = $derived(
+    !!timezone && !!computerTimezone && timezone !== computerTimezone
+  );
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -287,6 +298,43 @@
             {dateFormat || "YYYY-MM-DD"}
           </span>
         </div>
+      </div>
+      <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3 space-y-1.5">
+        <label
+          for="clinic-timezone"
+          class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+          >{m.clinic_profile_timezone_label()}</label
+        >
+        {#if isEditingProfile}
+          <select
+            id="clinic-timezone"
+            bind:value={timezone}
+            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+          >
+            <option value="">{m.clinic_profile_timezone_unset()}</option>
+            {#each zones as zone}
+              <option value={zone}>{zone}</option>
+            {/each}
+          </select>
+          {#if !timezone && computerTimezone}
+            <button
+              type="button"
+              class="text-xs text-sky-400 underline cursor-pointer"
+              onclick={() => (timezone = computerTimezone)}
+              >{m.clinic_profile_timezone_use_computer({ zone: computerTimezone })}</button
+            >
+          {/if}
+        {:else}
+          <span class="block text-sm font-medium text-slate-200 font-mono">
+            {timezone || m.clinic_profile_timezone_unset()}
+          </span>
+        {/if}
+        {#if timezoneMismatch}
+          <p class="text-xs text-amber-400" role="alert">
+            {m.clinic_profile_timezone_mismatch({ zone: timezone, computer: computerTimezone })}
+          </p>
+        {/if}
+        <p class="text-[11px] text-slate-500">{m.clinic_profile_timezone_hint()}</p>
       </div>
       <p class="text-[11px] text-slate-500 italic">
         {m.clinic_profile_regional_desc()}

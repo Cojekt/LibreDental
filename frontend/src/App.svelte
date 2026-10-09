@@ -170,7 +170,7 @@
   let insuranceSubscriberRelationship = $state("");
   let preferredContactMethod = $state("phone");
   let preferredLanguage = $state("en");
-  let reminderOptIn = $state(true);
+  let reminderOptIn = $state(false);
   let preferredProviderId = $state("");
   let referralSource = $state("");
   let medicalAlerts = $state("");
@@ -423,7 +423,9 @@
     insuranceSubscriberRelationship = "";
     preferredContactMethod = "phone";
     preferredLanguage = "en";
-    reminderOptIn = true;
+    // Reminders are sent automatically once a practice turns them on, so a new patient
+    // only receives them after staff tick this box.
+    reminderOptIn = false;
     preferredProviderId = "";
     referralSource = "";
     medicalAlerts = "";
@@ -945,6 +947,7 @@
   bind:status={apptStatus}
   bind:reason={apptReason}
   bind:notes={apptNotes}
+  appointmentId={isEditingAppt ? editingApptId : ""}
   onsave={handleSaveAppt}
   ondelete={() => handleDeleteAppt(editingApptId)}
 />
