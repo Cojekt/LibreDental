@@ -435,8 +435,17 @@ func TestSMTPEmailProvider_Send(t *testing.T) {
 func TestSMTPEmailProvider_SendFailsBeforeConnecting(t *testing.T) {
 	provider := NewSMTPEmailProvider()
 	ctx := context.Background()
-	config := map[string]string{"host": "127.0.0.1", "port": "1", "from_address": "reminders@clinic.example"}
-
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	if err := ln.Close(); err != nil {
+		t.Fatal(err)
+	}
+	config := map[string]string{"host": "127.0.0.1", "port": strconv.Itoa(port), "from_address": "reminders@clinic.example"}
 	for _, to := range []string{"not an address", "a@example.com\r\nBcc: b@example.com"} {
 		msg := &domain.NotificationMessage{To: to, Subject: "s", Body: "b"}
 		if _, err := provider.Send(ctx, msg, config); !errors.Is(err, storage.ErrInvalidInput) {
