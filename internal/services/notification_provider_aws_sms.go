@@ -34,8 +34,9 @@ var e164Pattern = regexp.MustCompile(`^\+[1-9][0-9]{1,14}$`)
 // after server errors and timeouts, when the first attempt may already have texted the patient.
 // Each send is therefore attempted exactly once.
 type AWSSMSProvider struct {
-	// endpoint replaces the AWS endpoint; only tests set it.
-	endpoint string
+	// endpoint and httpClient replace the AWS endpoint and HTTP client; only tests set them.
+	endpoint   string
+	httpClient pinpointsmsvoicev2.HTTPClient
 }
 
 func NewAWSSMSProvider() *AWSSMSProvider {
@@ -102,7 +103,11 @@ func (p *AWSSMSProvider) send(ctx context.Context, msg *domain.NotificationMessa
 		return nil, err
 	}
 
-	tracker := &requestWriteTracker{client: awshttp.NewBuildableClient()}
+	var base pinpointsmsvoicev2.HTTPClient = awshttp.NewBuildableClient()
+	if p.httpClient != nil {
+		base = p.httpClient
+	}
+	tracker := &connectionTracker{client: base}
 	opts := pinpointsmsvoicev2.Options{
 		Region:      cfg.region,
 		Credentials: credentials.NewStaticCredentialsProvider(cfg.accessKeyID, cfg.secretAccessKey, ""),
@@ -127,36 +132,37 @@ func (p *AWSSMSProvider) send(ctx context.Context, msg *domain.NotificationMessa
 
 	out, err := client.SendTextMessage(ctx, input)
 	if err != nil {
-		return &domain.NotificationResult{Status: domain.NotificationStatusFailed}, describeAWSSMSError(err, tracker.written.Load())
+		return &domain.NotificationResult{Status: domain.NotificationStatusFailed}, describeAWSSMSError(err, tracker.connected.Load())
 	}
 	return &domain.NotificationResult{ExternalMessageID: aws.ToString(out.MessageId), Status: domain.NotificationStatusSent}, nil
 }
 
-// requestWriteTracker wraps the SDK's HTTP client to record whether a request was fully
-// written to the network. The SDK reports a cancelled or failed request the same way whether
-// it happened before or after sending, but AWS can only have received a request that was
-// fully written.
-type requestWriteTracker struct {
-	client  pinpointsmsvoicev2.HTTPClient
-	written atomic.Bool
+// connectionTracker wraps the SDK's HTTP client to record whether a connection to AWS was
+// obtained. The SDK reports a cancelled or failed request the same way whether it happened
+// before or after sending, but nothing can reach AWS without a connection.
+//
+// GotConn is used rather than WroteRequest because both HTTP/1 and HTTP/2 call it on the
+// requesting goroutine before writing anything, so it has always run by the time Do returns.
+// HTTP/2 (which the SDK's client attempts) writes the request on another goroutine, and a
+// cancelled request can return before WroteRequest fires, which would make a sent text look
+// unsent.
+type connectionTracker struct {
+	client    pinpointsmsvoicev2.HTTPClient
+	connected atomic.Bool
 }
 
-func (t *requestWriteTracker) Do(req *http.Request) (*http.Response, error) {
+func (t *connectionTracker) Do(req *http.Request) (*http.Response, error) {
 	trace := &httptrace.ClientTrace{
-		WroteRequest: func(info httptrace.WroteRequestInfo) {
-			if info.Err == nil {
-				t.written.Store(true)
-			}
-		},
+		GotConn: func(httptrace.GotConnInfo) { t.connected.Store(true) },
 	}
 	return t.client.Do(req.WithContext(httptrace.WithClientTrace(req.Context(), trace)))
 }
 
 // describeAWSSMSError turns an SDK error into a message staff can act on, and marks it with
 // domain.ErrDeliveryUnknown when the text may have been sent anyway. AWS answers every
-// rejected request with HTTP 400, so only server errors, and requests that were sent but got
-// no response, are uncertain. requestWritten reports whether the request reached the network.
-func describeAWSSMSError(err error, requestWritten bool) error {
+// rejected request with HTTP 400, so only server errors, and requests that may have been sent
+// but got no response, are uncertain. connected reports whether a connection to AWS was made.
+func describeAWSSMSError(err error, connected bool) error {
 	var (
 		conflict   *types.ConflictException
 		quota      *types.ServiceQuotaExceededException
@@ -203,9 +209,9 @@ func describeAWSSMSError(err error, requestWritten bool) error {
 		return fmt.Errorf("%w: AWS returned a server error: %v", domain.ErrDeliveryUnknown, err)
 	}
 
-	// No response at all. If the request was never fully written (the context was cancelled
-	// first, or the connection failed), AWS can't have received it.
-	if !requestWritten {
+	// No response at all. Without a connection (the context was cancelled first, or connecting
+	// failed), AWS can't have received the request.
+	if !connected {
 		return fmt.Errorf("the request was not sent to AWS: %w", err)
 	}
 	return fmt.Errorf("%w: no response from AWS: %v", domain.ErrDeliveryUnknown, err)

@@ -575,6 +575,8 @@
   "integrations_aws_origination_identity_placeholder": "Phone number, pool ID, or ARN",
   "integrations_aws_configuration_set": "Configuration set (optional)",
   "integrations_secret_saved_placeholder": "Saved. Leave blank to keep it.",
+  "integrations_secret_remove": "Remove saved value",
+  "integrations_secret_will_remove": "The saved value will be removed when you save.",
   "integrations_test_recipient": "Send a test message",
   "integrations_test_hint": "Uses the saved settings, so save any changes first. Never use a patient's contact details.",
   "integrations_test_recipient_placeholder": "Email address or mobile number",

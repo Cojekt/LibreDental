@@ -165,7 +165,9 @@ func TestSecretsService_RedactsEverySecretField(t *testing.T) {
 	if err := svc.SetProviderConfig(providerName, map[string]string{"password": redactedSecret, "api_key": ""}); err != nil {
 		t.Fatalf("SetProviderConfig failed: %v", err)
 	}
-	raw, _ = svc.getRawProviderConfig(providerName)
+	if raw, err = svc.getRawProviderConfig(providerName); err != nil {
+		t.Fatalf("getRawProviderConfig failed: %v", err)
+	}
 	if raw["password"] != redactedSecret || raw["api_key"] != "" || raw["secret_access_key"] != "aws-secret" {
 		t.Errorf("Expected a literal \"********\" stored, api_key cleared, and the AWS secret kept; got %v", raw)
 	}
@@ -174,7 +176,9 @@ func TestSecretsService_RedactsEverySecretField(t *testing.T) {
 	if err := svc.SetProviderConfig("test_integration_secrets_empty", map[string]string{"host": "h"}); err != nil {
 		t.Fatalf("SetProviderConfig failed: %v", err)
 	}
-	raw, _ = svc.getRawProviderConfig("test_integration_secrets_empty")
+	if raw, err = svc.getRawProviderConfig("test_integration_secrets_empty"); err != nil {
+		t.Fatalf("getRawProviderConfig failed: %v", err)
+	}
 	for _, k := range secretConfigKeys {
 		if v, ok := raw[k]; ok {
 			t.Errorf("Expected no %s stored, got %q", k, v)

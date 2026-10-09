@@ -38,6 +38,8 @@
     // Secret fields with a stored value. They're shown empty rather than as REDACTED, which
     // would otherwise be saved as part of the credential if someone typed after it.
     let savedSecrets = $state<{ [key: string]: boolean }>({});
+    // Saved secrets staff chose to remove; saving sends "" for them, which clears them.
+    let removedSecrets = $state<{ [key: string]: boolean }>({});
     let isLoadingConfig = $state(false);
     let saveStatus = $state<{ ok: boolean; msg: string } | null>(null);
 
@@ -59,6 +61,7 @@
       providerConfigError = false;
       providerFullConfig = {};
       savedSecrets = {};
+      removedSecrets = {};
       providerApiKey = "";
       if (!selectedProvider) {
         isLoadingConfig = false;
@@ -99,9 +102,12 @@
       try {
         const config: { [key: string]: string | undefined } = { ...providerFullConfig };
         if (options.apiKey) config.api_key = providerApiKey;
-        // An empty secret field means "keep the saved one", so leave it out.
+        // An empty secret field means "keep the saved one", so leave it out, unless staff
+        // chose to remove it.
         for (const key of SECRET_KEYS) {
-          if (!config[key]) delete config[key];
+          if (config[key]) continue;
+          if (removedSecrets[key]) config[key] = "";
+          else delete config[key];
         }
         await service.SetProviderConfig(reqProvider, config);
         if (reqProvider === selectedProvider) {
@@ -112,10 +118,13 @@
             if (config[key]) {
               saved[key] = true;
               cleared[key] = "";
+            } else if (key in config) {
+              saved[key] = false;
             }
           }
           providerFullConfig = cleared;
           savedSecrets = saved;
+          removedSecrets = {};
           providerApiKey = "";
           saveStatus = { ok: true, msg: m.integrations_save_success() };
         }
@@ -175,7 +184,13 @@
         return providerFullConfig[key] ?? "";
       },
       secretSaved(key: string): boolean {
-        return !!savedSecrets[key];
+        return !!savedSecrets[key] && !removedSecrets[key];
+      },
+      secretRemoved(key: string): boolean {
+        return !!removedSecrets[key];
+      },
+      removeSecret(key: string) {
+        removedSecrets = { ...removedSecrets, [key]: true };
       },
       setFieldValue(key: string, value: string) {
         providerFullConfig = { ...providerFullConfig, [key]: value };
@@ -370,6 +385,17 @@
                   claimsPanel.isSavingConfig}
                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
               />
+              {#if claimsPanel.secretSaved("api_key")}
+                <button
+                  type="button"
+                  class="mt-1 text-xs text-slate-400 underline cursor-pointer disabled:opacity-50"
+                  disabled={!canEdit || claimsPanel.isLoadingConfig || claimsPanel.isSavingConfig}
+                  onclick={() => claimsPanel.removeSecret("api_key")}
+                  >{m.integrations_secret_remove()}</button
+                >
+              {:else if claimsPanel.secretRemoved("api_key")}
+                <p class="mt-1 text-xs text-amber-400">{m.integrations_secret_will_remove()}</p>
+              {/if}
             </div>
           </div>
 
@@ -493,6 +519,21 @@
                         notificationsPanel.isSavingConfig}
                       class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
                     />
+                    {#if notificationsPanel.secretSaved(field.key)}
+                      <button
+                        type="button"
+                        class="mt-1 text-xs text-slate-400 underline cursor-pointer disabled:opacity-50"
+                        disabled={!canEdit ||
+                          notificationsPanel.isLoadingConfig ||
+                          notificationsPanel.isSavingConfig}
+                        onclick={() => notificationsPanel.removeSecret(field.key)}
+                        >{m.integrations_secret_remove()}</button
+                      >
+                    {:else if notificationsPanel.secretRemoved(field.key)}
+                      <p class="mt-1 text-xs text-amber-400">
+                        {m.integrations_secret_will_remove()}
+                      </p>
+                    {/if}
                   {/if}
                 </div>
               {/each}

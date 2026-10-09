@@ -322,18 +322,60 @@ func TestAWSSMSProvider_CancellationBeforeAndAfterSending(t *testing.T) {
 		t.Errorf("Expected no request to reach AWS, got %d", n)
 	}
 
-	// The request is delivered, but the deadline expires while waiting for the response.
+	// The request reaches AWS, then the context is cancelled while waiting for the response.
+	// Cancelling only once the server has the request keeps this independent of timing.
+	received := make(chan struct{})
 	release := make(chan struct{})
-	slow := newFakeAWSSMS(t, func(w http.ResponseWriter) { <-release })
+	slow := newFakeAWSSMS(t, func(w http.ResponseWriter) {
+		close(received)
+		<-release
+	})
 	t.Cleanup(func() { close(release) })
 	provider = &AWSSMSProvider{endpoint: slow.server.URL}
-	ctx, cancelSlow := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	ctx, cancelSlow := context.WithCancel(context.Background())
 	defer cancelSlow()
+	go func() {
+		<-received
+		cancelSlow()
+	}()
 	_, err = provider.Send(ctx, testSMSMessage(), testAWSSMSConfig())
 	if !errors.Is(err, domain.ErrDeliveryUnknown) {
-		t.Errorf("Expected a timeout after sending to be uncertain, got %v", err)
+		t.Errorf("Expected a cancellation after sending to be uncertain, got %v", err)
 	}
 	if n := slow.attempts.Load(); n != 1 {
 		t.Errorf("Expected exactly 1 attempt, got %d", n)
+	}
+}
+
+// The SDK's client attempts HTTP/2, which writes requests on a separate goroutine; a request
+// cancelled after it reached AWS must still be reported as uncertain there.
+func TestAWSSMSProvider_CancellationAfterSendingOverHTTP2(t *testing.T) {
+	received := make(chan int, 1)
+	release := make(chan struct{})
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.ReadAll(r.Body)
+		received <- r.ProtoMajor
+		<-release
+	}))
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	t.Cleanup(server.Close)
+	t.Cleanup(func() { close(release) })
+
+	provider := &AWSSMSProvider{endpoint: server.URL, httpClient: server.Client()}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	proto := make(chan int, 1)
+	go func() {
+		p := <-received
+		proto <- p
+		cancel()
+	}()
+	_, err := provider.Send(ctx, testSMSMessage(), testAWSSMSConfig())
+	if p := <-proto; p != 2 {
+		t.Fatalf("Expected the request over HTTP/2, got HTTP/%d", p)
+	}
+	if !errors.Is(err, domain.ErrDeliveryUnknown) {
+		t.Errorf("Expected a cancellation after sending over HTTP/2 to be uncertain, got %v", err)
 	}
 }

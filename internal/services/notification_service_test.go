@@ -404,3 +404,27 @@ func TestNotificationService_PracticeCountryErrors(t *testing.T) {
 		t.Errorf("Expected an international number to work without a practice country, got %v", err)
 	}
 }
+
+// A test send must never fail silently: when the audit entry can't be written, that's
+// reported too, alongside any send failure. failingAuditRepo is in bridge_service_test.go.
+func TestNotificationService_SendTestMessageAuditFailures(t *testing.T) {
+	svc, _, _ := newTestNotificationService(t)
+	svc.auditService = NewAuditService(failingAuditRepo{}, svc.practiceRepo)
+	token, err := svc.auditService.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+	sendErr := errors.New("server said no")
+	RegisterNotificationProvider(svc, &dummyNotificationProvider{name: "mock_failing", channel: domain.NotificationChannelEmail, sendErr: sendErr})
+	RegisterNotificationProvider(svc, &dummyNotificationProvider{name: "mock_email", channel: domain.NotificationChannelEmail})
+
+	_, err = svc.SendTestMessage(token, "mock_failing", "me@example.com", "Test", "Hello")
+	if !errors.Is(err, sendErr) || !strings.Contains(err.Error(), "audit logging also failed: audit database unavailable") {
+		t.Errorf("Expected both the send and audit failures, got %v", err)
+	}
+
+	_, err = svc.SendTestMessage(token, "mock_email", "me@example.com", "Test", "Hello")
+	if err == nil || !strings.Contains(err.Error(), "test message sent but failed to log audit: audit database unavailable") {
+		t.Errorf("Expected the audit failure after a successful send, got %v", err)
+	}
+}
