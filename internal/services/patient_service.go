@@ -52,7 +52,11 @@ func (s *PatientService) CreatePatient(token string, p *domain.Patient) (*domain
 	if err != nil {
 		return nil, fmt.Errorf("failed to create patient: %w", err)
 	}
-	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", "Created new patient record"); err != nil {
+	consent := "not opted in to automated reminders"
+	if p.ReminderOptIn {
+		consent = reminderConsentChange(true)
+	}
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", "Created new patient record; "+consent); err != nil {
 		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return p, nil
@@ -62,14 +66,33 @@ func (s *PatientService) UpdatePatient(token string, p *domain.Patient) (*domain
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
-	err := s.repo.Update(context.Background(), p)
+	ctx := context.Background()
+	existing, err := s.repo.GetByID(ctx, p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update patient: %w", err)
 	}
-	if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Updated patient record"); err != nil {
+	err = s.repo.Update(ctx, p)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update patient: %w", err)
+	}
+	detail := "Updated patient record"
+	if p.ReminderOptIn != existing.ReminderOptIn {
+		detail += "; " + reminderConsentChange(p.ReminderOptIn)
+	}
+	if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", detail); err != nil {
 		fmt.Printf("Warning: failed to log audit action: %v\n", err)
 	}
 	return p, nil
+}
+
+// reminderConsentChange describes a patient's reminder opt-in for the audit trail. Automatic
+// reminders are sent on this flag alone, so who changed it, and when, must be traceable rather
+// than hidden in a generic "updated" entry.
+func reminderConsentChange(optedIn bool) string {
+	if optedIn {
+		return "opted in to automated reminders"
+	}
+	return "opted out of automated reminders"
 }
 
 func (s *PatientService) ArchivePatient(token string, id string) error {
