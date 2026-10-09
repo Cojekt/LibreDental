@@ -243,6 +243,11 @@
     if (!canEdit || !provider || !testRecipient.trim()) return;
     isSendingTest = true;
     testStatus = null;
+    // Staff can switch providers while a send is in flight; its result belongs only to the
+    // provider it was sent with.
+    const publish = (status: { ok: boolean; msg: string }) => {
+      if (notificationsPanel.selectedProvider === provider) testStatus = status;
+    };
     try {
       await NotificationService.SendTestMessage(
         auth.token,
@@ -251,10 +256,10 @@
         m.integrations_test_subject(),
         m.integrations_test_body()
       );
-      testStatus = { ok: true, msg: m.integrations_test_success() };
+      publish({ ok: true, msg: m.integrations_test_success() });
     } catch (e) {
       console.error("Failed to send test message:", e);
-      testStatus = { ok: false, msg: handleError(e, m.integrations_test_error()) };
+      publish({ ok: false, msg: handleError(e, m.integrations_test_error()) });
     } finally {
       isSendingTest = false;
     }
