@@ -52,7 +52,7 @@ func TestSecretsService_SetAndGetProviderConfig(t *testing.T) {
 	}
 }
 
-func TestSecretsService_SetProviderConfig_RedactedSentinelRestoresKey(t *testing.T) {
+func TestSecretsService_SetProviderConfig_OmittedSecretKeepsKey(t *testing.T) {
 	keyring.MockInit()
 	svc := NewSecretsService()
 
@@ -66,22 +66,17 @@ func TestSecretsService_SetProviderConfig_RedactedSentinelRestoresKey(t *testing
 		t.Fatalf("Initial SetProviderConfig failed: %v", err)
 	}
 
-	// Simulate the frontend sending the redacted sentinel back
-	withRedacted := map[string]string{
-		"api_key": "********",
-		"mode":    "staging",
-	}
-	if err := svc.SetProviderConfig(providerName, withRedacted); err != nil {
-		t.Fatalf("SetProviderConfig with sentinel failed: %v", err)
+	// The frontend never receives the key, so it leaves it out when it isn't changed.
+	if err := svc.SetProviderConfig(providerName, map[string]string{"mode": "staging"}); err != nil {
+		t.Fatalf("SetProviderConfig without the key failed: %v", err)
 	}
 
-	// The raw config should still have the original key
 	raw, err := svc.getRawProviderConfig(providerName)
 	if err != nil {
 		t.Fatalf("getRawProviderConfig failed: %v", err)
 	}
 	if raw["api_key"] != "original-secret-key" {
-		t.Errorf("Expected original api_key to be restored, got %q", raw["api_key"])
+		t.Errorf("Expected original api_key to be kept, got %q", raw["api_key"])
 	}
 	if raw["mode"] != "staging" {
 		t.Errorf("Expected mode to be updated to 'staging', got %q", raw["mode"])
@@ -148,16 +143,13 @@ func TestSecretsService_RedactsEverySecretField(t *testing.T) {
 		t.Errorf("Expected non-secret host to pass through, got %q", cfg["host"])
 	}
 
-	// The frontend sends back what it was given, plus its edits: placeholders keep the stored
-	// secrets, a typed value replaces one, and a placeholder for a secret that was never
-	// stored must not be saved as the literal placeholder.
-	if err := svc.SetProviderConfig("test_integration_secrets_empty", map[string]string{"host": "h"}); err != nil {
+	// Secrets left out keep their stored value; secrets sent are stored as sent, even when the
+	// value looks like the redaction placeholder.
+	if err := svc.SetProviderConfig(providerName, map[string]string{
+		"host":     "smtp2.example.com",
+		"password": "new-password",
+	}); err != nil {
 		t.Fatalf("SetProviderConfig failed: %v", err)
-	}
-	cfg["host"] = "smtp2.example.com"
-	cfg["password"] = "new-password"
-	if err := svc.SetProviderConfig(providerName, cfg); err != nil {
-		t.Fatalf("SetProviderConfig with placeholders failed: %v", err)
 	}
 	raw, err := svc.getRawProviderConfig(providerName)
 	if err != nil {
@@ -170,14 +162,25 @@ func TestSecretsService_RedactsEverySecretField(t *testing.T) {
 		}
 	}
 
-	if err := svc.SetProviderConfig("test_integration_secrets_empty", map[string]string{"host": "h", "password": redactedSecret}); err != nil {
+	if err := svc.SetProviderConfig(providerName, map[string]string{"password": redactedSecret, "api_key": ""}); err != nil {
 		t.Fatalf("SetProviderConfig failed: %v", err)
 	}
-	raw, err = svc.getRawProviderConfig("test_integration_secrets_empty")
-	if err != nil {
-		t.Fatalf("getRawProviderConfig failed: %v", err)
+	raw, _ = svc.getRawProviderConfig(providerName)
+	if raw["password"] != redactedSecret || raw["api_key"] != "" || raw["secret_access_key"] != "aws-secret" {
+		t.Errorf("Expected a literal \"********\" stored, api_key cleared, and the AWS secret kept; got %v", raw)
 	}
-	if v, ok := raw["password"]; ok {
-		t.Errorf("Expected no password to be stored, got %q", v)
+
+	// A provider with nothing stored yet, saved without secrets, stores none.
+	if err := svc.SetProviderConfig("test_integration_secrets_empty", map[string]string{"host": "h"}); err != nil {
+		t.Fatalf("SetProviderConfig failed: %v", err)
+	}
+	raw, _ = svc.getRawProviderConfig("test_integration_secrets_empty")
+	for _, k := range secretConfigKeys {
+		if v, ok := raw[k]; ok {
+			t.Errorf("Expected no %s stored, got %q", k, v)
+		}
+	}
+	if err := svc.SetProviderConfig("test_integration_secrets_nil", nil); err != nil {
+		t.Errorf("Expected a nil config to be accepted, got %v", err)
 	}
 }

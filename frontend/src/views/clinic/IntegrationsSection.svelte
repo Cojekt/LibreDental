@@ -18,9 +18,9 @@
     SetProviderConfig(name: string, config: ProviderConfig): Promise<void>;
   };
 
-  // Credential fields the backend never returns: it sends REDACTED in their place and swaps
-  // REDACTED back for the stored value on save. Must match secretConfigKeys in
-  // secrets_service.go.
+  // Credential fields the backend never returns: it sends REDACTED to show one is stored. On
+  // save, a secret left out keeps its stored value, so untouched secrets are never sent. Must
+  // match secretConfigKeys in secrets_service.go.
   const SECRET_KEYS = ["api_key", "password", "secret_access_key"];
   const REDACTED = "********";
 
@@ -79,7 +79,7 @@
         }
         providerFullConfig = loaded;
         savedSecrets = saved;
-        providerApiKey = (config && config["api_key"]) || "";
+        providerApiKey = loaded["api_key"] || "";
       } catch (e) {
         if (reqProvider !== selectedProvider) return;
         console.error("Failed to load provider config:", e);
@@ -98,26 +98,25 @@
       const reqProvider = selectedProvider;
       try {
         const config: { [key: string]: string | undefined } = { ...providerFullConfig };
-        // An empty secret field means "keep the saved one".
+        if (options.apiKey) config.api_key = providerApiKey;
+        // An empty secret field means "keep the saved one", so leave it out.
         for (const key of SECRET_KEYS) {
-          if (!config[key] && savedSecrets[key]) config[key] = REDACTED;
+          if (!config[key]) delete config[key];
         }
-        await service.SetProviderConfig(
-          reqProvider,
-          options.apiKey ? { ...config, api_key: providerApiKey } : config
-        );
+        await service.SetProviderConfig(reqProvider, config);
         if (reqProvider === selectedProvider) {
           // Typed secrets are now stored; don't keep them in the form as plain text.
           const cleared = { ...providerFullConfig };
           const saved = { ...savedSecrets };
           for (const key of SECRET_KEYS) {
-            if (cleared[key]) {
+            if (config[key]) {
               saved[key] = true;
               cleared[key] = "";
             }
           }
           providerFullConfig = cleared;
           savedSecrets = saved;
+          providerApiKey = "";
           saveStatus = { ok: true, msg: m.integrations_save_success() };
         }
       } catch (e) {
@@ -362,7 +361,9 @@
                 type="password"
                 id="claims-provider-api-key"
                 bind:value={claimsPanel.providerApiKey}
-                placeholder={m.integrations_placeholder_api_key()}
+                placeholder={claimsPanel.secretSaved("api_key")
+                  ? m.integrations_secret_saved_placeholder()
+                  : m.integrations_placeholder_api_key()}
                 disabled={!canEdit ||
                   !claimsPanel.selectedProvider ||
                   claimsPanel.isLoadingConfig ||
