@@ -42,6 +42,10 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 		 VALUES ('claim_1', 'pat_1', '2026-02-01', 'submitted', '[]', '2026-02-01', '2026-02-01')`,
 		`INSERT INTO dental_conditions (id, patient_id, tooth_number, ada_code, status, created_at, updated_at)
 		 VALUES ('cond_1', 'pat_1', 3, 'D2392', 'treatment_planned', '2026-02-01', '2026-02-01')`,
+		`INSERT INTO practice_config (id, clinic_name, country_code, currency, created_at, updated_at)
+		 VALUES (1, 'Smile Dental', 'US', 'USD', '2026-01-01', '2026-01-01')`,
+		`INSERT INTO notification_log (id, patient_id, channel, provider_name, recipient, body, status, sent_at)
+		 VALUES ('notif_1', 'pat_1', 'sms', 'aws_sms', '+12025550123', 'Reminder', 'sent', '2026-02-01')`,
 	} {
 		if _, err := old.Exec(stmt); err != nil {
 			t.Fatalf("seed old schema: %v\n%s", err, stmt)
@@ -65,6 +69,25 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	}
 	assertLinkedRowsIntact(t, db.DB, "upgrade")
 
+	// The reminder migration adds columns to tables that already hold rows: existing
+	// notifications have no reminder key, and the practice has no timezone until one is set.
+	var kind, apptStart sql.NullString
+	var status string
+	if err := db.QueryRow(`SELECT status, reminder_kind, appointment_start FROM notification_log WHERE id = 'notif_1'`).
+		Scan(&status, &kind, &apptStart); err != nil {
+		t.Fatalf("notification lost in upgrade: %v", err)
+	}
+	if status != "sent" || kind.Valid || apptStart.Valid {
+		t.Errorf("existing notification changed in upgrade: %s / %v / %v", status, kind, apptStart)
+	}
+	var clinic, timezone string
+	if err := db.QueryRow(`SELECT clinic_name, timezone FROM practice_config WHERE id = 1`).Scan(&clinic, &timezone); err != nil {
+		t.Fatalf("practice config lost in upgrade: %v", err)
+	}
+	if clinic != "Smile Dental" || timezone != "" {
+		t.Errorf("practice config changed in upgrade: %q / timezone %q", clinic, timezone)
+	}
+
 	// Rolling back and re-applying must also work on a populated database.
 	gooseMu.Lock()
 	defer gooseMu.Unlock()
@@ -77,6 +100,9 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	}
 	if err := db.QueryRow(`SELECT first_name FROM patients WHERE id = 'pat_1'`).Scan(&name); err != nil || name != "Jane" {
 		t.Errorf("patient lost across rollback: %q (err %v)", name, err)
+	}
+	if err := db.QueryRow(`SELECT status FROM notification_log WHERE id = 'notif_1'`).Scan(&status); err != nil || status != "sent" {
+		t.Errorf("notification lost across rollback: %q (err %v)", status, err)
 	}
 	assertLinkedRowsIntact(t, db.DB, "rollback and re-apply")
 }
