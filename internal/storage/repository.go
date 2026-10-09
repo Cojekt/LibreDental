@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
 )
@@ -130,6 +131,29 @@ type NotificationLogRepository interface {
 	Create(ctx context.Context, entry *domain.NotificationLog) error
 	List(ctx context.Context, patientID string, limit, offset int) ([]*domain.NotificationLog, error)
 	ListByAppointment(ctx context.Context, appointmentID string) ([]*domain.NotificationLog, error)
+
+	// ClaimReminder inserts entry, an automatic reminder, as pending unless a reminder with
+	// the same appointment, appointment start, kind, and channel already exists, or limit is
+	// non-nil and the patient has reached it. The check and the insert are one statement, so
+	// two processes sharing the database can't both claim.
+	ClaimReminder(ctx context.Context, entry *domain.NotificationLog, limit *domain.ReminderLimit) (domain.ReminderClaim, error)
+	// RecordSkipped stores entry, an automatic reminder that won't be sent, with its reason.
+	// It does nothing if that reminder is already recorded.
+	RecordSkipped(ctx context.Context, entry *domain.NotificationLog) error
+	// UpdateResult records the outcome of sending a claimed reminder.
+	UpdateResult(ctx context.Context, id string, status domain.NotificationStatus, externalMessageID, errorMessage string) error
+	// MarkStalePending marks reminders still pending since before cutoff as unknown: their
+	// sender stopped mid-send, so they may or may not have gone out.
+	MarkStalePending(ctx context.Context, cutoff time.Time) (int64, error)
+}
+
+// ReminderRepository stores the automatic reminder settings and rules.
+type ReminderRepository interface {
+	// GetSettings returns ErrNotFound until settings have been saved.
+	GetSettings(ctx context.Context) (*domain.ReminderSettings, error)
+	SaveSettings(ctx context.Context, settings *domain.ReminderSettings) error
+	ListRules(ctx context.Context) ([]*domain.ReminderRule, error)
+	SaveRule(ctx context.Context, rule *domain.ReminderRule) error
 }
 
 // ProgramBridgeRepository defines storage operations for local program bridge configuration.

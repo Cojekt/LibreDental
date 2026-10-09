@@ -122,6 +122,10 @@ func (s *PracticeConfigService) UpdatePracticeConfig(token string, cfg domain.Pr
 	if cfg.NPI != "" && !validNPI(cfg.NPI) {
 		return nil, fmt.Errorf("%w: practice NPI is not a valid 10-digit NPI", storage.ErrInvalidInput)
 	}
+	cfg.Timezone = strings.TrimSpace(cfg.Timezone)
+	if err := validatePracticeTimezone(cfg.Timezone); err != nil {
+		return nil, err
+	}
 	err := s.repo.Save(context.Background(), &cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update practice config: %w", err)
@@ -284,6 +288,22 @@ func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*
 
 	p.Pin = "****"
 	return &p, nil
+}
+
+// validatePracticeTimezone accepts an empty timezone (not set yet) or an IANA name. "Local" is
+// rejected: it would mean the timezone of whichever machine runs the backend, which in LAN
+// mode isn't necessarily where appointments are entered.
+func validatePracticeTimezone(name string) error {
+	if name == "" {
+		return nil
+	}
+	if name == "Local" {
+		return fmt.Errorf("%w: choose a named timezone, not the computer's local one", storage.ErrInvalidInput)
+	}
+	if _, err := time.LoadLocation(name); err != nil {
+		return fmt.Errorf("%w: %q is not a known timezone", storage.ErrInvalidInput, name)
+	}
+	return nil
 }
 
 // rejectReservedProviderID stops a staff account from taking a system actor ID, which would
