@@ -43,4 +43,7 @@ type AuditLogEntry struct {
 	ResourceID string      `json:"resource_id,omitempty"`
 	Details    string      `json:"details,omitempty"`
 	IPAddress  string      `json:"ip_address,omitempty"`
+	// SystemActor reports whether UserID is a system actor (IsSystemActorID). It's derived
+	// when entries are read, not stored, so the frontend doesn't re-implement the rule.
+	SystemActor bool `json:"system_actor"`
 }

@@ -139,5 +139,12 @@ func (s *AuditService) GetAuditLogs(token string, patientID string, limit int, o
 	if s.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
-	return s.repo.Query(context.Background(), patientID, limit, offset)
+	entries, err := s.repo.Query(context.Background(), patientID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range entries {
+		e.SystemActor = domain.IsSystemActorID(e.UserID)
+	}
+	return entries, nil
 }

@@ -23,7 +23,7 @@
   // System actors are LibreDental itself acting with no one logged in (for example automatic
   // reminders), so show a localized name rather than the one stored in the log.
   function getActorName(log: AuditLogEntry): string {
-    return log.user_id.startsWith("system:") ? m.audit_system_actor() : log.user_name;
+    return log.system_actor ? m.audit_system_actor() : log.user_name;
   }
 
   let requestGen = 0;
