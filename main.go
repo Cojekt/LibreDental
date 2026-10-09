@@ -5,6 +5,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	// Bundles the timezone database: Windows machines without Go installed have none, and
+	// reminders must render appointment times in the practice's timezone.
+	_ "time/tzdata"
 
 	"github.com/LibreDental/libredental/internal/app"
 	"github.com/LibreDental/libredental/internal/services"
@@ -83,6 +86,9 @@ func main() {
 	services.RegisterNotificationProvider(notificationService, services.NewSMTPEmailProvider())
 	services.RegisterNotificationProvider(notificationService, services.NewAWSSMSProvider())
 
+	reminderRepo := sqlite.NewReminderRepository(db)
+	reminderService := services.NewReminderService(reminderRepo, patientRepo, appointmentRepo, practiceConfigRepo, notificationLogRepo, notificationService, auditService)
+
 	serverCfg := app.LoadServerConfig()
 
 	wailsApp := application.New(application.Options{
@@ -106,6 +112,9 @@ func main() {
 			application.NewService(bridgeService),
 			application.NewService(timecardService),
 			application.NewService(auditService),
+			application.NewService(reminderService),
+			// Last, so the reminder job starts after every other service and stops first.
+			application.NewService(newReminderJobLifecycle(reminderService)),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
