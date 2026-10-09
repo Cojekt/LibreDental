@@ -307,6 +307,9 @@ func (s *NotificationService) SendTestMessage(token string, providerName string,
 
 	switch {
 	case sendErr != nil:
+		if auditErr != nil {
+			return result, fmt.Errorf("provider %q failed to send test message: %w (audit logging also failed: %v)", providerName, sendErr, auditErr)
+		}
 		return result, fmt.Errorf("provider %q failed to send test message: %w", providerName, sendErr)
 	case auditErr != nil:
 		return result, fmt.Errorf("test message sent but failed to log audit: %w", auditErr)
