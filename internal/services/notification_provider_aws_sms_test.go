@@ -305,3 +305,35 @@ func TestAWSSMSLive(t *testing.T) {
 	}
 	t.Logf("Sent; message ID %s", result.ExternalMessageID)
 }
+
+// The SDK reports a cancelled context the same way whether it happened before or after the
+// request was sent; only a request that reached the network can leave the outcome unknown.
+func TestAWSSMSProvider_CancellationBeforeAndAfterSending(t *testing.T) {
+	fake := newFakeAWSSMS(t, awsJSONResponse(200, `{"MessageId":"msg-0123"}`))
+	provider := &AWSSMSProvider{endpoint: fake.server.URL}
+
+	cancelled, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := provider.Send(cancelled, testSMSMessage(), testAWSSMSConfig())
+	if err == nil || errors.Is(err, domain.ErrDeliveryUnknown) {
+		t.Errorf("Expected a definite failure for a request cancelled before sending, got %v", err)
+	}
+	if n := fake.attempts.Load(); n != 0 {
+		t.Errorf("Expected no request to reach AWS, got %d", n)
+	}
+
+	// The request is delivered, but the deadline expires while waiting for the response.
+	release := make(chan struct{})
+	slow := newFakeAWSSMS(t, func(w http.ResponseWriter) { <-release })
+	t.Cleanup(func() { close(release) })
+	provider = &AWSSMSProvider{endpoint: slow.server.URL}
+	ctx, cancelSlow := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancelSlow()
+	_, err = provider.Send(ctx, testSMSMessage(), testAWSSMSConfig())
+	if !errors.Is(err, domain.ErrDeliveryUnknown) {
+		t.Errorf("Expected a timeout after sending to be uncertain, got %v", err)
+	}
+	if n := slow.attempts.Load(); n != 1 {
+		t.Errorf("Expected exactly 1 attempt, got %d", n)
+	}
+}
