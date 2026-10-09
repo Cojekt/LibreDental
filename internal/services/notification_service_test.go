@@ -344,3 +344,63 @@ func TestNotificationService_SendTestMessage(t *testing.T) {
 		t.Errorf("Expected no notification log entries, got %d, %v", len(entries), err)
 	}
 }
+
+// failingPracticeRepo returns err from Get; NotificationService uses no other method.
+type failingPracticeRepo struct {
+	storage.PracticeConfigRepository
+	err error
+}
+
+func (r failingPracticeRepo) Get(context.Context) (*domain.PracticeConfig, error) {
+	return nil, r.err
+}
+
+// The practice's country is only needed to read phone numbers. A storage failure must be
+// reported as such, not as an unreadable number; a practice that isn't set up yet just
+// can't use national-format numbers.
+func TestNotificationService_PracticeCountryErrors(t *testing.T) {
+	svc, _, token := newTestNotificationService(t)
+	sms := &dummyNotificationProvider{name: "mock_sms", channel: domain.NotificationChannelSMS}
+	email := &dummyNotificationProvider{name: "mock_email", channel: domain.NotificationChannelEmail}
+	RegisterNotificationProvider(svc, sms)
+	RegisterNotificationProvider(svc, email)
+	ctx := context.Background()
+	if err := svc.patientRepo.Create(ctx, &domain.Patient{
+		ID: "pat_country", FirstName: "Jane", LastName: "Doe", Email: "jane@example.com",
+		PhonePrimary: "(202) 555-0123", ReminderOptIn: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	svc.practiceRepo = failingPracticeRepo{err: errors.New("disk I/O error")}
+	for name, send := range map[string]func() error{
+		"test send": func() error {
+			_, err := svc.SendTestMessage(token, "mock_sms", "(202) 555-0123", "", "Hello")
+			return err
+		},
+		"patient send": func() error {
+			_, err := svc.SendNotification(token, "pat_country", "", "mock_sms", "", "Hello")
+			return err
+		},
+	} {
+		err := send()
+		if err == nil || !strings.Contains(err.Error(), "disk I/O error") || errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("%s: expected the storage error, got %v", name, err)
+		}
+	}
+	if len(sms.sent) != 0 {
+		t.Errorf("Expected nothing sent while practice settings can't be read, got %d", len(sms.sent))
+	}
+	if _, err := svc.SendTestMessage(token, "mock_email", "me@example.com", "Test", "Hello"); err != nil {
+		t.Errorf("Email doesn't need the practice's country, but failed: %v", err)
+	}
+
+	// Not set up yet: only numbers with a country code can be read.
+	svc.practiceRepo = failingPracticeRepo{err: storage.ErrNotFound}
+	if _, err := svc.SendTestMessage(token, "mock_sms", "(202) 555-0123", "", "Hello"); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Expected a national number to be unreadable without a practice country, got %v", err)
+	}
+	if _, err := svc.SendTestMessage(token, "mock_sms", "+1 202 555 0123", "", "Hello"); err != nil {
+		t.Errorf("Expected an international number to work without a practice country, got %v", err)
+	}
+}

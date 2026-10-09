@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -128,13 +129,18 @@ func normalizePhoneFor(channel domain.NotificationChannel, phone string, country
 }
 
 // practiceCountry returns the practice's country, used to read phone numbers that have no
-// country code. Before onboarding sets it, only numbers with a country code can be used.
-func (s *NotificationService) practiceCountry(ctx context.Context) domain.CountryCode {
+// country code. Before onboarding sets it, it's empty and only numbers with a country code
+// can be used. Any other error is returned, so a storage failure isn't mistaken for an
+// unreadable phone number.
+func (s *NotificationService) practiceCountry(ctx context.Context) (domain.CountryCode, error) {
 	cfg, err := s.practiceRepo.Get(ctx)
-	if err != nil || cfg == nil {
-		return ""
+	if errors.Is(err, storage.ErrNotFound) {
+		return "", nil
 	}
-	return cfg.CountryCode
+	if err != nil {
+		return "", fmt.Errorf("failed to read practice settings: %w", err)
+	}
+	return cfg.CountryCode, nil
 }
 
 // SendNotification sends a message to a patient through the given provider, subject to the
@@ -180,7 +186,13 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 		}
 	}
 
-	recipient, err := recipientFor(patient, provider.Channel(), s.practiceCountry(ctx))
+	var country domain.CountryCode
+	if provider.Channel() != domain.NotificationChannelEmail {
+		if country, err = s.practiceCountry(ctx); err != nil {
+			return nil, err
+		}
+	}
+	recipient, err := recipientFor(patient, provider.Channel(), country)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +287,11 @@ func (s *NotificationService) SendTestMessage(token string, providerName string,
 
 	ctx := context.Background()
 	if provider.Channel() != domain.NotificationChannelEmail {
-		normalized, err := normalizePhoneFor(provider.Channel(), to, s.practiceCountry(ctx))
+		country, err := s.practiceCountry(ctx)
+		if err != nil {
+			return nil, err
+		}
+		normalized, err := normalizePhoneFor(provider.Channel(), to, country)
 		if err != nil {
 			return nil, err
 		}
