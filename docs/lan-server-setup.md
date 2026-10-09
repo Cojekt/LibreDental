@@ -35,6 +35,19 @@ desktop user's session instead, for example as a user unit
 `User=`, `WantedBy=default.target`, then `systemctl --user enable --now libredental`),
 and enable automatic login for that user so the keyring is unlocked after a reboot.
 
+### Automatic Appointment Reminders
+
+To set up reminders for a practice, see [Setting Up Appointment Reminders](appointment-reminders-setup.md).
+If the practice turns on reminders (**My Clinic > Reminders**), they are sent by whichever
+LibreDental process is running: the server, and also the desktop app if it runs on the
+server PC. Both can run at once; each reminder is claimed in the shared database before it's
+sent, so it goes out only once. Reminders need the notification providers' credentials, so
+on Linux the server must run where it can reach the keyring (see above). Problems such as an
+unreadable keyring are shown under **Reminder activity** on the Reminders screen.
+
+The practice timezone (**My Clinic > Practice Profile & Standards**) must match the timezone of the
+workstations used to book appointments; the server PC's own timezone isn't used.
+
 ### Prevent System Sleep
 
 The Server PC must **never enter sleep/suspend mode** while the practice is open (the display monitor may turn off).
