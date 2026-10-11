@@ -1,4 +1,4 @@
-import { getLocale } from "../paraglide/runtime.js";
+import { currentLocale } from "./locale.svelte.js";
 
 /**
  * Format an integer cent amount as a localized currency string.
@@ -9,7 +9,7 @@ export function formatCurrency(cents: number, currencyCode?: string | null): str
   if (!curr) return (cents / 100).toFixed(2);
   try {
     // narrowSymbol: a Canadian clinic's own currency reads "$120.00", not "CA$120.00".
-    return new Intl.NumberFormat(getLocale(), {
+    return new Intl.NumberFormat(currentLocale(), {
       style: "currency",
       currency: curr,
       currencyDisplay: "narrowSymbol",

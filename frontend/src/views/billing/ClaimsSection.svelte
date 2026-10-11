@@ -438,6 +438,10 @@
     </button>
   </div>
 
+  {#if claimsRegionLocked}
+    <p class="m-0 text-xs text-amber-400">{m.integrations_claims_region_locked_body()}</p>
+  {/if}
+
   {#if claimsError}
     <p class="m-0 text-sm font-semibold text-rose-400" role="alert">{claimsError}</p>
   {/if}
