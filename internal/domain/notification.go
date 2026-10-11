@@ -2,8 +2,15 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+// ErrDeliveryUnknown marks a failed send whose message may still have reached the recipient,
+// for example a timeout after the vendor received the request. Retrying it could deliver a
+// duplicate, so callers must not retry automatically. Any other provider error means the
+// message was not sent.
+var ErrDeliveryUnknown = errors.New("delivery outcome unknown")
 
 // NotificationChannel identifies how a notification is delivered.
 type NotificationChannel string

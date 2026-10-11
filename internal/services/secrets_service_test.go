@@ -52,7 +52,7 @@ func TestSecretsService_SetAndGetProviderConfig(t *testing.T) {
 	}
 }
 
-func TestSecretsService_SetProviderConfig_RedactedSentinelRestoresKey(t *testing.T) {
+func TestSecretsService_SetProviderConfig_OmittedSecretKeepsKey(t *testing.T) {
 	keyring.MockInit()
 	svc := NewSecretsService()
 
@@ -66,22 +66,17 @@ func TestSecretsService_SetProviderConfig_RedactedSentinelRestoresKey(t *testing
 		t.Fatalf("Initial SetProviderConfig failed: %v", err)
 	}
 
-	// Simulate the frontend sending the redacted sentinel back
-	withRedacted := map[string]string{
-		"api_key": "********",
-		"mode":    "staging",
-	}
-	if err := svc.SetProviderConfig(providerName, withRedacted); err != nil {
-		t.Fatalf("SetProviderConfig with sentinel failed: %v", err)
+	// The frontend never receives the key, so it leaves it out when it isn't changed.
+	if err := svc.SetProviderConfig(providerName, map[string]string{"mode": "staging"}); err != nil {
+		t.Fatalf("SetProviderConfig without the key failed: %v", err)
 	}
 
-	// The raw config should still have the original key
 	raw, err := svc.getRawProviderConfig(providerName)
 	if err != nil {
 		t.Fatalf("getRawProviderConfig failed: %v", err)
 	}
 	if raw["api_key"] != "original-secret-key" {
-		t.Errorf("Expected original api_key to be restored, got %q", raw["api_key"])
+		t.Errorf("Expected original api_key to be kept, got %q", raw["api_key"])
 	}
 	if raw["mode"] != "staging" {
 		t.Errorf("Expected mode to be updated to 'staging', got %q", raw["mode"])
@@ -118,5 +113,78 @@ func TestSecretsService_DeleteProviderConfig_Idempotent(t *testing.T) {
 	// Deleting a provider that was never stored should not error
 	if err := svc.DeleteProviderConfig("never_stored_provider"); err != nil {
 		t.Errorf("Expected no error deleting nonexistent provider, got: %v", err)
+	}
+}
+
+func TestSecretsService_RedactsEverySecretField(t *testing.T) {
+	keyring.MockInit()
+	svc := NewSecretsService()
+	providerName := "test_integration_secrets"
+
+	if err := svc.SetProviderConfig(providerName, map[string]string{
+		"api_key":           "key-1",
+		"password":          "smtp-password",
+		"secret_access_key": "aws-secret",
+		"host":              "smtp.example.com",
+	}); err != nil {
+		t.Fatalf("SetProviderConfig failed: %v", err)
+	}
+
+	cfg, err := svc.GetProviderConfig(providerName)
+	if err != nil {
+		t.Fatalf("GetProviderConfig failed: %v", err)
+	}
+	for _, k := range []string{"api_key", "password", "secret_access_key"} {
+		if cfg[k] != redactedSecret {
+			t.Errorf("Expected %s to be redacted, got %q", k, cfg[k])
+		}
+	}
+	if cfg["host"] != "smtp.example.com" {
+		t.Errorf("Expected non-secret host to pass through, got %q", cfg["host"])
+	}
+
+	// Secrets left out keep their stored value; secrets sent are stored as sent, even when the
+	// value looks like the redaction placeholder.
+	if err := svc.SetProviderConfig(providerName, map[string]string{
+		"host":     "smtp2.example.com",
+		"password": "new-password",
+	}); err != nil {
+		t.Fatalf("SetProviderConfig failed: %v", err)
+	}
+	raw, err := svc.getRawProviderConfig(providerName)
+	if err != nil {
+		t.Fatalf("getRawProviderConfig failed: %v", err)
+	}
+	want := map[string]string{"api_key": "key-1", "password": "new-password", "secret_access_key": "aws-secret", "host": "smtp2.example.com"}
+	for k, v := range want {
+		if raw[k] != v {
+			t.Errorf("Stored %s = %q; want %q", k, raw[k], v)
+		}
+	}
+
+	if err := svc.SetProviderConfig(providerName, map[string]string{"password": redactedSecret, "api_key": ""}); err != nil {
+		t.Fatalf("SetProviderConfig failed: %v", err)
+	}
+	if raw, err = svc.getRawProviderConfig(providerName); err != nil {
+		t.Fatalf("getRawProviderConfig failed: %v", err)
+	}
+	if raw["password"] != redactedSecret || raw["api_key"] != "" || raw["secret_access_key"] != "aws-secret" {
+		t.Errorf("Expected a literal \"********\" stored, api_key cleared, and the AWS secret kept; got %v", raw)
+	}
+
+	// A provider with nothing stored yet, saved without secrets, stores none.
+	if err := svc.SetProviderConfig("test_integration_secrets_empty", map[string]string{"host": "h"}); err != nil {
+		t.Fatalf("SetProviderConfig failed: %v", err)
+	}
+	if raw, err = svc.getRawProviderConfig("test_integration_secrets_empty"); err != nil {
+		t.Fatalf("getRawProviderConfig failed: %v", err)
+	}
+	for _, k := range secretConfigKeys {
+		if v, ok := raw[k]; ok {
+			t.Errorf("Expected no %s stored, got %q", k, v)
+		}
+	}
+	if err := svc.SetProviderConfig("test_integration_secrets_nil", nil); err != nil {
+		t.Errorf("Expected a nil config to be accepted, got %v", err)
 	}
 }

@@ -3,6 +3,7 @@
   import { BillingService, NotificationService } from "@bindings/services/index.js";
   import { m } from "../../paraglide/messages.js";
   import { auth } from "../../stores/auth.svelte.js";
+  import { handleError } from "$lib/error.js";
 
   let { canEdit = false } = $props<{ canEdit: boolean }>();
 
@@ -17,7 +18,15 @@
     SetProviderConfig(name: string, config: ProviderConfig): Promise<void>;
   };
 
-  function createProviderPanel(service: ProviderConfigService) {
+  // Credential fields the backend never returns: it sends REDACTED to show one is stored. On
+  // save, a secret left out keeps its stored value, so untouched secrets are never sent. Must
+  // match secretConfigKeys in secrets_service.go.
+  const SECRET_KEYS = ["api_key", "password", "secret_access_key"];
+  const REDACTED = "********";
+
+  // apiKey: whether the panel has the single API key field (claims) or only provider-specific
+  // fields edited through fieldValue/setFieldValue (notifications).
+  function createProviderPanel(service: ProviderConfigService, options: { apiKey: boolean }) {
     let providers = $state<string[]>([]);
     let providersLoaded = $state(false);
     let providersLoadError = $state(false);
@@ -26,6 +35,11 @@
     let isSavingConfig = $state(false);
     let providerConfigError = $state(false);
     let providerFullConfig = $state<{ [key: string]: string | undefined }>({});
+    // Secret fields with a stored value. They're shown empty rather than as REDACTED, which
+    // would otherwise be saved as part of the credential if someone typed after it.
+    let savedSecrets = $state<{ [key: string]: boolean }>({});
+    // Saved secrets staff chose to remove; saving sends "" for them, which clears them.
+    let removedSecrets = $state<{ [key: string]: boolean }>({});
     let isLoadingConfig = $state(false);
     let saveStatus = $state<{ ok: boolean; msg: string } | null>(null);
 
@@ -46,6 +60,8 @@
       saveStatus = null;
       providerConfigError = false;
       providerFullConfig = {};
+      savedSecrets = {};
+      removedSecrets = {};
       providerApiKey = "";
       if (!selectedProvider) {
         isLoadingConfig = false;
@@ -56,8 +72,17 @@
       try {
         const config = await service.GetProviderConfig(reqProvider);
         if (reqProvider !== selectedProvider) return;
-        providerFullConfig = config || {};
-        providerApiKey = (config && config["api_key"]) || "";
+        const loaded = { ...(config || {}) };
+        const saved: { [key: string]: boolean } = {};
+        for (const key of SECRET_KEYS) {
+          if (loaded[key] === REDACTED) {
+            saved[key] = true;
+            loaded[key] = "";
+          }
+        }
+        providerFullConfig = loaded;
+        savedSecrets = saved;
+        providerApiKey = loaded["api_key"] || "";
       } catch (e) {
         if (reqProvider !== selectedProvider) return;
         console.error("Failed to load provider config:", e);
@@ -75,11 +100,32 @@
       saveStatus = null;
       const reqProvider = selectedProvider;
       try {
-        await service.SetProviderConfig(reqProvider, {
-          ...providerFullConfig,
-          api_key: providerApiKey,
-        });
+        const config: { [key: string]: string | undefined } = { ...providerFullConfig };
+        if (options.apiKey) config.api_key = providerApiKey;
+        // An empty secret field means "keep the saved one", so leave it out, unless staff
+        // chose to remove it.
+        for (const key of SECRET_KEYS) {
+          if (config[key]) continue;
+          if (removedSecrets[key]) config[key] = "";
+          else delete config[key];
+        }
+        await service.SetProviderConfig(reqProvider, config);
         if (reqProvider === selectedProvider) {
+          // Typed secrets are now stored; don't keep them in the form as plain text.
+          const cleared = { ...providerFullConfig };
+          const saved = { ...savedSecrets };
+          for (const key of SECRET_KEYS) {
+            if (config[key]) {
+              saved[key] = true;
+              cleared[key] = "";
+            } else if (key in config) {
+              saved[key] = false;
+            }
+          }
+          providerFullConfig = cleared;
+          savedSecrets = saved;
+          removedSecrets = {};
+          providerApiKey = "";
           saveStatus = { ok: true, msg: m.integrations_save_success() };
         }
       } catch (e) {
@@ -134,23 +180,140 @@
       get saveStatus() {
         return saveStatus;
       },
+      fieldValue(key: string): string {
+        return providerFullConfig[key] ?? "";
+      },
+      secretSaved(key: string): boolean {
+        return !!savedSecrets[key] && !removedSecrets[key];
+      },
+      secretRemoved(key: string): boolean {
+        return !!removedSecrets[key];
+      },
+      removeSecret(key: string) {
+        removedSecrets = { ...removedSecrets, [key]: true };
+      },
+      setFieldValue(key: string, value: string) {
+        providerFullConfig = { ...providerFullConfig, [key]: value };
+      },
       loadProviders,
       loadProviderConfig,
       saveProviderConfig,
     };
   }
 
-  const claimsPanel = createProviderPanel({
-    ListProviders: () => BillingService.ListProviders(),
-    GetProviderConfig: (name) => BillingService.GetProviderConfig(auth.token, name),
-    SetProviderConfig: (name, config) => BillingService.SetProviderConfig(auth.token, name, config),
-  });
-  const notificationsPanel = createProviderPanel({
-    ListProviders: () => NotificationService.ListProviders(),
-    GetProviderConfig: (name) => NotificationService.GetProviderConfig(auth.token, name),
-    SetProviderConfig: (name, config) =>
-      NotificationService.SetProviderConfig(auth.token, name, config),
-  });
+  const claimsPanel = createProviderPanel(
+    {
+      ListProviders: () => BillingService.ListProviders(),
+      GetProviderConfig: (name) => BillingService.GetProviderConfig(auth.token, name),
+      SetProviderConfig: (name, config) =>
+        BillingService.SetProviderConfig(auth.token, name, config),
+    },
+    { apiKey: true }
+  );
+  const notificationsPanel = createProviderPanel(
+    {
+      ListProviders: () => NotificationService.ListProviders(),
+      GetProviderConfig: (name) => NotificationService.GetProviderConfig(auth.token, name),
+      SetProviderConfig: (name, config) =>
+        NotificationService.SetProviderConfig(auth.token, name, config),
+    },
+    { apiKey: false }
+  );
+
+  // Settings each notification provider reads, keyed by provider name. Keys must match the Go
+  // providers; secret fields come back from the backend redacted.
+  type NotificationField = {
+    key: string;
+    label: () => string;
+    placeholder?: () => string;
+    type?: "text" | "password" | "number";
+    options?: { value: string; label: () => string }[];
+  };
+  const notificationFields: Record<string, NotificationField[]> = {
+    smtp_email: [
+      {
+        key: "host",
+        label: m.integrations_smtp_host,
+        placeholder: m.integrations_smtp_host_placeholder,
+      },
+      {
+        key: "tls_mode",
+        label: m.integrations_smtp_tls_mode,
+        options: [
+          { value: "starttls", label: m.integrations_smtp_tls_starttls },
+          { value: "implicit", label: m.integrations_smtp_tls_implicit },
+        ],
+      },
+      {
+        key: "port",
+        label: m.integrations_smtp_port,
+        placeholder: m.integrations_smtp_port_placeholder,
+        type: "number",
+      },
+      { key: "username", label: m.integrations_smtp_username },
+      { key: "password", label: m.integrations_smtp_password, type: "password" },
+      {
+        key: "from_address",
+        label: m.integrations_smtp_from_address,
+        placeholder: m.integrations_smtp_from_address_placeholder,
+      },
+      {
+        key: "from_name",
+        label: m.integrations_smtp_from_name,
+        placeholder: m.integrations_smtp_from_name_placeholder,
+      },
+    ],
+    aws_sms: [
+      { key: "access_key_id", label: m.integrations_aws_access_key_id },
+      { key: "secret_access_key", label: m.integrations_aws_secret_access_key, type: "password" },
+      {
+        key: "region",
+        label: m.integrations_aws_region,
+        placeholder: m.integrations_aws_region_placeholder,
+      },
+      {
+        key: "origination_identity",
+        label: m.integrations_aws_origination_identity,
+        placeholder: m.integrations_aws_origination_identity_placeholder,
+      },
+      { key: "configuration_set", label: m.integrations_aws_configuration_set },
+    ],
+  };
+  const selectedNotificationFields = $derived(
+    notificationFields[notificationsPanel.selectedProvider] ?? []
+  );
+
+  let testRecipient = $state("");
+  let isSendingTest = $state(false);
+  let testStatus = $state<{ ok: boolean; msg: string } | null>(null);
+
+  // Sends with the saved settings, not the ones being edited, so it checks what reminders use.
+  async function sendTestMessage() {
+    const provider = notificationsPanel.selectedProvider;
+    if (!canEdit || !provider || !testRecipient.trim()) return;
+    isSendingTest = true;
+    testStatus = null;
+    // Staff can switch providers while a send is in flight; its result belongs only to the
+    // provider it was sent with.
+    const publish = (status: { ok: boolean; msg: string }) => {
+      if (notificationsPanel.selectedProvider === provider) testStatus = status;
+    };
+    try {
+      await NotificationService.SendTestMessage(
+        auth.token,
+        provider,
+        testRecipient,
+        m.integrations_test_subject(),
+        m.integrations_test_body()
+      );
+      publish({ ok: true, msg: m.integrations_test_success() });
+    } catch (e) {
+      console.error("Failed to send test message:", e);
+      publish({ ok: false, msg: handleError(e, m.integrations_test_error()) });
+    } finally {
+      isSendingTest = false;
+    }
+  }
 
   // Also locked while saving: the save payload is captured when it starts, so a toggle
   // mid-save would show a mode that was never persisted.
@@ -213,13 +376,26 @@
                 type="password"
                 id="claims-provider-api-key"
                 bind:value={claimsPanel.providerApiKey}
-                placeholder={m.integrations_placeholder_api_key()}
+                placeholder={claimsPanel.secretSaved("api_key")
+                  ? m.integrations_secret_saved_placeholder()
+                  : m.integrations_placeholder_api_key()}
                 disabled={!canEdit ||
                   !claimsPanel.selectedProvider ||
                   claimsPanel.isLoadingConfig ||
                   claimsPanel.isSavingConfig}
                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
               />
+              {#if claimsPanel.secretSaved("api_key")}
+                <button
+                  type="button"
+                  class="mt-1 text-xs text-slate-400 underline cursor-pointer disabled:opacity-50"
+                  disabled={!canEdit || claimsPanel.isLoadingConfig || claimsPanel.isSavingConfig}
+                  onclick={() => claimsPanel.removeSecret("api_key")}
+                  >{m.integrations_secret_remove()}</button
+                >
+              {:else if claimsPanel.secretRemoved("api_key")}
+                <p class="mt-1 text-xs text-amber-400">{m.integrations_secret_will_remove()}</p>
+              {/if}
             </div>
           </div>
 
@@ -289,7 +465,10 @@
               <select
                 id="notification-provider-select"
                 bind:value={notificationsPanel.selectedProvider}
-                onchange={notificationsPanel.loadProviderConfig}
+                onchange={() => {
+                  testStatus = null;
+                  notificationsPanel.loadProviderConfig();
+                }}
                 disabled={notificationsPanel.noProviders}
                 class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
               >
@@ -299,23 +478,67 @@
                 {/each}
               </select>
             </div>
-
-            <div>
-              <label for="notification-provider-api-key" class="block text-xs text-slate-400 mb-1"
-                >{m.integrations_label_api_key()}</label
-              >
-              <input
-                type="password"
-                id="notification-provider-api-key"
-                bind:value={notificationsPanel.providerApiKey}
-                placeholder={m.integrations_placeholder_api_key()}
-                disabled={!canEdit ||
-                  !notificationsPanel.selectedProvider ||
-                  notificationsPanel.isLoadingConfig}
-                class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
-              />
-            </div>
           </div>
+
+          {#if selectedNotificationFields.length > 0}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {#each selectedNotificationFields as field (field.key)}
+                <div>
+                  <label
+                    for="notification-field-{field.key}"
+                    class="block text-xs text-slate-400 mb-1">{field.label()}</label
+                  >
+                  {#if field.options}
+                    <select
+                      id="notification-field-{field.key}"
+                      value={notificationsPanel.fieldValue(field.key) || field.options[0].value}
+                      onchange={(e) =>
+                        notificationsPanel.setFieldValue(field.key, e.currentTarget.value)}
+                      disabled={!canEdit ||
+                        notificationsPanel.isLoadingConfig ||
+                        notificationsPanel.isSavingConfig}
+                      class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
+                    >
+                      {#each field.options as option}
+                        <option value={option.value}>{option.label()}</option>
+                      {/each}
+                    </select>
+                  {:else}
+                    <input
+                      type={field.type ?? "text"}
+                      id="notification-field-{field.key}"
+                      value={notificationsPanel.fieldValue(field.key)}
+                      oninput={(e) =>
+                        notificationsPanel.setFieldValue(field.key, e.currentTarget.value)}
+                      placeholder={notificationsPanel.secretSaved(field.key)
+                        ? m.integrations_secret_saved_placeholder()
+                        : field.placeholder?.()}
+                      autocomplete="off"
+                      disabled={!canEdit ||
+                        notificationsPanel.isLoadingConfig ||
+                        notificationsPanel.isSavingConfig}
+                      class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
+                    />
+                    {#if notificationsPanel.secretSaved(field.key)}
+                      <button
+                        type="button"
+                        class="mt-1 text-xs text-slate-400 underline cursor-pointer disabled:opacity-50"
+                        disabled={!canEdit ||
+                          notificationsPanel.isLoadingConfig ||
+                          notificationsPanel.isSavingConfig}
+                        onclick={() => notificationsPanel.removeSecret(field.key)}
+                        >{m.integrations_secret_remove()}</button
+                      >
+                    {:else if notificationsPanel.secretRemoved(field.key)}
+                      <p class="mt-1 text-xs text-amber-400">
+                        {m.integrations_secret_will_remove()}
+                      </p>
+                    {/if}
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
 
           <div class="flex items-center justify-end gap-3">
             {#if notificationsPanel.saveStatus}
@@ -342,6 +565,43 @@
                 : m.integrations_btn_save()}
             </button>
           </div>
+
+          {#if notificationsPanel.selectedProvider}
+            <div class="space-y-2 border-t border-slate-800 pt-3">
+              <label for="notification-test-recipient" class="block text-xs text-slate-400"
+                >{m.integrations_test_recipient()}</label
+              >
+              <p class="text-xs text-slate-500">{m.integrations_test_hint()}</p>
+              <div class="flex flex-col gap-2 md:flex-row md:items-center">
+                <input
+                  type="text"
+                  id="notification-test-recipient"
+                  bind:value={testRecipient}
+                  placeholder={m.integrations_test_recipient_placeholder()}
+                  disabled={!canEdit || isSendingTest}
+                  class="w-full md:flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm bg-slate-800 text-white border-slate-700 hover:bg-slate-700 px-4 py-1 rounded-md text-xs cursor-pointer"
+                  disabled={!canEdit || isSendingTest || !testRecipient.trim()}
+                  onclick={sendTestMessage}
+                >
+                  {isSendingTest ? m.integrations_test_sending() : m.integrations_test_send()}
+                </button>
+              </div>
+              {#if testStatus}
+                <p
+                  class="text-xs font-semibold {testStatus.ok
+                    ? 'text-emerald-400'
+                    : 'text-rose-400'}"
+                  role={testStatus.ok ? "status" : "alert"}
+                >
+                  {testStatus.msg}
+                </p>
+              {/if}
+            </div>
+          {/if}
         </div>
       </div>
     </div>

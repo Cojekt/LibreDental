@@ -3,6 +3,8 @@ package services_test
 import (
 	"context"
 	"path/filepath"
+	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -200,5 +202,75 @@ func TestAuditService_LogPatientActionUsesSessionUser(t *testing.T) {
 	}
 	if logs[0].Resource != "dental_chart" || logs[0].Action != domain.AuditActionRead {
 		t.Errorf("Unexpected entry contents: %+v", logs[0])
+	}
+}
+
+// Wails binds every exported AuditService method for the frontend, and in LAN server mode for
+// any client on the network. This list is deliberately fixed: a newly exported method, such as
+// one that logs as a system actor, must be reviewed for what it lets a client write.
+func TestAuditService_BoundMethods(t *testing.T) {
+	want := []string{"CreateSession", "DestroySession", "GetAuditLogs", "GetSessionUser", "LogAction", "LogPatientAction"}
+
+	typ := reflect.TypeOf(&services.AuditService{})
+	var got []string
+	for i := range typ.NumMethod() {
+		got = append(got, typ.Method(i).Name)
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("AuditService exported methods changed:\n got  %v\n want %v", got, want)
+	}
+}
+
+// Whether an entry's actor is a system actor is decided by domain.IsSystemActorID and sent with
+// each entry, so the audit view never applies its own, possibly different, rule.
+func TestAuditService_MarksSystemActors(t *testing.T) {
+	tempDir := t.TempDir()
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tempDir, "audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit sqlite db: %v", err)
+	}
+	defer auditDb.Close()
+	mainDb, err := sqlite.Open(filepath.Join(tempDir, "main.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer mainDb.Close()
+
+	configRepo := sqlite.NewPracticeConfigRepository(mainDb)
+	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+	auditRepo := sqlite.NewAuditRepository(auditDb)
+	service := services.NewAuditService(auditRepo, configRepo)
+	token, err := service.CreateSession("prov_1", "1234")
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
+	want := map[string]bool{
+		domain.SystemActorReminders: true,
+		"system:":                   false, // the bare prefix isn't a system actor
+		"System:reminders":          false,
+		"prov_1":                    false,
+	}
+	for userID := range want {
+		if err := auditRepo.Log(context.Background(), &domain.AuditLogEntry{
+			ID: "audit_" + userID, UserID: userID, UserName: "x", Action: domain.AuditActionCreate, Resource: "notification",
+		}); err != nil {
+			t.Fatalf("Failed to log entry: %v", err)
+		}
+	}
+
+	logs, err := service.GetAuditLogs(token, "", 10, 0)
+	if err != nil {
+		t.Fatalf("GetAuditLogs failed: %v", err)
+	}
+	if len(logs) != len(want) {
+		t.Fatalf("Expected %d entries, got %d", len(want), len(logs))
+	}
+	for _, l := range logs {
+		if l.SystemActor != want[l.UserID] {
+			t.Errorf("%q: SystemActor = %v; want %v", l.UserID, l.SystemActor, want[l.UserID])
+		}
 	}
 }

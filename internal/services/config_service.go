@@ -210,6 +210,9 @@ func (s *PracticeConfigService) CreateInitialProvider(p domain.Provider) (string
 	if !pinPattern.MatchString(p.Pin) {
 		return "", fmt.Errorf("%w: pin must be exactly 4 digits", storage.ErrInvalidInput)
 	}
+	if err := rejectReservedProviderID(p.ID); err != nil {
+		return "", err
+	}
 	if p.Role == "" {
 		p.Role = domain.RoleDentist
 	}
@@ -235,6 +238,9 @@ func (s *PracticeConfigService) CreateInitialProvider(p domain.Provider) (string
 // SaveProvider creates or updates a clinic provider/staff member.
 func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*domain.Provider, error) {
 	if err := s.requireSession(token); err != nil {
+		return nil, err
+	}
+	if err := rejectReservedProviderID(p.ID); err != nil {
 		return nil, err
 	}
 	isNew := p.ID == ""
@@ -278,6 +284,16 @@ func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*
 
 	p.Pin = "****"
 	return &p, nil
+}
+
+// rejectReservedProviderID stops a staff account from taking a system actor ID, which would
+// make its actions look automatic in the audit trail. Case and surrounding spaces are ignored
+// so look-alike IDs are refused too.
+func rejectReservedProviderID(id string) error {
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(id)), domain.SystemActorPrefix) {
+		return fmt.Errorf("%w: provider ID %q is reserved", storage.ErrInvalidInput, id)
+	}
+	return nil
 }
 
 // normalizeProviderIdentifiers trims the claim identifiers on a provider and rejects malformed

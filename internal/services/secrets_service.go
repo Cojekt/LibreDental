@@ -9,6 +9,14 @@ import (
 
 const keyringServiceName = "LibreDental"
 
+const redactedSecret = "********"
+
+// secretConfigKeys are the provider config fields that hold credentials. Their values are never
+// returned to the frontend, which gets redactedSecret to show that one is stored. On save, a
+// secret the frontend leaves out keeps its stored value; one it sends is stored as sent, so any
+// value, "********" included, can be a real credential.
+var secretConfigKeys = []string{"api_key", "password", "secret_access_key"}
+
 // SecretsService manages secure storage of external credentials (like API keys)
 // using the host OS's native keychain/credential vault.
 type SecretsService struct{}
@@ -34,25 +42,38 @@ func (s *SecretsService) GetProviderConfig(providerName string) (map[string]stri
 		return nil, fmt.Errorf("failed to parse secret config: %w", err)
 	}
 
-	// Redact the API key for the frontend
-	if apiKey, ok := config["api_key"]; ok && apiKey != "" {
-		config["api_key"] = "********"
+	for _, k := range secretConfigKeys {
+		if config[k] != "" {
+			config[k] = redactedSecret
+		}
 	}
 
 	return config, nil
 }
 
-// SetProviderConfig encrypts and stores the configuration for a specific provider.
+// SetProviderConfig encrypts and stores the configuration for a specific provider. Secret
+// fields left out of config keep their stored value; a secret sent with any value, including
+// "" to clear it, replaces the stored one.
 func (s *SecretsService) SetProviderConfig(providerName string, config map[string]string) error {
 	key := fmt.Sprintf("provider_config_%s", providerName)
+	if config == nil {
+		config = map[string]string{}
+	}
 
-	// If the frontend sent back the redacted string, restore the real API key
-	if config["api_key"] == "********" {
-		oldConfig, err := s.getRawProviderConfig(providerName)
-		if err != nil {
-			return fmt.Errorf("failed to retrieve existing config to restore api_key: %w", err)
+	var oldConfig map[string]string
+	for _, k := range secretConfigKeys {
+		if _, sent := config[k]; sent {
+			continue
 		}
-		config["api_key"] = oldConfig["api_key"]
+		if oldConfig == nil {
+			var err error
+			if oldConfig, err = s.getRawProviderConfig(providerName); err != nil {
+				return fmt.Errorf("failed to retrieve existing config to keep %s: %w", k, err)
+			}
+		}
+		if old, ok := oldConfig[k]; ok {
+			config[k] = old
+		}
 	}
 
 	bytes, err := json.Marshal(config)

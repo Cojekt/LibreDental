@@ -20,6 +20,12 @@
     return p ? `${p.last_name}, ${p.first_name}` : id;
   }
 
+  // System actors are LibreDental itself acting with no one logged in (for example automatic
+  // reminders), so show a localized name rather than the one stored in the log.
+  function getActorName(log: AuditLogEntry): string {
+    return log.system_actor ? m.audit_system_actor() : log.user_name;
+  }
+
   let requestGen = 0;
 
   async function fetchLogs() {
@@ -124,7 +130,7 @@
                 >{new Date(log.timestamp).toLocaleString()}</td
               >
               <td class="px-4 py-3"
-                >{log.user_name} <span class="text-xs text-slate-500">({log.user_id})</span></td
+                >{getActorName(log)} <span class="text-xs text-slate-500">({log.user_id})</span></td
               >
               <td class="px-4 py-3">{log.patient_id ? getPatientName(log.patient_id) : "-"}</td>
               <td class="px-4 py-3">
