@@ -1,0 +1,12 @@
+{
+  "charting_modal_catalog_label": "Regional Procedure Catalogue:",
+  "charting_modal_catalog_prompt": "-- Select from {name} Catalogue --",
+  "billing_catalog_banner": "Procedure Catalogue & Custom Fee Schedules",
+  "clinic_profile_license_label": "Practice Licence Number",
+  "clinic_profile_zip_label": "Postal Code / ZIP Code",
+  "prov_license_prefix": "Licence:",
+  "prov_license_label": "Licence Number",
+  "prov_color_badge_label": "Schedule Colour Badge",
+  "doc_placeholder_name": "E.g. Clinic Licence 2026",
+  "billing_method_check": "Cheque"
+}

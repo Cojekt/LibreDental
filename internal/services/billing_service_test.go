@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -448,6 +449,9 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	// Register the test provider
 	testProv := &dummyTestProvider{}
 	billingSvc.registerProvider(testProv)
+	if avail, err := billingSvc.ListAvailableProviders(); err != nil || !slices.Equal(avail, []string{"test_mock"}) {
+		t.Errorf("Expected test_mock available for US, got %v (err: %v)", avail, err)
+	}
 
 	patient := &domain.Patient{
 		ID:          "pat_test_1",
@@ -549,6 +553,9 @@ func TestBillingService_SubmitClaimToProvider(t *testing.T) {
 	// Test 5: Providers refuse practices outside their supported countries before any call.
 	if err := configRepo.Save(ctx, &domain.PracticeConfig{ClinicName: "Test Clinic", CountryCode: domain.CountryCA, Currency: "CAD"}); err != nil {
 		t.Fatalf("Failed to switch practice country: %v", err)
+	}
+	if avail, err := billingSvc.ListAvailableProviders(); err != nil || len(avail) != 0 {
+		t.Errorf("Expected no available providers for CA, got %v (err: %v)", avail, err)
 	}
 	claim3 := &domain.Claim{ID: "claim_test_3", PatientID: "pat_test_1", Status: domain.ClaimStatusDraft, DateOfService: "2026-08-23"}
 	if err := claimRepo.Create(ctx, claim3); err != nil {

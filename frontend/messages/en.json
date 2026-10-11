@@ -553,6 +553,7 @@
   "integrations_section_notifications": "Patient Notifications (Email/SMS/Voice)",
   "integrations_notifications_no_providers": "No notification providers are configured for this installation.",
   "integrations_claims_no_providers": "No claims providers are configured for this installation.",
+  "integrations_claims_region_locked_body": "The available clearinghouse integrations do not support your practice's country. You can still create and track claims, but they cannot be submitted electronically.",
   "integrations_providers_load_error": "Failed to load providers.",
   "integrations_smtp_host": "SMTP server",
   "integrations_smtp_host_placeholder": "e.g. email-smtp.us-east-1.amazonaws.com",

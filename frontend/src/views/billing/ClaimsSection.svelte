@@ -76,6 +76,7 @@
   let submittingClaims = $state<Record<string, boolean>>({});
   let integrationProviders = $state<string[]>([]);
   let hasConfiguredProvider = $state(false);
+  let claimsRegionLocked = $state(false);
 
   const CLAIM_STATUSES = ["draft", "submitted", "accepted", "rejected", "paid"];
 
@@ -388,7 +389,12 @@
 
   onMount(async () => {
     try {
-      integrationProviders = (await BillingService.ListProviders()) || [];
+      const [registered, available] = await Promise.all([
+        BillingService.ListProviders(),
+        BillingService.ListAvailableProviders(),
+      ]);
+      integrationProviders = available || [];
+      claimsRegionLocked = (registered || []).length > 0 && integrationProviders.length === 0;
       for (const provider of integrationProviders) {
         try {
           const config = (await BillingService.GetProviderConfig(auth.token, provider)) as Record<
@@ -493,9 +499,11 @@
                       type="button"
                       class="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       onclick={() => promptSubmitClaim(c.id)}
-                      title={!hasConfiguredProvider
-                        ? m.billing_claim_submit_disabled_tooltip()
-                        : m.billing_btn_submit_claim()}
+                      title={claimsRegionLocked
+                        ? m.integrations_claims_region_locked_body()
+                        : !hasConfiguredProvider
+                          ? m.billing_claim_submit_disabled_tooltip()
+                          : m.billing_btn_submit_claim()}
                       disabled={submittingClaims[c.id] || !hasConfiguredProvider}
                     >
                       <svg

@@ -91,6 +91,22 @@ func (s *BillingService) ListProviders() []string {
 	return names
 }
 
+// ListAvailableProviders returns the registered providers that support the practice's
+// country. Providers missing from it are region locked: SubmitClaimToProvider refuses them.
+func (s *BillingService) ListAvailableProviders() ([]string, error) {
+	practice, err := s.practiceRepo.Get(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get practice configuration: %w", err)
+	}
+	names := []string{}
+	for _, name := range s.ListProviders() {
+		if slices.Contains(s.providers[name].SupportedCountries(), practice.CountryCode) {
+			names = append(names, name)
+		}
+	}
+	return names, nil
+}
+
 // GetProviderConfig retrieves configuration (secrets redacted) for a specific provider.
 func (s *BillingService) GetProviderConfig(token string, providerName string) (map[string]string, error) {
 	if s.auditService.GetSessionUser(token) == nil {

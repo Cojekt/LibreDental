@@ -1,3 +1,5 @@
+import { getLocale } from "../paraglide/runtime.js";
+
 /**
  * Format an integer cent amount as a localized currency string.
  * Falls back to a plain decimal string if the currency code is missing or unsupported.
@@ -6,9 +8,12 @@ export function formatCurrency(cents: number, currencyCode?: string | null): str
   const curr = currencyCode || "";
   if (!curr) return (cents / 100).toFixed(2);
   try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: curr }).format(
-      cents / 100
-    );
+    // narrowSymbol: a Canadian clinic's own currency reads "$120.00", not "CA$120.00".
+    return new Intl.NumberFormat(getLocale(), {
+      style: "currency",
+      currency: curr,
+      currencyDisplay: "narrowSymbol",
+    }).format(cents / 100);
   } catch {
     return `${(cents / 100).toFixed(2)}`;
   }

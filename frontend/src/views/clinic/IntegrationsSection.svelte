@@ -203,7 +203,7 @@
 
   const claimsPanel = createProviderPanel(
     {
-      ListProviders: () => BillingService.ListProviders(),
+      ListProviders: () => BillingService.ListAvailableProviders(),
       GetProviderConfig: (name) => BillingService.GetProviderConfig(auth.token, name),
       SetProviderConfig: (name, config) =>
         BillingService.SetProviderConfig(auth.token, name, config),
@@ -324,8 +324,24 @@
       claimsPanel.isSavingConfig
   );
 
+  // Registered clearinghouses exist, but none serve the practice's country.
+  let claimsRegionLocked = $state(false);
+
+  async function checkClaimsRegion() {
+    try {
+      const [registered, available] = await Promise.all([
+        BillingService.ListProviders(),
+        BillingService.ListAvailableProviders(),
+      ]);
+      claimsRegionLocked = (registered || []).length > 0 && (available || []).length === 0;
+    } catch (e) {
+      console.error("Failed to check claims region:", e);
+    }
+  }
+
   onMount(() => {
     claimsPanel.loadProviders();
+    checkClaimsRegion();
     notificationsPanel.loadProviders();
   });
 </script>
@@ -345,6 +361,8 @@
         <div class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
           {#if claimsPanel.providersLoadError}
             <p class="text-xs text-red-400">{m.integrations_providers_load_error()}</p>
+          {:else if claimsRegionLocked}
+            <p class="text-xs text-amber-400">{m.integrations_claims_region_locked_body()}</p>
           {:else if claimsPanel.noProviders}
             <p class="text-xs text-slate-500">{m.integrations_claims_no_providers()}</p>
           {/if}

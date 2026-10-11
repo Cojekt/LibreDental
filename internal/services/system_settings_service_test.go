@@ -331,4 +331,19 @@ func TestSystemSettingsService_GetEffectiveLocaleFromTag(t *testing.T) {
 	if err != nil || eff != "es" {
 		t.Errorf("Expected 'es' for 'es-MX', got %q (err: %v)", eff, err)
 	}
+
+	english := []string{"en", "en-GB", "en-CA"}
+	for tag, want := range map[string]string{
+		"en-GB": "en-GB",
+		"en-gb": "en-GB",
+		"en-US": "en",
+		"en-CA": "en-CA",
+		"en-AU": "en",
+		"en":    "en",
+	} {
+		eff, err = service.GetEffectiveLocaleFromTag(tag, english)
+		if err != nil || eff != want {
+			t.Errorf("Expected %q for %q, got %q (err: %v)", want, tag, eff, err)
+		}
+	}
 }
