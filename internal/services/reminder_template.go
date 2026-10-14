@@ -17,7 +17,7 @@ import (
 // time, and the practice's name and phone number, but not the reason for the visit.
 var reminderPlaceholders = []string{"first_name", "date", "time", "practice_name", "practice_phone"}
 
-var placeholderPattern = regexp.MustCompile(`\{([A-Za-z_]+)\}`)
+var placeholderPattern = regexp.MustCompile(`\{([^{}]+)\}`)
 
 // maxReminderSMSLength is the TCPA healthcare exemption's limit for a text message.
 const maxReminderSMSLength = 160
