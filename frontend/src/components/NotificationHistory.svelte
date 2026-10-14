@@ -106,7 +106,8 @@
         onclick={() => load(patientId, appointmentId, true)}>{m.notif_history_refresh()}</button
       >
     </div>
-    {#if loading}
+    <!-- During a refresh the current entries stay listed; the disabled button shows it's loading. -->
+    {#if loading && entries.length === 0}
       <p class="text-slate-500">{m.notif_history_loading()}</p>
     {:else if error}
       <p class="text-rose-400" role="alert">{error}</p>
