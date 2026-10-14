@@ -712,7 +712,7 @@
   "reminders_disabled_success": "Reminders are off.",
   "reminders_confirm_title": "Turn on automatic reminders?",
   "reminders_confirm_counts": "{optedIn} active patients are opted in to reminders: {mobile} with a mobile number that can receive texts and {email} with an email address.",
-  "reminders_confirm_note": "They will start receiving reminders by text and email before their appointments. Check that these patients have agreed to receive them.",
+  "reminders_confirm_note": "Eligible patients will receive reminders by text or email, depending on the contact information on file. Check that these patients have agreed to receive them.",
   "reminders_job_title": "Reminder activity",
   "reminders_job_last_run": "Last checked: {time}",
   "reminders_job_counts": "Sent {sent}, failed {failed}, uncertain {unknown}, skipped {skipped}",
