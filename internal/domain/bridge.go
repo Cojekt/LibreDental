@@ -68,4 +68,6 @@ type ProgramBridge interface {
 type BridgeInfo struct {
 	Capabilities []BridgeCapability `json:"capabilities"`
 	Config       BridgeConfig       `json:"config"`
+	// DefaultArgs is the bridge's preset argument template, so staff can restore it.
+	DefaultArgs string `json:"default_args"`
 }
