@@ -205,7 +205,7 @@ func (r *NotificationRepository) ClaimReminder(ctx context.Context, entry *domai
 			(SELECT COUNT(*) FROM notification_log
 			 WHERE patient_id = ? AND channel = ? AND status IN `+countedStatuses+` AND sent_at >= ?) < ?
 		)
-		ON CONFLICT (appointment_id, appointment_start, reminder_kind, channel) WHERE reminder_kind IS NOT NULL
+		ON CONFLICT (appointment_id, appointment_start, reminder_kind, channel) WHERE reminder_kind IS NOT NULL AND status <> 'skipped'
 		DO NOTHING`,
 		entry.ID, entry.PatientID, entry.AppointmentID, string(entry.Channel), entry.ProviderName,
 		entry.Recipient, entry.Subject, entry.Body, string(entry.Status), entry.SentAt,
@@ -239,7 +239,8 @@ func (r *NotificationRepository) reminderExists(ctx context.Context, entry *doma
 	var n int
 	err := r.db.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM notification_log
-		WHERE appointment_id = ? AND appointment_start = ? AND reminder_kind = ? AND channel = ?`,
+		WHERE appointment_id = ? AND appointment_start = ? AND reminder_kind = ? AND channel = ?
+		  AND status <> 'skipped'`,
 		entry.AppointmentID, appointmentStartValue(entry.AppointmentStart), entry.ReminderKind, string(entry.Channel),
 	).Scan(&n)
 	if err != nil {
@@ -248,27 +249,38 @@ func (r *NotificationRepository) reminderExists(ctx context.Context, entry *doma
 	return n > 0, nil
 }
 
-func (r *NotificationRepository) RecordSkipped(ctx context.Context, entry *domain.NotificationLog) error {
+func (r *NotificationRepository) RecordSkipped(ctx context.Context, entry *domain.NotificationLog) (bool, error) {
 	if err := validateReminderEntry(entry); err != nil {
-		return err
+		return false, err
 	}
 	entry.Status = domain.NotificationStatusSkipped
-	_, err := r.db.ExecContext(ctx, `
+	key := appointmentStartValue(entry.AppointmentStart)
+	res, err := r.db.ExecContext(ctx, `
 		INSERT INTO notification_log (
 			id, patient_id, appointment_id, channel, provider_name,
 			external_message_id, recipient, subject, body, status, error_message, sent_at,
 			reminder_kind, appointment_start
-		) VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT (appointment_id, appointment_start, reminder_kind, channel) WHERE reminder_kind IS NOT NULL
-		DO NOTHING`,
+		)
+		SELECT ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?
+		WHERE NOT EXISTS (
+			SELECT 1 FROM notification_log
+			WHERE appointment_id = ? AND appointment_start = ? AND reminder_kind = ? AND channel = ?
+			  AND (status <> 'skipped' OR (recipient = ? AND error_message = ?))
+		)`,
 		entry.ID, entry.PatientID, entry.AppointmentID, string(entry.Channel), entry.ProviderName,
 		entry.Recipient, entry.Subject, entry.Body, string(entry.Status), entry.ErrorMessage, entry.SentAt,
-		entry.ReminderKind, appointmentStartValue(entry.AppointmentStart),
+		entry.ReminderKind, key,
+		entry.AppointmentID, key, entry.ReminderKind, string(entry.Channel),
+		entry.Recipient, entry.ErrorMessage,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to record skipped reminder: %w", err)
+		return false, fmt.Errorf("failed to record skipped reminder: %w", err)
 	}
-	return nil
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return n == 1, nil
 }
 
 func (r *NotificationRepository) UpdateResult(ctx context.Context, id string, status domain.NotificationStatus, externalMessageID, errorMessage string) error {

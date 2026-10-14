@@ -611,3 +611,44 @@ func TestReminderService_JobLifecycle(t *testing.T) {
 	}
 	StopReminderJob(e.service) // stopping twice is harmless
 }
+
+// A skip caused by fixable data doesn't use up the reminder: once staff correct the number,
+// the next pass sends it, still within its window.
+func TestReminderScheduler_SendsAfterSkippedDataIsFixed(t *testing.T) {
+	e := newReminderEnv(t)
+	e.addPatient("pat_1", func(p *domain.Patient) { p.PhonePrimary = "555-0123" })
+	e.addAppointment("appt_1", "pat_1", e.at(10, 15, 10, 0))
+
+	e.runAt(e.at(10, 13, 10, 0))
+	e.runAt(e.at(10, 13, 10, 5)) // the same problem isn't recorded twice
+	if sms, _ := e.sentCount(); sms != 0 {
+		t.Fatalf("Expected no text to an invalid number, got %d", sms)
+	}
+
+	p, _ := e.patients.GetByID(context.Background(), "pat_1")
+	p.PhonePrimary = "(202) 555-0123"
+	if err := e.patients.Update(context.Background(), p); err != nil {
+		t.Fatal(err)
+	}
+	e.runAt(e.at(10, 13, 10, 10))
+	e.runAt(e.at(10, 13, 10, 15))
+	if sms, _ := e.sentCount(); sms != 1 {
+		t.Fatalf("Expected the text once the number was fixed, got %d", sms)
+	}
+
+	var skipped, sent int
+	for _, h := range e.history("appt_1") {
+		if h.Channel != domain.NotificationChannelSMS {
+			continue
+		}
+		switch h.Status {
+		case domain.NotificationStatusSkipped:
+			skipped++
+		case domain.NotificationStatusSent:
+			sent++
+		}
+	}
+	if skipped != 1 || sent != 1 {
+		t.Errorf("Expected one skipped and one sent text in the history, got %d and %d", skipped, sent)
+	}
+}

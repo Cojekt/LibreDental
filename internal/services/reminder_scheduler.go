@@ -340,11 +340,14 @@ func (s *reminderScheduler) sendReminder(
 
 func (s *reminderScheduler) recordSkipped(ctx context.Context, entry *domain.NotificationLog, reason string, pass *reminderPass) {
 	entry.ErrorMessage = reason
-	if err := s.logs.RecordSkipped(ctx, entry); err != nil {
+	recorded, err := s.logs.RecordSkipped(ctx, entry)
+	if err != nil {
 		pass.problem("%v", err)
 		return
 	}
-	pass.skipped++
+	if recorded {
+		pass.skipped++
+	}
 }
 
 // describeOffset renders a rule's timing for audit entries, for example "2 days" or "2 hours".

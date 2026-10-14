@@ -351,16 +351,48 @@ func TestNotificationRepository_RecordSkippedAndStalePending(t *testing.T) {
 	start := time.Date(2026, 10, 9, 17, 0, 0, 0, time.UTC)
 	now := time.Date(2026, 10, 7, 17, 0, 0, 0, time.UTC)
 
-	skipped := reminderEntry("appt_1", start, "2880m", domain.NotificationChannelSMS, now)
-	skipped.ErrorMessage = "phone number is not valid"
-	if err := f.repo.RecordSkipped(ctx, skipped); err != nil {
-		t.Fatalf("RecordSkipped failed: %v", err)
+	skip := func(recipient, reason string) *domain.NotificationLog {
+		e := reminderEntry("appt_1", start, "2880m", domain.NotificationChannelSMS, now)
+		e.Recipient, e.ErrorMessage = recipient, reason
+		return e
 	}
-	if err := f.repo.RecordSkipped(ctx, reminderEntry("appt_1", start, "2880m", domain.NotificationChannelSMS, now)); err != nil {
-		t.Fatalf("Recording the same skip twice should be a no-op, got %v", err)
+	record := func(e *domain.NotificationLog) bool {
+		t.Helper()
+		recorded, err := f.repo.RecordSkipped(ctx, e)
+		if err != nil {
+			t.Fatalf("RecordSkipped failed: %v", err)
+		}
+		return recorded
+	}
+
+	skipped := skip("555-0123", "phone number is not valid")
+	if !record(skipped) {
+		t.Fatalf("Expected the first skip to be recorded")
+	}
+	// Every pass sees the same problem; it's recorded once.
+	if record(skip("555-0123", "phone number is not valid")) {
+		t.Errorf("Expected the same skip not to be recorded again")
+	}
+	// A different problem (the number was edited but is still invalid) is recorded.
+	if !record(skip("555-0199", "phone number is not valid")) {
+		t.Errorf("Expected a skip for a different recipient to be recorded")
+	}
+
+	// A skip doesn't hold the reminder's key: once the number is fixed, the reminder can be
+	// claimed, and still only once.
+	fixed := reminderEntry("appt_1", start, "2880m", domain.NotificationChannelSMS, now)
+	if got, _ := f.repo.ClaimReminder(ctx, fixed, nil); got != domain.ReminderClaimed {
+		t.Errorf("Claim after a skip = %s; want claimed", got)
+	}
+	if err := f.repo.UpdateResult(ctx, fixed.ID, domain.NotificationStatusSent, "msg-1", ""); err != nil {
+		t.Fatal(err)
 	}
 	if got, _ := f.repo.ClaimReminder(ctx, reminderEntry("appt_1", start, "2880m", domain.NotificationChannelSMS, now), nil); got != domain.ReminderAlreadyClaimed {
-		t.Errorf("Claim after a skip = %s; want already_claimed (skips are final)", got)
+		t.Errorf("Second claim = %s; want already_claimed", got)
+	}
+	// Once claimed, no further skip is recorded for it.
+	if record(skip("555-0100", "phone number is not valid")) {
+		t.Errorf("Expected no skip recorded after the reminder was claimed")
 	}
 
 	stale := reminderEntry("appt_1", start, "120m", domain.NotificationChannelSMS, now)
@@ -381,5 +413,37 @@ func TestNotificationRepository_RecordSkippedAndStalePending(t *testing.T) {
 	}
 	if statuses[skipped.ID] != domain.NotificationStatusSkipped || statuses[stale.ID] != domain.NotificationStatusUnknown || statuses[fresh.ID] != domain.NotificationStatusPending {
 		t.Errorf("Unexpected statuses: %v", statuses)
+	}
+}
+
+// Default rules are only created when none exist, so a partial set would be permanent: they
+// are saved all together or not at all.
+func TestReminderRepository_CreateRulesIsAllOrNothing(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "reminders.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+	repo := sqlite.NewReminderRepository(db)
+	ctx := context.Background()
+
+	bad := []*domain.ReminderRule{
+		{ID: "rule_a", OffsetMinutes: 2880, Channel: domain.NotificationChannelSMS, ProviderName: "aws_sms", BodyTemplate: "a", Enabled: true},
+		{ID: "rule_b", OffsetMinutes: 2880, Channel: domain.NotificationChannelEmail, ProviderName: "smtp_email", BodyTemplate: "b", Enabled: true},
+		// Same timing and channel as rule_a: the insert fails after two rules were written.
+		{ID: "rule_c", OffsetMinutes: 2880, Channel: domain.NotificationChannelSMS, ProviderName: "aws_sms", BodyTemplate: "c", Enabled: true},
+	}
+	if err := repo.CreateRules(ctx, bad); err == nil {
+		t.Fatalf("Expected a duplicate rule to fail the batch")
+	}
+	if rules, err := repo.ListRules(ctx); err != nil || len(rules) != 0 {
+		t.Fatalf("Expected no rules saved after a failed batch, got %d, %v", len(rules), err)
+	}
+
+	if err := repo.CreateRules(ctx, bad[:2]); err != nil {
+		t.Fatalf("CreateRules failed: %v", err)
+	}
+	if rules, err := repo.ListRules(ctx); err != nil || len(rules) != 2 {
+		t.Errorf("Expected 2 rules, got %d, %v", len(rules), err)
 	}
 }

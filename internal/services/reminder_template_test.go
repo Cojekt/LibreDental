@@ -28,6 +28,12 @@ func TestValidateReminderTemplate(t *testing.T) {
 	if err := validateReminderTemplate("{First_Name}"); err == nil {
 		t.Errorf("Expected placeholders to be case-sensitive")
 	}
+	// Typos must be rejected, not sent literally.
+	for _, typo := range []string{"{first-name}", "{name2}", "{ first_name }", "{first name}"} {
+		if err := validateReminderTemplate("Hi " + typo); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("Expected %q to be rejected, got %v", typo, err)
+		}
+	}
 }
 
 func TestReminderValuesAndRendering(t *testing.T) {

@@ -14,6 +14,7 @@
   import { auth } from "../../stores/auth.svelte.js";
   import { handleError } from "$lib/error.js";
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
+  import { getComputerTimezone } from "$lib/timezones.js";
 
   let {
     canEdit = false,
@@ -55,8 +56,17 @@
   let previews = $state<{ [ruleId: string]: ReminderPreview | null }>({});
   let previewErrors = $state<{ [ruleId: string]: string }>({});
   const previewTimers: { [ruleId: string]: ReturnType<typeof setTimeout> } = {};
+  // The latest preview request per rule; responses to earlier ones are ignored.
+  const previewRequests: { [ruleId: string]: number } = {};
 
   const hasTimezone = $derived(!!practiceConfig?.timezone);
+  // Appointment times are entered in this computer's timezone, so reminders would show the wrong
+  // time if the practice timezone differed. Turning reminders on is blocked until they match.
+  const computerTimezone = getComputerTimezone();
+  const timezoneMismatch = $derived(
+    hasTimezone && !!computerTimezone && practiceConfig?.timezone !== computerTimezone
+  );
+  const canTurnOn = $derived(hasTimezone && !timezoneMismatch);
 
   async function load() {
     loadError = "";
@@ -122,6 +132,7 @@
   }
 
   async function requestEnable() {
+    if (!canTurnOn) return;
     message = null;
     try {
       counts = await ReminderService.GetRecipientCounts(auth.token);
@@ -197,16 +208,21 @@
 
   function schedulePreview(rule: ReminderRule) {
     clearTimeout(previewTimers[rule.id]);
+    const request = (previewRequests[rule.id] ?? 0) + 1;
+    previewRequests[rule.id] = request;
     previewTimers[rule.id] = setTimeout(async () => {
       try {
-        previews[rule.id] = await ReminderService.PreviewReminderTemplate(
+        const preview = await ReminderService.PreviewReminderTemplate(
           auth.token,
           rule.channel,
           rule.subject_template,
           rule.body_template
         );
+        if (previewRequests[rule.id] !== request) return;
+        previews[rule.id] = preview;
         previewErrors[rule.id] = "";
       } catch (e) {
+        if (previewRequests[rule.id] !== request) return;
         previews[rule.id] = null;
         previewErrors[rule.id] = handleError(e, m.reminders_preview_error());
       }
@@ -246,9 +262,16 @@
     </p>
   {/if}
 
-  {#if !hasTimezone}
+  {#if !hasTimezone || timezoneMismatch}
     <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-300">
-      {m.reminders_timezone_missing()}
+      {#if !hasTimezone}
+        {m.reminders_timezone_missing()}
+      {:else}
+        {m.reminders_timezone_mismatch({
+          zone: practiceConfig?.timezone ?? "",
+          computer: computerTimezone,
+        })}
+      {/if}
       {#if onopenprofile}
         <button type="button" class="ml-1 underline cursor-pointer" onclick={onopenprofile}
           >{m.reminders_open_profile()}</button
@@ -284,7 +307,7 @@
         <button
           type="button"
           class="btn btn-secondary btn-sm cursor-pointer"
-          disabled={!canEdit || busy || !hasTimezone}
+          disabled={!canEdit || busy || !canTurnOn}
           onclick={requestEnable}>{m.reminders_btn_enable()}</button
         >
       {/if}

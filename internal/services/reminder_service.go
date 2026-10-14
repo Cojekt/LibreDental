@@ -173,9 +173,15 @@ func (s *ReminderService) recipientCounts(ctx context.Context) (*domain.Reminder
 	if err != nil {
 		return nil, fmt.Errorf("failed to list patients: %w", err)
 	}
+	// The country is only needed to read phone numbers. Before onboarding sets it, only numbers
+	// with a country code count; any other failure is reported rather than miscounted.
 	var country domain.CountryCode
-	if cfg, err := s.practice.Get(ctx); err == nil {
+	cfg, err := s.practice.Get(ctx)
+	switch {
+	case err == nil:
 		country = cfg.CountryCode
+	case !errors.Is(err, storage.ErrNotFound):
+		return nil, fmt.Errorf("failed to read practice settings: %w", err)
 	}
 	counts := &domain.ReminderRecipientCounts{}
 	for _, p := range patients {
@@ -273,12 +279,11 @@ func (s *ReminderService) createRules(ctx context.Context, rules []domain.Remind
 		}
 		prepared = append(prepared, rule)
 	}
+	toSave := make([]*domain.ReminderRule, len(prepared))
 	for i := range prepared {
-		if err := s.reminders.SaveRule(ctx, &prepared[i]); err != nil {
-			return err
-		}
+		toSave[i] = &prepared[i]
 	}
-	return nil
+	return s.reminders.CreateRules(ctx, toSave)
 }
 
 func (s *ReminderService) validateRule(rule *domain.ReminderRule) error {

@@ -137,9 +137,11 @@ type NotificationLogRepository interface {
 	// non-nil and the patient has reached it. The check and the insert are one statement, so
 	// two processes sharing the database can't both claim.
 	ClaimReminder(ctx context.Context, entry *domain.NotificationLog, limit *domain.ReminderLimit) (domain.ReminderClaim, error)
-	// RecordSkipped stores entry, an automatic reminder that won't be sent, with its reason.
-	// It does nothing if that reminder is already recorded.
-	RecordSkipped(ctx context.Context, entry *domain.NotificationLog) error
+	// RecordSkipped stores entry, an automatic reminder that won't be sent now, with its reason,
+	// and reports whether it was stored. It does nothing if the reminder was already sent or
+	// claimed, or the same skip (recipient and reason) is already recorded. A skip doesn't hold
+	// the reminder's key, so the reminder can still be claimed once its data is corrected.
+	RecordSkipped(ctx context.Context, entry *domain.NotificationLog) (bool, error)
 	// UpdateResult records the outcome of sending a claimed reminder.
 	UpdateResult(ctx context.Context, id string, status domain.NotificationStatus, externalMessageID, errorMessage string) error
 	// MarkStalePending marks reminders still pending since before cutoff as unknown: their
@@ -154,6 +156,8 @@ type ReminderRepository interface {
 	SaveSettings(ctx context.Context, settings *domain.ReminderSettings) error
 	ListRules(ctx context.Context) ([]*domain.ReminderRule, error)
 	SaveRule(ctx context.Context, rule *domain.ReminderRule) error
+	// CreateRules saves new rules in one transaction: all of them, or none.
+	CreateRules(ctx context.Context, rules []*domain.ReminderRule) error
 }
 
 // ProgramBridgeRepository defines storage operations for local program bridge configuration.

@@ -106,6 +106,33 @@ func (r *ReminderRepository) ListRules(ctx context.Context) ([]*domain.ReminderR
 }
 
 func (r *ReminderRepository) SaveRule(ctx context.Context, rule *domain.ReminderRule) error {
+	return saveRule(ctx, r.db, rule)
+}
+
+// CreateRules saves new rules in one transaction, so a failure partway through can't leave a
+// partial set (rules are only created when none exist, so a partial set would be permanent).
+func (r *ReminderRepository) CreateRules(ctx context.Context, rules []*domain.ReminderRule) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start saving reminder rules: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, rule := range rules {
+		if err := saveRule(ctx, tx, rule); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to save reminder rules: %w", err)
+	}
+	return nil
+}
+
+type execer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func saveRule(ctx context.Context, db execer, rule *domain.ReminderRule) error {
 	if rule.ID == "" || rule.OffsetMinutes <= 0 || rule.Channel == "" || rule.ProviderName == "" || rule.BodyTemplate == "" {
 		return fmt.Errorf("%w: reminder rule needs an ID, a positive offset, a channel, a provider, and a body", storage.ErrInvalidInput)
 	}
@@ -114,7 +141,7 @@ func (r *ReminderRepository) SaveRule(ctx context.Context, rule *domain.Reminder
 		rule.CreatedAt = now
 	}
 	rule.UpdatedAt = now
-	_, err := r.db.ExecContext(ctx, `
+	_, err := db.ExecContext(ctx, `
 		INSERT INTO reminder_rules (id, offset_minutes, channel, provider_name, subject_template, body_template, enabled, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET

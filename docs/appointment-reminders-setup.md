@@ -98,7 +98,7 @@ that registration, which takes the longest, so start it early.
    - your business's legal name, address, website, and contact person;
    - the use case: **Appointment reminders**;
    - **sample messages**, for example:
-     `Smile Dental: Hi Jane, reminder of your visit on 10/15/2026 at 10:00 AM. Call (206) 555-0100 with questions. Reply STOP to opt out.`;
+     `Smile Dental: Jane, your visit is 10/15/2026 at 10:00 AM. Questions? (206) 555-0100. Reply STOP to opt out.`;
    - **how patients agree** to receive texts, for example: "Patients give consent on our
      new-patient intake form, which states message frequency and how to opt out. Staff record
      consent in our practice management software."; you may be asked for a link to, or image
@@ -116,16 +116,26 @@ that registration, which takes the longest, so start it early.
    automatically: anyone who replies STOP stops receiving texts.
 5. **Create a login for LibreDental.** In **IAM > Users**, create a user (for example
    `libredental-sms`) with **no console access**. Give it a policy that only allows sending
-   texts:
+   texts, and only from your practice's number:
 
    ```json
    {
      "Version": "2012-10-17",
      "Statement": [
-       { "Effect": "Allow", "Action": "sms-voice:SendTextMessage", "Resource": "*" }
+       {
+         "Effect": "Allow",
+         "Action": "sms-voice:SendTextMessage",
+         "Resource": "arn:aws:sms-voice:REGION:ACCOUNT_ID:phone-number/PHONE_NUMBER_ID"
+       }
      ]
    }
    ```
+
+   Replace `REGION` (for example `us-east-1`), `ACCOUNT_ID` (your 12-digit AWS account
+   number), and `PHONE_NUMBER_ID` (shown on the number's page under **Phone numbers**, starting
+   with `phone-`). The number's page also shows its full ARN, which you can paste instead.
+   Limiting the policy this way means that if the key were ever leaked, it couldn't be used to
+   send from any other number in the account.
 
    Then open the user's **Security credentials** and choose **Create access key** ("Application
    running outside AWS"). Copy the **access key ID** and **secret access key**; the secret is

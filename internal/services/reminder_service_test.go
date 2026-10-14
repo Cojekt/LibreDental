@@ -226,3 +226,22 @@ func TestReminderService_SaveRuleAndHours(t *testing.T) {
 		t.Errorf("PreviewReminderTemplate: %+v, %v", preview, err)
 	}
 }
+
+// The confirmation counts read the practice's country to check phone numbers. A storage
+// failure must be reported, not turn every national-format number into "no mobile".
+func TestReminderService_RecipientCountsReportStorageErrors(t *testing.T) {
+	e := newReminderEnv(t)
+	e.addPatient("pat_1", nil)
+
+	e.service.practice = failingPracticeRepo{err: errors.New("disk I/O error")}
+	if _, err := e.service.GetRecipientCounts(e.token); err == nil || !strings.Contains(err.Error(), "disk I/O error") {
+		t.Errorf("Expected the storage error, got %v", err)
+	}
+
+	// Before onboarding sets a country, only numbers with a country code count as mobile.
+	e.service.practice = failingPracticeRepo{err: storage.ErrNotFound}
+	counts, err := e.service.GetRecipientCounts(e.token)
+	if err != nil || counts.OptedIn != 1 || counts.WithMobile != 0 || counts.WithEmail != 1 {
+		t.Errorf("Expected 1 opted in, 0 readable mobiles, 1 email; got %+v, %v", counts, err)
+	}
+}

@@ -82,9 +82,18 @@
 </script>
 
 <div class="space-y-2 text-xs">
-  <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
-    {m.notif_history_title()}
-  </p>
+  <div class="flex items-center justify-between">
+    <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
+      {m.notif_history_title()}
+    </p>
+    <!-- Refreshed on request rather than by polling: each fetch is recorded in the audit log. -->
+    <button
+      type="button"
+      class="text-[11px] text-slate-400 underline cursor-pointer disabled:opacity-50"
+      disabled={loading}
+      onclick={() => load(patientId, appointmentId)}>{m.notif_history_refresh()}</button
+    >
+  </div>
   {#if loading}
     <p class="text-slate-500">{m.notif_history_loading()}</p>
   {:else if error}

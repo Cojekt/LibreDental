@@ -23,10 +23,12 @@ CREATE INDEX IF NOT EXISTS idx_notification_log_sent_at ON notification_log(sent
 
 -- One automatic reminder per appointment time, rule timing, and channel, so a reminder is never
 -- sent twice even with two processes running, while a rescheduled appointment can be reminded
--- again for its new time. Manual sends have no reminder_kind and are not constrained.
+-- again for its new time. Manual sends have no reminder_kind and are not constrained. Skipped
+-- reminders don't count: their reason (such as an invalid phone number) can be fixed, and the
+-- reminder should then still go out.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_log_reminder
     ON notification_log(appointment_id, appointment_start, reminder_kind, channel)
-    WHERE reminder_kind IS NOT NULL;
+    WHERE reminder_kind IS NOT NULL AND status <> 'skipped';
 
 CREATE TABLE IF NOT EXISTS reminder_settings (
     id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
