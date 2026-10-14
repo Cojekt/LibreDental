@@ -4,6 +4,7 @@
   import { auth } from "../stores/auth.svelte.js";
   import { m } from "../paraglide/messages.js";
   import { providerRoleLabel } from "$lib/labels.js";
+  import { errorCode } from "$lib/error.js";
   import { PracticeConfigService, AuditService } from "@bindings/services/index.js";
 
   let {
@@ -61,11 +62,7 @@
       errorMsg = "";
     } catch (err: any) {
       if (selectedProvider !== currentAttemptProvider || !showModal) return;
-      if (
-        err &&
-        err.message &&
-        (err.message.includes("incorrect pin") || err.message.includes("pin not set"))
-      ) {
+      if (errorCode(err) === "incorrect_pin") {
         errorMsg = m.staff_login_incorrect_pin();
       } else {
         errorMsg = m.staff_login_failed();

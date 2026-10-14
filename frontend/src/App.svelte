@@ -13,7 +13,7 @@
     getDateOnlyString,
     dateOnlyToISO,
   } from "$lib/date.js";
-  import { handleError } from "$lib/error.js";
+  import { errorCode, handleError } from "$lib/error.js";
   import { m } from "./paraglide/messages.js";
   import type {
     Patient,
@@ -269,7 +269,7 @@
       await loadAppointments();
     } catch (err: any) {
       // A sessionless save is rejected once another client has created the first provider.
-      if (!auth.token && err?.message?.includes("unauthorized")) {
+      if (!auth.token && errorCode(err) === "unauthorized") {
         await handleAlreadyInitialized();
         return;
       }
