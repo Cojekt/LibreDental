@@ -206,7 +206,10 @@ func (s *ReminderService) EnableReminders(token string, defaultRules []domain.Re
 	}
 	ctx := context.Background()
 	practice, err := s.practice.Get(ctx)
-	if err != nil || practice.Timezone == "" {
+	if err != nil {
+		return nil, fmt.Errorf("failed to read practice settings: %w", err)
+	}
+	if practice.Timezone == "" {
 		return nil, fmt.Errorf("%w: set the practice timezone before turning on reminders", storage.ErrInvalidInput)
 	}
 
