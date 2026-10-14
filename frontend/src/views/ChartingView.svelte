@@ -17,7 +17,7 @@
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
   import { formatCurrency } from "$lib/currency.js";
-  import { handleError } from "$lib/error.js";
+  import { errorCode, handleError } from "$lib/error.js";
   import { calculateAge, formatDateOnly } from "$lib/date.js";
   import ConfirmModal from "../components/ui/ConfirmModal.svelte";
 
@@ -261,10 +261,7 @@
     } catch (e: any) {
       if (gen === requestGenChart) {
         console.error("Failed to load patient chart:", e);
-        if (
-          (e && typeof e.message === "string" && e.message.includes("unauthorized")) ||
-          (typeof e === "string" && e.includes("unauthorized"))
-        ) {
+        if (errorCode(e) === "unauthorized") {
           // Do not treat unauthorized as empty chart
         } else {
           currentChart = { patient_id: patientId, conditions: [], updated_at: "" };

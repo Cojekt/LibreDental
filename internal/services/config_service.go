@@ -130,6 +130,12 @@ func (s *PracticeConfigService) UpdatePracticeConfig(token string, cfg domain.Pr
 	return &cfg, nil
 }
 
+var (
+	ErrProviderInactive = errors.New("provider is inactive")
+	ErrPinNotSet        = errors.New("pin not set or empty")
+	ErrPinIncorrect     = errors.New("incorrect pin")
+)
+
 // ListProviders fetches all configured clinic providers and staff.
 
 // VerifyProviderPin checks a provider's pin and returns the redacted provider.
@@ -141,13 +147,13 @@ func (s *PracticeConfigService) VerifyProviderPin(id string, pin string) (*domai
 	for _, p := range providers {
 		if p.ID == id {
 			if !p.IsActive {
-				return nil, errors.New("provider is inactive")
+				return nil, ErrProviderInactive
 			}
 			if p.Pin == "" || pin == "" {
-				return nil, errors.New("pin not set or empty")
+				return nil, ErrPinNotSet
 			}
 			if p.Pin != pin {
-				return nil, errors.New("incorrect pin")
+				return nil, ErrPinIncorrect
 			}
 			p.Pin = "****"
 			return p, nil

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -144,6 +145,9 @@ func TestBridgeServiceServerMode(t *testing.T) {
 	env := newTestBridgeService(t)
 	env.svc.serverMode = true
 
+	if env.svc.IsAvailable() {
+		t.Error("IsAvailable in server mode = true, want false")
+	}
 	infos, err := env.svc.ListBridges(env.token)
 	if err != nil || len(infos) != 0 {
 		t.Errorf("ListBridges in server mode = %v, %v; want empty", infos, err)
@@ -166,10 +170,19 @@ func TestBridgeServiceConfig(t *testing.T) {
 	if len(infos) != len(DefaultProgramBridges()) {
 		t.Fatalf("ListBridges returned %d bridges, want %d", len(infos), len(DefaultProgramBridges()))
 	}
+	if !env.svc.IsAvailable() {
+		t.Error("IsAvailable in desktop mode = false, want true")
+	}
 	for _, info := range infos {
 		if info.Config.Enabled || info.Config.Name == "" {
 			t.Errorf("unexpected default config: %+v", info.Config)
 		}
+		if info.DefaultArgs != info.Config.Args {
+			t.Errorf("%s: DefaultArgs = %q, want unconfigured args %q", info.Config.Name, info.DefaultArgs, info.Config.Args)
+		}
+	}
+	if tokens := env.svc.ListArgumentTokens(); !slices.Equal(tokens, BridgeArgumentTokens) {
+		t.Errorf("ListArgumentTokens = %v, want %v", tokens, BridgeArgumentTokens)
 	}
 
 	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
@@ -209,6 +222,9 @@ func TestBridgeServiceConfig(t *testing.T) {
 	for _, info := range infos {
 		if info.Config.Name == "weasis" {
 			cfg = info.Config
+			if info.DefaultArgs != `'$dicom:get -l "{dir}"'` {
+				t.Errorf("weasis DefaultArgs after save = %q, want the preset", info.DefaultArgs)
+			}
 		}
 	}
 	if !cfg.Enabled || cfg.Path != env.exePath || cfg.Args != "-x" || cfg.CreatedAt.IsZero() {

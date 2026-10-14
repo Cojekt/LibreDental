@@ -64,6 +64,17 @@ func RegisterProgramBridge(s *BridgeService, b domain.ProgramBridge) {
 	s.bridges[b.Name()] = b
 }
 
+// IsAvailable reports whether this build can launch local programs at all, so the frontend
+// can tell "unavailable in server mode" apart from "no bridges registered".
+func (s *BridgeService) IsAvailable() bool {
+	return !s.serverMode
+}
+
+// ListArgumentTokens returns the placeholders an argument template may use.
+func (s *BridgeService) ListArgumentTokens() []string {
+	return slices.Clone(BridgeArgumentTokens)
+}
+
 // ListBridges returns the registered bridges with their current config.
 func (s *BridgeService) ListBridges(token string) ([]domain.BridgeInfo, error) {
 	if s.auditService.GetSessionUser(token) == nil {
@@ -88,7 +99,11 @@ func (s *BridgeService) ListBridges(token string) ([]domain.BridgeInfo, error) {
 		if !ok {
 			cfg = defaultBridgeConfig(b)
 		}
-		infos = append(infos, domain.BridgeInfo{Capabilities: b.Capabilities(), Config: cfg})
+		infos = append(infos, domain.BridgeInfo{
+			Capabilities: b.Capabilities(),
+			Config:       cfg,
+			DefaultArgs:  b.DefaultConfig().Args,
+		})
 	}
 	return infos, nil
 }

@@ -4,6 +4,7 @@
   import { m } from "../../paraglide/messages.js";
   import { auth } from "../../stores/auth.svelte.js";
   import { handleError } from "$lib/error.js";
+  import ProgramBridgesPanel from "./ProgramBridgesPanel.svelte";
 
   let { canEdit = false } = $props<{ canEdit: boolean }>();
 
@@ -621,6 +622,14 @@
             </div>
           {/if}
         </div>
+      </div>
+
+      <!-- Local Programs (program bridges) Section -->
+      <div>
+        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
+          >{m.integrations_section_bridges()}
+        </span>
+        <ProgramBridgesPanel {canEdit} />
       </div>
     </div>
   </div>

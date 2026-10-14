@@ -70,8 +70,11 @@ var BridgeArgumentTokens = []string{
 }
 
 var (
-	ErrBridgeNotConfigured = errors.New("program bridge is not configured")
-	errBridgeTemplate      = errors.New("invalid bridge argument template")
+	ErrBridgeNotConfigured   = errors.New("program bridge is not configured")
+	errBridgePathRequired    = fmt.Errorf("%w: program path is required", ErrBridgeNotConfigured)
+	errBridgePathNotAbsolute = fmt.Errorf("%w: program path must be absolute", ErrBridgeNotConfigured)
+	errBridgeBatchFile       = fmt.Errorf("%w: batch files cannot be used as bridge programs", ErrBridgeNotConfigured)
+	errBridgeTemplate        = errors.New("invalid bridge argument template")
 )
 
 // validateBridgeArgs expands a template against a fully populated sample request, so unknown
@@ -90,16 +93,16 @@ func validateBridgeArgs(template string) error {
 
 func validateBridgeExecutable(path string) error {
 	if strings.TrimSpace(path) == "" {
-		return fmt.Errorf("%w: program path is required", ErrBridgeNotConfigured)
+		return errBridgePathRequired
 	}
 	if !filepath.IsAbs(path) {
-		return fmt.Errorf("%w: program path must be absolute", ErrBridgeNotConfigured)
+		return errBridgePathNotAbsolute
 	}
 	// cmd.exe re-parses the command line of batch files with different quoting rules than
 	// regular programs, which would undo the argument isolation this bridge relies on.
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".bat", ".cmd":
-		return fmt.Errorf("%w: batch files cannot be used as bridge programs", ErrBridgeNotConfigured)
+		return errBridgeBatchFile
 	}
 	return nil
 }
