@@ -34,6 +34,8 @@ type reminderScheduler struct {
 	logs          storage.NotificationLogRepository
 	audit         *AuditService
 	now           func() time.Time
+	// onHistoryChange, if set, is called after a pass that added to or updated the history.
+	onHistoryChange func()
 
 	passMu   sync.Mutex
 	statusMu sync.Mutex
@@ -44,6 +46,7 @@ type reminderScheduler struct {
 type reminderPass struct {
 	sent, failed, unknown, skipped int
 	errs                           []string
+	historyChanged                 bool
 }
 
 func (p *reminderPass) problem(format string, args ...any) {
@@ -92,16 +95,22 @@ func (s *reminderScheduler) runPass(ctx context.Context) {
 	s.sendDue(ctx, now, &pass)
 
 	s.statusMu.Lock()
-	defer s.statusMu.Unlock()
 	ranAt := now
 	s.status.LastRunAt = &ranAt
 	s.status.Sent, s.status.Failed, s.status.Unknown, s.status.Skipped = pass.sent, pass.failed, pass.unknown, pass.skipped
 	s.status.LastError = strings.Join(pass.errs, "; ")
+	s.statusMu.Unlock()
+
+	if pass.historyChanged && s.onHistoryChange != nil {
+		s.onHistoryChange()
+	}
 }
 
 func (s *reminderScheduler) sendDue(ctx context.Context, now time.Time, pass *reminderPass) {
-	if _, err := s.logs.MarkStalePending(ctx, now.Add(-stalePendingAfter)); err != nil {
+	if n, err := s.logs.MarkStalePending(ctx, now.Add(-stalePendingAfter)); err != nil {
 		pass.problem("%v", err)
+	} else if n > 0 {
+		pass.historyChanged = true
 	}
 
 	settings, err := s.reminders.GetSettings(ctx)
@@ -296,6 +305,7 @@ func (s *reminderScheduler) sendReminder(
 		// another appointment's text can still go out tomorrow if it's within its window.
 		return
 	}
+	pass.historyChanged = true
 
 	result, sendErr := s.notifications.send(ctx, provider, &domain.NotificationMessage{
 		Channel: rule.Channel,
@@ -342,10 +352,12 @@ func (s *reminderScheduler) recordSkipped(ctx context.Context, entry *domain.Not
 	entry.ErrorMessage = reason
 	// The history gets one row per distinct skip, but the job status reports what this pass did,
 	// so every skip counts.
-	if _, err := s.logs.RecordSkipped(ctx, entry); err != nil {
+	stored, err := s.logs.RecordSkipped(ctx, entry)
+	if err != nil {
 		pass.problem("%v", err)
 		return
 	}
+	pass.historyChanged = pass.historyChanged || stored
 	pass.skipped++
 }
 

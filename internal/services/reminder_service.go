@@ -66,6 +66,12 @@ func StartReminderJob(s *ReminderService, ctx context.Context) {
 	s.startJob(ctx, reminderPassInterval)
 }
 
+// OnReminderHistoryChange sets fn to be called after a reminder pass adds to or updates the
+// notification history, so open history views can reload. Call it before StartReminderJob.
+func OnReminderHistoryChange(s *ReminderService, fn func()) {
+	s.scheduler.onHistoryChange = fn
+}
+
 // StopReminderJob stops the reminder job and waits for a pass in progress to finish.
 func StopReminderJob(s *ReminderService) {
 	s.stopJob()

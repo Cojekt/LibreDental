@@ -14,12 +14,20 @@ type reminderJobLifecycle struct {
 	reminders *services.ReminderService
 }
 
+// notificationHistoryChangedEvent tells open notification history views to reload. It carries no
+// data: in server mode events reach every LAN client over an unauthenticated WebSocket, so it
+// can't say which patient's history changed.
+const notificationHistoryChangedEvent = "notifications:changed"
+
 func newReminderJobLifecycle(reminders *services.ReminderService) *reminderJobLifecycle {
 	return &reminderJobLifecycle{reminders: reminders}
 }
 
 // ServiceStartup starts the job. Wails cancels ctx just before shutdown.
 func (l *reminderJobLifecycle) ServiceStartup(ctx context.Context, _ application.ServiceOptions) error {
+	services.OnReminderHistoryChange(l.reminders, func() {
+		application.Get().Event.Emit(notificationHistoryChangedEvent)
+	})
 	services.StartReminderJob(l.reminders, ctx)
 	return nil
 }

@@ -656,3 +656,27 @@ func TestReminderScheduler_SendsAfterSkippedDataIsFixed(t *testing.T) {
 		t.Errorf("Expected one skipped and one sent text in the history, got %d and %d", skipped, sent)
 	}
 }
+
+func TestReminderScheduler_ReportsHistoryChanges(t *testing.T) {
+	e := newReminderEnv(t)
+	changes := 0
+	OnReminderHistoryChange(e.service, func() { changes++ })
+	e.addPatient("pat_1", nil)
+	e.addPatient("pat_badphone", func(p *domain.Patient) { p.PhonePrimary = "555-0123" })
+	e.addAppointment("appt_1", "pat_1", e.at(10, 15, 10, 0))
+	e.addAppointment("appt_badphone", "pat_badphone", e.at(10, 15, 10, 0))
+
+	e.runAt(e.at(10, 13, 9, 55))
+	if changes != 0 {
+		t.Fatalf("Expected no history change before reminders are due, got %d", changes)
+	}
+	e.runAt(e.at(10, 13, 10, 0))
+	if changes != 1 {
+		t.Fatalf("Expected one history change for a pass that sent and skipped reminders, got %d", changes)
+	}
+	// The same reminders are already sent or skipped, so nothing new is recorded.
+	e.runAt(e.at(10, 13, 10, 5))
+	if changes != 1 {
+		t.Errorf("Expected no history change when nothing new is recorded, got %d", changes)
+	}
+}

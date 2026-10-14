@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Events } from "@wailsio/runtime";
   import type { NotificationLog } from "@bindings/domain/models.js";
   import { NotificationService } from "@bindings/services/index.js";
   import { m } from "../paraglide/messages.js";
@@ -17,11 +18,15 @@
   let error = $state("");
   let requestGen = 0;
 
-  async function load(patient: string, appointment: string) {
+  // A refresh keeps the current entries on screen until the new ones arrive.
+  async function load(patient: string, appointment: string, refresh = false) {
     const gen = ++requestGen;
-    entries = [];
+    if (!refresh) entries = [];
     error = "";
-    if (!auth.token || (!patient && !appointment)) return;
+    if (!auth.token || (!patient && !appointment)) {
+      entries = [];
+      return;
+    }
     loading = true;
     try {
       const res = appointment
@@ -41,6 +46,10 @@
   $effect(() => {
     load(patientId, appointmentId);
   });
+
+  // Sent by the backend after the reminder job records messages. It doesn't say for which
+  // patient, so every open history reloads; it fires at most once per reminder pass.
+  $effect(() => Events.On("notifications:changed", () => load(patientId, appointmentId, true)));
 
   function statusLabel(status: string): string {
     switch (status) {
@@ -94,7 +103,7 @@
         type="button"
         class="text-[11px] text-slate-400 underline cursor-pointer disabled:opacity-50"
         disabled={loading}
-        onclick={() => load(patientId, appointmentId)}>{m.notif_history_refresh()}</button
+        onclick={() => load(patientId, appointmentId, true)}>{m.notif_history_refresh()}</button
       >
     </div>
     {#if loading}
