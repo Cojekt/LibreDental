@@ -719,7 +719,7 @@
   "reminders_job_not_run": "Not checked yet since LibreDental started.",
   "reminders_job_error": "Problem: {error}",
   "reminders_job_refresh": "Refresh",
-  "reminders_default_sms_2days": "{practice_name}: Hi {first_name}, reminder of your visit on {date} at {time}. Call {practice_phone} with questions. Reply STOP to opt out.",
+  "reminders_default_sms_2days": "{practice_name}: Hi {first_name}, reminder of your visit on {date} at {time}. Reply STOP to opt out.",
   "reminders_default_sms_2hours": "{practice_name}: Hi {first_name}, see you today at {time}. Running late? Call {practice_phone}. Reply STOP to opt out.",
   "reminders_default_email_subject": "Appointment reminder from {practice_name}",
   "reminders_default_email_body": "Hi {first_name},\n\nThis is a reminder of your appointment at {practice_name} on {date} at {time}.\n\nIf you need to reschedule, please call us at {practice_phone}.\n\nThank you,\n{practice_name}",
