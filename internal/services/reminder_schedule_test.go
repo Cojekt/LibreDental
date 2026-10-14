@@ -27,6 +27,7 @@ func TestParseSendingHours(t *testing.T) {
 	for _, bad := range [][2]string{
 		{"20:00", "08:00"}, {"08:00", "08:00"}, {"8:00", "20:00"}, {"08:00", "24:00"},
 		{"08:60", "20:00"}, {"", "20:00"}, {"ab:cd", "20:00"}, {"-1:00", "20:00"},
+		{"+1:00", "20:00"}, {"08:-0", "20:00"}, {"0a:00", "20:00"}, {"08:00", "2O:00"},
 	} {
 		if _, err := parseSendingHours(bad[0], bad[1]); !errors.Is(err, storage.ErrInvalidInput) {
 			t.Errorf("parseSendingHours(%q, %q) should be rejected, got %v", bad[0], bad[1], err)

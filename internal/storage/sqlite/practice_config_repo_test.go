@@ -501,14 +501,20 @@ func TestPracticeConfigRepository_Timezone(t *testing.T) {
 		t.Fatalf("Save failed: %v", err)
 	}
 	got, err := repo.Get(ctx)
-	if err != nil || got.Timezone != "" {
-		t.Fatalf("Expected no timezone by default, got %q, %v", got.Timezone, err)
+	if err != nil {
+		t.Fatalf("Get failed: %v", err)
+	}
+	if got.Timezone != "" {
+		t.Fatalf("Expected no timezone by default, got %q", got.Timezone)
 	}
 	got.Timezone = "America/Los_Angeles"
 	if err := repo.Save(ctx, got); err != nil {
 		t.Fatalf("Save failed: %v", err)
 	}
-	if got, err = repo.Get(ctx); err != nil || got.Timezone != "America/Los_Angeles" {
-		t.Errorf("Timezone didn't round-trip: %q, %v", got.Timezone, err)
+	if got, err = repo.Get(ctx); err != nil {
+		t.Fatalf("Get failed: %v", err)
+	}
+	if got.Timezone != "America/Los_Angeles" {
+		t.Errorf("Timezone didn't round-trip: %q", got.Timezone)
 	}
 }

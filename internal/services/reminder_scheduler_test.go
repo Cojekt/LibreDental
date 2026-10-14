@@ -624,6 +624,10 @@ func TestReminderScheduler_SendsAfterSkippedDataIsFixed(t *testing.T) {
 	if sms, _ := e.sentCount(); sms != 0 {
 		t.Fatalf("Expected no text to an invalid number, got %d", sms)
 	}
+	// The job status reports what the latest pass did, so the repeated skip still counts.
+	if status, _ := e.service.GetReminderJobStatus(e.token); status.Skipped != 1 {
+		t.Errorf("Expected the second pass to report 1 skipped, got %d", status.Skipped)
+	}
 
 	p, _ := e.patients.GetByID(context.Background(), "pat_1")
 	p.PhonePrimary = "(202) 555-0123"

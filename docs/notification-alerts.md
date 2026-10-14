@@ -1,7 +1,8 @@
 # Appointment Reminders (Email and SMS)
 
-> **Status:** in progress (branch `sms-notif`). PRs 1 to 3 (system actor, email and SMS
-> providers, automatic reminders) are implemented; PR 3's manual testing and PR 4 remain. Last updated 2026-10-05.
+> **Status:** PRs 1 and 2 (system actor, email and SMS providers) are merged (#109). PR 3
+> (automatic reminders) is in review (#118). PR 4 (automating the AWS setup) is planned.
+> Last updated 2026-10-13.
 
 LibreDental will send automatic appointment reminders to patients by email and text message.
 This document records the design decisions, the research behind them, and how the feature
@@ -21,7 +22,7 @@ LibreDental and each practice.
 
 | Channel | Vendor | Why |
 | --- | --- | --- |
-| Email | Any SMTP server (Amazon SES SMTP, Google Workspace, Microsoft 365, Mailgun, ...) | One provider covers most hosts; the Go standard library is enough. |
+| Email | Any SMTP server with TLS and password sign-in (Amazon SES SMTP, Google Workspace with an app password, Mailgun, ...). Microsoft 365 isn't supported: it is retiring password sign-in for SMTP, and supporting it needs OAuth2. | One provider covers most hosts; the Go standard library is enough. |
 | SMS | AWS End User Messaging SMS | AWS signs a BAA self-serve and at no cost through AWS Artifact, and the service is on AWS's HIPAA-eligible list. Twilio only offers a BAA on its paid Security and Enterprise Editions. |
 
 The provider registry supports several vendors per channel, so a Twilio provider can be
@@ -452,7 +453,7 @@ clear message rather than sent to a possibly wrong number. **Chosen:** `nyaruka/
 | `toE164` table test | For each of the six countries: national and international formats, spaces, dashes, dots, parentheses, `00` and `011` prefixes, extensions, too short, too long, letters, empty. |
 | Secrets redaction (extended) | Each secret field is redacted on read and restored on save; non-secret fields pass through; a placeholder for a field with no stored value is not saved as the literal placeholder. |
 | `SendTestMessage` | Requires a session; audited on success and on failure; unknown provider rejected. |
-| `TestAWSSMSLive` (opt-in) | Skipped unless `AWS_SMS_LIVE_TEST=1` and credentials are set. Sends a `DryRun` request (free, nothing delivered), then, if a simulator destination number is given, a real send from a simulator origination number. CI never runs it. |
+| `TestAWSSMSLive` (opt-in) | Skipped unless `AWS_SMS_LIVE_TEST=1` and credentials are set. Sends a `DryRun` request (free, nothing delivered) to `AWS_SMS_DESTINATION`. A real send happens only when `AWS_SMS_LIVE_SEND=1` is also set; use a simulator origination number and destination number so nothing reaches a carrier. CI never runs it. |
 | `TestSMTPLive` (opt-in) | Skipped unless SMTP settings are in the environment. Sends to `success@simulator.amazonses.com` when pointed at SES. |
 
 **Manual:** in the app, configure both providers against the AWS sandbox. Send a test SMS to
@@ -643,7 +644,7 @@ decisions made from it, and the plan that follows from both.
    is opted in. Until now nothing sent to patients, so the checkbox had no effect. Once
    automatic reminders exist, it decides who gets texts and emails. **This changes what
    existing stored data means**, which `AGENTS.md` says must be called out. See
-   [Open decisions](#open-decisions-for-pr-3).
+   [Decisions for PR 3](#decisions-for-pr-3).
 
 7. **Preferred contact method defaults to "phone".** The choices are `phone`, `sms`, and
    `email`, and the form defaults to `phone`, meaning a voice call, for which there is no

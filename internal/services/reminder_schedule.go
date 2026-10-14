@@ -44,9 +44,14 @@ func parseSendingHours(start, end string) (sendingHours, error) {
 // parseClock parses "HH:MM" (24-hour) into minutes after midnight.
 func parseClock(v string) (int, error) {
 	h, m, ok := strings.Cut(strings.TrimSpace(v), ":")
-	hour, errH := strconv.Atoi(h)
-	minute, errM := strconv.Atoi(m)
-	if !ok || len(h) != 2 || len(m) != 2 || errH != nil || errM != nil || hour > 23 || minute > 59 || hour < 0 || minute < 0 {
+	// Atoi alone would accept signs, such as "+1:00" or "08:-0".
+	twoDigits := func(s string) bool { return len(s) == 2 && s[0] >= '0' && s[0] <= '9' && s[1] >= '0' && s[1] <= '9' }
+	if !ok || !twoDigits(h) || !twoDigits(m) {
+		return 0, fmt.Errorf("%w: %q is not a time of day (HH:MM)", storage.ErrInvalidInput, v)
+	}
+	hour, _ := strconv.Atoi(h)
+	minute, _ := strconv.Atoi(m)
+	if hour > 23 || minute > 59 {
 		return 0, fmt.Errorf("%w: %q is not a time of day (HH:MM)", storage.ErrInvalidInput, v)
 	}
 	return hour*60 + minute, nil

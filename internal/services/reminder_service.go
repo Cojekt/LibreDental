@@ -144,12 +144,9 @@ func (s *ReminderService) SaveSendingHours(token string, start string, end strin
 		return nil, err
 	}
 	settings.SendingHoursStart, settings.SendingHoursEnd = strings.TrimSpace(start), strings.TrimSpace(end)
-	if err := s.reminders.SaveSettings(ctx, settings); err != nil {
+	detail := fmt.Sprintf("Set reminder sending hours to %s-%s", settings.SendingHoursStart, settings.SendingHoursEnd)
+	if err := s.auditThenSave(token, detail, func() error { return s.reminders.SaveSettings(ctx, settings) }); err != nil {
 		return nil, err
-	}
-	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "reminder_settings",
-		fmt.Sprintf("Set reminder sending hours to %s-%s", settings.SendingHoursStart, settings.SendingHoursEnd)); err != nil {
-		return settings, fmt.Errorf("sending hours saved but failed to log audit: %w", err)
 	}
 	return settings, nil
 }
@@ -223,8 +220,11 @@ func (s *ReminderService) EnableReminders(token string, defaultRules []domain.Re
 	if err != nil {
 		return nil, err
 	}
+	// The defaults are checked before anything is audited or saved, so bad input leaves no
+	// trace and changes nothing.
+	var newRules []*domain.ReminderRule
 	if len(existing) == 0 {
-		if err := s.createRules(ctx, defaultRules); err != nil {
+		if newRules, err = s.prepareRules(defaultRules); err != nil {
 			return nil, err
 		}
 	}
@@ -239,20 +239,27 @@ func (s *ReminderService) EnableReminders(token string, defaultRules []domain.Re
 	}
 	now := time.Now().UTC().Truncate(time.Second)
 	settings.Enabled, settings.EnabledAt, settings.EnabledBy = true, &now, user.ID
-	if err := s.reminders.SaveSettings(ctx, settings); err != nil {
-		return nil, err
-	}
-	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "reminder_settings", fmt.Sprintf(
+	detail := fmt.Sprintf(
 		"Turned on automatic reminders for %d opted-in patients (%d with a mobile number, %d with an email address)",
-		counts.OptedIn, counts.WithMobile, counts.WithEmail)); err != nil {
-		return settings, fmt.Errorf("reminders turned on but failed to log audit: %w", err)
+		counts.OptedIn, counts.WithMobile, counts.WithEmail)
+	if err := s.auditThenSave(token, detail, func() error {
+		if len(newRules) > 0 {
+			if err := s.reminders.CreateRules(ctx, newRules); err != nil {
+				return err
+			}
+		}
+		return s.reminders.SaveSettings(ctx, settings)
+	}); err != nil {
+		return nil, err
 	}
 	return settings, nil
 }
 
-func (s *ReminderService) createRules(ctx context.Context, rules []domain.ReminderRule) error {
+// prepareRules validates new rules and fills in their IDs and providers. They're saved together
+// later, by CreateRules.
+func (s *ReminderService) prepareRules(rules []domain.ReminderRule) ([]*domain.ReminderRule, error) {
 	if len(rules) == 0 {
-		return fmt.Errorf("%w: no reminder rules to create", storage.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: no reminder rules to create", storage.ErrInvalidInput)
 	}
 	// Validate every rule before saving any: a partly created set would stop the defaults from
 	// ever being created, since rules are only created when none exist.
@@ -260,11 +267,11 @@ func (s *ReminderService) createRules(ctx context.Context, rules []domain.Remind
 	prepared := make([]domain.ReminderRule, 0, len(rules))
 	for _, rule := range rules {
 		if rule.OffsetMinutes <= 0 {
-			return fmt.Errorf("%w: reminder timing must be before the appointment", storage.ErrInvalidInput)
+			return nil, fmt.Errorf("%w: reminder timing must be before the appointment", storage.ErrInvalidInput)
 		}
 		key := fmt.Sprintf("%d/%s", rule.OffsetMinutes, rule.Channel)
 		if seen[key] {
-			return fmt.Errorf("%w: duplicate reminder rule for %s", storage.ErrInvalidInput, key)
+			return nil, fmt.Errorf("%w: duplicate reminder rule for %s", storage.ErrInvalidInput, key)
 		}
 		seen[key] = true
 		if rule.ProviderName == "" {
@@ -275,7 +282,7 @@ func (s *ReminderService) createRules(ctx context.Context, rules []domain.Remind
 		rule.ID = "rule_" + uuid.NewString()
 		rule.CreatedAt = time.Time{}
 		if err := s.validateRule(&rule); err != nil {
-			return err
+			return nil, err
 		}
 		prepared = append(prepared, rule)
 	}
@@ -283,7 +290,22 @@ func (s *ReminderService) createRules(ctx context.Context, rules []domain.Remind
 	for i := range prepared {
 		toSave[i] = &prepared[i]
 	}
-	return s.reminders.CreateRules(ctx, toSave)
+	return toSave, nil
+}
+
+// auditThenSave records a settings change in the audit trail before saving it, and doesn't save
+// it if the entry can't be written, so a change is never applied untraced (as with
+// SetBridgeConfig). A failed save is recorded too.
+func (s *ReminderService) auditThenSave(token string, detail string, save func() error) error {
+	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "reminder_settings", detail); err != nil {
+		return fmt.Errorf("failed to log audit, reminder settings not saved: %w", err)
+	}
+	if err := save(); err != nil {
+		_ = s.auditService.LogAction(token, domain.AuditActionUpdate, "reminder_settings",
+			fmt.Sprintf("Failed to save reminder settings (%s): %v", detail, err))
+		return err
+	}
+	return nil
 }
 
 func (s *ReminderService) validateRule(rule *domain.ReminderRule) error {
@@ -316,11 +338,10 @@ func (s *ReminderService) DisableReminders(token string) (*domain.ReminderSettin
 		return nil, err
 	}
 	settings.Enabled, settings.EnabledAt, settings.EnabledBy = false, nil, ""
-	if err := s.reminders.SaveSettings(ctx, settings); err != nil {
+	if err := s.auditThenSave(token, "Turned off automatic reminders", func() error {
+		return s.reminders.SaveSettings(ctx, settings)
+	}); err != nil {
 		return nil, err
-	}
-	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "reminder_settings", "Turned off automatic reminders"); err != nil {
-		return settings, fmt.Errorf("reminders turned off but failed to log audit: %w", err)
 	}
 	return settings, nil
 }
@@ -362,16 +383,13 @@ func (s *ReminderService) SaveReminderRule(token string, rule domain.ReminderRul
 	if err := s.validateRule(existing); err != nil {
 		return nil, err
 	}
-	if err := s.reminders.SaveRule(ctx, existing); err != nil {
-		return nil, err
-	}
 	state := "off"
 	if existing.Enabled {
 		state = "on"
 	}
-	if err := s.auditService.LogAction(token, domain.AuditActionUpdate, "reminder_settings", fmt.Sprintf(
-		"Updated the %s %s reminder (now %s)", describeOffset(existing.OffsetMinutes), existing.Channel, state)); err != nil {
-		return existing, fmt.Errorf("reminder rule saved but failed to log audit: %w", err)
+	detail := fmt.Sprintf("Updated the %s %s reminder (now %s)", describeOffset(existing.OffsetMinutes), existing.Channel, state)
+	if err := s.auditThenSave(token, detail, func() error { return s.reminders.SaveRule(ctx, existing) }); err != nil {
+		return nil, err
 	}
 	return existing, nil
 }

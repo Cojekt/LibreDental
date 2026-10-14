@@ -4,6 +4,7 @@
   import { m } from "../paraglide/messages.js";
   import { auth } from "../stores/auth.svelte.js";
   import { handleError } from "$lib/error.js";
+  import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   // Shows messages sent to a patient, or for one appointment. Pass exactly one of the two.
   let { patientId = "", appointmentId = "" } = $props<{
@@ -81,50 +82,53 @@
   }
 </script>
 
-<div class="space-y-2 text-xs">
-  <div class="flex items-center justify-between">
-    <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
-      {m.notif_history_title()}
-    </p>
-    <!-- Refreshed on request rather than by polling: each fetch is recorded in the audit log. -->
-    <button
-      type="button"
-      class="text-[11px] text-slate-400 underline cursor-pointer disabled:opacity-50"
-      disabled={loading}
-      onclick={() => load(patientId, appointmentId)}>{m.notif_history_refresh()}</button
-    >
+<!-- Redrawn when the language changes, so labels and dates follow the new locale. -->
+{#key getLocaleVersion()}
+  <div class="space-y-2 text-xs">
+    <div class="flex items-center justify-between">
+      <p class="font-semibold text-slate-400 uppercase tracking-wider text-[11px]">
+        {m.notif_history_title()}
+      </p>
+      <!-- Refreshed on request rather than by polling: each fetch is recorded in the audit log. -->
+      <button
+        type="button"
+        class="text-[11px] text-slate-400 underline cursor-pointer disabled:opacity-50"
+        disabled={loading}
+        onclick={() => load(patientId, appointmentId)}>{m.notif_history_refresh()}</button
+      >
+    </div>
+    {#if loading}
+      <p class="text-slate-500">{m.notif_history_loading()}</p>
+    {:else if error}
+      <p class="text-rose-400" role="alert">{error}</p>
+    {:else if entries.length === 0}
+      <p class="text-slate-500">{m.notif_history_empty()}</p>
+    {:else}
+      <ul class="space-y-1.5">
+        {#each entries as entry (entry.id)}
+          <li class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-2.5 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-300">
+                {channelLabel(entry.channel)}
+                {#if entry.reminder_kind}
+                  <span class="text-slate-500">· {m.notif_history_automatic()}</span>
+                {/if}
+              </span>
+              <span
+                class="rounded border px-1.5 py-0.5 text-[11px] font-medium {statusClass(
+                  entry.status
+                )}">{statusLabel(entry.status)}</span
+              >
+            </div>
+            <div class="text-slate-500">
+              {new Date(entry.sent_at).toLocaleString()} · {entry.recipient}
+            </div>
+            {#if entry.error_message}
+              <div class="text-slate-400">{entry.error_message}</div>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {/if}
   </div>
-  {#if loading}
-    <p class="text-slate-500">{m.notif_history_loading()}</p>
-  {:else if error}
-    <p class="text-rose-400" role="alert">{error}</p>
-  {:else if entries.length === 0}
-    <p class="text-slate-500">{m.notif_history_empty()}</p>
-  {:else}
-    <ul class="space-y-1.5">
-      {#each entries as entry (entry.id)}
-        <li class="rounded-lg border border-slate-700/60 bg-slate-900/40 p-2.5 space-y-1">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-slate-300">
-              {channelLabel(entry.channel)}
-              {#if entry.reminder_kind}
-                <span class="text-slate-500">· {m.notif_history_automatic()}</span>
-              {/if}
-            </span>
-            <span
-              class="rounded border px-1.5 py-0.5 text-[11px] font-medium {statusClass(
-                entry.status
-              )}">{statusLabel(entry.status)}</span
-            >
-          </div>
-          <div class="text-slate-500">
-            {new Date(entry.sent_at).toLocaleString()} · {entry.recipient}
-          </div>
-          {#if entry.error_message}
-            <div class="text-slate-400">{entry.error_message}</div>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-  {/if}
-</div>
+{/key}

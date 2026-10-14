@@ -245,3 +245,54 @@ func TestReminderService_RecipientCountsReportStorageErrors(t *testing.T) {
 		t.Errorf("Expected 1 opted in, 0 readable mobiles, 1 email; got %+v, %v", counts, err)
 	}
 }
+
+// Reminder settings are audited before they're saved, and not saved if the entry can't be
+// written (as with SetBridgeConfig). failingAuditRepo is in bridge_service_test.go.
+func TestReminderService_SettingsNotSavedWithoutAudit(t *testing.T) {
+	ctx := context.Background()
+	withFailingAudit := func(e *reminderEnv) string {
+		t.Helper()
+		e.service.auditService = NewAuditService(failingAuditRepo{}, e.practice)
+		token, err := e.service.auditService.CreateSession("prov_1", "1234")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return token
+	}
+
+	e := newReminderEnv(t) // reminders on, default rules created
+	rules, _ := e.reminders.ListRules(ctx)
+	token := withFailingAudit(e)
+
+	if _, err := e.service.SaveSendingHours(token, "09:00", "17:00"); err == nil {
+		t.Errorf("Expected SaveSendingHours to fail without an audit entry")
+	}
+	if _, err := e.service.DisableReminders(token); err == nil {
+		t.Errorf("Expected DisableReminders to fail without an audit entry")
+	}
+	edited := *rules[0]
+	edited.BodyTemplate = "Changed {time}"
+	if _, err := e.service.SaveReminderRule(token, edited); err == nil {
+		t.Errorf("Expected SaveReminderRule to fail without an audit entry")
+	}
+	settings, _ := e.reminders.GetSettings(ctx)
+	if !settings.Enabled || settings.SendingHoursStart != "08:00" || settings.SendingHoursEnd != "20:00" {
+		t.Errorf("Expected settings unchanged, got %+v", settings)
+	}
+	if after, _ := e.reminders.ListRules(ctx); after[0].BodyTemplate != rules[0].BodyTemplate {
+		t.Errorf("Expected the rule unchanged, got %q", after[0].BodyTemplate)
+	}
+
+	// Turning reminders on for the first time creates no rules and stays off.
+	f := newReminderEnvWithoutRules(t)
+	token = withFailingAudit(f)
+	if _, err := f.service.EnableReminders(token, defaultTestRules()); err == nil {
+		t.Errorf("Expected EnableReminders to fail without an audit entry")
+	}
+	if rules, _ := f.reminders.ListRules(ctx); len(rules) != 0 {
+		t.Errorf("Expected no rules created, got %d", len(rules))
+	}
+	if settings, _ := f.reminders.GetSettings(ctx); settings.Enabled {
+		t.Errorf("Expected reminders to stay off")
+	}
+}
