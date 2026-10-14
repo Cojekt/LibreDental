@@ -22,7 +22,7 @@ LibreDental and each practice.
 
 | Channel | Vendor | Why |
 | --- | --- | --- |
-| Email | Any SMTP server with TLS and password sign-in (Amazon SES SMTP, Google Workspace with an app password, Mailgun, ...). Microsoft 365 isn't supported: it is retiring password sign-in for SMTP, and supporting it needs OAuth2. | One provider covers most hosts; the Go standard library is enough. |
+| Email | Any SMTP server with TLS and `AUTH PLAIN` password authentication (Amazon SES SMTP, Google Workspace with an app password, Mailgun, ...). Microsoft 365 isn't supported: it is retiring password sign-in for SMTP, and supporting it needs OAuth2. | One provider covers most hosts; the Go standard library is enough. |
 | SMS | AWS End User Messaging SMS | AWS signs a BAA self-serve and at no cost through AWS Artifact, and the service is on AWS's HIPAA-eligible list. Twilio only offers a BAA on its paid Security and Enterprise Editions. |
 
 The provider registry supports several vendors per channel, so a Twilio provider can be
