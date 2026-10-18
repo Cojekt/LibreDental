@@ -27,6 +27,15 @@ type NotificationStatus string
 const (
 	NotificationStatusSent   NotificationStatus = "sent"
 	NotificationStatusFailed NotificationStatus = "failed"
+	// NotificationStatusPending marks a reminder claimed for sending whose outcome isn't
+	// recorded yet. One left behind by a crash becomes unknown and is never retried.
+	NotificationStatusPending NotificationStatus = "pending"
+	// NotificationStatusUnknown marks a send that may or may not have been delivered
+	// (see ErrDeliveryUnknown).
+	NotificationStatusUnknown NotificationStatus = "unknown"
+	// NotificationStatusSkipped marks a reminder that was deliberately not sent, with the
+	// reason in ErrorMessage, so staff can see why and it isn't retried.
+	NotificationStatusSkipped NotificationStatus = "skipped"
 )
 
 // NotificationMessage is the payload handed to a NotificationProvider to deliver.
@@ -76,4 +85,9 @@ type NotificationLog struct {
 	Status            NotificationStatus `json:"status"`
 	ErrorMessage      string             `json:"error_message,omitempty"`
 	SentAt            time.Time          `json:"sent_at"`
+	// ReminderKind and AppointmentStart are set only on automatic reminders. Together with
+	// the appointment and channel they identify a reminder, so it is sent at most once per
+	// appointment time.
+	ReminderKind     string     `json:"reminder_kind,omitempty"`
+	AppointmentStart *time.Time `json:"appointment_start,omitempty"`
 }

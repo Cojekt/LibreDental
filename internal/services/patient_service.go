@@ -48,12 +48,31 @@ func (s *PatientService) CreatePatient(token string, p *domain.Patient) (*domain
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
+	consent := "not opted in to automated reminders"
+	if p.ReminderOptIn {
+		consent = reminderConsentChange(true)
+	}
+	detail := "Created new patient record; " + consent
+	// A patient created opted in can receive reminders straight away, so their consent is
+	// audited before the record is saved, and the record isn't saved if it can't be.
+	auditFirst := p.ReminderOptIn && p.ID != ""
+	if auditFirst {
+		if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", detail); err != nil {
+			return nil, fmt.Errorf("failed to log audit, patient not created: %w", err)
+		}
+	}
 	err := s.repo.Create(context.Background(), p)
 	if err != nil {
+		if auditFirst {
+			_ = s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics",
+				fmt.Sprintf("Failed to create patient record; reminder opt-in not applied: %v", err))
+		}
 		return nil, fmt.Errorf("failed to create patient: %w", err)
 	}
-	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", "Created new patient record"); err != nil {
-		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	if !auditFirst {
+		if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, p.ID, "patient_demographics", detail); err != nil {
+			fmt.Printf("Warning: failed to log audit action: %v\n", err)
+		}
 	}
 	return p, nil
 }
@@ -62,14 +81,46 @@ func (s *PatientService) UpdatePatient(token string, p *domain.Patient) (*domain
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
-	err := s.repo.Update(context.Background(), p)
+	ctx := context.Background()
+	existing, err := s.repo.GetByID(ctx, p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update patient: %w", err)
 	}
-	if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", "Updated patient record"); err != nil {
-		fmt.Printf("Warning: failed to log audit action: %v\n", err)
+	detail := "Updated patient record"
+	// Reminders are sent on the opt-in flag alone, so a change to it is audited before it's
+	// saved, and isn't saved if it can't be (as with SetBridgeConfig). Other edits keep the
+	// existing order.
+	consentChanged := p.ReminderOptIn != existing.ReminderOptIn
+	if consentChanged {
+		detail += "; " + reminderConsentChange(p.ReminderOptIn)
+		if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", detail); err != nil {
+			return nil, fmt.Errorf("failed to log audit, reminder opt-in change not saved: %w", err)
+		}
+	}
+	err = s.repo.Update(ctx, p)
+	if err != nil {
+		if consentChanged {
+			_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics",
+				fmt.Sprintf("Failed to save patient record; reminder opt-in change not applied: %v", err))
+		}
+		return nil, fmt.Errorf("failed to update patient: %w", err)
+	}
+	if !consentChanged {
+		if err := s.auditService.LogPatientAction(token, domain.AuditActionUpdate, p.ID, "patient_demographics", detail); err != nil {
+			fmt.Printf("Warning: failed to log audit action: %v\n", err)
+		}
 	}
 	return p, nil
+}
+
+// reminderConsentChange describes a patient's reminder opt-in for the audit trail. Automatic
+// reminders are sent on this flag alone, so who changed it, and when, must be traceable rather
+// than hidden in a generic "updated" entry.
+func reminderConsentChange(optedIn bool) string {
+	if optedIn {
+		return "opted in to automated reminders"
+	}
+	return "opted out of automated reminders"
 }
 
 func (s *PatientService) ArchivePatient(token string, id string) error {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
+	"github.com/google/uuid"
 )
 
 // NotificationService exposes patient notification (email/SMS/voice) operations to the
@@ -197,28 +198,20 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 		return nil, err
 	}
 
-	config, err := s.secrets.getRawProviderConfig(providerName)
+	config, err := s.providerConfig(providerName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve config for provider %q: %w", providerName, err)
+		return nil, err
 	}
 
-	msg := &domain.NotificationMessage{
+	result, sendErr := s.send(ctx, provider, &domain.NotificationMessage{
 		Channel: provider.Channel(),
 		To:      recipient,
 		Subject: subject,
 		Body:    body,
-	}
-
-	sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	result, sendErr := provider.Send(sendCtx, msg, config)
-	if sendErr == nil && result != nil && result.Status == domain.NotificationStatusFailed {
-		sendErr = fmt.Errorf("provider reported failed delivery")
-	}
+	}, config)
 
 	entry := &domain.NotificationLog{
-		ID:            fmt.Sprintf("notif_%d", time.Now().UnixNano()),
+		ID:            newNotificationID(),
 		PatientID:     patientID,
 		AppointmentID: appointmentID,
 		Channel:       provider.Channel(),
@@ -231,14 +224,11 @@ func (s *NotificationService) SendNotification(token string, patientID string, a
 	if result != nil {
 		entry.ExternalMessageID = result.ExternalMessageID
 	}
+	entry.Status = deliveryStatus(sendErr)
 	if sendErr != nil {
-		entry.Status = domain.NotificationStatusFailed
 		entry.ErrorMessage = sendErr.Error()
-	} else {
-		entry.Status = domain.NotificationStatusSent
-		if result != nil && result.Status != "" {
-			entry.Status = result.Status
-		}
+	} else if result != nil && result.Status != "" {
+		entry.Status = result.Status
 	}
 
 	// The provider call has already happened at this point, so a log failure must not hide
@@ -298,22 +288,17 @@ func (s *NotificationService) SendTestMessage(token string, providerName string,
 		to = normalized
 	}
 
-	config, err := s.secrets.getRawProviderConfig(providerName)
+	config, err := s.providerConfig(providerName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve config for provider %q: %w", providerName, err)
+		return nil, err
 	}
 
-	sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	result, sendErr := provider.Send(sendCtx, &domain.NotificationMessage{
+	result, sendErr := s.send(ctx, provider, &domain.NotificationMessage{
 		Channel: provider.Channel(),
 		To:      to,
 		Subject: subject,
 		Body:    body,
 	}, config)
-	if sendErr == nil && result != nil && result.Status == domain.NotificationStatusFailed {
-		sendErr = fmt.Errorf("provider reported failed delivery")
-	}
 
 	detail := fmt.Sprintf("Sent test %s message via %s to %s", provider.Channel(), providerName, to)
 	if sendErr != nil {
@@ -331,6 +316,64 @@ func (s *NotificationService) SendTestMessage(token string, providerName string,
 		return result, fmt.Errorf("test message sent but failed to log audit: %w", auditErr)
 	}
 	return result, nil
+}
+
+// providerConfig returns a provider's saved settings, including secrets, from the keychain.
+func (s *NotificationService) providerConfig(providerName string) (map[string]string, error) {
+	config, err := s.secrets.getRawProviderConfig(providerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve config for provider %q: %w", providerName, err)
+	}
+	return config, nil
+}
+
+// send delivers msg through provider, bounded by a timeout. A provider that reports a failed
+// status without an error is treated as having failed.
+func (s *NotificationService) send(ctx context.Context, provider domain.NotificationProvider, msg *domain.NotificationMessage, config map[string]string) (*domain.NotificationResult, error) {
+	sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	result, err := provider.Send(sendCtx, msg, config)
+	if err == nil && result != nil && result.Status == domain.NotificationStatusFailed {
+		err = fmt.Errorf("provider reported failed delivery")
+	}
+	return result, err
+}
+
+// deliveryStatus is the status recorded for a send that returned err.
+func deliveryStatus(err error) domain.NotificationStatus {
+	switch {
+	case err == nil:
+		return domain.NotificationStatusSent
+	case errors.Is(err, domain.ErrDeliveryUnknown):
+		return domain.NotificationStatusUnknown
+	default:
+		return domain.NotificationStatusFailed
+	}
+}
+
+// providerFor returns the registered provider with that name and channel.
+func (s *NotificationService) providerFor(name string, channel domain.NotificationChannel) (domain.NotificationProvider, bool) {
+	p, ok := s.providers[name]
+	if !ok || p.Channel() != channel {
+		return nil, false
+	}
+	return p, true
+}
+
+// providersFor lists registered provider names for a channel, sorted.
+func (s *NotificationService) providersFor(channel domain.NotificationChannel) []string {
+	var names []string
+	for name, p := range s.providers {
+		if p.Channel() == channel {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+func newNotificationID() string {
+	return "notif_" + uuid.NewString()
 }
 
 // ListNotificationLog returns notification history, optionally filtered by patient.

@@ -126,8 +126,12 @@ type PracticeConfig struct {
 	ToothSystem   ToothSystem       `json:"tooth_system"`
 	DateFormat    string            `json:"date_format"`
 	BusinessHours []BusinessHourDay `json:"business_hours"`
-	CreatedAt     time.Time         `json:"created_at"`
-	UpdatedAt     time.Time         `json:"updated_at"`
+	// Timezone is an IANA name such as "America/Los_Angeles". Appointment times are entered
+	// in the staff computers' timezone, so this must match them for reminders to show the
+	// right time. Empty until set; automatic reminders don't run without it.
+	Timezone  string    `json:"timezone"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // NewPracticeConfig creates a new PracticeConfig populated with regional defaults from country metadata.

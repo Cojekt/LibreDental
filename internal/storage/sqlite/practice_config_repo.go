@@ -25,7 +25,7 @@ func (r *PracticeConfigRepository) Get(ctx context.Context) (*domain.PracticeCon
 	SELECT id, clinic_name, tagline, tax_id, license_number, phone, email, website,
 	       address_line1, address_line2, city, state_province, postal_code,
 	       country_code, currency, tooth_system, date_format, business_hours,
-	       created_at, updated_at, COALESCE(npi, '')
+	       created_at, updated_at, COALESCE(npi, ''), COALESCE(timezone, '')
 	FROM practice_config WHERE id = 1`
 
 	row := r.db.QueryRowContext(ctx, query)
@@ -55,6 +55,7 @@ func (r *PracticeConfigRepository) Get(ctx context.Context) (*domain.PracticeCon
 		&cfg.CreatedAt,
 		&cfg.UpdatedAt,
 		&cfg.NPI,
+		&cfg.Timezone,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -112,9 +113,9 @@ func (r *PracticeConfigRepository) save(ctx context.Context, cfg *domain.Practic
 		return 0, fmt.Errorf("failed to marshal business hours: %w", err)
 	}
 
-	source := `VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	source := `VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	if onlyWithoutProvider {
-		source = `SELECT 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+		source = `SELECT 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 	WHERE NOT EXISTS (SELECT 1 FROM providers WHERE is_active = 1)`
 	}
 
@@ -123,7 +124,7 @@ func (r *PracticeConfigRepository) save(ctx context.Context, cfg *domain.Practic
 		id, clinic_name, tagline, tax_id, license_number, phone, email, website,
 		address_line1, address_line2, city, state_province, postal_code,
 		country_code, currency, tooth_system, date_format, business_hours,
-		created_at, updated_at, npi
+		created_at, updated_at, npi, timezone
 	) ` + source + `
 	ON CONFLICT(id) DO UPDATE SET
 		clinic_name = excluded.clinic_name,
@@ -144,14 +145,15 @@ func (r *PracticeConfigRepository) save(ctx context.Context, cfg *domain.Practic
 		date_format = excluded.date_format,
 		business_hours = excluded.business_hours,
 		updated_at = excluded.updated_at,
-		npi = excluded.npi`
+		npi = excluded.npi,
+		timezone = excluded.timezone`
 
 	res, err := r.db.ExecContext(
 		ctx, query,
 		cfg.ClinicName, cfg.Tagline, cfg.TaxID, cfg.LicenseNumber, cfg.Phone, cfg.Email, cfg.Website,
 		cfg.AddressLine1, cfg.AddressLine2, cfg.City, cfg.StateProvince, cfg.PostalCode,
 		cfg.CountryCode, cfg.Currency, cfg.ToothSystem, cfg.DateFormat, string(hoursJSON),
-		cfg.CreatedAt, cfg.UpdatedAt, cfg.NPI,
+		cfg.CreatedAt, cfg.UpdatedAt, cfg.NPI, cfg.Timezone,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save practice config: %w", err)

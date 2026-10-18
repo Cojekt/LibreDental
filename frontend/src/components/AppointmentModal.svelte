@@ -7,6 +7,7 @@
   import { getLocaleVersion } from "$lib/locale.svelte.js";
   import { getLocalDateString } from "$lib/date.js";
   import { providerRoleLabel, operatoryTypeLabel } from "$lib/labels.js";
+  import NotificationHistory from "./NotificationHistory.svelte";
 
   let {
     showModal = $bindable(false),
@@ -24,6 +25,7 @@
     reason = $bindable(""),
     notes = $bindable(""),
     errorMsg = "",
+    appointmentId = "",
     onsave,
     ondelete,
   } = $props<{
@@ -42,6 +44,7 @@
     reason: string;
     notes: string;
     errorMsg?: string;
+    appointmentId?: string;
     onsave: (e: Event) => void;
     ondelete?: () => void;
   }>();
@@ -217,6 +220,10 @@
         class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
       ></textarea>
     </FormField>
+
+    {#if isEditing && appointmentId}
+      <NotificationHistory {appointmentId} />
+    {/if}
 
     {#if errorMsg}
       <div

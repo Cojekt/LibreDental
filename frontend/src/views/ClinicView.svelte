@@ -16,6 +16,7 @@
   import OperatoriesSection from "./clinic/OperatoriesSection.svelte";
   import DocumentsSection from "./clinic/DocumentsSection.svelte";
   import IntegrationsSection from "./clinic/IntegrationsSection.svelte";
+  import RemindersSection from "./clinic/RemindersSection.svelte";
   import { m } from "../paraglide/messages.js";
   import { isValidNpi, isValidTaxonomyCode } from "$lib/identifiers.js";
   import { handleError } from "$lib/error.js";
@@ -44,7 +45,7 @@
   let canEdit = $derived(!!auth.token);
 
   let activeSubTab = $state<
-    "profile" | "hours" | "providers" | "operatories" | "documents" | "integrations"
+    "profile" | "hours" | "providers" | "operatories" | "documents" | "integrations" | "reminders"
   >("profile");
   let savingProfile = $state(false);
   let profileMessage = $state<{
@@ -135,6 +136,7 @@
   let currency = $state(practiceConfig?.currency || "");
   let toothSystem = $state(practiceConfig?.tooth_system || "");
   let dateFormat = $state(practiceConfig?.date_format || "");
+  let timezone = $state(practiceConfig?.timezone || "");
   let businessHours = $state<BusinessHourDay[]>(
     ensureDaySlots(
       practiceConfig?.business_hours || [
@@ -217,6 +219,7 @@
       currency = practiceConfig.currency || countryMeta?.default_currency || "";
       toothSystem = practiceConfig.tooth_system || countryMeta?.default_tooth_system || "";
       dateFormat = practiceConfig.date_format || countryMeta?.date_format || "";
+      timezone = practiceConfig.timezone || "";
       if (practiceConfig.business_hours && practiceConfig.business_hours.length > 0) {
         businessHours = ensureDaySlots(practiceConfig.business_hours);
       }
@@ -287,6 +290,7 @@
       currency = practiceConfig.currency || countryMeta?.default_currency || "";
       toothSystem = practiceConfig.tooth_system || countryMeta?.default_tooth_system || "";
       dateFormat = practiceConfig.date_format || countryMeta?.date_format || "";
+      timezone = practiceConfig.timezone || "";
       if (practiceConfig.business_hours && practiceConfig.business_hours.length > 0) {
         businessHours = practiceConfig.business_hours;
       }
@@ -342,6 +346,9 @@
         currency: currency,
         tooth_system: toothSystem as any,
         date_format: dateFormat,
+        // Sent with every save: the backend replaces the whole config, so leaving it out
+        // would clear the timezone and stop reminders.
+        timezone: timezone,
         business_hours: businessHours,
       };
 
@@ -536,6 +543,7 @@
     { id: "operatories", label: m.clinic_tab_operatories(), count: operatories.length },
     { id: "documents", label: m.clinic_tab_documents() },
     { id: "integrations", label: m.clinic_tab_integrations() },
+    { id: "reminders", label: m.clinic_tab_reminders() },
   ]);
 </script>
 
@@ -705,6 +713,7 @@
         bind:currency
         bind:toothSystem
         bind:dateFormat
+        bind:timezone
       />
     {:else if activeSubTab === "hours"}
       <ClinicHoursSection
@@ -761,6 +770,12 @@
       <DocumentsSection bind:openUploadModal={triggerUploadDocument} />
     {:else if activeSubTab === "integrations"}
       <IntegrationsSection {canEdit} />
+    {:else if activeSubTab === "reminders"}
+      <RemindersSection
+        {canEdit}
+        {practiceConfig}
+        onopenprofile={() => (activeSubTab = "profile")}
+      />
     {/if}
   </div>
 </div>

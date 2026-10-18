@@ -416,3 +416,34 @@ func TestPracticeConfigService_RejectsReservedProviderIDs(t *testing.T) {
 		}
 	}
 }
+
+func TestPracticeConfigService_ValidatesTimezone(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "timezone.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+	service := services.NewPracticeConfigService(sqlite.NewPracticeConfigRepository(db), nil)
+	cfg, err := service.SetConfig("", "US")
+	if err != nil {
+		t.Fatalf("Failed to set practice config: %v", err)
+	}
+	if cfg.Timezone != "" {
+		t.Errorf("Expected no timezone until one is chosen, got %q", cfg.Timezone)
+	}
+
+	for _, bad := range []string{"Mars/Olympus_Mons", "Local", "PST8PDT/x"} {
+		cfg.Timezone = bad
+		if _, err := service.UpdatePracticeConfig("", *cfg); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("Expected timezone %q to be rejected, got %v", bad, err)
+		}
+	}
+	cfg.Timezone = " America/Chicago "
+	saved, err := service.UpdatePracticeConfig("", *cfg)
+	if err != nil || saved.Timezone != "America/Chicago" {
+		t.Errorf("Expected a valid timezone to be trimmed and saved, got %+v, %v", saved, err)
+	}
+	if got, _ := service.GetConfig(); got.Timezone != "America/Chicago" {
+		t.Errorf("Timezone not stored: %q", got.Timezone)
+	}
+}

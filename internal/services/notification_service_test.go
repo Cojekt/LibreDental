@@ -5,6 +5,7 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,13 +21,16 @@ type dummyNotificationProvider struct {
 	channel    domain.NotificationChannel
 	sendErr    error
 	sendStatus domain.NotificationStatus
+	mu         sync.Mutex
 	sent       []*domain.NotificationMessage
 }
 
 func (p *dummyNotificationProvider) Name() string                        { return p.name }
 func (p *dummyNotificationProvider) Channel() domain.NotificationChannel { return p.channel }
 func (p *dummyNotificationProvider) Send(ctx context.Context, msg *domain.NotificationMessage, config map[string]string) (*domain.NotificationResult, error) {
+	p.mu.Lock()
 	p.sent = append(p.sent, msg)
+	p.mu.Unlock()
 	if p.sendErr != nil {
 		return nil, p.sendErr
 	}
