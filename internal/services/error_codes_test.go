@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
 func TestErrorCode(t *testing.T) {
+	batchPath := filepath.Join(t.TempDir(), "run.BAT")
 	tests := []struct {
 		err  error
 		want string
@@ -20,7 +22,7 @@ func TestErrorCode(t *testing.T) {
 		{ErrPinIncorrect, "incorrect_pin"},
 		{validateBridgeExecutable("relative/viewer"), "bridge_path_not_absolute"},
 		{validateBridgeExecutable(""), "bridge_path_required"},
-		{validateBridgeExecutable("/opt/viewer/run.BAT"), "bridge_batch_file"},
+		{validateBridgeExecutable(batchPath), "bridge_batch_file"},
 		{fmt.Errorf("%w: weasis is not enabled", ErrBridgeNotConfigured), "bridge_not_configured"},
 		{validateBridgeArgs("{chart_number}"), "bridge_invalid_args"},
 		{errors.New("something else"), ""},
