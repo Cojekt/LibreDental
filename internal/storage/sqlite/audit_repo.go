@@ -48,13 +48,15 @@ func (r *AuditRepository) Query(ctx context.Context, patientID string, limit int
 	var query string
 	var args []interface{}
 
+	// rowid breaks ties between entries logged within the same clock tick, which
+	// keeps newest-first ordering and OFFSET pagination deterministic.
 	if patientID != "" {
 		query = `SELECT id, timestamp, user_id, user_name, patient_id, action, resource, resource_id, details, ip_address
-		         FROM audit_logs WHERE patient_id = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?`
+		         FROM audit_logs WHERE patient_id = ? ORDER BY timestamp DESC, rowid DESC LIMIT ? OFFSET ?`
 		args = append(args, patientID, limit, offset)
 	} else {
 		query = `SELECT id, timestamp, user_id, user_name, patient_id, action, resource, resource_id, details, ip_address
-		         FROM audit_logs ORDER BY timestamp DESC LIMIT ? OFFSET ?`
+		         FROM audit_logs ORDER BY timestamp DESC, rowid DESC LIMIT ? OFFSET ?`
 		args = append(args, limit, offset)
 	}
 
