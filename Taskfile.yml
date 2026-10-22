@@ -1,8 +1,17 @@
 version: "3"
 
 includes:
+  common:
+    taskfile: ./build/Taskfile.yml
+    dir: .
+  linux:
+    taskfile: ./build/linux/Taskfile.yml
+    dir: .
+  windows:
+    taskfile: ./build/windows/Taskfile.yml
+    dir: .
   deps:
-    taskfile: ./Taskfile.deps.yml
+    taskfile: ./tasks/deps.yml
     dir: .
     vars:
       PACKAGE_MANAGER: "{{.PACKAGE_MANAGER}}"
@@ -13,7 +22,6 @@ vars:
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
   VITE_PORT: "{{.WAILS_VITE_PORT | default 9245}}"
   GOOS: "{{.GOOS | default OS}}"
-  exeExt: '{{if eq OS "windows"}}.exe{{end}}'
 
 tasks:
   desktop:
@@ -26,27 +34,53 @@ tasks:
   server:
     desc: Builds and runs the application in server mode (HTTP server at http://localhost:4242)
     cmds:
-      - rm -rf build/darwin build/ios
-      - wails3 generate bindings -ts -i
-      - cd frontend && {{.PACKAGE_MANAGER}} run build
-      - go build -tags server,dev -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
-      - "{{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}"
+      - task: clean:unused-platforms
+      - task: common:build:server
+        vars:
+          DEV: "true"
+          EXTRA_TAGS: dev
+      - '"./{{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}"'
 
   demo:
-    desc: "Generates a standalone pre-populated save archive (libredental-demo-data.zip)"
+    desc: Generates a standalone pre-populated save archive (libredental-demo-data.zip)
     cmds:
-      - '{{if eq OS "windows"}}if not exist "{{.BIN_DIR}}" mkdir "{{.BIN_DIR}}"{{else}}mkdir -p "{{.BIN_DIR}}"{{end}}'
+      - task: mkdir:bin
       - go run ./internal/demo/gen.go {{.BIN_DIR}}/libredental-demo-data.zip
 
   artifact:
     desc: Builds all local artifacts (desktop binary, server binary, and demo data)
     cmds:
-      - '{{if eq OS "windows"}}if exist "build\darwin" rmdir /s /q "build\darwin" & if exist "build\ios" rmdir /s /q "build\ios"{{else}}rm -rf build/darwin build/ios{{end}}'
-      - wails3 generate bindings -ts -i
-      - cd frontend && {{.PACKAGE_MANAGER}} run build
-      - go build -tags dev -o {{.BIN_DIR}}/{{.APP_NAME}}{{exeExt}}
-      - go build -tags server,dev -o {{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}
+      - task: clean:unused-platforms
+      - task: build
+        vars:
+          DEV: "true"
+          EXTRA_TAGS: dev
+      - task: common:build:server
+        vars:
+          DEV: "true"
+          EXTRA_TAGS: dev
       - task: demo
+
+  build:
+    desc: Builds the desktop application for the current OS (DEV=true for a dev build)
+    cmds:
+      - task: "{{.GOOS}}:build"
+        vars:
+          DEV: "{{.DEV}}"
+          ARCH: "{{.ARCH}}"
+          EXTRA_TAGS: "{{.EXTRA_TAGS}}"
+          OBFUSCATED: "{{.OBFUSCATED}}"
+          GARBLE_ARGS: "{{.GARBLE_ARGS}}"
+
+  package:
+    desc: Packages a production build for the current OS (installers plus server binary)
+    cmds:
+      - task: "{{.GOOS}}:package"
+
+  run:
+    desc: Runs the built desktop application
+    cmds:
+      - task: "{{.GOOS}}:run"
 
   format:
     desc: Formats Go code with gofmt and frontend code with prettier
@@ -59,3 +93,38 @@ tasks:
     cmds:
       - go test ./...
       - cd frontend && {{.PACKAGE_MANAGER}} run check
+
+  # Mirrors the go-checks and frontend-checks jobs in .github/workflows/ci.yml;
+  # update both together.
+  check:
+    desc: Runs the same quality checks as CI (gofmt, go vet, tests, prettier, svelte-check)
+    cmds:
+      - |
+        UNFORMATTED=$(gofmt -l .)
+        if [ -n "$UNFORMATTED" ]; then
+          echo "The following Go files are not formatted cleanly with gofmt:"
+          echo "$UNFORMATTED"
+          exit 1
+        fi
+      - go vet ./...
+      - go test ./internal/...
+      - task: common:generate:bindings
+      - cd frontend && {{.PACKAGE_MANAGER}} run format:check
+      - cd frontend && {{.PACKAGE_MANAGER}} run check
+
+  # wails3 tooling recreates the macOS/iOS asset folders, which this project doesn't ship.
+  clean:unused-platforms:
+    internal: true
+    cmds:
+      - cmd: rm -rf build/darwin build/ios
+        platforms: [linux, darwin]
+      - cmd: powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue build/darwin, build/ios"
+        platforms: [windows]
+
+  mkdir:bin:
+    internal: true
+    cmds:
+      - cmd: mkdir -p {{.BIN_DIR}}
+        platforms: [linux, darwin]
+      - cmd: powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path {{.BIN_DIR}} | Out-Null"
+        platforms: [windows]

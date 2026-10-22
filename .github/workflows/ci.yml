@@ -50,7 +50,7 @@ jobs:
           cache-go: "false"
 
       - name: Generate Wails Bindings
-        run: task -t .github/Taskfile.yml common:generate:bindings
+        run: task common:generate:bindings
 
       - name: Check Frontend Formatting
         working-directory: frontend
@@ -73,7 +73,7 @@ jobs:
         uses: ./.github/actions/setup-env
 
       - name: Build Server Binary
-        run: task -t .github/Taskfile.yml build:server
+        run: task common:build:server
 
       - name: Build Desktop Application
-        run: task -t .github/Taskfile.yml build
+        run: task build

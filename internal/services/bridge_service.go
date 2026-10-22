@@ -15,6 +15,7 @@ import (
 
 	"github.com/LibreDental/libredental/internal/app"
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/bridges"
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
@@ -72,7 +73,7 @@ func (s *BridgeService) IsAvailable() bool {
 
 // ListArgumentTokens returns the placeholders an argument template may use.
 func (s *BridgeService) ListArgumentTokens() []string {
-	return slices.Clone(BridgeArgumentTokens)
+	return slices.Clone(bridges.BridgeArgumentTokens)
 }
 
 // ListBridges returns the registered bridges with their current config.
@@ -122,11 +123,11 @@ func (s *BridgeService) SetBridgeConfig(token string, config domain.BridgeConfig
 		return fmt.Errorf("program bridge %q not registered", config.Name)
 	}
 	if config.Enabled {
-		if err := validateBridgeExecutable(config.Path); err != nil {
+		if err := bridges.ValidateBridgeExecutable(config.Path); err != nil {
 			return err
 		}
 	}
-	if err := validateBridgeArgs(config.Args); err != nil {
+	if err := bridges.ValidateBridgeArgs(config.Args); err != nil {
 		return err
 	}
 
@@ -173,7 +174,7 @@ func (s *BridgeService) LaunchBridge(token string, name string, patientID string
 		return err
 	}
 	if !config.Enabled {
-		return fmt.Errorf("%w: %s is not enabled", ErrBridgeNotConfigured, name)
+		return fmt.Errorf("%w: %s is not enabled", bridges.ErrBridgeNotConfigured, name)
 	}
 
 	needed := domain.BridgeCapabilityPatient

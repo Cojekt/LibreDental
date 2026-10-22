@@ -433,10 +433,10 @@ clear message rather than sent to a possibly wrong number. **Chosen:** `nyaruka/
 
 | File | Contents |
 | --- | --- |
-| `internal/services/notification_provider_smtp.go` | `smtp_email` provider. Config: `host`, `port`, `username`, `password`, `from_address`, `from_name`, `tls_mode` (`starttls` or `implicit`). |
-| `internal/services/notification_provider_aws_sms.go` | `aws_sms` provider. Config: `access_key_id`, `secret_access_key`, `region`, `origination_identity`, optional `configuration_set`. |
-| `internal/services/notification_sms.go` | SMS part counter (GSM-7 or UCS-2, number of parts) used by the AWS provider and later by PR 3. |
-| `internal/services/notification_phone.go` | `toE164(raw, country)`. |
+| `internal/services/notify/smtp.go` | `smtp_email` provider. Config: `host`, `port`, `username`, `password`, `from_address`, `from_name`, `tls_mode` (`starttls` or `implicit`). |
+| `internal/services/notify/aws_sms.go` | `aws_sms` provider. Config: `access_key_id`, `secret_access_key`, `region`, `origination_identity`, optional `configuration_set`. |
+| `internal/services/notify/sms.go` | SMS part counter (GSM-7 or UCS-2, number of parts) used by the AWS provider and later by PR 3. |
+| `internal/services/notify/phone.go` | `ToE164(raw, country)`. |
 | A `_test.go` for each of the four files above | See below. |
 
 **Tests**

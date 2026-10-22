@@ -1,4 +1,4 @@
-package services
+package bridges
 
 import (
 	"context"
@@ -77,7 +77,7 @@ func TestExpandBridgeArgs(t *testing.T) {
 		"quote in dir":           {"{dir}", &domain.BridgeRequest{Dir: `a"b`, Files: []string{"f"}}},
 	}
 	for name, tc := range errCases {
-		if _, err := ExpandBridgeArgs(tc.template, tc.req); !errors.Is(err, errBridgeTemplate) {
+		if _, err := ExpandBridgeArgs(tc.template, tc.req); !errors.Is(err, ErrBridgeTemplate) {
 			t.Errorf("%s: expected template error, got %v", name, err)
 		}
 	}
@@ -113,7 +113,7 @@ func TestDefaultProgramBridgesTemplatesParse(t *testing.T) {
 			t.Errorf("duplicate bridge name %q", b.Name())
 		}
 		seen[b.Name()] = true
-		if err := validateBridgeArgs(b.DefaultConfig().Args); err != nil {
+		if err := ValidateBridgeArgs(b.DefaultConfig().Args); err != nil {
 			t.Errorf("bridge %q default args do not expand: %v", b.Name(), err)
 		}
 		if b.DefaultConfig().Enabled {
@@ -125,14 +125,14 @@ func TestDefaultProgramBridgesTemplatesParse(t *testing.T) {
 func TestValidateBridgeArgs(t *testing.T) {
 	valid := []string{"", "{files}", `-p {patient_id} "{last_name}, {first_name}" {birth_date} {sex} -d "{dir}"`}
 	for _, tmpl := range valid {
-		if err := validateBridgeArgs(tmpl); err != nil {
-			t.Errorf("validateBridgeArgs(%q): %v", tmpl, err)
+		if err := ValidateBridgeArgs(tmpl); err != nil {
+			t.Errorf("ValidateBridgeArgs(%q): %v", tmpl, err)
 		}
 	}
 	invalid := []string{"{dire}", "--files={files}", "{last_name", `-d "unterminated`}
 	for _, tmpl := range invalid {
-		if err := validateBridgeArgs(tmpl); !errors.Is(err, errBridgeTemplate) {
-			t.Errorf("validateBridgeArgs(%q): expected template error, got %v", tmpl, err)
+		if err := ValidateBridgeArgs(tmpl); !errors.Is(err, ErrBridgeTemplate) {
+			t.Errorf("ValidateBridgeArgs(%q): expected template error, got %v", tmpl, err)
 		}
 	}
 }

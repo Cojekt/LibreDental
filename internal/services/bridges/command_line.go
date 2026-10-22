@@ -1,4 +1,4 @@
-package services
+package bridges
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func (b *CommandLineBridge) DefaultConfig() domain.BridgeConfig {
 }
 
 func (b *CommandLineBridge) BuildLaunch(_ context.Context, req *domain.BridgeRequest, config domain.BridgeConfig) (*domain.BridgeLaunch, error) {
-	if err := validateBridgeExecutable(config.Path); err != nil {
+	if err := ValidateBridgeExecutable(config.Path); err != nil {
 		return nil, err
 	}
 	args, err := ExpandBridgeArgs(config.Args, req)
@@ -71,15 +71,15 @@ var BridgeArgumentTokens = []string{
 
 var (
 	ErrBridgeNotConfigured   = errors.New("program bridge is not configured")
-	errBridgePathRequired    = fmt.Errorf("%w: program path is required", ErrBridgeNotConfigured)
-	errBridgePathNotAbsolute = fmt.Errorf("%w: program path must be absolute", ErrBridgeNotConfigured)
-	errBridgeBatchFile       = fmt.Errorf("%w: batch files cannot be used as bridge programs", ErrBridgeNotConfigured)
-	errBridgeTemplate        = errors.New("invalid bridge argument template")
+	ErrBridgePathRequired    = fmt.Errorf("%w: program path is required", ErrBridgeNotConfigured)
+	ErrBridgePathNotAbsolute = fmt.Errorf("%w: program path must be absolute", ErrBridgeNotConfigured)
+	ErrBridgeBatchFile       = fmt.Errorf("%w: batch files cannot be used as bridge programs", ErrBridgeNotConfigured)
+	ErrBridgeTemplate        = errors.New("invalid bridge argument template")
 )
 
-// validateBridgeArgs expands a template against a fully populated sample request, so unknown
+// ValidateBridgeArgs expands a template against a fully populated sample request, so unknown
 // tokens or a misplaced {files} are rejected when the config is saved rather than at launch.
-func validateBridgeArgs(template string) error {
+func ValidateBridgeArgs(template string) error {
 	_, err := ExpandBridgeArgs(template, &domain.BridgeRequest{
 		Patient: &domain.Patient{
 			ID: "sample", FirstName: "sample", LastName: "sample",
@@ -91,18 +91,18 @@ func validateBridgeArgs(template string) error {
 	return err
 }
 
-func validateBridgeExecutable(path string) error {
+func ValidateBridgeExecutable(path string) error {
 	if strings.TrimSpace(path) == "" {
-		return errBridgePathRequired
+		return ErrBridgePathRequired
 	}
 	if !filepath.IsAbs(path) {
-		return errBridgePathNotAbsolute
+		return ErrBridgePathNotAbsolute
 	}
 	// cmd.exe re-parses the command line of batch files with different quoting rules than
 	// regular programs, which would undo the argument isolation this bridge relies on.
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".bat", ".cmd":
-		return errBridgeBatchFile
+		return ErrBridgeBatchFile
 	}
 	return nil
 }
@@ -121,7 +121,7 @@ func ExpandBridgeArgs(template string, req *domain.BridgeRequest) ([]string, err
 	for _, part := range parts {
 		if part == "{files}" {
 			if len(req.Files) == 0 {
-				return nil, fmt.Errorf("%w: {files} requires at least one document", errBridgeTemplate)
+				return nil, fmt.Errorf("%w: {files} requires at least one document", ErrBridgeTemplate)
 			}
 			out = append(out, req.Files...)
 			continue
@@ -145,7 +145,7 @@ func expandBridgeArg(part string, req *domain.BridgeRequest) (string, error) {
 		}
 		end := strings.IndexByte(part[start:], '}')
 		if end < 0 {
-			return "", fmt.Errorf("%w: unclosed token in %q", errBridgeTemplate, part)
+			return "", fmt.Errorf("%w: unclosed token in %q", ErrBridgeTemplate, part)
 		}
 		token := part[start : start+end+1]
 		value, err := bridgeTokenValue(token, req)
@@ -162,19 +162,19 @@ func bridgeTokenValue(token string, req *domain.BridgeRequest) (string, error) {
 	switch token {
 	case "{dir}":
 		if req.Dir == "" {
-			return "", fmt.Errorf("%w: {dir} requires at least one document", errBridgeTemplate)
+			return "", fmt.Errorf("%w: {dir} requires at least one document", ErrBridgeTemplate)
 		}
 		if strings.ContainsAny(req.Dir, "\"\n\r") {
-			return "", fmt.Errorf("%w: export directory contains unsupported characters", errBridgeTemplate)
+			return "", fmt.Errorf("%w: export directory contains unsupported characters", ErrBridgeTemplate)
 		}
 		return req.Dir, nil
 	case "{files}":
-		return "", fmt.Errorf("%w: {files} must be a separate argument", errBridgeTemplate)
+		return "", fmt.Errorf("%w: {files} must be a separate argument", ErrBridgeTemplate)
 	}
 
 	p := req.Patient
 	if p == nil {
-		return "", fmt.Errorf("%w: %s requires a patient", errBridgeTemplate, token)
+		return "", fmt.Errorf("%w: %s requires a patient", ErrBridgeTemplate, token)
 	}
 	var value string
 	switch token {
@@ -192,7 +192,7 @@ func bridgeTokenValue(token string, req *domain.BridgeRequest) (string, error) {
 	case "{sex}":
 		value = dicomSex(p.Sex)
 	default:
-		return "", fmt.Errorf("%w: unknown token %s", errBridgeTemplate, token)
+		return "", fmt.Errorf("%w: unknown token %s", ErrBridgeTemplate, token)
 	}
 	return sanitizeBridgeValue(token, value)
 }
@@ -203,11 +203,11 @@ func bridgeTokenValue(token string, req *domain.BridgeRequest) (string, error) {
 func sanitizeBridgeValue(token, value string) (string, error) {
 	for _, r := range value {
 		if unicode.IsControl(r) || r == '"' {
-			return "", fmt.Errorf("%w: value for %s contains unsupported characters", errBridgeTemplate, token)
+			return "", fmt.Errorf("%w: value for %s contains unsupported characters", ErrBridgeTemplate, token)
 		}
 	}
 	if strings.HasPrefix(value, "-") || strings.HasPrefix(value, "/") {
-		return "", fmt.Errorf("%w: value for %s cannot start with %q", errBridgeTemplate, token, value[:1])
+		return "", fmt.Errorf("%w: value for %s cannot start with %q", ErrBridgeTemplate, token, value[:1])
 	}
 	return value, nil
 }
@@ -257,7 +257,7 @@ func splitBridgeArgs(s string) ([]string, error) {
 		}
 	}
 	if quote != 0 {
-		return nil, fmt.Errorf("%w: unterminated quote", errBridgeTemplate)
+		return nil, fmt.Errorf("%w: unterminated quote", ErrBridgeTemplate)
 	}
 	if inArg {
 		args = append(args, cur.String())

@@ -41,7 +41,7 @@ LibreDental addresses the growing need for modern, open-source dental practice m
 
 ## Getting Started & Contributing
 
-LibreDental™ is built as a **[Wails v3](https://v3.wails.io)** application combining a Go backend with a modern Svelte 5 / Vite frontend. We welcome contributions from developers, dental professionals, UI/UX designers, and open-source advocates!
+LibreDental is built as a **[Wails v3](https://v3.wails.io)** application combining a Go backend with a modern Svelte 5 / Vite frontend. We welcome contributions from developers, dental professionals, UI/UX designers, and open-source advocates!
 
 ### Prerequisites
 

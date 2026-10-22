@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/notify"
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
@@ -263,7 +264,7 @@ func (s *reminderScheduler) sendReminder(
 		if strings.TrimSpace(patient.PhonePrimary) == "" {
 			return
 		}
-		number, err := toSMSNumber(patient.PhonePrimary, practice.CountryCode)
+		number, err := notify.ToSMSNumber(patient.PhonePrimary, practice.CountryCode)
 		if err != nil {
 			entry.Recipient = patient.PhonePrimary
 			skipReason = strings.TrimPrefix(err.Error(), storage.ErrInvalidInput.Error()+": ")

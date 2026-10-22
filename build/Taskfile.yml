@@ -283,7 +283,6 @@ tasks:
 
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
-    internal: true
     desc: |
       Builds the Docker image needed for cross-compiling to any platform.
       Run this once to enable cross-platform builds from any OS.

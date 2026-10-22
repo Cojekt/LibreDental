@@ -1,4 +1,4 @@
-package services
+package claims
 
 import (
 	"testing"
@@ -16,8 +16,8 @@ func TestValidNPI(t *testing.T) {
 		"123456789":      false,
 		"12345678a3":     false,
 	} {
-		if got := validNPI(npi); got != want {
-			t.Errorf("validNPI(%q) = %v, want %v", npi, got, want)
+		if got := ValidNPI(npi); got != want {
+			t.Errorf("ValidNPI(%q) = %v, want %v", npi, got, want)
 		}
 	}
 }

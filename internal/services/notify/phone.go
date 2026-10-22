@@ -1,4 +1,4 @@
-package services
+package notify
 
 import (
 	"fmt"
@@ -10,11 +10,11 @@ import (
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
-// toE164 converts a phone number as staff typed it into E.164 (+ and country code), which
+// ToE164 converts a phone number as staff typed it into E.164 (+ and country code), which
 // messaging vendors require. Numbers without a country code are read as numbers in the
 // practice's country. Anything that isn't a valid number is rejected rather than guessed at, so
 // a message never goes to a mistyped number.
-func toE164(raw string, country domain.CountryCode) (string, error) {
+func ToE164(raw string, country domain.CountryCode) (string, error) {
 	num, err := parsePhone(raw, country)
 	if err != nil {
 		return "", err
@@ -22,8 +22,8 @@ func toE164(raw string, country domain.CountryCode) (string, error) {
 	return phonenumbers.Format(num, phonenumbers.E164), nil
 }
 
-// toSMSNumber is toE164 for text messages: it also rejects numbers that can't receive them.
-func toSMSNumber(raw string, country domain.CountryCode) (string, error) {
+// ToSMSNumber is ToE164 for text messages: it also rejects numbers that can't receive them.
+func ToSMSNumber(raw string, country domain.CountryCode) (string, error) {
 	num, err := parsePhone(raw, country)
 	if err != nil {
 		return "", err

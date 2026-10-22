@@ -1,4 +1,4 @@
-package services
+package claims
 
 import (
 	"fmt"
@@ -99,10 +99,10 @@ func validSubscriberRelationship(code string) bool {
 	return false
 }
 
-// validNPI checks the NPI's shape (CMS issues them starting with 1 or 2) and its Luhn check
+// ValidNPI checks the NPI's shape (CMS issues them starting with 1 or 2) and its Luhn check
 // digit (computed with the 80840 card-issuer prefix), which catches most typos before a
 // payer rejects the claim for them.
-func validNPI(npi string) bool {
+func ValidNPI(npi string) bool {
 	if len(npi) != 10 || (npi[0] != '1' && npi[0] != '2') || digitsOnly(npi) != npi {
 		return false
 	}
@@ -118,6 +118,11 @@ func validNPI(npi string) bool {
 		sum += d
 	}
 	return (10-sum%10)%10 == int(npi[9]-'0')
+}
+
+// ValidTaxonomyCode checks a provider taxonomy code's shape (10 characters ending in X).
+func ValidTaxonomyCode(code string) bool {
+	return taxonomyPattern.MatchString(code)
 }
 
 // providerCredentials are degree suffixes that may follow a provider's name without a comma.

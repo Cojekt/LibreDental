@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/notify"
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
@@ -113,7 +114,7 @@ func previewReminder(channel domain.NotificationChannel, subject, body string, p
 	}
 	preview.Characters = utf8.RuneCountInString(preview.Body)
 	if channel == domain.NotificationChannelSMS {
-		preview.Encoding, _, preview.Parts = smsSize(preview.Body)
+		preview.Encoding, _, preview.Parts = notify.SMSSize(preview.Body)
 		preview.TooLong = preview.Characters > maxReminderSMSLength
 	}
 	return preview, nil

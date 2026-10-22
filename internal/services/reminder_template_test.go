@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/notify"
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
@@ -97,7 +98,7 @@ func TestReminderSMSLengthAndPreview(t *testing.T) {
 		t.Fatalf("previewReminder failed: %v", err)
 	}
 	want := "Smile Dental: Hi Christopher, reminder of your appointment on 12/30/2026 at 10:30 AM. Questions? Call (206) 555-0100. Reply STOP to opt out."
-	if p.Body != want || p.Characters != len(want) || p.Encoding != smsEncodingGSM7 || p.TooLong {
+	if p.Body != want || p.Characters != len(want) || p.Encoding != notify.SMSEncodingGSM7 || p.TooLong {
 		t.Errorf("Unexpected preview: %+v", p)
 	}
 

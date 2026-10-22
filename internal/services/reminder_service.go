@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/notify"
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
@@ -193,7 +194,7 @@ func (s *ReminderService) recipientCounts(ctx context.Context) (*domain.Reminder
 		}
 		counts.OptedIn++
 		if p.PhonePrimary != "" {
-			if _, err := toSMSNumber(p.PhonePrimary, country); err == nil {
+			if _, err := notify.ToSMSNumber(p.PhonePrimary, country); err == nil {
 				counts.WithMobile++
 			}
 		}

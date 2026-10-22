@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/claims"
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
@@ -119,7 +120,7 @@ func (s *PracticeConfigService) UpdatePracticeConfig(token string, cfg domain.Pr
 		return nil, err
 	}
 	cfg.NPI = strings.TrimSpace(cfg.NPI)
-	if cfg.NPI != "" && !validNPI(cfg.NPI) {
+	if cfg.NPI != "" && !claims.ValidNPI(cfg.NPI) {
 		return nil, fmt.Errorf("%w: practice NPI is not a valid 10-digit NPI", storage.ErrInvalidInput)
 	}
 	cfg.Timezone = strings.TrimSpace(cfg.Timezone)
@@ -327,10 +328,10 @@ func rejectReservedProviderID(id string) error {
 func normalizeProviderIdentifiers(p *domain.Provider) error {
 	p.NPI = strings.TrimSpace(p.NPI)
 	p.TaxonomyCode = strings.ToUpper(strings.TrimSpace(p.TaxonomyCode))
-	if p.NPI != "" && !validNPI(p.NPI) {
+	if p.NPI != "" && !claims.ValidNPI(p.NPI) {
 		return fmt.Errorf("%w: provider NPI is not a valid 10-digit NPI", storage.ErrInvalidInput)
 	}
-	if p.TaxonomyCode != "" && !taxonomyPattern.MatchString(p.TaxonomyCode) {
+	if p.TaxonomyCode != "" && !claims.ValidTaxonomyCode(p.TaxonomyCode) {
 		return fmt.Errorf("%w: provider taxonomy code must be 10 characters ending in X", storage.ErrInvalidInput)
 	}
 	return nil

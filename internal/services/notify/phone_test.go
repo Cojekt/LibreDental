@@ -1,4 +1,4 @@
-package services
+package notify
 
 import (
 	"errors"
@@ -29,9 +29,9 @@ func TestToSMSNumber(t *testing.T) {
 		{"+12025550123", "", "+12025550123"},
 	}
 	for _, tt := range valid {
-		got, err := toSMSNumber(tt.raw, tt.country)
+		got, err := ToSMSNumber(tt.raw, tt.country)
 		if err != nil || got != tt.want {
-			t.Errorf("toSMSNumber(%q, %s) = %q, %v; want %q", tt.raw, tt.country, got, err, tt.want)
+			t.Errorf("ToSMSNumber(%q, %s) = %q, %v; want %q", tt.raw, tt.country, got, err, tt.want)
 		}
 	}
 
@@ -54,19 +54,19 @@ func TestToSMSNumber(t *testing.T) {
 		{"2025550123", "", "no country to read a national number in"},
 	}
 	for _, tt := range invalid {
-		if got, err := toSMSNumber(tt.raw, tt.country); !errors.Is(err, storage.ErrInvalidInput) {
-			t.Errorf("toSMSNumber(%q, %s) = %q, %v; want rejection (%s)", tt.raw, tt.country, got, err, tt.why)
+		if got, err := ToSMSNumber(tt.raw, tt.country); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Errorf("ToSMSNumber(%q, %s) = %q, %v; want rejection (%s)", tt.raw, tt.country, got, err, tt.why)
 		}
 	}
 }
 
 // Voice calls can reach landlines and extensions, so only the number itself is checked.
 func TestToE164AllowsLandlines(t *testing.T) {
-	got, err := toE164("020 7946 0018", domain.CountryGB)
+	got, err := ToE164("020 7946 0018", domain.CountryGB)
 	if err != nil || got != "+442079460018" {
-		t.Errorf("toE164(GB landline) = %q, %v; want +442079460018", got, err)
+		t.Errorf("ToE164(GB landline) = %q, %v; want +442079460018", got, err)
 	}
-	if _, err := toE164("+1 555 555 0100", domain.CountryUS); !errors.Is(err, storage.ErrInvalidInput) {
+	if _, err := ToE164("+1 555 555 0100", domain.CountryUS); !errors.Is(err, storage.ErrInvalidInput) {
 		t.Errorf("Expected an invalid number to be rejected for voice too, got %v", err)
 	}
 }

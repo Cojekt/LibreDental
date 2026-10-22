@@ -1,4 +1,4 @@
-package services
+package notify
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 // pasted from a word processor, switches the whole message to UCS-2 and cuts each part from
 // 160 characters to 70. Every part is billed.
 const (
-	smsEncodingGSM7 = "GSM-7"
-	smsEncodingUCS2 = "UCS-2"
+	SMSEncodingGSM7 = "GSM-7"
+	SMSEncodingUCS2 = "UCS-2"
 )
 
 // Per-part and per-message limits from AWS End User Messaging SMS. Multipart messages lose
@@ -32,11 +32,11 @@ const (
 	smsGSM7Extended = "^{}\\[]~|€\f"
 )
 
-// smsSize reports the encoding a message will be sent with, its length in that encoding's
+// SMSSize reports the encoding a message will be sent with, its length in that encoding's
 // units (GSM-7 extended characters count twice; UCS-2 counts UTF-16 code units), and the
 // number of billed parts.
-func smsSize(body string) (encoding string, units, parts int) {
-	encoding = smsEncodingGSM7
+func SMSSize(body string) (encoding string, units, parts int) {
+	encoding = SMSEncodingGSM7
 	for _, r := range body {
 		switch {
 		case strings.ContainsRune(smsGSM7Basic, r):
@@ -44,12 +44,12 @@ func smsSize(body string) (encoding string, units, parts int) {
 		case strings.ContainsRune(smsGSM7Extended, r):
 			units += 2
 		default:
-			encoding = smsEncodingUCS2
+			encoding = SMSEncodingUCS2
 		}
 	}
 
 	single, multi := smsGSM7SinglePart, smsGSM7MultiPart
-	if encoding == smsEncodingUCS2 {
+	if encoding == SMSEncodingUCS2 {
 		units = len(utf16.Encode([]rune(body)))
 		single, multi = smsUCS2SinglePart, smsUCS2MultiPart
 	}
@@ -70,9 +70,9 @@ func checkSMSBody(body string) error {
 	if strings.TrimSpace(body) == "" {
 		return fmt.Errorf("%w: text message body is empty", storage.ErrInvalidInput)
 	}
-	encoding, units, _ := smsSize(body)
+	encoding, units, _ := SMSSize(body)
 	limit := smsGSM7Max
-	if encoding == smsEncodingUCS2 {
+	if encoding == SMSEncodingUCS2 {
 		limit = smsUCS2Max
 	}
 	if units > limit {

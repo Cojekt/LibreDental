@@ -5,12 +5,16 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
 	// Bundles the timezone database: Windows machines without Go installed have none, and
 	// reminders must render appointment times in the practice's timezone.
 	_ "time/tzdata"
 
 	"github.com/LibreDental/libredental/internal/app"
 	"github.com/LibreDental/libredental/internal/services"
+	"github.com/LibreDental/libredental/internal/services/bridges"
+	"github.com/LibreDental/libredental/internal/services/claims"
+	"github.com/LibreDental/libredental/internal/services/notify"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -70,21 +74,21 @@ func main() {
 
 	secretsService := services.NewSecretsService()
 	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, patientRepo, practiceConfigRepo, secretsService, auditService)
-	services.RegisterClaimProvider(billingService, services.NewStediClaimProvider())
+	services.RegisterClaimProvider(billingService, claims.NewStediClaimProvider())
 
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
 	programBridgeRepo := sqlite.NewProgramBridgeRepository(db)
 	bridgeService := services.NewBridgeService(programBridgeRepo, patientRepo, documentService, auditService)
-	for _, b := range services.DefaultProgramBridges() {
+	for _, b := range bridges.DefaultProgramBridges() {
 		services.RegisterProgramBridge(bridgeService, b)
 	}
 
 	notificationLogRepo := sqlite.NewNotificationRepository(db)
 	notificationService := services.NewNotificationService(patientRepo, appointmentRepo, practiceConfigRepo, notificationLogRepo, secretsService, auditService)
-	services.RegisterNotificationProvider(notificationService, services.NewSMTPEmailProvider())
-	services.RegisterNotificationProvider(notificationService, services.NewAWSSMSProvider())
+	services.RegisterNotificationProvider(notificationService, notify.NewSMTPEmailProvider())
+	services.RegisterNotificationProvider(notificationService, notify.NewAWSSMSProvider())
 
 	reminderRepo := sqlite.NewReminderRepository(db)
 	reminderService := services.NewReminderService(reminderRepo, patientRepo, appointmentRepo, practiceConfigRepo, notificationLogRepo, notificationService, auditService)

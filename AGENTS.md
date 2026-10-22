@@ -66,19 +66,24 @@ compilation) and are what CI mirrors. Don't shell out to `gofmt`, `go test`,
 you're deliberately running a narrower slice (e.g. `go test ./internal/services/...`
 while iterating on one package).
 
-All via [Task](https://taskfile.dev) (`Taskfile.yml` at repo root):
+All via [Task](https://taskfile.dev). The root `Taskfile.yml` is the only entry point:
+CI, `wails3 dev` (`build/config.yml`) and local use all go through it. It includes the
+Wails-generated `build/**/Taskfile.yml` files (as `common:`, `linux:`, `windows:`) and
+`tasks/deps.yml` (as `deps:`).
 
 | Command | What it does |
 | --- | --- |
 | `task desktop` | Live-reload dev mode (Wails) |
 | `task server` | Build + run server binary |
 | `task test` | `go test ./...` + `npm run check` (frontend type/svelte check) |
+| `task check` | Same quality checks as CI (`gofmt -l`, `go vet`, tests, bindings, `format:check`, svelte-check) |
 | `task format` | `gofmt -w -s .` + prettier on frontend — **use this to format, always** |
 | `task artifact` | Build desktop binary, server binary, and demo data archive |
 | `task demo` | Generate `dist/libredental-demo-data.zip` |
+| `task build` / `task package` | Production desktop build / installers for the current OS (what CI runs) |
 
 **Before considering a change done: run `task format` then `task test`.** Both
-must be clean. CI (`.github/workflows/ci.yml`) separately enforces `gofmt -l`
+must be clean; `task check` runs the full CI quality gate if you want certainty. CI (`.github/workflows/ci.yml`) separately enforces `gofmt -l`
 emptiness, `go vet ./...`, `go test -v ./internal/...`, frontend `format:check`,
 and `svelte-check` — if you need to check CI's exact invocations, read that
 workflow file rather than assuming, since it can drift from `Taskfile.yml`.

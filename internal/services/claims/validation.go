@@ -1,4 +1,4 @@
-package services
+package claims
 
 import (
 	"errors"
@@ -54,7 +54,7 @@ func ValidateDentalClaim(sub *domain.ClaimSubmission) error {
 	}
 
 	// Billing provider (the practice).
-	if !validNPI(pr.NPI) {
+	if !ValidNPI(pr.NPI) {
 		add("valid practice NPI")
 	}
 	if len(digitsOnly(pr.TaxID)) != 9 {
@@ -76,7 +76,7 @@ func ValidateDentalClaim(sub *domain.ClaimSubmission) error {
 	// Rendering provider. Only reported separately when the NPI differs from the practice's,
 	// and then X12 requires the taxonomy code too.
 	if rp := sub.RenderingProvider; rp != nil {
-		if !validNPI(rp.NPI) {
+		if !ValidNPI(rp.NPI) {
 			add("valid NPI for provider %s", rp.Name)
 		} else if rp.NPI != pr.NPI {
 			if !taxonomyPattern.MatchString(rp.TaxonomyCode) {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/notify"
 	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/google/uuid"
 )
@@ -124,9 +125,9 @@ func recipientFor(patient *domain.Patient, channel domain.NotificationChannel, c
 
 func normalizePhoneFor(channel domain.NotificationChannel, phone string, country domain.CountryCode) (string, error) {
 	if channel == domain.NotificationChannelSMS {
-		return toSMSNumber(phone, country)
+		return notify.ToSMSNumber(phone, country)
 	}
-	return toE164(phone, country)
+	return notify.ToE164(phone, country)
 }
 
 // practiceCountry returns the practice's country, used to read phone numbers that have no

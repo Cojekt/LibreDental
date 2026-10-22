@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/dicom"
 	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/google/uuid"
 )
@@ -226,7 +227,7 @@ func (s *DocumentService) GetDocumentBase64(token string, id string) (string, er
 // GetDocumentImagesBase64 retrieves an image document and returns its decoded image data URLs.
 // For DICOM files, it extracts all frames and reports any that could not be decoded. For
 // regular images, it returns a single data URL with no skipped frames.
-func (s *DocumentService) GetDocumentImagesBase64(token string, id string) (*DicomParseResult, error) {
+func (s *DocumentService) GetDocumentImagesBase64(token string, id string) (*dicom.DicomParseResult, error) {
 	if s.auditService.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
@@ -262,7 +263,7 @@ func (s *DocumentService) GetDocumentImagesBase64(token string, id string) (*Dic
 	}
 
 	if isDicom {
-		result, err := ParseDicomDataURLs(data)
+		result, err := dicom.ParseDicomDataURLs(data)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse DICOM frames: %w", err)
 		}
@@ -284,7 +285,7 @@ func (s *DocumentService) GetDocumentImagesBase64(token string, id string) (*Dic
 	if doc.PatientID != nil {
 		_ = s.auditService.LogPatientAction(token, domain.AuditActionRead, *doc.PatientID, "document", "Viewed document image")
 	}
-	return &DicomParseResult{ImageURLs: []string{dataURL}, TotalFrames: 1}, nil
+	return &dicom.DicomParseResult{ImageURLs: []string{dataURL}, TotalFrames: 1}, nil
 }
 
 // OpenDocument opens the document in the OS default application.

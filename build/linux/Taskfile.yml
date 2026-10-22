@@ -86,7 +86,7 @@ tasks:
       - sh: docker image inspect {{.CROSS_IMAGE}} > /dev/null 2>&1
         msg: |
           Docker image '{{.CROSS_IMAGE}}' not found.
-          Build it first: wails3 task setup:docker
+          Build it first: task common:setup:docker
     cmds:
       - docker run --rm -v "{{.ROOT_DIR}}:/app" -v "{{.ROOT_DIR}}/{{.BIN_DIR}}:/app/bin" {{.DOCKER_MOUNTS}} -e APP_NAME="{{.APP_NAME}}" {{if .EXTRA_TAGS}}-e EXTRA_TAGS="{{.EXTRA_TAGS}}"{{end}} {{if eq .OBFUSCATED "true"}}-e OBFUSCATED=true{{end}} {{if .GARBLE_ARGS}}-e GARBLE_ARGS="{{.GARBLE_ARGS}}"{{end}} "{{.CROSS_IMAGE}}" linux {{.DOCKER_ARCH}}
       - cmd: docker run --rm -v "{{.ROOT_DIR}}:/app" -v "{{.ROOT_DIR}}/{{.BIN_DIR}}:/app/bin" alpine chown -R $(id -u):$(id -g) /app/bin

@@ -1,4 +1,4 @@
-package services
+package notify
 
 import (
 	"context"

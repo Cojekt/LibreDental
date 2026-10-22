@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/LibreDental/libredental/internal/services/bridges"
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
@@ -23,11 +24,11 @@ var errorCodes = []struct {
 	{storage.ErrLastActiveProvider, "last_active_provider"},
 	{storage.ErrAlreadyInitialized, "already_initialized"},
 	{ErrBridgesUnavailable, "bridges_unavailable"},
-	{errBridgePathRequired, "bridge_path_required"},
-	{errBridgePathNotAbsolute, "bridge_path_not_absolute"},
-	{errBridgeBatchFile, "bridge_batch_file"},
-	{ErrBridgeNotConfigured, "bridge_not_configured"},
-	{errBridgeTemplate, "bridge_invalid_args"},
+	{bridges.ErrBridgePathRequired, "bridge_path_required"},
+	{bridges.ErrBridgePathNotAbsolute, "bridge_path_not_absolute"},
+	{bridges.ErrBridgeBatchFile, "bridge_batch_file"},
+	{bridges.ErrBridgeNotConfigured, "bridge_not_configured"},
+	{bridges.ErrBridgeTemplate, "bridge_invalid_args"},
 	{storage.ErrNotFound, "not_found"},
 }
 

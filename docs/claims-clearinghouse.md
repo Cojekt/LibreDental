@@ -4,16 +4,16 @@ LibreDental submits US dental claims electronically (X12 837D) through a clearin
 Clearinghouses are implemented as `domain.ClaimProvider`s and registered in `main.go`; the
 first one is [Stedi](https://www.stedi.com), via its
 [Dental Claims JSON API](https://www.stedi.com/docs/healthcare/api-reference/post-healthcare-dental-claims)
-(`internal/services/claim_provider_stedi.go`).
+(`internal/services/claims/stedi.go`).
 
 ## Adding a clearinghouse
 
 The data requirements come from the X12 837D standard, not from any one vendor, so they are
 shared:
 
-- `ValidateDentalClaim` (`claim_validation.go`) checks a `domain.ClaimSubmission` has
+- `ValidateDentalClaim` (`claims/validation.go`) checks a `domain.ClaimSubmission` has
   everything an 837D needs and reports every gap at once. Call it before mapping.
-- `claim_x12.go` holds X12 value formatting: dates, phone numbers, amounts, tooth codes,
+- `claims/x12.go` holds X12 value formatting: dates, phone numbers, amounts, tooth codes,
   NPI check digits, and delimiter stripping.
 
 A new provider then only maps the submission to the vendor's format and handles its
@@ -68,7 +68,7 @@ Compatibility with Stedi's API is tested offline, with no API key or network acc
 To also submit a test claim to the real API:
 
 ```bash
-STEDI_API_KEY=... go test ./internal/services -run TestStediLiveTestMode -v
+STEDI_API_KEY=... go test ./internal/services/claims -run TestStediLiveTestMode -v
 ```
 
 Stedi's free sandbox accounts can't submit claims, not even test claims. A pay-as-you-go

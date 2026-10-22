@@ -57,7 +57,7 @@ jobs:
         # -tags production, -trimpath, stripped-symbol build path (see
         # build/linux/Taskfile.yml and build/windows/Taskfile.yml) so this
         # matrix can never silently drift onto a dev build.
-        run: task -t .github/Taskfile.yml package ARCH=${{ matrix.arch }} DEV=false
+        run: task package ARCH=${{ matrix.arch }} DEV=false
 
       - name: Prepare Artifacts (Linux)
         if: runner.os == 'Linux'

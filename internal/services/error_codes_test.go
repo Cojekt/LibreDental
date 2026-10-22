@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/LibreDental/libredental/internal/services/bridges"
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
@@ -20,11 +21,11 @@ func TestErrorCode(t *testing.T) {
 		{fmt.Errorf("failed to load: %w", storage.ErrNotFound), "not_found"},
 		{ErrPinNotSet, "incorrect_pin"},
 		{ErrPinIncorrect, "incorrect_pin"},
-		{validateBridgeExecutable("relative/viewer"), "bridge_path_not_absolute"},
-		{validateBridgeExecutable(""), "bridge_path_required"},
-		{validateBridgeExecutable(batchPath), "bridge_batch_file"},
-		{fmt.Errorf("%w: weasis is not enabled", ErrBridgeNotConfigured), "bridge_not_configured"},
-		{validateBridgeArgs("{chart_number}"), "bridge_invalid_args"},
+		{bridges.ValidateBridgeExecutable("relative/viewer"), "bridge_path_not_absolute"},
+		{bridges.ValidateBridgeExecutable(""), "bridge_path_required"},
+		{bridges.ValidateBridgeExecutable(batchPath), "bridge_batch_file"},
+		{fmt.Errorf("%w: weasis is not enabled", bridges.ErrBridgeNotConfigured), "bridge_not_configured"},
+		{bridges.ValidateBridgeArgs("{chart_number}"), "bridge_invalid_args"},
 		{errors.New("something else"), ""},
 		{nil, ""},
 	}
@@ -37,11 +38,11 @@ func TestErrorCode(t *testing.T) {
 
 func TestErrorCodeKeepsMessage(t *testing.T) {
 	// The English text is still what logs and audit details show.
-	if got := validateBridgeExecutable("relative"); got.Error() != "program bridge is not configured: program path must be absolute" {
+	if got := bridges.ValidateBridgeExecutable("relative"); got.Error() != "program bridge is not configured: program path must be absolute" {
 		t.Errorf("unexpected message %q", got)
 	}
-	if !errors.Is(validateBridgeExecutable("relative"), ErrBridgeNotConfigured) {
-		t.Error("path errors must still match ErrBridgeNotConfigured")
+	if !errors.Is(bridges.ValidateBridgeExecutable("relative"), bridges.ErrBridgeNotConfigured) {
+		t.Error("path errors must still match bridges.ErrBridgeNotConfigured")
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/services/bridges"
 	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
@@ -81,7 +82,7 @@ func newTestBridgeService(t *testing.T) *bridgeTestEnv {
 		env.launches = append(env.launches, l)
 		return env.startErr
 	}
-	for _, b := range DefaultProgramBridges() {
+	for _, b := range bridges.DefaultProgramBridges() {
 		RegisterProgramBridge(env.svc, b)
 	}
 	return env
@@ -167,8 +168,8 @@ func TestBridgeServiceConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListBridges: %v", err)
 	}
-	if len(infos) != len(DefaultProgramBridges()) {
-		t.Fatalf("ListBridges returned %d bridges, want %d", len(infos), len(DefaultProgramBridges()))
+	if len(infos) != len(bridges.DefaultProgramBridges()) {
+		t.Fatalf("ListBridges returned %d bridges, want %d", len(infos), len(bridges.DefaultProgramBridges()))
 	}
 	if !env.svc.IsAvailable() {
 		t.Error("IsAvailable in desktop mode = false, want true")
@@ -181,28 +182,28 @@ func TestBridgeServiceConfig(t *testing.T) {
 			t.Errorf("%s: DefaultArgs = %q, want unconfigured args %q", info.Config.Name, info.DefaultArgs, info.Config.Args)
 		}
 	}
-	if tokens := env.svc.ListArgumentTokens(); !slices.Equal(tokens, BridgeArgumentTokens) {
-		t.Errorf("ListArgumentTokens = %v, want %v", tokens, BridgeArgumentTokens)
+	if tokens := env.svc.ListArgumentTokens(); !slices.Equal(tokens, bridges.BridgeArgumentTokens) {
+		t.Errorf("ListArgumentTokens = %v, want %v", tokens, bridges.BridgeArgumentTokens)
 	}
 
 	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
 		Name: "weasis", Enabled: true, Path: "relative/weasis",
-	}); !errors.Is(err, ErrBridgeNotConfigured) {
-		t.Errorf("expected ErrBridgeNotConfigured for relative path, got %v", err)
+	}); !errors.Is(err, bridges.ErrBridgeNotConfigured) {
+		t.Errorf("expected bridges.ErrBridgeNotConfigured for relative path, got %v", err)
 	}
 	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
 		Name: "weasis", Args: `-d "unterminated`,
-	}); !errors.Is(err, errBridgeTemplate) {
+	}); !errors.Is(err, bridges.ErrBridgeTemplate) {
 		t.Errorf("expected template error, got %v", err)
 	}
 	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
 		Name: "custom", Args: "--file={files}",
-	}); !errors.Is(err, errBridgeTemplate) {
+	}); !errors.Is(err, bridges.ErrBridgeTemplate) {
 		t.Errorf("expected template error for inline {files}, got %v", err)
 	}
 	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{
 		Name: "custom", Args: "{chart_number}",
-	}); !errors.Is(err, errBridgeTemplate) {
+	}); !errors.Is(err, bridges.ErrBridgeTemplate) {
 		t.Errorf("expected template error for unknown token, got %v", err)
 	}
 	if err := env.svc.SetBridgeConfig(env.token, domain.BridgeConfig{Name: "nope"}); err == nil {
@@ -303,8 +304,8 @@ func TestBridgeServiceLaunchRejections(t *testing.T) {
 	env := newTestBridgeService(t)
 	otherDoc := env.saveDoc(t, "pat_2", "other.dcm")
 
-	if err := env.svc.LaunchBridge(env.token, "weasis", "pat_1", nil); !errors.Is(err, ErrBridgeNotConfigured) {
-		t.Errorf("disabled bridge: expected ErrBridgeNotConfigured, got %v", err)
+	if err := env.svc.LaunchBridge(env.token, "weasis", "pat_1", nil); !errors.Is(err, bridges.ErrBridgeNotConfigured) {
+		t.Errorf("disabled bridge: expected bridges.ErrBridgeNotConfigured, got %v", err)
 	}
 
 	env.enable(t, "weasis", "")
@@ -410,7 +411,7 @@ func TestBridgeServiceConfigNotSavedWithoutAudit(t *testing.T) {
 	repo := sqlite.NewProgramBridgeRepository(env.db)
 	svc := NewBridgeService(repo, nil, nil, auditSvc)
 	svc.serverMode = false
-	RegisterProgramBridge(svc, NewCommandLineBridge("weasis", "", domain.BridgeCapabilityDocuments))
+	RegisterProgramBridge(svc, bridges.NewCommandLineBridge("weasis", "", domain.BridgeCapabilityDocuments))
 
 	if err := svc.SetBridgeConfig(token, domain.BridgeConfig{Name: "weasis", Enabled: true, Path: env.exePath}); err == nil {
 		t.Fatal("expected error when the audit entry cannot be written")
