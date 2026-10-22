@@ -20,7 +20,8 @@ func NewDocumentRepository(db *DB) *DocumentRepository {
 	return &DocumentRepository{db: db}
 }
 
-// Create inserts a new document record.
+// Create inserts a new document record. Timestamps are written in UTC because
+// created_at is ordered as text.
 func (r *DocumentRepository) Create(doc *domain.Document) error {
 	query := `
 		INSERT INTO documents (
@@ -36,8 +37,8 @@ func (r *DocumentRepository) Create(doc *domain.Document) error {
 		doc.FilePath,
 		doc.SizeBytes,
 		doc.ContentType,
-		doc.CreatedAt,
-		doc.UpdatedAt,
+		doc.CreatedAt.UTC(),
+		doc.UpdatedAt.UTC(),
 	)
 	if err != nil {
 		return fmt.Errorf("document repo create: %w", err)

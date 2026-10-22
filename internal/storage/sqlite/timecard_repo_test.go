@@ -117,3 +117,70 @@ func TestTimecardRepository_ActiveTimecardUniqueness(t *testing.T) {
 		t.Fatalf("Failed to save new active timecard after clocking out previous: %v", err)
 	}
 }
+
+// Times are compared as text in SQL, so the date-range filter only works if
+// clock-ins are stored in UTC like the (UTC) filter bounds the frontend sends.
+func TestTimecardRepository_ListFiltersByInstantAcrossTimezones(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "test_timecard_tz.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	configRepo := sqlite.NewPracticeConfigRepository(db)
+	repo := sqlite.NewTimecardRepository(db)
+	ctx := context.Background()
+
+	prov := &domain.Provider{ID: "prov_tz", Name: "Dr. Zone", Role: domain.RoleDentist, IsActive: true}
+	if err := configRepo.SaveProvider(ctx, prov); err != nil {
+		t.Fatalf("Failed to save provider: %v", err)
+	}
+
+	pdt := time.FixedZone("PDT", -7*60*60)
+	entries := []struct {
+		id      string
+		clockIn time.Time
+	}{
+		{"tc_early_oct21", time.Date(2026, 10, 21, 6, 30, 0, 0, pdt)},
+		{"tc_noon_oct21", time.Date(2026, 10, 21, 12, 0, 0, 0, pdt)},
+		{"tc_early_oct22", time.Date(2026, 10, 22, 5, 0, 0, 0, pdt)},
+	}
+	for _, e := range entries {
+		clockOut := e.clockIn.Add(time.Hour)
+		tc := &domain.Timecard{
+			ID:           e.id,
+			ProviderID:   prov.ID,
+			ClockIn:      e.clockIn,
+			ClockOut:     &clockOut,
+			HourlyRate:   50,
+			TotalMinutes: 60,
+		}
+		if err := repo.SaveTimecard(ctx, tc); err != nil {
+			t.Fatalf("Failed to save timecard %s: %v", e.id, err)
+		}
+	}
+
+	// Oct 21 in PDT, expressed in UTC as the frontend sends it.
+	start := time.Date(2026, 10, 21, 7, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 10, 22, 6, 59, 59, 999000000, time.UTC)
+	timecards, err := repo.ListTimecards(ctx, prov.ID, &start, &end)
+	if err != nil {
+		t.Fatalf("ListTimecards failed: %v", err)
+	}
+
+	var got []string
+	for _, tc := range timecards {
+		got = append(got, tc.ID)
+	}
+	want := []string{"tc_noon_oct21", "tc_early_oct21"}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("ListTimecards for Oct 21 PDT = %v, want %v", got, want)
+	}
+	for _, tc := range timecards {
+		for _, e := range entries {
+			if tc.ID == e.id && !tc.ClockIn.Equal(e.clockIn) {
+				t.Errorf("%s ClockIn = %v, want instant %v", tc.ID, tc.ClockIn, e.clockIn)
+			}
+		}
+	}
+}

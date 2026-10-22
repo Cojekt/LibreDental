@@ -33,12 +33,12 @@ func (r *TimecardRepository) ListTimecards(ctx context.Context, providerID strin
 
 	if startDate != nil {
 		query += ` AND clock_in >= ?`
-		args = append(args, *startDate)
+		args = append(args, startDate.UTC())
 	}
 
 	if endDate != nil {
 		query += ` AND clock_in <= ?`
-		args = append(args, *endDate)
+		args = append(args, endDate.UTC())
 	}
 
 	query += ` ORDER BY clock_in DESC`
@@ -161,10 +161,12 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 		updated_at = excluded.updated_at
 	`
 
+	// Times are stored as text and compared as text in range filters and
+	// ORDER BY, so every value must be written in UTC.
 	var clockOut sql.NullTime
 	if t.ClockOut != nil {
 		clockOut.Valid = true
-		clockOut.Time = *t.ClockOut
+		clockOut.Time = t.ClockOut.UTC()
 	}
 
 	var totalMinutes sql.NullInt64
@@ -176,13 +178,13 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 	var paidAt sql.NullTime
 	if t.PaidAt != nil {
 		paidAt.Valid = true
-		paidAt.Time = *t.PaidAt
+		paidAt.Time = t.PaidAt.UTC()
 	}
 
 	_, err := r.db.ExecContext(
 		ctx, query,
-		t.ID, t.ProviderID, t.ClockIn, clockOut, t.HourlyRate,
-		totalMinutes, paidAt, isManualInt, t.CreatedAt, t.UpdatedAt,
+		t.ID, t.ProviderID, t.ClockIn.UTC(), clockOut, t.HourlyRate,
+		totalMinutes, paidAt, isManualInt, t.CreatedAt.UTC(), t.UpdatedAt.UTC(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save timecard: %w", err)

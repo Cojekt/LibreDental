@@ -170,3 +170,52 @@ func TestDocumentRepository(t *testing.T) {
 		}
 	})
 }
+
+// created_at is ordered as text in SQL, so documents created with local
+// times must still come back newest-first by actual instant.
+func TestDocumentRepository_OrdersByInstantAcrossTimezones(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "test_document_tz.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	repo := sqlite.NewDocumentRepository(db)
+	pdt := time.FixedZone("PDT", -7*60*60)
+
+	docs := []struct {
+		id        string
+		createdAt time.Time
+	}{
+		// 17:00 UTC, newer of the two.
+		{"doc_local", time.Date(2026, 10, 21, 10, 0, 0, 0, pdt)},
+		{"doc_utc", time.Date(2026, 10, 21, 16, 0, 0, 0, time.UTC)},
+	}
+	for _, d := range docs {
+		doc := &domain.Document{
+			ID:          d.id,
+			Type:        domain.DocumentTypePDF,
+			Name:        d.id,
+			FilePath:    d.id + ".pdf",
+			SizeBytes:   1,
+			ContentType: "application/pdf",
+			CreatedAt:   d.createdAt,
+			UpdatedAt:   d.createdAt,
+		}
+		if err := repo.Create(doc); err != nil {
+			t.Fatalf("Failed to create document %s: %v", d.id, err)
+		}
+	}
+
+	listed, err := repo.ListClinicDocuments()
+	if err != nil {
+		t.Fatalf("Failed to list clinic documents: %v", err)
+	}
+	if len(listed) != 2 || listed[0].ID != "doc_local" || listed[1].ID != "doc_utc" {
+		var got []string
+		for _, d := range listed {
+			got = append(got, d.ID)
+		}
+		t.Errorf("ListClinicDocuments order = %v, want [doc_local doc_utc]", got)
+	}
+}
