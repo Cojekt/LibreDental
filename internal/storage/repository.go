@@ -167,3 +167,13 @@ type ProgramBridgeRepository interface {
 	List(ctx context.Context) ([]*domain.BridgeConfig, error)
 	Save(ctx context.Context, cfg *domain.BridgeConfig) error
 }
+
+// TimecardRepository defines storage operations for provider timecards and payroll.
+type TimecardRepository interface {
+	ListTimecards(ctx context.Context, providerID string, startDate *time.Time, endDate *time.Time) ([]*domain.Timecard, error)
+	GetActiveTimecard(ctx context.Context, providerID string) (*domain.Timecard, error)
+	SaveTimecard(ctx context.Context, t *domain.Timecard) error
+	GetTotalOwed(ctx context.Context, providerID string) (int64, error)
+	MarkTimecardsPaid(ctx context.Context, providerID string) error
+	DeleteTimecard(ctx context.Context, id string) error
+}

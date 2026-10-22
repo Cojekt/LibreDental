@@ -468,7 +468,7 @@ func TestSMTPEmailProvider_SendFailsBeforeConnecting(t *testing.T) {
 // the default recipient is SES's mailbox simulator, which accepts mail without delivering it.
 //
 //	SMTP_LIVE_HOST=email-smtp.us-east-1.amazonaws.com SMTP_LIVE_USERNAME=... SMTP_LIVE_PASSWORD=... \
-//	SMTP_LIVE_FROM=reminders@your-verified-domain go test ./internal/services -run TestSMTPLive -v
+//	SMTP_LIVE_FROM=reminders@your-verified-domain go test ./internal/services/notify -run TestSMTPLive -v
 func TestSMTPLive(t *testing.T) {
 	host := os.Getenv("SMTP_LIVE_HOST")
 	if host == "" {

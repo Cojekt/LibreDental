@@ -8,16 +8,15 @@ import (
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
-	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
 type TimecardService struct {
-	timecardRepo       *sqlite.TimecardRepository
-	practiceConfigRepo *sqlite.PracticeConfigRepository
+	timecardRepo       storage.TimecardRepository
+	practiceConfigRepo storage.PracticeConfigRepository
 	auditService       *AuditService
 }
 
-func NewTimecardService(timecardRepo *sqlite.TimecardRepository, practiceConfigRepo *sqlite.PracticeConfigRepository, auditService *AuditService) *TimecardService {
+func NewTimecardService(timecardRepo storage.TimecardRepository, practiceConfigRepo storage.PracticeConfigRepository, auditService *AuditService) *TimecardService {
 	return &TimecardService{
 		timecardRepo:       timecardRepo,
 		practiceConfigRepo: practiceConfigRepo,

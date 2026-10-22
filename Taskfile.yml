@@ -63,6 +63,9 @@ tasks:
 
   build:
     desc: Builds the desktop application for the current OS (DEV=true for a dev build)
+    preconditions: &supported-os
+      - sh: '{{if or (eq .GOOS "linux") (eq .GOOS "windows")}}true{{else}}false{{end}}'
+        msg: "Desktop builds are only supported on linux and windows (GOOS={{.GOOS}})"
     cmds:
       - task: "{{.GOOS}}:build"
         vars:
@@ -74,11 +77,13 @@ tasks:
 
   package:
     desc: Packages a production build for the current OS (installers plus server binary)
+    preconditions: *supported-os
     cmds:
       - task: "{{.GOOS}}:package"
 
   run:
     desc: Runs the built desktop application
+    preconditions: *supported-os
     cmds:
       - task: "{{.GOOS}}:run"
 

@@ -22,7 +22,7 @@ type BridgeConfig struct {
 	Name      string    `json:"name"`
 	Enabled   bool      `json:"enabled"`
 	Path      string    `json:"path"` // absolute path to the external program's executable
-	Args      string    `json:"args"` // argument template, see services.BridgeArgumentTokens
+	Args      string    `json:"args"` // argument template, see bridges.BridgeArgumentTokens
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

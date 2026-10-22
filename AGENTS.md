@@ -1,12 +1,18 @@
 # Agent Instructions for LibreDental
 
-This file orients coding agents (Claude Code, etc.) working in this repo. It's a
-supplement to `README.md`, not a replacement — read that too for project philosophy.
+Instructions for coding agents. Human-facing docs (what the project is, philosophy,
+setup) live in `README.md`.
 
-## This is medical software — act accordingly
+## Working here
 
-LibreDental stores real patient health and financial data (clinical history,
-insurance, billing/ledger). That changes how you should work here, not just what:
+LibreDental is a desktop app (with an optional LAN server mode) distributed to dental
+offices, which run it on their own machines against their own data. This repo never
+touches a production deployment or real patient records: every database you see is a
+local dev or demo database (`task demo`, `internal/demo/`). Feel free to reset, seed,
+corrupt, or experiment with that data while developing and testing.
+
+The caution belongs in what gets committed, because that code ships to clinics and runs
+against their real patient, clinical and billing records:
 
 - **Prefer small, careful, reviewable changes over sweeping ones.** Don't refactor
   or "clean up" code adjacent to what you were asked to touch.
@@ -20,14 +26,11 @@ insurance, billing/ledger). That changes how you should work here, not just what
   timezones, and unit conventions matter (see `docs/release-checklist.md` for known
   footguns). If a change affects how existing stored data is interpreted, call that
   out explicitly rather than "fixing it forward" quietly.
-- **Correctness and data integrity take priority over speed.** When in doubt about
-  a schema change, a data migration, or anything touching stored patient/financial
-  records, stop and ask rather than guessing.
+- **Migrations must be safe for existing installs.** When in doubt about a schema
+  change or data migration, stop and ask rather than guessing (see "Database
+  migrations" below).
 
-## What this project is
-
-LibreDental is an open-source, local-first dental practice management app:
-patient records, scheduling, odontogram/charting, billing & insurance claims.
+## Stack
 
 - **Backend:** Go 1.26, wrapped as a native desktop app via Wails v3. Can also run
   headless as an HTTP server (`task server`, port 4242) for LAN multi-client setups.
@@ -66,8 +69,10 @@ compilation) and are what CI mirrors. Don't shell out to `gofmt`, `go test`,
 you're deliberately running a narrower slice (e.g. `go test ./internal/services/...`
 while iterating on one package).
 
-All via [Task](https://taskfile.dev). The root `Taskfile.yml` is the only entry point:
-CI, `wails3 dev` (`build/config.yml`) and local use all go through it. It includes the
+All via [Task](https://taskfile.dev). The root `Taskfile.yml` is the only entry point for
+builds: CI's build and packaging jobs, `wails3 dev` (`build/config.yml`) and local use all
+go through it. CI's go-checks and frontend-checks jobs call the tools directly; `task check`
+mirrors them. It includes the
 Wails-generated `build/**/Taskfile.yml` files (as `common:`, `linux:`, `windows:`) and
 `tasks/deps.yml` (as `deps:`).
 

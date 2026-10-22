@@ -272,7 +272,7 @@ func TestAWSSMSProvider_RejectsBeforeRequest(t *testing.T) {
 // a simulator destination number so nothing reaches a carrier.
 //
 //	AWS_SMS_LIVE_TEST=1 AWS_SMS_ACCESS_KEY_ID=... AWS_SMS_SECRET_ACCESS_KEY=... AWS_SMS_REGION=us-east-1 \
-//	AWS_SMS_ORIGINATION_IDENTITY=... AWS_SMS_DESTINATION=+1... go test ./internal/services -run TestAWSSMSLive -v
+//	AWS_SMS_ORIGINATION_IDENTITY=... AWS_SMS_DESTINATION=+1... go test ./internal/services/notify -run TestAWSSMSLive -v
 func TestAWSSMSLive(t *testing.T) {
 	if os.Getenv("AWS_SMS_LIVE_TEST") != "1" {
 		t.Skip("AWS_SMS_LIVE_TEST not set")
