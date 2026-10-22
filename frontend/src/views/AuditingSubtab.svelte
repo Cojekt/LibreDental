@@ -60,6 +60,9 @@
   }
 
   function handleNext() {
+    // While a page is loading, logs still holds the previous page, so a second click would
+    // store that page's cursor again under the next page number.
+    if (loading) return;
     const last = logs[logs.length - 1];
     if (!last) return;
     cursors[page + 1] = last.id;
@@ -107,8 +110,10 @@
         >{m.audit_prev()}</button
       >
       <span class="text-sm text-slate-400">{m.audit_page({ page: page + 1 })}</span>
-      <button class="btn btn-secondary btn-sm" onclick={handleNext} disabled={logs.length < limit}
-        >{m.audit_next()}</button
+      <button
+        class="btn btn-secondary btn-sm"
+        onclick={handleNext}
+        disabled={loading || logs.length < limit}>{m.audit_next()}</button
       >
     </div>
   </div>

@@ -62,8 +62,16 @@ func (r *AuditRepository) Query(ctx context.Context, patientID string, limit int
 	}
 
 	if beforeID != "" {
+		// A cursor is the last entry of the previous page, so when filtering by
+		// patient it must belong to that patient's log.
+		cursorQuery := `SELECT 1 FROM audit_logs WHERE id = ?`
+		cursorArgs := []interface{}{beforeID}
+		if patientID != "" {
+			cursorQuery += ` AND patient_id = ?`
+			cursorArgs = append(cursorArgs, patientID)
+		}
 		var exists int
-		err := r.db.QueryRowContext(ctx, `SELECT 1 FROM audit_logs WHERE id = ?`, beforeID).Scan(&exists)
+		err := r.db.QueryRowContext(ctx, cursorQuery, cursorArgs...).Scan(&exists)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%w: unknown audit log cursor %q", storage.ErrInvalidInput, beforeID)
 		}
