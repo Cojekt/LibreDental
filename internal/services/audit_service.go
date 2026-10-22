@@ -15,7 +15,7 @@ import (
 var ErrUnauthorized = errors.New("unauthorized: must be logged in to perform this action")
 
 type AuditRepository interface {
-	Query(ctx context.Context, patientID string, limit int, offset int) ([]*domain.AuditLogEntry, error)
+	Query(ctx context.Context, patientID string, limit int, beforeID string) ([]*domain.AuditLogEntry, error)
 	Log(ctx context.Context, entry *domain.AuditLogEntry) error
 }
 
@@ -135,11 +135,13 @@ func (s *AuditService) logSystemPatientAction(actorID string, action domain.Audi
 	return s.logPatientActionAs(auditActor{id: actorID, name: domain.SystemActorName}, action, patientID, resource, resourceID, details)
 }
 
-func (s *AuditService) GetAuditLogs(token string, patientID string, limit int, offset int) ([]*domain.AuditLogEntry, error) {
+// GetAuditLogs returns audit entries newest first. To page, pass the ID of the
+// last entry of the previous page as beforeID; pass "" for the first page.
+func (s *AuditService) GetAuditLogs(token string, patientID string, limit int, beforeID string) ([]*domain.AuditLogEntry, error) {
 	if s.GetSessionUser(token) == nil {
 		return nil, ErrUnauthorized
 	}
-	entries, err := s.repo.Query(context.Background(), patientID, limit, offset)
+	entries, err := s.repo.Query(context.Background(), patientID, limit, beforeID)
 	if err != nil {
 		return nil, err
 	}

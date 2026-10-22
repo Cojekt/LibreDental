@@ -112,7 +112,7 @@ func (e *bridgeTestEnv) enable(t *testing.T, name, args string) {
 
 func (e *bridgeTestEnv) bridgeAuditDetails(t *testing.T) []string {
 	t.Helper()
-	logs, err := e.audit.GetAuditLogs(e.token, e.patientID, 100, 0)
+	logs, err := e.audit.GetAuditLogs(e.token, e.patientID, 100, "")
 	if err != nil {
 		t.Fatalf("GetAuditLogs: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestBridgeServiceConfig(t *testing.T) {
 		t.Errorf("unexpected saved config: %+v", cfg)
 	}
 
-	logs, err := env.audit.GetAuditLogs(env.token, "", 100, 0)
+	logs, err := env.audit.GetAuditLogs(env.token, "", 100, "")
 	if err != nil {
 		t.Fatalf("GetAuditLogs: %v", err)
 	}
@@ -392,7 +392,7 @@ func TestStartBridgeProcess(t *testing.T) {
 
 type failingAuditRepo struct{}
 
-func (failingAuditRepo) Query(context.Context, string, int, int) ([]*domain.AuditLogEntry, error) {
+func (failingAuditRepo) Query(context.Context, string, int, string) ([]*domain.AuditLogEntry, error) {
 	return nil, nil
 }
 

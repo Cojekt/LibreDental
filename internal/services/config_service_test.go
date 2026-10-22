@@ -243,7 +243,7 @@ func TestPracticeConfigService_OnboardingAndSessionGating(t *testing.T) {
 		t.Fatalf("Expected session for the new dentist provider, got %+v", user)
 	}
 
-	logs, err := auditService.GetAuditLogs(token, "", 10, 0)
+	logs, err := auditService.GetAuditLogs(token, "", 10, "")
 	if err != nil {
 		t.Fatalf("Failed to read audit logs: %v", err)
 	}
@@ -303,7 +303,7 @@ func TestPracticeConfigService_OnboardingAndSessionGating(t *testing.T) {
 	if _, err := service.GetProviderPin(token, "prov_missing"); !errors.Is(err, storage.ErrNotFound) {
 		t.Fatalf("Expected ErrNotFound for unknown provider, got %v", err)
 	}
-	logs, err = auditService.GetAuditLogs(token, "", 50, 0)
+	logs, err = auditService.GetAuditLogs(token, "", 50, "")
 	if err != nil {
 		t.Fatalf("Failed to read audit logs: %v", err)
 	}

@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/services"
+	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
@@ -92,12 +94,12 @@ func TestAuditService(t *testing.T) {
 		t.Fatalf("Failed to create session: %v", err)
 	}
 
-	if _, err := service.GetAuditLogs("bogus-token", "pat_123", 10, 0); err != services.ErrUnauthorized {
+	if _, err := service.GetAuditLogs("bogus-token", "pat_123", 10, ""); err != services.ErrUnauthorized {
 		t.Fatalf("Expected ErrUnauthorized for unauthenticated call, got %v", err)
 	}
 
 	// 2. Fetch Logs
-	logs, err := service.GetAuditLogs(readToken, "pat_123", 10, 0)
+	logs, err := service.GetAuditLogs(readToken, "pat_123", 10, "")
 	if err != nil {
 		t.Fatalf("Failed to get audit logs: %v", err)
 	}
@@ -114,7 +116,7 @@ func TestAuditService(t *testing.T) {
 	}
 
 	// 3. Fetch Logs with no Patient ID (should return all)
-	allLogs, err := service.GetAuditLogs(readToken, "", 10, 0)
+	allLogs, err := service.GetAuditLogs(readToken, "", 10, "")
 	if err != nil {
 		t.Fatalf("Failed to get all audit logs: %v", err)
 	}
@@ -138,7 +140,7 @@ func TestAuditService(t *testing.T) {
 		t.Fatalf("Failed to log second audit event: %v", err)
 	}
 
-	paginatedLogs, err := service.GetAuditLogs(readToken, "pat_123", 1, 0) // Limit 1
+	paginatedLogs, err := service.GetAuditLogs(readToken, "pat_123", 1, "") // Limit 1
 	if err != nil {
 		t.Fatalf("Failed to get paginated logs: %v", err)
 	}
@@ -146,16 +148,20 @@ func TestAuditService(t *testing.T) {
 		t.Errorf("Expected 1 paginated log entry, got %d", len(paginatedLogs))
 	}
 
-	paginatedLogsOffset, err := service.GetAuditLogs(readToken, "pat_123", 1, 1) // Offset 1
+	nextPage, err := service.GetAuditLogs(readToken, "pat_123", 1, paginatedLogs[0].ID)
 	if err != nil {
-		t.Fatalf("Failed to get paginated offset logs: %v", err)
+		t.Fatalf("Failed to get next page of logs: %v", err)
 	}
-	if len(paginatedLogsOffset) != 1 {
-		t.Errorf("Expected 1 paginated log entry, got %d", len(paginatedLogsOffset))
+	if len(nextPage) != 1 {
+		t.Fatalf("Expected 1 paginated log entry, got %d", len(nextPage))
 	}
 
-	if paginatedLogs[0].ID == paginatedLogsOffset[0].ID {
-		t.Errorf("Pagination offset returned the same row")
+	if paginatedLogs[0].ID == nextPage[0].ID {
+		t.Errorf("Next page returned the same row")
+	}
+
+	if _, err := service.GetAuditLogs(readToken, "pat_123", 1, "audit_missing"); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Errorf("Expected ErrInvalidInput for an unknown cursor, got %v", err)
 	}
 }
 
@@ -190,7 +196,7 @@ func TestAuditService_LogPatientActionUsesSessionUser(t *testing.T) {
 		t.Fatalf("LogPatientAction failed: %v", err)
 	}
 
-	logs, err := service.GetAuditLogs(token, "pat_9", 10, 0)
+	logs, err := service.GetAuditLogs(token, "pat_9", 10, "")
 	if err != nil {
 		t.Fatalf("Failed to get audit logs: %v", err)
 	}
@@ -261,7 +267,7 @@ func TestAuditService_MarksSystemActors(t *testing.T) {
 		}
 	}
 
-	logs, err := service.GetAuditLogs(token, "", 10, 0)
+	logs, err := service.GetAuditLogs(token, "", 10, "")
 	if err != nil {
 		t.Fatalf("GetAuditLogs failed: %v", err)
 	}

@@ -180,7 +180,7 @@ func TestSeedDatabase(t *testing.T) {
 	}
 
 	auditRepo := sqlite.NewAuditRepository(auditDb)
-	auditEntries, err := auditRepo.Query(ctx, "", 1, 0)
+	auditEntries, err := auditRepo.Query(ctx, "", 1, "")
 	if err != nil {
 		t.Fatalf("Failed to query audit log: %v", err)
 	}

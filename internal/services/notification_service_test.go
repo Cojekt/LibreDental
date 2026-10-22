@@ -320,7 +320,7 @@ func TestNotificationService_SendTestMessage(t *testing.T) {
 		t.Errorf("Expected the provider's error to be returned, got %v", err)
 	}
 
-	logs, err := auditSvc.GetAuditLogs(token, "", 50, 0)
+	logs, err := auditSvc.GetAuditLogs(token, "", 50, "")
 	if err != nil {
 		t.Fatalf("Failed to read audit log: %v", err)
 	}

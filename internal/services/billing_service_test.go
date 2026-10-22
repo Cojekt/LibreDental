@@ -123,7 +123,7 @@ func TestBillingService_ProcedureCodesAndChartClaim(t *testing.T) {
 		t.Errorf("Expected condition status to be completed, got %s", chart.Conditions[0].Status)
 	}
 
-	logs, err := auditRepo.Query(ctx, "pat_test_1", 50, 0)
+	logs, err := auditRepo.Query(ctx, "pat_test_1", 50, "")
 	if err != nil {
 		t.Fatalf("Failed to query audit logs: %v", err)
 	}
@@ -860,7 +860,7 @@ func TestBillingService_ProviderConfigRequiresSessionAndAudits(t *testing.T) {
 		t.Errorf("Expected redacted api_key, got %q", cfg["api_key"])
 	}
 
-	logs, err := svc.auditService.GetAuditLogs(token, "", 50, 0)
+	logs, err := svc.auditService.GetAuditLogs(token, "", 50, "")
 	if err != nil {
 		t.Fatalf("Failed to read audit logs: %v", err)
 	}

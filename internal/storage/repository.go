@@ -43,7 +43,7 @@ type AppointmentRepository interface {
 // AuditRepository defines storage operations for immutable HIPAA audit logs.
 type AuditRepository interface {
 	Log(ctx context.Context, entry *domain.AuditLogEntry) error
-	Query(ctx context.Context, patientID string, limit int, offset int) ([]*domain.AuditLogEntry, error)
+	Query(ctx context.Context, patientID string, limit int, beforeID string) ([]*domain.AuditLogEntry, error)
 }
 
 // PracticeConfigRepository defines storage operations for practice configuration, providers, and operatories.

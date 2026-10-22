@@ -150,7 +150,7 @@ func TestPatientService_AuditsReminderConsent(t *testing.T) {
 
 	latest := func(patientID string) string {
 		t.Helper()
-		logs, err := auditService.GetAuditLogs(token, patientID, 1, 0)
+		logs, err := auditService.GetAuditLogs(token, patientID, 1, "")
 		if err != nil || len(logs) == 0 {
 			t.Fatalf("Failed to read audit log: %v", err)
 		}
@@ -216,7 +216,7 @@ func (r *patientAuditRepo) Log(_ context.Context, e *domain.AuditLogEntry) error
 	return nil
 }
 
-func (r *patientAuditRepo) Query(context.Context, string, int, int) ([]*domain.AuditLogEntry, error) {
+func (r *patientAuditRepo) Query(context.Context, string, int, string) ([]*domain.AuditLogEntry, error) {
 	return r.entries, nil
 }
 

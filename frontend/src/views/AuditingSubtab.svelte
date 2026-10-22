@@ -14,6 +14,9 @@
   let selectedPatient = $state("");
   let page = $state(0);
   let limit = $state(50);
+  // cursors[n] is the ID of the last entry before page n ("" for the first page). Paging by
+  // cursor instead of offset keeps pages stable while new entries are being logged.
+  let cursors = $state<string[]>([""]);
 
   function getPatientName(id: string): string {
     const p = patients.find((p: Patient) => p.id === id);
@@ -32,7 +35,12 @@
     const gen = ++requestGen;
     loading = true;
     try {
-      const res = await AuditService.GetAuditLogs(auth.token, selectedPatient, limit, page * limit);
+      const res = await AuditService.GetAuditLogs(
+        auth.token,
+        selectedPatient,
+        limit,
+        cursors[page]
+      );
       if (gen !== requestGen) return;
       logs = (res?.filter(Boolean) as AuditLogEntry[]) || [];
     } catch (e) {
@@ -52,6 +60,9 @@
   }
 
   function handleNext() {
+    const last = logs[logs.length - 1];
+    if (!last) return;
+    cursors[page + 1] = last.id;
     page++;
     fetchLogs();
   }
@@ -62,6 +73,7 @@
     void selectedPatient;
     untrack(() => {
       page = 0;
+      cursors = [""];
       fetchLogs();
     });
   });

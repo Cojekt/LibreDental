@@ -2,10 +2,14 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
+	"github.com/LibreDental/libredental/internal/storage"
 )
 
 type AuditRepository struct {
@@ -40,25 +44,45 @@ func (r *AuditRepository) Log(ctx context.Context, entry *domain.AuditLogEntry) 
 	return nil
 }
 
-func (r *AuditRepository) Query(ctx context.Context, patientID string, limit int, offset int) ([]*domain.AuditLogEntry, error) {
+// Query returns audit entries newest first. beforeID is a keyset cursor (the ID
+// of the last entry of the previous page): when set, only entries older than it
+// are returned, so entries logged while someone pages through the log cannot
+// shift later pages and cause duplicated or skipped rows.
+func (r *AuditRepository) Query(ctx context.Context, patientID string, limit int, beforeID string) ([]*domain.AuditLogEntry, error) {
 	if limit <= 0 {
 		limit = 100
 	}
 
-	var query string
+	var conditions []string
 	var args []interface{}
 
-	// rowid breaks ties between entries logged within the same clock tick, which
-	// keeps newest-first ordering and OFFSET pagination deterministic.
 	if patientID != "" {
-		query = `SELECT id, timestamp, user_id, user_name, patient_id, action, resource, resource_id, details, ip_address
-		         FROM audit_logs WHERE patient_id = ? ORDER BY timestamp DESC, rowid DESC LIMIT ? OFFSET ?`
-		args = append(args, patientID, limit, offset)
-	} else {
-		query = `SELECT id, timestamp, user_id, user_name, patient_id, action, resource, resource_id, details, ip_address
-		         FROM audit_logs ORDER BY timestamp DESC, rowid DESC LIMIT ? OFFSET ?`
-		args = append(args, limit, offset)
+		conditions = append(conditions, "patient_id = ?")
+		args = append(args, patientID)
 	}
+
+	if beforeID != "" {
+		var exists int
+		err := r.db.QueryRowContext(ctx, `SELECT 1 FROM audit_logs WHERE id = ?`, beforeID).Scan(&exists)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("%w: unknown audit log cursor %q", storage.ErrInvalidInput, beforeID)
+		}
+		if err != nil {
+			return nil, err
+		}
+		conditions = append(conditions, "(timestamp, rowid) < (SELECT timestamp, rowid FROM audit_logs WHERE id = ?)")
+		args = append(args, beforeID)
+	}
+
+	where := ""
+	if len(conditions) > 0 {
+		where = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// rowid breaks ties between entries logged within the same clock tick.
+	query := fmt.Sprintf(`SELECT id, timestamp, user_id, user_name, patient_id, action, resource, resource_id, details, ip_address
+		FROM audit_logs %s ORDER BY timestamp DESC, rowid DESC LIMIT ?`, where)
+	args = append(args, limit)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {

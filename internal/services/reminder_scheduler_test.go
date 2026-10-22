@@ -213,7 +213,7 @@ func TestReminderScheduler_AuditsAsSystemActor(t *testing.T) {
 
 	e.runAt(e.at(10, 13, 10, 0))
 
-	logs, err := e.audit.GetAuditLogs(e.token, "", 100, 0)
+	logs, err := e.audit.GetAuditLogs(e.token, "", 100, "")
 	if err != nil {
 		t.Fatal(err)
 	}

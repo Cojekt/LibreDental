@@ -31,7 +31,7 @@ func TestAuditService_LogSystemPatientAction(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	if logs, err := auditRepo.Query(ctx, "", 10, 0); err != nil || len(logs) != 0 {
+	if logs, err := auditRepo.Query(ctx, "", 10, ""); err != nil || len(logs) != 0 {
 		t.Fatalf("Expected rejected calls to write nothing, got %d entries, err %v", len(logs), err)
 	}
 
@@ -40,7 +40,7 @@ func TestAuditService_LogSystemPatientAction(t *testing.T) {
 		t.Fatalf("logSystemPatientAction failed: %v", err)
 	}
 
-	logs, err := auditRepo.Query(ctx, "pat_1", 10, 0)
+	logs, err := auditRepo.Query(ctx, "pat_1", 10, "")
 	if err != nil {
 		t.Fatalf("Failed to query audit logs: %v", err)
 	}

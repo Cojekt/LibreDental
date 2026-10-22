@@ -83,7 +83,7 @@ func TestReminderService_EnableAndDisable(t *testing.T) {
 		t.Errorf("Expected the existing 3 rules to be reused, got %d", len(rules))
 	}
 
-	logs, _ := e.audit.GetAuditLogs(e.token, "", 100, 0)
+	logs, _ := e.audit.GetAuditLogs(e.token, "", 100, "")
 	var on, off int
 	for _, l := range logs {
 		if l.Resource != "reminder_settings" || l.UserID != "prov_1" {
