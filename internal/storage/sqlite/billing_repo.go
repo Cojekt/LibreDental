@@ -14,10 +14,10 @@ import (
 
 // ClaimRepository implements storage.ClaimRepository for SQLite.
 type ClaimRepository struct {
-	db *DB
+	db queryExecutor
 }
 
-func NewClaimRepository(db *DB) *ClaimRepository {
+func NewClaimRepository(db queryExecutor) *ClaimRepository {
 	return &ClaimRepository{db: db}
 }
 

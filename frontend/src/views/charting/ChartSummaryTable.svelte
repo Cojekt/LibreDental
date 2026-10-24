@@ -158,6 +158,13 @@
               </td>
               <td class="py-3 px-4 text-slate-200 font-medium">
                 {cond.description}
+                {#if cond.pricing}<p class="text-xs text-slate-400">
+                    {cond.pricing.kind === "insurance"
+                      ? cond.pricing.provider_name
+                      : cond.pricing.kind === "standard"
+                        ? m.insurance_standard()
+                        : m.insurance_manual()}
+                  </p>{/if}
               </td>
               <td class="py-3 px-4">
                 <StatusBadge variant={cond.status} label={conditionStatusLabel(cond.status)} />

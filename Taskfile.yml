@@ -94,10 +94,11 @@ tasks:
       - cd frontend && {{.PACKAGE_MANAGER}} run format
 
   test:
-    desc: Runs go test and npm run check on the repo
+    desc: Runs Go tests, frontend type checks and frontend interaction tests
     cmds:
       - go test ./...
       - cd frontend && {{.PACKAGE_MANAGER}} run check
+      - cd frontend && {{.PACKAGE_MANAGER}} run test
 
   # Mirrors the go-checks and frontend-checks jobs in .github/workflows/ci.yml;
   # update both together.
@@ -116,6 +117,7 @@ tasks:
       - task: common:generate:bindings
       - cd frontend && {{.PACKAGE_MANAGER}} run format:check
       - cd frontend && {{.PACKAGE_MANAGER}} run check
+      - cd frontend && {{.PACKAGE_MANAGER}} run test
 
   # wails3 tooling recreates the macOS/iOS asset folders, which this project doesn't ship.
   clean:unused-platforms:

@@ -16,6 +16,7 @@ import (
 
 // BillingService exposes billing operations to the Wails frontend.
 type BillingService struct {
+	pricing      storage.InsuranceRepository
 	claimRepo    storage.ClaimRepository
 	payRepo      storage.PaymentRepository
 	bundleRepo   storage.TreatmentBundleRepository
@@ -150,6 +151,9 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 	if c == nil {
 		return nil, fmt.Errorf("%w: claim cannot be nil", storage.ErrInvalidInput)
 	}
+	if c.ID == "" && s.pricing != nil {
+		return nil, fmt.Errorf("%w: stable claim ID is required", storage.ErrInvalidInput)
+	}
 	if c.ID == "" {
 		c.ID = fmt.Sprintf("claim_%d", time.Now().UnixNano())
 	}
@@ -162,7 +166,16 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 	if err := s.stampInsuranceFromPatient(c); err != nil {
 		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
-	if err := s.claimRepo.Create(context.Background(), c); err != nil {
+	var saveErr error
+	if s.pricing != nil {
+		if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, c.PatientID, "pricing", "Requested confirmed claim pricing"); err != nil {
+			return nil, err
+		}
+		saveErr = s.pricing.ConfirmClaim(context.Background(), c, false)
+	} else {
+		saveErr = s.claimRepo.Create(context.Background(), c)
+	}
+	if err := saveErr; err != nil {
 		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
 	if err := s.auditService.LogPatientAction(token, domain.AuditActionCreate, c.PatientID, "claim", "Created claim"); err != nil {
@@ -249,7 +262,13 @@ func (s *BillingService) UpdateClaim(token string, c *domain.Claim) (*domain.Cla
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing claim: %w", err)
 	}
-	if err := s.claimRepo.Update(context.Background(), c); err != nil {
+	var saveErr error
+	if s.pricing != nil {
+		saveErr = s.pricing.ConfirmClaim(context.Background(), c, true)
+	} else {
+		saveErr = s.claimRepo.Update(context.Background(), c)
+	}
+	if err := saveErr; err != nil {
 		return nil, fmt.Errorf("failed to update claim: %w", err)
 	}
 	_ = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, c.PatientID, "claim", "Updated claim")
@@ -669,7 +688,7 @@ func (s *BillingService) ListProcedureCodes(countryCode string, providerID strin
 
 	for _, pc := range codes {
 		effFee, err := s.feeRepo.GetEffectiveFee(ctx, cc, pc.Code, providerID)
-		if err == nil && effFee > 0 {
+		if err == nil {
 			pc.EffectiveFee = effFee
 		} else {
 			pc.EffectiveFee = pc.DefaultFee
@@ -788,7 +807,7 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 	var toComplete []domain.ToothCondition
 	for i, condID := range conditionIDs {
 		cond, exists := condMap[condID]
-		if !exists || alreadyBilled[condID] {
+		if !exists || alreadyBilled[condID] || (cond.Status != domain.ToothStatusTreatmentPlanned && cond.Status != domain.ToothStatusCompleted) {
 			continue
 		}
 
@@ -805,6 +824,7 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 			ADACode:          adaCode,
 			Description:      cond.Description,
 			Fee:              cond.Fee,
+			Pricing:          cond.Pricing,
 		}
 		claim.LineItems = append(claim.LineItems, lineItem)
 		alreadyBilled[condID] = true // a repeated ID in the request must not bill twice
@@ -818,7 +838,13 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		return nil, ErrNothingToBill
 	}
 
-	if err := s.claimRepo.Create(ctx, claim); err != nil {
+	var createErr error
+	if s.pricing != nil {
+		createErr = s.pricing.ConfirmClaim(ctx, claim, false)
+	} else {
+		createErr = s.claimRepo.Create(ctx, claim)
+	}
+	if err := createErr; err != nil {
 		return nil, fmt.Errorf("failed to create claim from chart: %w", err)
 	}
 

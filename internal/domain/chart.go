@@ -30,28 +30,32 @@ const (
 
 // ToothCondition represents a specific tooth finding or procedure (e.g. Caries, Crown, Root Canal, Composite).
 type ToothCondition struct {
-	ID          string         `json:"id"`
-	PatientID   string         `json:"patient_id"`
-	ToothNumber int            `json:"tooth_number"` // Universal Numbering System 1-32 (or 101-120 for primary A-T)
-	Surfaces    []ToothSurface `json:"surfaces,omitempty"`
-	ADACode     string         `json:"ada_code,omitempty"` // e.g., D2392 for 2-surface posterior composite
-	Description string         `json:"description"`
-	Status      ToothStatus    `json:"status"`
-	Fee         int64          `json:"fee,omitempty"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
+	ID                string         `json:"id"`
+	PatientID         string         `json:"patient_id"`
+	ToothNumber       int            `json:"tooth_number"` // Universal Numbering System 1-32 (or 101-120 for primary A-T)
+	Surfaces          []ToothSurface `json:"surfaces,omitempty"`
+	ADACode           string         `json:"ada_code,omitempty"` // e.g., D2392 for 2-surface posterior composite
+	Description       string         `json:"description"`
+	Status            ToothStatus    `json:"status"`
+	Fee               int64          `json:"fee"`
+	Pricing           *PricingSource `json:"pricing,omitempty"`
+	ExpectedUpdatedAt time.Time      `json:"-"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
 }
 
 // SaveToothConditionPayload represents the payload for saving a tooth condition, omitting timestamps.
 type SaveToothConditionPayload struct {
-	ID          string         `json:"id"`
-	PatientID   string         `json:"patient_id"`
-	ToothNumber int            `json:"tooth_number"`
-	Surfaces    []ToothSurface `json:"surfaces,omitempty"`
-	ADACode     string         `json:"ada_code,omitempty"`
-	Description string         `json:"description"`
-	Status      ToothStatus    `json:"status"`
-	Fee         int64          `json:"fee,omitempty"`
+	ID                string         `json:"id"`
+	PatientID         string         `json:"patient_id"`
+	ToothNumber       int            `json:"tooth_number"`
+	Surfaces          []ToothSurface `json:"surfaces,omitempty"`
+	ADACode           string         `json:"ada_code,omitempty"`
+	Description       string         `json:"description"`
+	Status            ToothStatus    `json:"status"`
+	Fee               int64          `json:"fee"`
+	Pricing           *PricingSource `json:"pricing,omitempty"`
+	ExpectedUpdatedAt time.Time      `json:"expected_updated_at,omitempty"`
 }
 
 // DentalChart represents a patient's full dental chart.

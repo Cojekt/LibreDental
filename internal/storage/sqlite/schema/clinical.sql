@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS dental_conditions (
 	fee INTEGER NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME NOT NULL,
+ insurance_provider_id TEXT REFERENCES insurance_providers(id) ON DELETE RESTRICT,
+ pricing_source TEXT CHECK(pricing_source IS NULL OR json_valid(pricing_source)),
 	FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE RESTRICT
 );
 

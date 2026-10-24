@@ -5,6 +5,10 @@ import { m } from "../paraglide/messages.js";
 const errorMessages: Record<string, () => string> = {
   unauthorized: m.error_unauthorized,
   not_found: m.error_not_found,
+  insurance_duplicate: m.insurance_duplicate,
+  insurance_unavailable: m.insurance_unavailable,
+  insurance_missing_fee: m.insurance_missing_fee,
+  pricing_changed: m.insurance_price_changed,
   conflict: m.error_conflict,
   last_active_provider: m.error_last_active_provider,
   already_initialized: m.error_already_initialized,

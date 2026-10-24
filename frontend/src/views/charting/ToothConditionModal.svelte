@@ -7,6 +7,7 @@
 
   let {
     showConditionModal = $bindable(false),
+    errorMsg = "",
     selectedToothNumber,
     currentToothSystem,
     countryMeta = null,
@@ -14,7 +15,7 @@
     formADACode = $bindable(""),
     formDescription = $bindable(""),
     formStatus = $bindable(ToothStatus.ToothStatusTreatmentPlanned),
-    formFee = $bindable(0),
+    formFee = $bindable(),
     isEditingCondition,
     editingConditionId,
     procedurePresets,
@@ -27,6 +28,7 @@
     formatCurrency,
   } = $props<{
     showConditionModal: boolean;
+    errorMsg?: string;
     selectedToothNumber: number | null;
     currentToothSystem: ToothSystem;
     countryMeta?: CountryConfig | null;
@@ -111,6 +113,7 @@
 
       <!-- Form Controls -->
       <form onsubmit={handleSaveCondition} class="flex flex-col gap-4">
+        {#if errorMsg}<p role="alert" class="text-rose-400">{errorMsg}</p>{/if}
         {#if procedureCodes.length > 0}
           <div class="flex flex-col gap-1">
             <label for="condition-catalog-code" class="text-xs font-semibold text-sky-400">
@@ -125,7 +128,7 @@
                 if (item) {
                   formADACode = item.code;
                   formDescription = item.description;
-                  formFee = (item.effective_fee || item.default_fee) / 100;
+                  formFee = (item.effective_fee ?? item.default_fee) / 100;
                 }
               }}
               class="bg-slate-950 border border-sky-500/40 text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-sky-500 cursor-pointer"
@@ -138,7 +141,7 @@
               {#each procedureCodes as p}
                 <option value={p.code}>
                   [{p.category}] {p.code} - {p.description} ({formatCurrency(
-                    p.effective_fee || p.default_fee
+                    p.effective_fee ?? p.default_fee
                   )})
                 </option>
               {/each}
