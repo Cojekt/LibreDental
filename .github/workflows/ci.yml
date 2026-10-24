@@ -60,6 +60,10 @@ jobs:
         working-directory: frontend
         run: npm run check
 
+      - name: Frontend Interaction Tests
+        working-directory: frontend
+        run: npm run test
+
   build:
     name: Build Application & Server
     needs: [go-checks, frontend-checks]

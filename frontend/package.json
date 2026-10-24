@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "check": "npm run build:i18n && svelte-check --tsconfig ./tsconfig.json --tsgo",
     "format:check": "prettier --check . ../.github",
-    "format": "prettier --write . ../.github"
+    "format": "prettier --write . ../.github",
+    "test": "vitest run --config vitest.config.ts",
+    "pretest": "task --dir .. common:generate:bindings && npm run build:i18n"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -23,15 +25,19 @@
     "@inlang/plugin-m-function-matcher": "^2.3.4",
     "@inlang/plugin-message-format": "^4.5.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/svelte": "^5.4.2",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^26.6.5",
     "@typescript/native": "npm:typescript@^7.0.2",
+    "jsdom": "^30.1.3",
     "prettier": "^3.9.10",
     "prettier-plugin-svelte": "^4.1.1",
     "svelte": "^5.57.2",
     "svelte-check": "^4.7.6",
     "tslib": "^2.6.2",
     "typescript": "^6.0.3",
-    "vite": "^8.3.4"
+    "vite": "^8.3.4",
+    "vitest": "^4.1.12"
   }
 }

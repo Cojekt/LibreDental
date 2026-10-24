@@ -9,9 +9,13 @@ import (
 )
 
 var (
-	ErrNotFound     = errors.New("record not found")
-	ErrConflict     = errors.New("optimistic concurrency conflict: record has been updated by another user")
-	ErrInvalidInput = errors.New("invalid input data")
+	ErrInsuranceDuplicate   = errors.New("insurance name already exists")
+	ErrInsuranceUnavailable = errors.New("insurance provider or plan unavailable")
+	ErrInsuranceFeeMissing  = errors.New("plan has no configured procedure fee")
+	ErrPricingChanged       = errors.New("price changed; review and confirm again")
+	ErrNotFound             = errors.New("record not found")
+	ErrConflict             = errors.New("optimistic concurrency conflict: record has been updated by another user")
+	ErrInvalidInput         = errors.New("invalid input data")
 
 	// ErrLastActiveProvider is returned when an operation would leave the clinic
 	// with zero active providers, which is not allowed.
@@ -176,4 +180,15 @@ type TimecardRepository interface {
 	GetTotalOwed(ctx context.Context, providerID string) (int64, error)
 	MarkTimecardsPaid(ctx context.Context, providerID string) error
 	DeleteTimecard(ctx context.Context, id string) error
+}
+
+type InsuranceRepository interface {
+	ListProviders(context.Context) ([]*domain.InsuranceProvider, error)
+	SaveProvider(context.Context, *domain.InsuranceProvider) error
+	ListFees(context.Context, string, domain.CountryCode) ([]*domain.InsuranceFee, error)
+	SaveFee(context.Context, *domain.InsuranceFee) error
+	DeleteFee(context.Context, string, domain.CountryCode, string) error
+	Preview(context.Context, *domain.PricingSource) (*domain.PricingSource, error)
+	ConfirmCondition(context.Context, *domain.ToothCondition) (bool, error)
+	ConfirmClaim(context.Context, *domain.Claim, bool) error
 }

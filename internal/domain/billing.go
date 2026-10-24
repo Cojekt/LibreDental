@@ -31,6 +31,7 @@ const (
 // ClaimLineItem represents a single CDT-coded procedure on an insurance claim.
 type ClaimLineItem struct {
 	ID               string         `json:"id"`
+	Pricing          *PricingSource `json:"pricing,omitempty"`
 	ToothConditionID string         `json:"tooth_condition_id,omitempty"` // optional link to dental_conditions
 	ToothNumber      int            `json:"tooth_number,omitempty"`
 	Surfaces         []ToothSurface `json:"surfaces,omitempty"`
@@ -135,7 +136,7 @@ type ProcedureCode struct {
 	Category     string      `json:"category"`
 	Description  string      `json:"description"`
 	DefaultFee   int64       `json:"default_fee"`
-	EffectiveFee int64       `json:"effective_fee,omitempty"`
+	EffectiveFee int64       `json:"effective_fee"`
 	IsActive     bool        `json:"is_active"`
 }
 

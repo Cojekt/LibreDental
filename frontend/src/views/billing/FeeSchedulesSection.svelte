@@ -135,7 +135,7 @@
     <div class="p-8 text-center text-sm text-slate-400">{m.common_loading()}</div>
   {:else if procedureCodes.length === 0}
     <EmptyState
-      title={`No procedure codes available for ${countryMeta?.name || "this country"}.`}
+      title={m.insurance_empty_catalog({ name: countryMeta?.name || m.billing_catalog_global() })}
     />
   {:else}
     <div class="rounded-xl border border-slate-800 bg-slate-900/40 overflow-x-auto">
@@ -154,7 +154,7 @@
         </thead>
         <tbody class="divide-y divide-slate-800/60">
           {#each procedureCodes as p (p.code)}
-            {@const hasCustom = (p.effective_fee || 0) > 0 && p.effective_fee !== p.default_fee}
+            {@const hasCustom = (p.effective_fee ?? p.default_fee) !== p.default_fee}
             <tr class="hover:bg-slate-900/50 transition-colors">
               <td class="px-4 py-3 font-mono font-bold text-sky-400">{p.code}</td>
               <td class="px-4 py-3"><StatusBadge variant="draft" label={p.category} /></td>
@@ -164,7 +164,7 @@
               >
               <td class="px-4 py-3 font-bold text-slate-100 font-mono">
                 {formatCurrency(
-                  p.effective_fee || p.default_fee,
+                  p.effective_fee ?? p.default_fee,
                   countryMeta?.default_currency || "USD"
                 )}
                 {#if hasCustom}
@@ -178,7 +178,7 @@
                 <button
                   type="button"
                   class="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer"
-                  onclick={() => openEditFeeModal(p.code, p.effective_fee || p.default_fee)}
+                  onclick={() => openEditFeeModal(p.code, p.effective_fee ?? p.default_fee)}
                 >
                   {m.patients_btn_edit()}
                 </button>

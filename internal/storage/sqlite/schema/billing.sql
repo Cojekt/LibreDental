@@ -184,3 +184,21 @@ INSERT OR IGNORE INTO procedure_codes (country_code, code, category, description
 ('FR', 'HBLD038', 'Restorative', 'Pose d une couronne dentaire céramo-métallique', 50000),
 ('FR', 'HBFD033', 'Endodontics', 'Exérèse du contenu canalaire d une molaire (Dévitalisation)', 25000),
 ('FR', 'HBGD036', 'Oral Surgery', 'Extraction d une dent permanente sur arcade', 8000);
+
+CREATE TABLE insurance_providers (
+ id TEXT NOT NULL PRIMARY KEY,
+ name TEXT NOT NULL,
+ normalized_name TEXT NOT NULL UNIQUE CHECK(length(normalized_name) > 0),
+ archived INTEGER NOT NULL DEFAULT 0 CHECK(archived IN (0, 1)),
+ created_at DATETIME NOT NULL,
+ updated_at DATETIME NOT NULL
+);
+CREATE TABLE insurance_fee_overrides (
+ provider_id TEXT NOT NULL REFERENCES insurance_providers(id) ON DELETE RESTRICT,
+ country_code TEXT NOT NULL,
+ code TEXT NOT NULL,
+ fee INTEGER NOT NULL CHECK(fee >= 0 AND fee <= 9007199254740991),
+ updated_at DATETIME NOT NULL,
+ PRIMARY KEY(provider_id, country_code, code),
+ FOREIGN KEY(country_code, code) REFERENCES procedure_codes(country_code, code) ON DELETE RESTRICT
+);

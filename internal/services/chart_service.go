@@ -10,6 +10,7 @@ import (
 )
 
 type ChartService struct {
+	pricing      storage.InsuranceRepository
 	chartRepo    storage.ChartRepository
 	auditService *AuditService
 }
@@ -47,22 +48,38 @@ func (s *ChartService) SaveToothCondition(token string, payload *domain.SaveToot
 		return nil, fmt.Errorf("%w: tooth condition payload cannot be nil", storage.ErrInvalidInput)
 	}
 
+	if payload.ID == "" && s.pricing != nil && (payload.Status == domain.ToothStatusTreatmentPlanned || payload.Status == domain.ToothStatusCompleted) {
+		return nil, fmt.Errorf("%w: stable treatment ID is required", storage.ErrInvalidInput)
+	}
 	if payload.ID == "" {
 		payload.ID = fmt.Sprintf("cond_%d", time.Now().UnixNano())
 	}
 
 	c := &domain.ToothCondition{
-		ID:          payload.ID,
-		PatientID:   payload.PatientID,
-		ToothNumber: payload.ToothNumber,
-		Surfaces:    payload.Surfaces,
-		ADACode:     payload.ADACode,
-		Description: payload.Description,
-		Status:      payload.Status,
-		Fee:         payload.Fee,
+		ID:                payload.ID,
+		PatientID:         payload.PatientID,
+		ToothNumber:       payload.ToothNumber,
+		Surfaces:          payload.Surfaces,
+		ADACode:           payload.ADACode,
+		Description:       payload.Description,
+		Status:            payload.Status,
+		Fee:               payload.Fee,
+		Pricing:           payload.Pricing,
+		ExpectedUpdatedAt: payload.ExpectedUpdatedAt,
 	}
 
-	isInsert, err := s.chartRepo.SaveCondition(context.Background(), c)
+	var isInsert bool
+	var err error
+	if s.pricing != nil {
+		if c.Status == domain.ToothStatusTreatmentPlanned || c.Status == domain.ToothStatusCompleted {
+			if err = s.auditService.LogPatientAction(token, domain.AuditActionUpdate, c.PatientID, "pricing", fmt.Sprintf("Requested treatment %s pricing: %s", c.ID, insuranceDetails(c.Pricing))); err != nil {
+				return nil, err
+			}
+		}
+		isInsert, err = s.pricing.ConfirmCondition(context.Background(), c)
+	} else {
+		isInsert, err = s.chartRepo.SaveCondition(context.Background(), c)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to save tooth condition: %w", err)
 	}

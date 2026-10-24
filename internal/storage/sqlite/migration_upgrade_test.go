@@ -38,10 +38,14 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 			insurance_policy_number, insurance_is_subscriber, created_at, updated_at)
 		 VALUES ('pat_1', 'Jane', 'Doe', '1985-06-15T00:00:00Z', 'female', 'Delta Dental',
 			'POL-1', 1, '2026-01-01', '2026-01-01')`,
+		`INSERT INTO procedure_codes(country_code,code,category,description,default_fee) VALUES ('US','D2391','Restorative','Original procedure',14000)`,
+		`INSERT INTO providers(id,name,role,is_active,created_at,updated_at) VALUES ('legacy-clinician','Legacy dentist','dentist',1,'2026-01-01','2026-01-01')`,
+		`INSERT INTO fee_schedules(id,country_code,code,provider_id,custom_fee,updated_at) VALUES ('practice-fee','US','D2391',NULL,10000,'2026-01-01'),('clinician-fee','US','D2391','legacy-clinician',12000,'2026-01-01')`,
+		`INSERT INTO payments(id,patient_id,amount,method,date,created_at) VALUES ('legacy-payment','pat_1',2222,'cash','2026-02-01','2026-02-01')`,
 		`INSERT INTO claims (id, patient_id, date_of_service, status, line_items, created_at, updated_at)
-		 VALUES ('claim_1', 'pat_1', '2026-02-01', 'submitted', '[]', '2026-02-01', '2026-02-01')`,
-		`INSERT INTO dental_conditions (id, patient_id, tooth_number, ada_code, status, created_at, updated_at)
-		 VALUES ('cond_1', 'pat_1', 3, 'D2392', 'treatment_planned', '2026-02-01', '2026-02-01')`,
+		 VALUES ('claim_1', 'pat_1', '2026-02-01', 'submitted', '[{"id":"legacy-line","ada_code":"D2391","fee":12345}]', '2026-02-01', '2026-02-01')`,
+		`INSERT INTO dental_conditions (id, patient_id, tooth_number, ada_code, status, fee, created_at, updated_at)
+		 VALUES ('cond_1', 'pat_1', 3, 'D2392', 'treatment_planned',4567, '2026-02-01', '2026-02-01')`,
 		`INSERT INTO practice_config (id, clinic_name, country_code, currency, created_at, updated_at)
 		 VALUES (1, 'Smile Dental', 'US', 'USD', '2026-01-01', '2026-01-01')`,
 		`INSERT INTO notification_log (id, patient_id, channel, provider_name, recipient, body, status, sent_at)
@@ -68,6 +72,23 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 		t.Errorf("patient data changed in upgrade: %s / %s / %s", name, carrier, policy)
 	}
 	assertLinkedRowsIntact(t, db.DB, "upgrade")
+	assertMoney := func() {
+		for query, want := range map[string]int64{
+			`SELECT default_fee FROM procedure_codes WHERE country_code='US' AND code='D2391'`: 14000,
+			`SELECT custom_fee FROM fee_schedules WHERE id='practice-fee'`:                     10000,
+			`SELECT custom_fee FROM fee_schedules WHERE id='clinician-fee'`:                    12000,
+			`SELECT json_extract(line_items,'$[0].fee') FROM claims WHERE id='claim_1'`:        12345,
+			`SELECT fee FROM dental_conditions WHERE id='cond_1'`:                              4567,
+			`SELECT amount FROM payments WHERE id='legacy-payment'`:                            2222,
+		} {
+			var got int64
+			if err := db.QueryRow(query).Scan(&got); err != nil || got != want {
+				t.Errorf("upgrade changed money: %s: got %d, want %d (%v)", query, got, want, err)
+			}
+		}
+
+	}
+	assertMoney()
 
 	// The reminder migration adds columns to tables that already hold rows: existing
 	// notifications have no reminder key, and the practice has no timezone until one is set.
@@ -105,6 +126,7 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 		t.Errorf("notification lost across rollback: %q (err %v)", status, err)
 	}
 	assertLinkedRowsIntact(t, db.DB, "rollback and re-apply")
+	assertMoney()
 }
 
 // assertLinkedRowsIntact checks the claim and chart rows referencing pat_1 survived and that no

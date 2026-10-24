@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PricingPicker from "../../components/PricingPicker.svelte";
+  import type { PricingSource } from "@bindings/domain/models.js";
   import { onMount } from "svelte";
   import { BillingService, ChartService } from "@bindings/services/index.js";
   import { auth } from "../../stores/auth.svelte.js";
@@ -33,6 +35,47 @@
     countryMeta?: CountryConfig | null;
   }>();
 
+  let bundleLineIDs = $state(new Set<string>());
+  let pricingLine = $state(-1);
+  let showPricing = $state(false);
+  let savingClaim = $state(false);
+  let pendingClaimId = $state("");
+  let resumeSave = $state(false);
+  let originalClaim = $state<Claim | null>(null);
+  function needsPricing(li: ClaimLineItem) {
+    const original = originalClaim?.line_items?.find((line) => line.id === li.id);
+    if (
+      isEditingClaim &&
+      originalClaim?.patient_id === claimPatientId &&
+      originalClaim?.provider_id === claimProviderId &&
+      original &&
+      original.ada_code === li.ada_code &&
+      original.fee === Math.round(Number(li.fee) * 100) &&
+      original.tooth_condition_id === li.tooth_condition_id
+    )
+      return false;
+    return (
+      !li.tooth_condition_id &&
+      (!li.pricing ||
+        li.pricing.patient_id !== claimPatientId ||
+        li.pricing.code !== (li.ada_code || "PROC") ||
+        li.pricing.amount !== Math.round(Number(li.fee) * 100) ||
+        li.pricing.clinician_id !== claimProviderId)
+    );
+  }
+  async function confirmLine(source: PricingSource) {
+    if (pricingLine < 0 || !claimLineItems[pricingLine]) return;
+    claimLineItems[pricingLine].fee = source.amount / 100;
+    claimLineItems[pricingLine].pricing = source;
+    if (resumeSave) {
+      const next = claimLineItems.findIndex(needsPricing);
+      if (next >= 0) {
+        pricingLine = next;
+        return false;
+      }
+      await saveClaim(new Event("submit"), true);
+    }
+  }
   let claims = $state<Claim[]>([]);
   let loadingClaims = $state(false);
   let showClaimModal = $state(false);
@@ -129,6 +172,9 @@
   }
 
   export function openNewClaim() {
+    originalClaim = null;
+    bundleLineIDs = new Set();
+    pendingClaimId = crypto.randomUUID();
     isEditingClaim = false;
     editingClaimId = "";
     editingClaimCreatedAt = "";
@@ -160,6 +206,7 @@
     const c = claims.find((x) => x.id === id);
     if (!c) return;
 
+    originalClaim = c;
     isEditingClaim = true;
     editingClaimId = c.id;
     editingClaimCreatedAt = c.created_at || "";
@@ -194,7 +241,7 @@
     claimLineItems = [
       ...claimLineItems,
       {
-        id: `li_${Date.now()}`,
+        id: crypto.randomUUID(),
         ada_code: "",
         description: "",
         fee: 0,
@@ -219,7 +266,7 @@
         const newItems: ClaimLineItem[] = (b.items ?? []).map(
           (item, i) =>
             ({
-              id: `li_${Date.now()}_${i}`,
+              id: crypto.randomUUID(),
               ada_code: item.ada_code,
               description: item.description,
               fee: (item.default_fee || 0) / 100,
@@ -227,6 +274,7 @@
               insurance_allowed: null,
             }) as any as ClaimLineItem
         );
+        bundleLineIDs = new Set([...bundleLineIDs, ...newItems.map((x) => x.id)]);
         claimLineItems = [...claimLineItems, ...newItems];
         bundleLookupInput = "";
       } else {
@@ -239,12 +287,21 @@
     }
   }
 
-  async function saveClaim(e: Event) {
+  async function saveClaim(e: Event, propagateError = false) {
     e.preventDefault();
-    if (!claimPatientId || !claimDateOfService) return;
+    if (!claimPatientId || !claimDateOfService || savingClaim) return;
+    const missing = claimLineItems.findIndex(needsPricing);
+    if (missing >= 0) {
+      pricingLine = missing;
+      resumeSave = true;
+      showPricing = true;
+      return;
+    }
+    claimsError = "";
+    savingClaim = true;
 
     const payload: Omit<Claim, "created_at" | "updated_at"> & { created_at?: string } = {
-      id: isEditingClaim ? editingClaimId : `claim_${Date.now()}`,
+      id: isEditingClaim ? editingClaimId : pendingClaimId,
       patient_id: claimPatientId,
       provider_id: claimProviderId,
       appointment_id: claimAppointmentId,
@@ -258,6 +315,7 @@
       notes: claimNotes,
       line_items: claimLineItems.map((li) => ({
         ...li,
+        ada_code: li.ada_code || (li.pricing ? "PROC" : ""),
         fee: Math.round((li.fee || 0) * 100),
         insurance_allowed:
           li.insurance_allowed != null ? Math.round(li.insurance_allowed * 100) : undefined,
@@ -279,7 +337,17 @@
       showClaimModal = false;
       await loadClaims();
     } catch (e) {
-      console.error("Failed to save claim:", e);
+      claimsError = handleError(e, m.insurance_error());
+      for (const li of claimLineItems) {
+        if (
+          !li.tooth_condition_id &&
+          (!li.pricing?.confirmed_at || li.pricing.confirmed_at.startsWith("0001"))
+        )
+          li.pricing = undefined;
+      }
+      if (propagateError) throw e;
+    } finally {
+      savingClaim = false;
     }
   }
 
@@ -371,8 +439,9 @@
     const newItems: ClaimLineItem[] = toImport.map(
       (cond, i) =>
         ({
-          id: `li_${Date.now()}_${i}`,
+          id: crypto.randomUUID(),
           tooth_condition_id: cond.id,
+          pricing: cond.pricing,
           tooth_number: cond.tooth_number ?? null,
           surfaces: cond.surfaces,
           ada_code: cond.ada_code || "PROC",
@@ -575,7 +644,8 @@
   subtitle={m.billing_claim_modal_subtitle()}
   maxWidth="max-w-4xl"
 >
-  <form onsubmit={saveClaim} class="space-y-5">
+  <form onsubmit={(e) => saveClaim(e)} class="space-y-5">
+    {#if claimsError}<p role="alert" class="text-sm text-rose-400">{claimsError}</p>{/if}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <FormField label={m.appt_label_patient()} forId="cl-patient" required>
         <select
@@ -730,6 +800,7 @@
               <div class="col-span-2">
                 <Input
                   bind:value={li.ada_code}
+                  disabled={!!li.tooth_condition_id}
                   aria-label={m.charting_th_code()}
                   placeholder={m.billing_claim_code_placeholder()}
                   class="font-mono text-xs py-1.5 px-2"
@@ -755,9 +826,26 @@
                 />
               </div>
               <div class="col-span-2">
+                <button
+                  type="button"
+                  class="btn btn-secondary text-xs"
+                  onclick={() => {
+                    pricingLine = i;
+                    resumeSave = false;
+                    showPricing = true;
+                  }}>{m.insurance_pricing()}</button
+                >
+                {#if li.pricing}<span class="text-xs"
+                    >{li.pricing.kind === "insurance"
+                      ? li.pricing.provider_name
+                      : li.pricing.kind === "standard"
+                        ? m.insurance_standard()
+                        : m.insurance_manual()}</span
+                  >{/if}
                 <Input
                   type="number"
                   bind:value={li.fee}
+                  disabled={!!li.tooth_condition_id}
                   aria-label={m.charting_th_fee()}
                   step="0.01"
                   min="0"
@@ -925,3 +1013,19 @@
     </select>
   {/if}
 </ConfirmModal>
+
+{#if pricingLine >= 0 && claimLineItems[pricingLine]}
+  <PricingPicker
+    bind:showModal={showPricing}
+    contextID={claimLineItems[pricingLine].id}
+    patientID={claimPatientId}
+    patientName={patientName(claimPatientId)}
+    code={claimLineItems[pricingLine].ada_code || "PROC"}
+    description={claimLineItems[pricingLine].description}
+    {countryMeta}
+    preferManual={bundleLineIDs.has(claimLineItems[pricingLine].id)}
+    clinicianID={claimProviderId}
+    manualFee={Math.round(Number(claimLineItems[pricingLine].fee) * 100)}
+    onconfirm={confirmLine}
+  />
+{/if}

@@ -76,6 +76,10 @@ func main() {
 	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, patientRepo, practiceConfigRepo, secretsService, auditService)
 	services.RegisterClaimProvider(billingService, claims.NewStediClaimProvider())
 
+	insuranceRepo := sqlite.NewInsuranceRepository(db)
+	services.AttachInsurancePricing(chartService, billingService, insuranceRepo)
+	insuranceService := services.NewInsuranceService(insuranceRepo, auditService)
+
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
@@ -111,6 +115,7 @@ func main() {
 			newService(systemSettingsService),
 			newService(chartService),
 			newService(billingService),
+			newService(insuranceService),
 			newService(documentService),
 			newService(notificationService),
 			newService(bridgeService),
