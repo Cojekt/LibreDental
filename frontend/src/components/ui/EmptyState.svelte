@@ -8,12 +8,12 @@
     subtitle = "",
     icon = "",
     children,
-  } = $props<{
+  }: {
     title?: string;
     subtitle?: string;
     icon?: string;
     children?: Snippet;
-  }>();
+  } = $props();
 
   const displayTitle = $derived.by(() => {
     getLocaleVersion();

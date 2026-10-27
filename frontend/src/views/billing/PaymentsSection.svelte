@@ -20,10 +20,13 @@
   import { formatCurrency } from "$lib/currency.js";
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
 
-  let { patients = [], countryMeta = null } = $props<{
+  let {
+    patients = [],
+    countryMeta = null,
+  }: {
     patients: Patient[];
     countryMeta?: CountryConfig | null;
-  }>();
+  } = $props();
 
   let payments = $state<Payment[]>([]);
   let claims = $state<Claim[]>([]);

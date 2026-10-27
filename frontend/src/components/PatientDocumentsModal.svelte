@@ -4,10 +4,13 @@
   import DocumentsSection from "../views/clinic/DocumentsSection.svelte";
   import { m } from "../paraglide/messages.js";
 
-  let { showModal = $bindable(false), patient } = $props<{
+  let {
+    showModal = $bindable(false),
+    patient,
+  }: {
     showModal: boolean;
     patient: Patient;
-  }>();
+  } = $props();
 
   let triggerUpload = $state<() => void>();
 </script>

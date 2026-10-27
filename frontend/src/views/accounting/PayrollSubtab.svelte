@@ -9,9 +9,11 @@
   import { providerRoleLabel } from "$lib/labels.js";
   import TimecardsModal from "./TimecardsModal.svelte";
 
-  let { providers = [] } = $props<{
+  let {
+    providers = [],
+  }: {
     providers: Provider[];
-  }>();
+  } = $props();
 
   let totalOwed = $state<Record<string, number | undefined>>({});
   let providerGen: Record<string, number> = {};

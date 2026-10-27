@@ -6,11 +6,15 @@
   import FormField from "./ui/FormField.svelte";
   import Input from "./ui/Input.svelte";
 
-  let { onback, oncomplete, onalreadyinitialized } = $props<{
+  let {
+    onback,
+    oncomplete,
+    onalreadyinitialized,
+  }: {
     onback?: () => void;
     oncomplete: () => void;
     onalreadyinitialized: () => void;
-  }>();
+  } = $props();
 
   let name = $state("");
   let role = $state("dentist");

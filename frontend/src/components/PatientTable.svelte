@@ -14,7 +14,7 @@
     oneditpatient,
     onarchivepatient,
     onselectpatient,
-  } = $props<{
+  }: {
     patients: Patient[];
     loading: boolean;
     statusFilter: string;
@@ -24,7 +24,7 @@
     oneditpatient: (p: Patient) => void;
     onarchivepatient: (p: Patient) => void;
     onselectpatient?: (p: Patient) => void;
-  }>();
+  } = $props();
 </script>
 
 <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-800">

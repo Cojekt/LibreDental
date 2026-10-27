@@ -4,12 +4,12 @@
     label = "",
     size = "md",
     customClass = "",
-  } = $props<{
+  }: {
     variant?: string;
     label?: string;
     size?: "sm" | "md" | "lg";
     customClass?: string;
-  }>();
+  } = $props();
 
   const variantStyles: Record<string, string> = {
     // Appointment Statuses

@@ -14,11 +14,11 @@
     showModal = $bindable(false),
     theme = $bindable("system"),
     onchangetheme,
-  } = $props<{
+  }: {
     showModal: boolean;
     theme: ThemeMode;
     onchangetheme: (newTheme: ThemeMode) => void;
-  }>();
+  } = $props();
 
   let dataDir = $state("");
   let dataDirError = $state(false);

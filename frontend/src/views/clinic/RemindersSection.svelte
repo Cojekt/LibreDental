@@ -20,11 +20,11 @@
     canEdit = false,
     practiceConfig = null,
     onopenprofile,
-  } = $props<{
+  }: {
     canEdit: boolean;
     practiceConfig: PracticeConfig | null;
     onopenprofile?: () => void;
-  }>();
+  } = $props();
 
   const TWO_DAYS = 2 * 24 * 60;
   const TWO_HOURS = 2 * 60;

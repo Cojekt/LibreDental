@@ -14,7 +14,7 @@
     oncomplete,
     onprovidercreated,
     onalreadyinitialized,
-  } = $props<{
+  }: {
     showOnboarding: boolean;
     step: 1 | 2;
     supportedCountries: CountryConfig[];
@@ -22,7 +22,7 @@
     oncomplete: (countryCode: string) => Promise<void>;
     onprovidercreated: () => void;
     onalreadyinitialized: () => void;
-  }>();
+  } = $props();
 
   const totalSteps = 2;
 

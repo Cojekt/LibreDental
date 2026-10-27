@@ -5,9 +5,11 @@
   import type { Patient, AuditLogEntry } from "@bindings/domain/index.js";
   import { auth } from "../stores/auth.svelte.js";
 
-  let { patients = [] } = $props<{
+  let {
+    patients = [],
+  }: {
     patients: Patient[];
-  }>();
+  } = $props();
 
   let logs = $state<AuditLogEntry[]>([]);
   let loading = $state(true);

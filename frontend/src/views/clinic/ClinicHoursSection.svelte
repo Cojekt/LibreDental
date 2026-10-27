@@ -11,7 +11,7 @@
     addBreak,
     removeBreak,
     syncDayBounds,
-  } = $props<{
+  }: {
     businessHours: BusinessHourDay[];
     isEditingProfile: boolean;
     formatTime12: (time24: string) => string;
@@ -20,7 +20,7 @@
     addBreak: (hour: BusinessHourDay) => void;
     removeBreak: (hour: BusinessHourDay, index: number) => void;
     syncDayBounds: (hour: BusinessHourDay) => void;
-  }>();
+  } = $props();
 </script>
 
 <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-6 space-y-6">

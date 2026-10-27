@@ -17,10 +17,13 @@
   import { formatCurrency } from "$lib/currency.js";
   import { auth } from "../../stores/auth.svelte.js";
 
-  let { providers = [], countryMeta = null } = $props<{
+  let {
+    providers = [],
+    countryMeta = null,
+  }: {
     providers: Provider[];
     countryMeta?: CountryConfig | null;
-  }>();
+  } = $props();
 
   let procedureCodes = $state<ProcedureCode[]>([]);
   let feeSchedules = $state<FeeSchedule[]>([]);

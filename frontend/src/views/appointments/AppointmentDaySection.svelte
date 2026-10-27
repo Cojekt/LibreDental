@@ -26,7 +26,7 @@
     completeLabel = m.appts_action_complete(),
     cancelLabel = m.appts_action_cancel(),
     noShowLabel = m.appts_action_no_show(),
-  } = $props<{
+  }: {
     selectedDate: string;
     timeSlots: string[];
     workingIntervals?: [number, number][] | null;
@@ -48,7 +48,7 @@
     completeLabel?: string;
     cancelLabel?: string;
     noShowLabel?: string;
-  }>();
+  } = $props();
 
   const PX_PER_MIN = 1.6; // 96px per hour
   const ROW_H = PX_PER_MIN * 60;

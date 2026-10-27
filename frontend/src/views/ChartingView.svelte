@@ -22,10 +22,13 @@
   import { calculateAge, formatDateOnly } from "$lib/date.js";
   import ConfirmModal from "../components/ui/ConfirmModal.svelte";
 
-  let { patients = [], countryMeta = null } = $props<{
+  let {
+    patients = [],
+    countryMeta = null,
+  }: {
     patients: Patient[];
     countryMeta?: CountryConfig | null;
-  }>();
+  } = $props();
 
   import PricingPicker from "../components/PricingPicker.svelte";
   import type { PricingSource } from "@bindings/domain/models.js";

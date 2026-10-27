@@ -7,7 +7,7 @@
   import { auth } from "../../stores/auth.svelte.js";
   import { handleError } from "$lib/error.js";
 
-  let { canEdit = false } = $props<{ canEdit: boolean }>();
+  let { canEdit = false }: { canEdit: boolean } = $props();
 
   // Names must match DefaultProgramBridges in bridge_command_line.go; unknown names show as-is.
   const bridgeLabels: Record<string, () => string> = {

@@ -24,7 +24,7 @@
     handleDeleteCondition,
     handleGenerateClaimFromChart,
     formatCurrency,
-  } = $props<{
+  }: {
     selectedPatient: Patient;
     currentChart: DentalChart | null;
     countryMeta?: CountryConfig | null;
@@ -37,7 +37,7 @@
     handleDeleteCondition: (id: string) => void;
     handleGenerateClaimFromChart: () => void;
     formatCurrency: (amount: number) => string;
-  }>();
+  } = $props();
 </script>
 
 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-4">

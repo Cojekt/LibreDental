@@ -31,7 +31,7 @@
     operatories = $bindable([]),
     onrefresh,
     onrequestlogin,
-  } = $props<{
+  }: {
     practiceConfig: PracticeConfig | null;
     countryMeta?: CountryConfig | null;
     supportedCountries?: CountryConfig[];
@@ -39,7 +39,7 @@
     operatories: Operatory[];
     onrefresh: () => Promise<void>;
     onrequestlogin: () => void;
-  }>();
+  } = $props();
 
   // Anyone can view clinic setup, but changes require a signed-in provider so they're audited.
   let canEdit = $derived(!!auth.token);

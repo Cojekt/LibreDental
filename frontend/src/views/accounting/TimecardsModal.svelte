@@ -15,12 +15,12 @@
     providerId = "",
     providerName = "",
     onrefresh,
-  } = $props<{
+  }: {
     showModal: boolean;
     providerId: string;
     providerName: string;
     onrefresh: () => Promise<void>;
-  }>();
+  } = $props();
 
   let timecards = $state<Timecard[]>([]);
   let loading = $state(false);

@@ -19,7 +19,7 @@
     manualFee = 0,
     preferManual = false,
     onconfirm,
-  } = $props<{
+  }: {
     showModal?: boolean;
     contextID?: string;
     patientID: string;
@@ -31,7 +31,7 @@
     manualFee?: number;
     preferManual?: boolean;
     onconfirm: (source: PricingSource) => Promise<boolean | void>;
-  }>();
+  } = $props();
   let source = $state<PricingSource | null>(null),
     reference = $state<PricingSource | null>(null);
   let selectedProvider = $state(""),

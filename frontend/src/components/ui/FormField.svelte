@@ -10,7 +10,7 @@
     helpText,
     labelClass = "text-slate-300",
     children,
-  } = $props<{
+  }: {
     label?: string;
     forId?: string;
     required?: boolean;
@@ -18,7 +18,7 @@
     helpText?: string;
     labelClass?: string;
     children?: Snippet;
-  }>();
+  } = $props();
 </script>
 
 <div class="flex flex-col gap-1.5 w-full">

@@ -57,7 +57,7 @@
     configuredProviders = [],
     errorMsg = "",
     onsave,
-  } = $props<{
+  }: {
     showPatientModal: boolean;
     isEditing: boolean;
     firstName: string;
@@ -104,7 +104,7 @@
     configuredProviders?: Provider[];
     errorMsg?: string;
     onsave: (e: Event) => void;
-  }>();
+  } = $props();
 
   const idLabel = $derived.by(() => {
     getLocaleVersion();

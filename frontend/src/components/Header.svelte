@@ -9,13 +9,13 @@
     onnewappointment,
     onopensettings,
     onopenstafflogin,
-  } = $props<{
+  }: {
     activeTab: string;
     onnewpatient: () => void;
     onnewappointment: () => void;
     onopensettings: () => void;
     onopenstafflogin: () => void;
-  }>();
+  } = $props();
 
   import { auth } from "../stores/auth.svelte.js";
 

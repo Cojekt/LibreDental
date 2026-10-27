@@ -19,7 +19,7 @@
     opRoomCode = $bindable(""),
     opType = $bindable("general"),
     opIsActive = $bindable(true),
-  } = $props<{
+  }: {
     operatories: Operatory[];
     canEdit: boolean;
     openAddOperatoryModal: () => void;
@@ -32,7 +32,7 @@
     opRoomCode: string;
     opType: string;
     opIsActive: boolean;
-  }>();
+  } = $props();
 
   let searchQuery = $state("");
   let statusFilter = $state("all"); // 'all', 'active', 'inactive'

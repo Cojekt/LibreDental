@@ -8,14 +8,14 @@
     badgeText = "",
     badgeCount = undefined,
     children,
-  } = $props<{
+  }: {
     title: string;
     subtitle?: string;
     icon?: string;
     badgeText?: string;
     badgeCount?: number | string;
     children?: Snippet;
-  }>();
+  } = $props();
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">

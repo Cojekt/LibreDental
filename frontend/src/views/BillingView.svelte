@@ -13,11 +13,11 @@
     patients = [],
     providers = [],
     countryMeta = null,
-  } = $props<{
+  }: {
     patients: Patient[];
     providers: Provider[];
     countryMeta?: CountryConfig | null;
-  }>();
+  } = $props();
 
   let billingTab = $state<"claims" | "payments" | "bundles" | "fees" | "insurance">("claims");
 

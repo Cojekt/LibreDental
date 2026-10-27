@@ -11,7 +11,7 @@
     formatTime,
     getPatientName,
     getStatusColor,
-  } = $props<{
+  }: {
     monthGrid: {
       dateStr: string;
       dayNum: number;
@@ -26,7 +26,7 @@
     formatTime: (isoStr: string) => string;
     getPatientName: (id: string) => string;
     getStatusColor: (status: string) => string;
-  }>();
+  } = $props();
 </script>
 
 <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">

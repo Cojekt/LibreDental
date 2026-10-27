@@ -12,13 +12,13 @@
     oneditpatient,
     onarchivepatient,
     onclearselection,
-  } = $props<{
+  }: {
     patient: Patient | null;
     countryMeta?: CountryConfig | null;
     oneditpatient?: (p: Patient) => void;
     onarchivepatient?: (p: Patient) => void;
     onclearselection?: () => void;
-  }>();
+  } = $props();
 
   let showSSN = $state(false);
   let showDocuments = $state(false);
