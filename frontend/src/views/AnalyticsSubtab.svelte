@@ -7,9 +7,11 @@
   import { formatCurrency } from "$lib/currency.js";
   import { paymentMethodLabel } from "$lib/labels.js";
 
-  let { countryMeta = null } = $props<{
+  let {
+    countryMeta = null,
+  }: {
     countryMeta?: CountryConfig | null;
-  }>();
+  } = $props();
 
   let payments = $state<Payment[]>([]);
   let loading = $state(false);

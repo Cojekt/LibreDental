@@ -16,7 +16,7 @@
     onaddpatient,
     oneditpatient,
     onarchivepatient,
-  } = $props<{
+  }: {
     patients: Patient[];
     loading: boolean;
     searchQuery: string;
@@ -26,7 +26,7 @@
     onaddpatient: () => void;
     oneditpatient: (p: Patient) => void;
     onarchivepatient: (p: Patient) => void;
-  }>();
+  } = $props();
 
   let selectedPatient = $state<Patient | null>(null);
 

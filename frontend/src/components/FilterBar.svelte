@@ -6,11 +6,11 @@
     searchQuery = $bindable(),
     statusFilter = $bindable(),
     onloadpatients,
-  } = $props<{
+  }: {
     searchQuery: string;
     statusFilter: string;
     onloadpatients: () => void;
-  }>();
+  } = $props();
 
   const searchPlaceholder = $derived.by(() => {
     getLocaleVersion();

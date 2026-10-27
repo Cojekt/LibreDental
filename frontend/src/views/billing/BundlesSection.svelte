@@ -16,9 +16,11 @@
   import { auth } from "../../stores/auth.svelte.js";
   import { handleError } from "$lib/error.js";
 
-  let { countryMeta = null } = $props<{
+  let {
+    countryMeta = null,
+  }: {
     countryMeta?: CountryConfig | null;
-  }>();
+  } = $props();
 
   let bundles = $state<TreatmentBundle[]>([]);
   let loadingBundles = $state(false);

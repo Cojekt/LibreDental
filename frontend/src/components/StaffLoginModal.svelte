@@ -11,11 +11,11 @@
     showModal = $bindable(false),
     providers = [],
     onlogout,
-  } = $props<{
+  }: {
     showModal: boolean;
     providers: Provider[];
     onlogout?: () => void;
-  }>();
+  } = $props();
 
   let selectedProvider = $state<Provider | null>(null);
   let pinInput = $state("");

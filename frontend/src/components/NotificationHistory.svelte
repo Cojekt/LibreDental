@@ -8,10 +8,13 @@
   import { getLocaleVersion } from "$lib/locale.svelte.js";
 
   // Shows messages sent to a patient, or for one appointment. Pass exactly one of the two.
-  let { patientId = "", appointmentId = "" } = $props<{
+  let {
+    patientId = "",
+    appointmentId = "",
+  }: {
     patientId?: string;
     appointmentId?: string;
-  }>();
+  } = $props();
 
   let entries = $state<NotificationLog[]>([]);
   let loading = $state(false);

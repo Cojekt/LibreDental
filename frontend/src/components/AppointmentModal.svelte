@@ -28,7 +28,7 @@
     appointmentId = "",
     onsave,
     ondelete,
-  } = $props<{
+  }: {
     showModal: boolean;
     isEditing: boolean;
     patients: Patient[];
@@ -47,7 +47,7 @@
     appointmentId?: string;
     onsave: (e: Event) => void;
     ondelete?: () => void;
-  }>();
+  } = $props();
 
   const statuses = $derived([
     { id: "scheduled", label: m.appts_status_scheduled() },

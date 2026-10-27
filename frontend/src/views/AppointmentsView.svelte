@@ -30,7 +30,7 @@
     oneditappointment,
     onupdatestatus,
     ondeleteappointment,
-  } = $props<{
+  }: {
     appointments: Appointment[];
     patients: Patient[];
     providers?: Provider[];
@@ -44,7 +44,7 @@
     oneditappointment: (appt: Appointment) => void;
     onupdatestatus: (id: string, status: string) => void;
     ondeleteappointment: (id: string) => void;
-  }>();
+  } = $props();
 
   let calendarView = $state<"day" | "week" | "month">("day");
 

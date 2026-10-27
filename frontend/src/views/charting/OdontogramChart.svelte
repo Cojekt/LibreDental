@@ -19,7 +19,7 @@
     getToothPrimaryStatus,
     getToothLabel,
     openAddConditionForTooth,
-  } = $props<{
+  }: {
     dentitionType: "adult" | "primary";
     currentToothSystem: ToothSystem;
     loadingChart: boolean;
@@ -35,7 +35,7 @@
     getToothPrimaryStatus: (num: number) => string | null;
     getToothLabel: (num: number, system: ToothSystem) => string;
     openAddConditionForTooth: (num: number) => void;
-  }>();
+  } = $props();
 
   function getSurfaceFill(conds: ToothCondition[], s1: ToothSurface, s2?: ToothSurface) {
     const match = conds.find(

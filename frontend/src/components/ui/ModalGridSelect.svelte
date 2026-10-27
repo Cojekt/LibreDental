@@ -14,7 +14,7 @@
     buttonClass = "",
     hideChevron = false,
     id,
-  } = $props<{
+  }: {
     value: T | undefined;
     options: any[];
     placeholder?: string;
@@ -24,7 +24,7 @@
     buttonClass?: string;
     hideChevron?: boolean;
     id?: string;
-  }>();
+  } = $props();
 
   let showModal = $state(false);
 

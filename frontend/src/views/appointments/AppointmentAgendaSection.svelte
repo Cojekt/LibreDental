@@ -15,7 +15,7 @@
     onupdatestatus,
     oneditappointment,
     ondeleteappointment,
-  } = $props<{
+  }: {
     filteredAppointments: Appointment[];
     jumpToDateFromAgenda: (isoStr: string) => void;
     formatApptDate: (isoStr: string) => string;
@@ -26,7 +26,7 @@
     onupdatestatus: (id: string, status: string) => void;
     oneditappointment: (appt: Appointment) => void;
     ondeleteappointment: (id: string) => void;
-  }>();
+  } = $props();
 </script>
 
 <div class="rounded-xl border border-slate-700/80 bg-slate-900/80 shadow-md overflow-hidden">

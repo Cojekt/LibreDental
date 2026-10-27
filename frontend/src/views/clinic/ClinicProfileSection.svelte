@@ -26,7 +26,7 @@
     toothSystem = $bindable(""),
     dateFormat = $bindable(""),
     timezone = $bindable(""),
-  } = $props<{
+  }: {
     practiceConfig: PracticeConfig | null;
     countryMeta?: CountryConfig | null;
     isEditingProfile: boolean;
@@ -47,7 +47,7 @@
     toothSystem: string;
     dateFormat: string;
     timezone: string;
-  }>();
+  } = $props();
 
   const computerTimezone = getComputerTimezone();
   const zones = $derived(timezoneOptions(countryCode, timezone, computerTimezone));

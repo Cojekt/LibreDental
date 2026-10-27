@@ -29,11 +29,11 @@
     patients = [],
     providers = [],
     countryMeta = null,
-  } = $props<{
+  }: {
     patients: Patient[];
     providers: Provider[];
     countryMeta?: CountryConfig | null;
-  }>();
+  } = $props();
 
   let bundleLineIDs = $state(new Set<string>());
   let pricingLine = $state(-1);

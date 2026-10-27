@@ -8,10 +8,13 @@
   import * as m from "../../paraglide/messages.js";
   import { handleError } from "../../lib/error.js";
 
-  let { showModal = $bindable(false), patientId = "" } = $props<{
+  let {
+    showModal = $bindable(false),
+    patientId = "",
+  }: {
     showModal: boolean;
     patientId: string;
-  }>();
+  } = $props();
 
   let documents = $state<Document[]>([]);
   let isLoading = $state(false);

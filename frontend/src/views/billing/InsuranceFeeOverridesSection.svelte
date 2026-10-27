@@ -15,7 +15,7 @@
     countryMeta = null,
     providerID = $bindable(""),
     code = "",
-  } = $props<{ countryMeta?: CountryConfig | null; providerID?: string; code?: string }>();
+  }: { countryMeta?: CountryConfig | null; providerID?: string; code?: string } = $props();
   let providers = $state<InsuranceProvider[]>([]),
     fees = $state<InsuranceFee[]>([]),
     procedures = $state<ProcedureCode[]>([]);

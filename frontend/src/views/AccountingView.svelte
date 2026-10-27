@@ -6,10 +6,13 @@
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "../lib/locale.svelte.js";
 
-  let { providers = [], countryMeta = null } = $props<{
+  let {
+    providers = [],
+    countryMeta = null,
+  }: {
     providers: Provider[];
     countryMeta?: CountryConfig | null;
-  }>();
+  } = $props();
 
   let activeSubtab = $state("payroll");
 

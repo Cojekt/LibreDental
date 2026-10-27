@@ -3,10 +3,13 @@
   import { getLocaleVersion } from "../lib/locale.svelte.js";
   import { auth } from "../stores/auth.svelte.js";
 
-  let { activeTab = $bindable("clinic"), ontabchange } = $props<{
+  let {
+    activeTab = $bindable("clinic"),
+    ontabchange,
+  }: {
     activeTab?: string;
     ontabchange: (tab: string) => void;
-  }>();
+  } = $props();
 
   // Tabs are derived so labels re-evaluate when localeVersion changes (locale switch),
   // and enabled state re-evaluates when auth.token changes.

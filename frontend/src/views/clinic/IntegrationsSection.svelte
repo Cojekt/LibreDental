@@ -6,7 +6,7 @@
   import { handleError } from "$lib/error.js";
   import ProgramBridgesPanel from "./ProgramBridgesPanel.svelte";
 
-  let { canEdit = false } = $props<{ canEdit: boolean }>();
+  let { canEdit = false }: { canEdit: boolean } = $props();
 
   // Generic list-providers / get-config / set-config panel state, parameterized by which
   // Wails service backs it (BillingService for claims clearinghouses, NotificationService

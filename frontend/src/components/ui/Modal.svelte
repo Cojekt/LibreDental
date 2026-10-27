@@ -29,7 +29,7 @@
     preventDismiss = false,
     children,
     footer,
-  } = $props<{
+  }: {
     showModal: boolean;
     title?: string;
     subtitle?: string;
@@ -38,7 +38,7 @@
     preventDismiss?: boolean;
     children?: Snippet;
     footer?: Snippet;
-  }>();
+  } = $props();
 
   const modalId = Symbol("modal");
   let dialogEl = $state<HTMLDivElement | null>(null);

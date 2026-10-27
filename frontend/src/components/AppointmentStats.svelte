@@ -3,10 +3,13 @@
   import { m } from "../paraglide/messages.js";
   import { getLocaleVersion } from "$lib/locale.svelte.js";
 
-  let { appointments = [], compact = false } = $props<{
+  let {
+    appointments = [],
+    compact = false,
+  }: {
     appointments: Appointment[];
     compact?: boolean;
-  }>();
+  } = $props();
 
   let scheduledCount = $derived(
     appointments.filter((a: Appointment) => a.status === "scheduled").length

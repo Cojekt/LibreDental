@@ -26,7 +26,7 @@
     handleSaveCondition,
     handleDeleteCondition,
     formatCurrency,
-  } = $props<{
+  }: {
     showConditionModal: boolean;
     errorMsg?: string;
     selectedToothNumber: number | null;
@@ -47,7 +47,7 @@
     handleSaveCondition: (e: Event) => void;
     handleDeleteCondition: (id: string) => void;
     formatCurrency: (amount: number) => string;
-  }>();
+  } = $props();
 
   const surfaceOptions = $derived.by(() => {
     getLocaleVersion();

@@ -14,7 +14,7 @@
     getProviderName,
     statusBadges,
     getStatusColor,
-  } = $props<{
+  }: {
     weekDays: {
       dateStr: string;
       label: string;
@@ -31,7 +31,7 @@
     getProviderName: (id: string) => string;
     statusBadges: Record<string, { label: string; bg: string; text: string; border: string }>;
     getStatusColor: (status: string) => string;
-  }>();
+  } = $props();
 </script>
 
 <div class="grid grid-cols-1 md:grid-cols-7 gap-3">

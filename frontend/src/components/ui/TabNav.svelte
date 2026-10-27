@@ -10,11 +10,11 @@
     tabs = [],
     activeTab = $bindable(""),
     onselect,
-  } = $props<{
+  }: {
     tabs: TabItem[];
     activeTab: string;
     onselect?: (id: string) => void;
-  }>();
+  } = $props();
 
   function selectTab(id: string) {
     activeTab = id;

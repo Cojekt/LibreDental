@@ -35,7 +35,7 @@
     provPin = $bindable(""),
     provIsActive = $bindable(true),
     provHourlyRate = $bindable(0.0),
-  } = $props<{
+  }: {
     providers: Provider[];
     canEdit: boolean;
     openAddProviderModal: () => void;
@@ -58,7 +58,7 @@
     provPin: string;
     provIsActive: boolean;
     provHourlyRate: number;
-  }>();
+  } = $props();
 
   let activeTimecards = $state<Record<string, Timecard | null | undefined>>({});
   let inFlightAction = $state<Record<string, "clockIn" | "clockOut" | null>>({});

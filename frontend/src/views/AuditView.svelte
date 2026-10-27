@@ -2,9 +2,11 @@
   import type { Patient } from "@bindings/domain/index.js";
   import AuditingSubtab from "./AuditingSubtab.svelte";
 
-  let { patients = [] } = $props<{
+  let {
+    patients = [],
+  }: {
     patients: Patient[];
-  }>();
+  } = $props();
 </script>
 
 <div class="flex h-full w-full flex-col gap-6">

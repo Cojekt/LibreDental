@@ -13,10 +13,13 @@
 
   // With a patientId this lists and uploads that patient's documents; without one it manages
   // clinic-wide documents.
-  let { openUploadModal = $bindable(), patientId = "" } = $props<{
+  let {
+    openUploadModal = $bindable(),
+    patientId = "",
+  }: {
     openUploadModal?: () => void;
     patientId?: string;
-  }>();
+  } = $props();
 
   let documents = $state<Document[]>([]);
   let isLoading = $state(true);

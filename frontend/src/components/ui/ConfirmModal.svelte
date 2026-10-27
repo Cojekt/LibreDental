@@ -13,7 +13,7 @@
     cancelText = undefined,
     onConfirm,
     children,
-  } = $props<{
+  }: {
     showModal: boolean;
     title?: string;
     message?: string;
@@ -21,7 +21,7 @@
     cancelText?: string;
     onConfirm: () => void | boolean | Promise<void | boolean>;
     children?: Snippet;
-  }>();
+  } = $props();
 
   // Defaults must re-derive when the language changes; a plain default
   // parameter is only evaluated once, when the component is first created.
