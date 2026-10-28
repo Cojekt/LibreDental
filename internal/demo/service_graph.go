@@ -15,6 +15,7 @@ type ServiceGraph struct {
 	Practice    *services.PracticeConfigService
 	Chart       *services.ChartService
 	Billing     *services.BillingService
+	Insurance   *services.InsuranceService
 	Document    *services.DocumentService
 	Audit       *services.AuditService
 }
@@ -45,6 +46,10 @@ func BuildServiceGraph(db *sqlite.DB, auditDb *sqlite.DB, appDir string) *Servic
 	secretsService := services.NewSecretsService()
 	billingService := services.NewBillingService(claimRepo, paymentRepo, bundleRepo, procedureRepo, procedureRepo, chartRepo, patientRepo, practiceConfigRepo, secretsService, auditService)
 
+	insuranceRepo := sqlite.NewInsuranceRepository(db)
+	services.AttachInsurancePricing(chartService, billingService, insuranceRepo)
+	insuranceService := services.NewInsuranceService(insuranceRepo, auditService)
+
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
@@ -54,6 +59,7 @@ func BuildServiceGraph(db *sqlite.DB, auditDb *sqlite.DB, appDir string) *Servic
 		Practice:    practiceConfigService,
 		Chart:       chartService,
 		Billing:     billingService,
+		Insurance:   insuranceService,
 		Document:    documentService,
 		Audit:       auditService,
 	}

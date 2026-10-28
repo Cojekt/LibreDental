@@ -1,6 +1,6 @@
 <script lang="ts">
   import { InsuranceService, AuditService } from "@bindings/services/index.js";
-  import type { CountryConfig, PricingSource } from "@bindings/domain/index.js";
+  import type { CountryConfig, PricingSource, Provider } from "@bindings/domain/index.js";
   import { auth } from "../stores/auth.svelte.js";
   import { m } from "../paraglide/messages.js";
   import { formatCurrency } from "$lib/currency.js";
@@ -15,7 +15,8 @@
     code,
     description,
     countryMeta = null,
-    clinicianID = "",
+    clinicianID = $bindable(""),
+    clinicians = [],
     manualFee = 0,
     preferManual = false,
     onconfirm,
@@ -28,6 +29,7 @@
     description: string;
     countryMeta?: CountryConfig | null;
     clinicianID?: string;
+    clinicians?: Provider[];
     manualFee?: number;
     preferManual?: boolean;
     onconfirm: (source: PricingSource) => Promise<boolean | void>;
@@ -91,6 +93,7 @@
     }
     const patient = patientID,
       procedure = code;
+    void clinicianID;
     void initialize(patient, procedure, contextID);
   });
   async function initialize(patient: string, procedure: string, context: string) {
@@ -157,6 +160,21 @@
   {:else}
     <div class="space-y-4">
       <p><strong>{patientName}</strong> · {code} — {description}</p>
+      {#if clinicians.length > 0}
+        <label class="flex items-center gap-3">
+          <span class="text-xs font-semibold text-slate-300">{m.insurance_clinician()}</span>
+          <select
+            bind:value={clinicianID}
+            disabled={busy}
+            class="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+          >
+            <option value="">{m.insurance_no_clinician()}</option>
+            {#each clinicians.filter((c) => c.is_active || c.id === clinicianID) as c}
+              <option value={c.id}>{c.name}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
       <p>
         {m.billing_th_base_fee()}:
         <strong

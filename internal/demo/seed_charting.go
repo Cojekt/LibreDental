@@ -6,7 +6,7 @@ import (
 	"github.com/LibreDental/libredental/internal/domain"
 )
 
-func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) error {
+func seedChartConditions(g *ServiceGraph, token string, plans demoPlans, summary *SeedSummary) error {
 	conditions := []*domain.SaveToothConditionPayload{
 		{
 			ID:          "cond_301",
@@ -16,7 +16,7 @@ func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) er
 			ADACode:     "D2392",
 			Description: "2-Surface Posterior Composite Restoration",
 			Status:      domain.ToothStatusCompleted,
-			Fee:         28000,
+			Fee:         29500,
 		},
 		{
 			ID:          "cond_302",
@@ -36,7 +36,7 @@ func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) er
 			ADACode:     "D2393",
 			Description: "3-Surface Posterior Composite",
 			Status:      domain.ToothStatusTreatmentPlanned,
-			Fee:         35000,
+			Fee:         23000,
 		},
 		{
 			ID:          "cond_304",
@@ -46,7 +46,7 @@ func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) er
 			ADACode:     "D7140",
 			Description: "Impacted Wisdom Tooth Extraction",
 			Status:      domain.ToothStatusCompleted,
-			Fee:         45000,
+			Fee:         17000,
 		},
 		{
 			ID:          "cond_305",
@@ -56,7 +56,7 @@ func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) er
 			ADACode:     "D3330",
 			Description: "Molar Endodontic Therapy (Root Canal)",
 			Status:      domain.ToothStatusTreatmentPlanned,
-			Fee:         120000,
+			Fee:         88000,
 		},
 		{
 			ID:          "cond_306",
@@ -66,7 +66,7 @@ func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) er
 			ADACode:     "D2740",
 			Description: "Porcelain/Ceramic Crown",
 			Status:      domain.ToothStatusTreatmentPlanned,
-			Fee:         135000,
+			Fee:         130000,
 		},
 		{
 			ID:          "cond_307",
@@ -126,11 +126,29 @@ func seedChartConditions(g *ServiceGraph, token string, summary *SeedSummary) er
 			ADACode:     "D1351",
 			Description: "Dental Sealant - Per Tooth",
 			Status:      domain.ToothStatusCompleted,
-			Fee:         6500,
+			Fee:         5500,
 		},
 	}
 
+	// Planned and completed treatments are billable, so each gets a confirmed price, covering
+	// every pricing source: clinician, practice-wide and catalog fees, insurance and manual.
+	prices := map[string]demoPrice{
+		"cond_301": {kind: "standard", clinician: "prov_101"},
+		"cond_303": {kind: "standard", clinician: "prov_101"},
+		"cond_304": {kind: "standard", clinician: "prov_101"},
+		"cond_305": {kind: "insurance", clinician: "prov_102", plan: "MetLife Dental"},
+		"cond_306": {kind: "standard", clinician: "prov_102"},
+		"cond_308": {kind: "manual", amount: 140000},
+		"cond_312": {kind: "standard", clinician: "prov_103"},
+	}
 	for _, cond := range conditions {
+		if price, ok := prices[cond.ID]; ok {
+			src, err := price.preview(g, token, plans, cond.PatientID, cond.ADACode)
+			if err != nil {
+				return err
+			}
+			cond.Fee, cond.Pricing = src.Amount, src
+		}
 		if _, err := g.Chart.SaveToothCondition(token, cond); err != nil {
 			return fmt.Errorf("failed to seed tooth condition %s: %w", cond.ID, err)
 		}

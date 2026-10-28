@@ -13,6 +13,7 @@ var (
 	ErrInsuranceUnavailable = errors.New("insurance provider or plan unavailable")
 	ErrInsuranceFeeMissing  = errors.New("plan has no configured procedure fee")
 	ErrPricingChanged       = errors.New("price changed; review and confirm again")
+	ErrPricingClinician     = errors.New("treatment was priced for a different clinician")
 	ErrNotFound             = errors.New("record not found")
 	ErrConflict             = errors.New("optimistic concurrency conflict: record has been updated by another user")
 	ErrInvalidInput         = errors.New("invalid input data")

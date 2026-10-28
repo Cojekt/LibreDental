@@ -923,5 +923,8 @@
   "insurance_no_base": "Procedure not in catalog; no original reference price is available.",
   "insurance_duplicate": "This name already exists. Select or restore the existing entry.",
   "insurance_price_changed": "The price changed. Review the current amount and confirm again.",
+  "insurance_pricing_clinician": "A treatment was priced with a different clinician's fee schedule than this claim's provider. Bill it on that clinician's claim or price it again.",
+  "insurance_clinician": "Clinician fee schedule",
+  "insurance_no_clinician": "Practice-wide fees",
   "insurance_invalid_fee": "Enter a valid nonnegative fee with no more than two decimal places."
 }

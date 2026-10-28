@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -179,5 +180,61 @@ func TestInsuranceServiceEndToEnd(t *testing.T) {
 		if !found {
 			t.Errorf("missing audit resource %s", resource)
 		}
+	}
+}
+
+func TestChartClaimProviderFollowsPricingClinician(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	db, err := sqlite.Open(filepath.Join(dir, "app.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	auditDB, err := sqlite.OpenAudit(filepath.Join(dir, "audit.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer auditDB.Close()
+	config := sqlite.NewPracticeConfigRepository(db)
+	for _, id := range []string{"dentist-a", "dentist-b"} {
+		if err := config.SaveProvider(ctx, &domain.Provider{ID: id, Name: id, Pin: "1234", IsActive: true}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	audit := NewAuditService(sqlite.NewAuditRepository(auditDB), config)
+	token, err := audit.CreateSession("dentist-a", "1234")
+	if err != nil {
+		t.Fatal(err)
+	}
+	patientRepo := sqlite.NewPatientRepository(db)
+	if err := patientRepo.Create(ctx, &domain.Patient{ID: "p", FirstName: "P", LastName: "Test"}); err != nil {
+		t.Fatal(err)
+	}
+	repo := sqlite.NewInsuranceRepository(db)
+	svc := NewInsuranceService(repo, audit)
+	chartRepo := sqlite.NewChartRepository(db)
+	chart := NewChartService(chartRepo, audit)
+	proc := sqlite.NewProcedureRepository(db)
+	billing := NewBillingService(sqlite.NewClaimRepository(db), sqlite.NewPaymentRepository(db), sqlite.NewBundleRepository(db), proc, proc, chartRepo, patientRepo, config, NewSecretsService(), audit)
+	AttachInsurancePricing(chart, billing, repo)
+	for i, clinician := range []string{"dentist-a", "", "dentist-b"} {
+		price, err := svc.Preview(token, &domain.PricingSource{Kind: "standard", PatientID: "p", CountryCode: domain.CountryUS, Code: "D2391", ClinicianID: clinician})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := chart.SaveToothCondition(token, &domain.SaveToothConditionPayload{ID: fmt.Sprintf("cond-%d", i), PatientID: "p", ToothNumber: 3 + i, ADACode: "D2391", Description: "Filling", Status: domain.ToothStatusTreatmentPlanned, Fee: price.Amount, Pricing: price}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := billing.CreateClaimFromChartConditions(token, "p", "", []string{"cond-0", "cond-2"}); !errors.Is(err, storage.ErrPricingClinician) {
+		t.Fatal("treatments priced for different clinicians combined on one claim", err)
+	}
+	claim, err := billing.CreateClaimFromChartConditions(token, "p", "", []string{"cond-0", "cond-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claim.ProviderID != "dentist-a" || len(claim.LineItems) != 2 {
+		t.Fatal("claim provider not taken from treatment pricing", claim.ProviderID, len(claim.LineItems))
 	}
 }

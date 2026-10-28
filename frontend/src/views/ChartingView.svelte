@@ -6,6 +6,7 @@
     SaveToothConditionPayload,
     CountryConfig,
     ProcedureCode,
+    Provider,
   } from "@bindings/domain/models.js";
   import { ToothSystem, ToothSurface, ToothStatus } from "@bindings/domain/models.js";
   import { ChartService, BillingService } from "@bindings/services/index.js";
@@ -24,15 +25,18 @@
 
   let {
     patients = [],
+    providers = [],
     countryMeta = null,
   }: {
     patients: Patient[];
+    providers?: Provider[];
     countryMeta?: CountryConfig | null;
   } = $props();
 
   import PricingPicker from "../components/PricingPicker.svelte";
   import type { PricingSource } from "@bindings/domain/models.js";
   let showPricing = $state(false);
+  let pricingClinicianID = $state("");
   let pendingConditionId = $state("");
   let savingCondition = $state(false);
   let conditionError = $state("");
@@ -245,7 +249,9 @@
       const msg = handleError(e, "");
       claimErrorMsg = msg.includes(CHART_NOTHING_TO_BILL)
         ? m.charting_billing_all_billed()
-        : m.charting_billing_err_claim();
+        : errorCode(e) === "pricing_clinician"
+          ? m.insurance_pricing_clinician()
+          : m.charting_billing_err_claim();
     } finally {
       isCreatingClaim = false;
     }
@@ -380,6 +386,7 @@
       }
       return;
     }
+    pricingClinicianID = old?.pricing?.clinician_id || "";
     showPricing = true;
   }
 
@@ -623,5 +630,7 @@
   description={formDescription}
   {countryMeta}
   manualFee={Math.round(Number(formFee) * 100)}
+  bind:clinicianID={pricingClinicianID}
+  clinicians={providers}
   onconfirm={saveConfirmedCondition}
 />
