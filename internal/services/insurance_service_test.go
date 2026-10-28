@@ -237,4 +237,12 @@ func TestChartClaimProviderFollowsPricingClinician(t *testing.T) {
 	if claim.ProviderID != "dentist-a" || len(claim.LineItems) != 2 {
 		t.Fatal("claim provider not taken from treatment pricing", claim.ProviderID, len(claim.LineItems))
 	}
+	// The signed-in user is dentist-a, so this distinguishes pricing from a session fallback.
+	claim, err = billing.CreateClaimFromChartConditions(token, "p", "", []string{"cond-2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claim.ProviderID != "dentist-b" {
+		t.Fatal("claim provider not taken from treatment pricing", claim.ProviderID)
+	}
 }

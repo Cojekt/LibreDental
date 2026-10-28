@@ -381,7 +381,9 @@ func (r *InsuranceRepository) ConfirmClaim(ctx context.Context, c *domain.Claim,
 		preserved := false
 		if old != nil {
 			for _, prev := range old.LineItems {
-				if prev.ID == li.ID && old.PatientID == c.PatientID && prev.ADACode == li.ADACode && prev.Fee == li.Fee && prev.ToothConditionID == li.ToothConditionID {
+				// A provider change must not keep a line priced on another clinician's fee schedule.
+				clinicianOK := prev.Pricing == nil || prev.Pricing.ClinicianID == "" || prev.Pricing.ClinicianID == c.ProviderID
+				if prev.ID == li.ID && old.PatientID == c.PatientID && prev.ADACode == li.ADACode && prev.Fee == li.Fee && prev.ToothConditionID == li.ToothConditionID && clinicianOK {
 					li.Pricing = prev.Pricing
 					preserved = true
 					break

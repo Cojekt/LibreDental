@@ -153,11 +153,13 @@ func TestSeedDatabase(t *testing.T) {
 		kind, clinician string
 		amount          int64
 	}{
-		"cond_301": {"standard", "prov_101", 29500},  // clinician fee schedule
-		"cond_303": {"standard", "prov_101", 23000},  // catalog fee
+		"cond_301": {"standard", "prov_101", 29500}, // clinician fee schedule
+		"cond_303": {"standard", "prov_101", 23000}, // catalog fee
+		"cond_304": {"standard", "prov_101", 17000},
 		"cond_305": {"insurance", "prov_102", 88000}, // MetLife plan fee
 		"cond_306": {"standard", "prov_102", 130000}, // practice-wide fee schedule
 		"cond_308": {"manual", "", 140000},
+		"cond_312": {"standard", "prov_103", 5500},
 	}
 	for id, want := range wantPricing {
 		c, err := chartRepo.GetConditionByID(ctx, id)

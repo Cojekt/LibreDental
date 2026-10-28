@@ -439,6 +439,14 @@ func TestInsurancePricingClinicians(t *testing.T) {
 	if err := link("same-clinician", "dentist-a", "priced-a"); err != nil {
 		t.Fatal(err)
 	}
+	moved, err := NewClaimRepository(f.db).GetByID(ctx, "same-clinician")
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved.ProviderID = "dentist-b"
+	if err := f.repo.ConfirmClaim(ctx, moved, true); !errors.Is(err, storage.ErrPricingClinician) {
+		t.Fatal("provider change kept a line priced for another clinician", err)
+	}
 	if err := link("practice-pricing", "dentist-b", "priced-none"); err != nil {
 		t.Fatal("practice-wide pricing should bill under any provider", err)
 	}
