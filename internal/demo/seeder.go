@@ -17,6 +17,8 @@ type SeedSummary struct {
 	AppointmentsCount  int
 	ConditionsCount    int
 	FeeSchedulesCount  int
+	InsurancePlans     int
+	InsuranceFees      int
 	BundlesCount       int
 	ClaimsCount        int
 	PaymentsCount      int
@@ -76,13 +78,17 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 		return nil, err
 	}
 
-	// 7. Dental Chart Conditions
-	if err := seedChartConditions(graph, token, summary); err != nil {
+	// 7. Custom Fee Schedules and insurance plan fees, before anything is priced
+	if err := seedFeeSchedules(graph, token, now, summary); err != nil {
+		return nil, err
+	}
+	plans, err := seedInsurancePlans(graph, token, summary)
+	if err != nil {
 		return nil, err
 	}
 
-	// 8. Custom Fee Schedules
-	if err := seedFeeSchedules(graph, token, now, summary); err != nil {
+	// 8. Dental Chart Conditions
+	if err := seedChartConditions(graph, token, plans, summary); err != nil {
 		return nil, err
 	}
 
@@ -92,7 +98,7 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 	}
 
 	// 10. Claims
-	if err := seedClaims(graph, token, now, summary); err != nil {
+	if err := seedClaims(graph, token, now, plans, summary); err != nil {
 		return nil, err
 	}
 

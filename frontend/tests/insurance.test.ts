@@ -108,7 +108,7 @@ it("displays a zero-dollar standard override without substituting the base price
 });
 it("opens the insurance tab beside Fee Schedules", async () => {
   render(BillingView, { patients: [], providers: [], countryMeta: meta });
-  await fireEvent.click(screen.getByRole("button", { name: "Insurance Fee Overrides" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Insurance Fees" }));
   await screen.findByText("Example Insurance");
 });
 it("searches by provider name and creates a missing provider", async () => {
@@ -157,7 +157,7 @@ it("renames and archives/restores an insurer without creating duplicates", async
 it("distinguishes missing from zero, saves zero and removes only the override", async () => {
   render(InsuranceSection, { countryMeta: meta });
   await fireEvent.click(await screen.findByRole("button", { name: "Example Insurance" }));
-  await screen.findByText("No configured fee");
+  await screen.findByPlaceholderText("No configured fee");
   expect(screen.getByText("$150.00")).toBeTruthy();
   await fireEvent.input(screen.getByRole("spinbutton", { name: "Fee for D2391" }), {
     target: { value: "0" },
@@ -170,7 +170,7 @@ it("distinguishes missing from zero, saves zero and removes only the override", 
     )
   );
   await screen.findByRole("button", { name: "Remove override" });
-  expect(screen.queryByText("No configured fee")).toBeNull();
+  expect(screen.queryByPlaceholderText("No configured fee")).toBeNull();
   await fireEvent.click(screen.getByRole("button", { name: "Remove override" }));
   await waitFor(() =>
     expect(api.deleteFee).toHaveBeenCalledWith("session", "insurer", "US", "D2391")
@@ -520,7 +520,7 @@ it("clears a stale claim error after successful renewed confirmation", async () 
 it("replaces logged-out insurance management with the existing sign-in message", async () => {
   testAuth.token = "";
   render(BillingView, { patients: [], providers: [], countryMeta: meta });
-  await fireEvent.click(screen.getByRole("button", { name: "Insurance Fee Overrides" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Insurance Fees" }));
   await screen.findByText("Sign in to make changes");
   expect(screen.queryByRole("button", { name: "Add provider" })).toBeNull();
   expect(screen.queryByRole("textbox", { name: "Insurance provider name" })).toBeNull();

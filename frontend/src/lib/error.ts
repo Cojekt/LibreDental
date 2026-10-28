@@ -9,6 +9,7 @@ const errorMessages: Record<string, () => string> = {
   insurance_unavailable: m.insurance_unavailable,
   insurance_missing_fee: m.insurance_missing_fee,
   pricing_changed: m.insurance_price_changed,
+  pricing_clinician: m.insurance_pricing_clinician,
   conflict: m.error_conflict,
   last_active_provider: m.error_last_active_provider,
   already_initialized: m.error_already_initialized,

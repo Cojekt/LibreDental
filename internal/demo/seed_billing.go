@@ -2,6 +2,7 @@ package demo
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/domain"
@@ -34,6 +35,74 @@ func seedFeeSchedules(g *ServiceGraph, token string, now time.Time, summary *See
 		summary.FeeSchedulesCount++
 	}
 	return nil
+}
+
+// demoPlans maps insurance plan names to their generated IDs.
+type demoPlans map[string]string
+
+func seedInsurancePlans(g *ServiceGraph, token string, summary *SeedSummary) (demoPlans, error) {
+	plans := []struct {
+		name     string
+		archived bool
+		fees     map[string]int64
+	}{
+		{"Delta Dental PPO", false, map[string]int64{"D0120": 5200, "D1110": 9800, "D2392": 24000}},
+		{"MetLife Dental", false, map[string]int64{"D3330": 88000, "D2740": 102000}},
+		{"Cigna Dental Health", false, map[string]int64{"D0120": 5500, "D1110": 9500}},
+		{"Legacy Dental Network", true, map[string]int64{"D0120": 4800}},
+	}
+	ids := demoPlans{}
+	for _, plan := range plans {
+		p, err := g.Insurance.SaveProvider(token, &domain.InsuranceProvider{Name: plan.name})
+		if err != nil {
+			return nil, fmt.Errorf("failed to seed insurance plan %s: %w", plan.name, err)
+		}
+		ids[plan.name] = p.ID
+		summary.InsurancePlans++
+		codes := make([]string, 0, len(plan.fees))
+		for code := range plan.fees {
+			codes = append(codes, code)
+		}
+		sort.Strings(codes)
+		for _, code := range codes {
+			if err := g.Insurance.SaveFee(token, &domain.InsuranceFee{ProviderID: p.ID, CountryCode: domain.CountryUS, Code: code, Fee: plan.fees[code]}); err != nil {
+				return nil, fmt.Errorf("failed to seed %s fee for %s: %w", plan.name, code, err)
+			}
+			summary.InsuranceFees++
+		}
+		if plan.archived {
+			p.Archived = true
+			if _, err := g.Insurance.SaveProvider(token, p); err != nil {
+				return nil, fmt.Errorf("failed to archive insurance plan %s: %w", plan.name, err)
+			}
+		}
+	}
+	return ids, nil
+}
+
+// demoPrice selects a pricing source the way the pricing review does in the app.
+// plan is an insurance plan name for kind "insurance"; amount is used for kind "manual".
+type demoPrice struct {
+	kind      string
+	clinician string
+	plan      string
+	amount    int64
+}
+
+func (p demoPrice) preview(g *ServiceGraph, token string, plans demoPlans, patient, code string) (*domain.PricingSource, error) {
+	src, err := g.Insurance.Preview(token, &domain.PricingSource{
+		Kind:        p.kind,
+		PatientID:   patient,
+		CountryCode: domain.CountryUS,
+		Code:        code,
+		ClinicianID: p.clinician,
+		ProviderID:  plans[p.plan],
+		Amount:      p.amount,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to price %s for %s: %w", code, patient, err)
+	}
+	return src, nil
 }
 
 func seedBundles(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
@@ -76,7 +145,7 @@ func seedBundles(g *ServiceGraph, token string, now time.Time, summary *SeedSumm
 	return nil
 }
 
-func seedClaims(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
+func seedClaims(g *ServiceGraph, token string, now time.Time, plans demoPlans, summary *SeedSummary) error {
 	claims := []*domain.Claim{
 		{
 			ID:               "claim_401",
@@ -97,9 +166,9 @@ func seedClaims(g *ServiceGraph, token string, now time.Time, summary *SeedSumma
 					Surfaces:         []domain.ToothSurface{domain.SurfaceMesial, domain.SurfaceOcclusal},
 					ADACode:          "D2392",
 					Description:      "2-Surface Posterior Composite Restoration",
-					Fee:              28000,
-					InsuranceAllowed: 22400,
-					PatientPortion:   5600,
+					Fee:              29500,
+					InsuranceAllowed: 23600,
+					PatientPortion:   5900,
 				},
 			},
 			CreatedAt: now,
@@ -124,9 +193,9 @@ func seedClaims(g *ServiceGraph, token string, now time.Time, summary *SeedSumma
 					Surfaces:         []domain.ToothSurface{domain.SurfaceOcclusal},
 					ADACode:          "D3330",
 					Description:      "Molar Endodontic Therapy (Root Canal)",
-					Fee:              120000,
-					InsuranceAllowed: 96000,
-					PatientPortion:   24000,
+					Fee:              88000,
+					InsuranceAllowed: 70400,
+					PatientPortion:   17600,
 				},
 				{
 					ID:               "li_3",
@@ -135,9 +204,9 @@ func seedClaims(g *ServiceGraph, token string, now time.Time, summary *SeedSumma
 					Surfaces:         []domain.ToothSurface{},
 					ADACode:          "D2740",
 					Description:      "Porcelain/Ceramic Crown",
-					Fee:              135000,
-					InsuranceAllowed: 108000,
-					PatientPortion:   27000,
+					Fee:              130000,
+					InsuranceAllowed: 104000,
+					PatientPortion:   26000,
 				},
 			},
 			CreatedAt: now,
@@ -162,8 +231,8 @@ func seedClaims(g *ServiceGraph, token string, now time.Time, summary *SeedSumma
 					Surfaces:         []domain.ToothSurface{},
 					ADACode:          "D0120",
 					Description:      "Periodic Oral Evaluation",
-					Fee:              11000,
-					InsuranceAllowed: 11000,
+					Fee:              5500,
+					InsuranceAllowed: 5500,
 					PatientPortion:   0,
 				},
 				{
@@ -173,8 +242,8 @@ func seedClaims(g *ServiceGraph, token string, now time.Time, summary *SeedSumma
 					Surfaces:         []domain.ToothSurface{},
 					ADACode:          "D1110",
 					Description:      "Prophylaxis - Adult",
-					Fee:              14000,
-					InsuranceAllowed: 14000,
+					Fee:              9500,
+					InsuranceAllowed: 9500,
 					PatientPortion:   0,
 				},
 			},
@@ -183,7 +252,24 @@ func seedClaims(g *ServiceGraph, token string, now time.Time, summary *SeedSumma
 		},
 	}
 
+	// Lines linked to a charted treatment copy its saved pricing; the rest need a review.
+	direct := map[string]demoPrice{
+		"li_4": {kind: "insurance", clinician: "prov_101", plan: "Cigna Dental Health"},
+		"li_5": {kind: "insurance", clinician: "prov_101", plan: "Cigna Dental Health"},
+	}
 	for _, c := range claims {
+		for i := range c.LineItems {
+			li := &c.LineItems[i]
+			price, ok := direct[li.ID]
+			if !ok {
+				continue
+			}
+			src, err := price.preview(g, token, plans, c.PatientID, li.ADACode)
+			if err != nil {
+				return err
+			}
+			li.Pricing = src
+		}
 		if _, err := g.Billing.CreateClaim(token, c); err != nil {
 			return fmt.Errorf("failed to seed claim %s: %w", c.ID, err)
 		}
@@ -198,7 +284,7 @@ func seedPayments(g *ServiceGraph, token string, now time.Time, summary *SeedSum
 			ID:        "pay_501",
 			PatientID: "pat_101",
 			ClaimID:   "claim_401",
-			Amount:    5600,
+			Amount:    5900,
 			Method:    domain.PaymentMethodCreditCard,
 			Date:      "2026-06-14",
 			Notes:     "Patient 20% co-payment for D2392",
@@ -208,7 +294,7 @@ func seedPayments(g *ServiceGraph, token string, now time.Time, summary *SeedSum
 			ID:        "pay_502",
 			PatientID: "pat_101",
 			ClaimID:   "claim_401",
-			Amount:    22400,
+			Amount:    23600,
 			Method:    domain.PaymentMethodInsurance,
 			Date:      "2026-06-15",
 			Notes:     "Delta Dental insurance claim payment EOB #99482",

@@ -144,6 +144,52 @@ func TestSeedDatabase(t *testing.T) {
 		t.Errorf("Expected 2 conditions for pat_101, got %d", len(chart.Conditions))
 	}
 
+	if summary.InsurancePlans != 4 || summary.InsuranceFees != 8 {
+		t.Errorf("Expected 4 insurance plans with 8 fees, got %d plans, %d fees", summary.InsurancePlans, summary.InsuranceFees)
+	}
+
+	// Every billable treatment carries a confirmed pricing stamp matching its saved fee.
+	wantPricing := map[string]struct {
+		kind, clinician string
+		amount          int64
+	}{
+		"cond_301": {"standard", "prov_101", 29500}, // clinician fee schedule
+		"cond_303": {"standard", "prov_101", 23000}, // catalog fee
+		"cond_304": {"standard", "prov_101", 17000},
+		"cond_305": {"insurance", "prov_102", 88000}, // MetLife plan fee
+		"cond_306": {"standard", "prov_102", 130000}, // practice-wide fee schedule
+		"cond_308": {"manual", "", 140000},
+		"cond_312": {"standard", "prov_103", 5500},
+	}
+	for id, want := range wantPricing {
+		c, err := chartRepo.GetConditionByID(ctx, id)
+		if err != nil {
+			t.Fatalf("Failed to get condition %s: %v", id, err)
+		}
+		p := c.Pricing
+		if p == nil || p.ConfirmedAt.IsZero() || p.Kind != want.kind || p.ClinicianID != want.clinician || p.Amount != want.amount || c.Fee != want.amount {
+			t.Errorf("Condition %s: fee %d, pricing %+v; want %+v", id, c.Fee, p, want)
+		}
+	}
+	for _, id := range []string{"cond_302", "cond_307"} {
+		if c, err := chartRepo.GetConditionByID(ctx, id); err != nil || c.Pricing != nil {
+			t.Errorf("Expected non-billable condition %s to have no pricing (err %v)", id, err)
+		}
+	}
+
+	claimRepo := sqlite.NewClaimRepository(db)
+	for _, id := range []string{"claim_401", "claim_402", "claim_403"} {
+		claim, err := claimRepo.GetByID(ctx, id)
+		if err != nil {
+			t.Fatalf("Failed to get claim %s: %v", id, err)
+		}
+		for _, li := range claim.LineItems {
+			if li.Pricing == nil || li.Pricing.Amount != li.Fee || li.Pricing.ClinicianID != claim.ProviderID {
+				t.Errorf("Claim %s line %s: fee %d, pricing %+v", id, li.ID, li.Fee, li.Pricing)
+			}
+		}
+	}
+
 	// Verify documents
 	docRepo := sqlite.NewDocumentRepository(db)
 	clinicDocs, err := docRepo.ListClinicDocuments()

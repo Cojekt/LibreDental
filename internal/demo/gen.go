@@ -85,6 +85,8 @@ func run(outputPath string) error {
 	fmt.Printf("   • Appointments        : %d\n", summary.AppointmentsCount)
 	fmt.Printf("   • Dental Chart Records: %d\n", summary.ConditionsCount)
 	fmt.Printf("   • Fee Schedule Rates  : %d\n", summary.FeeSchedulesCount)
+	fmt.Printf("   • Insurance Plans     : %d\n", summary.InsurancePlans)
+	fmt.Printf("   • Insurance Plan Fees : %d\n", summary.InsuranceFees)
 	fmt.Printf("   • Treatment Bundles   : %d\n", summary.BundlesCount)
 	fmt.Printf("   • Insurance Claims    : %d\n", summary.ClaimsCount)
 	fmt.Printf("   • Patient Payments    : %d\n", summary.PaymentsCount)

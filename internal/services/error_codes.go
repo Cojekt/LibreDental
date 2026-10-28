@@ -24,6 +24,7 @@ var errorCodes = []struct {
 	{storage.ErrInsuranceUnavailable, "insurance_unavailable"},
 	{storage.ErrInsuranceFeeMissing, "insurance_missing_fee"},
 	{storage.ErrPricingChanged, "pricing_changed"},
+	{storage.ErrPricingClinician, "pricing_clinician"},
 	{storage.ErrConflict, "conflict"},
 	{storage.ErrLastActiveProvider, "last_active_provider"},
 	{storage.ErrAlreadyInitialized, "already_initialized"},

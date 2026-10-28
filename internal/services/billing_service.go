@@ -837,6 +837,18 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 	if len(claim.LineItems) == 0 {
 		return nil, ErrNothingToBill
 	}
+	// A claim has one provider, so treatments priced on clinician fee schedules must agree.
+	if claim.ProviderID == "" {
+		for _, li := range claim.LineItems {
+			if li.Pricing == nil || li.Pricing.ClinicianID == "" || li.Pricing.ClinicianID == claim.ProviderID {
+				continue
+			}
+			if claim.ProviderID != "" {
+				return nil, fmt.Errorf("failed to create claim from chart: %w: %w", storage.ErrInvalidInput, storage.ErrPricingClinician)
+			}
+			claim.ProviderID = li.Pricing.ClinicianID
+		}
+	}
 
 	var createErr error
 	if s.pricing != nil {

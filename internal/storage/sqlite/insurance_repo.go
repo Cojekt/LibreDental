@@ -140,7 +140,7 @@ func previewPricing(ctx context.Context, q queryExecutor, s *domain.PricingSourc
 	}
 	if s.ClinicianID != "" {
 		var active bool
-		if err := q.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM providers WHERE id=?)`, s.ClinicianID).Scan(&active); err != nil || !active {
+		if err := q.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM providers WHERE id=? AND is_active=1)`, s.ClinicianID).Scan(&active); err != nil || !active {
 			return nil, storage.ErrInvalidInput
 		}
 	}
@@ -218,6 +218,10 @@ func checkPricing(ctx context.Context, q queryExecutor, s *domain.PricingSource,
 	}
 	if current.Version != s.Version {
 		return nil, fmt.Errorf("%w: %w", storage.ErrConflict, storage.ErrPricingChanged)
+	}
+	// Version covers the recomputed amount, not the client's copy, so a saved fee must match it.
+	if current.Amount != amount {
+		return nil, fmt.Errorf("%w: confirm pricing before saving", storage.ErrInvalidInput)
 	}
 	current.ConfirmedAt = time.Now().UTC()
 
@@ -377,7 +381,9 @@ func (r *InsuranceRepository) ConfirmClaim(ctx context.Context, c *domain.Claim,
 		preserved := false
 		if old != nil {
 			for _, prev := range old.LineItems {
-				if prev.ID == li.ID && old.PatientID == c.PatientID && prev.ADACode == li.ADACode && prev.Fee == li.Fee && prev.ToothConditionID == li.ToothConditionID {
+				// A provider change must not keep a line priced on another clinician's fee schedule.
+				clinicianOK := prev.Pricing == nil || prev.Pricing.ClinicianID == "" || prev.Pricing.ClinicianID == c.ProviderID
+				if prev.ID == li.ID && old.PatientID == c.PatientID && prev.ADACode == li.ADACode && prev.Fee == li.Fee && prev.ToothConditionID == li.ToothConditionID && clinicianOK {
 					li.Pricing = prev.Pricing
 					preserved = true
 					break
@@ -410,6 +416,10 @@ func (r *InsuranceRepository) ConfirmClaim(ctx context.Context, c *domain.Claim,
 			if raw.Valid {
 				if e := json.Unmarshal([]byte(raw.String), &li.Pricing); e != nil {
 					return e
+				}
+				// An empty clinician means no clinician-specific fee was considered.
+				if li.Pricing.ClinicianID != "" && li.Pricing.ClinicianID != c.ProviderID {
+					return fmt.Errorf("%w: %w", storage.ErrInvalidInput, storage.ErrPricingClinician)
 				}
 			}
 			continue

@@ -11,6 +11,9 @@ The original procedure catalog and its reference price remain unchanged.
 New billable treatments and direct claim lines use a shared pricing review. Staff can
 choose effective standard pricing, a provider's configured insurance price, or an
 explicit manual fee. Standard pricing preserves clinician → practice → base precedence.
+Chart pricing can optionally pick a clinician fee schedule; claim lines use the claim's
+provider. A charted treatment priced for a clinician can only be billed on that clinician's
+claim, and chart-to-claim takes its provider from the treatments' clinician when one is set.
 Insurance prices replace that amount without combining discounts. Missing or archived
 insurance fees cannot silently fall back to standard pricing. Confirmation shows patient,
 procedure, original reference price, selected source and the exact amount to save.

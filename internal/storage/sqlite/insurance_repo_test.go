@@ -388,3 +388,66 @@ func TestInsuranceConditionResponseOmitsRequestToken(t *testing.T) {
 		t.Fatal("request-only token leaked into response")
 	}
 }
+
+func TestInsurancePricingMustMatchSavedFee(t *testing.T) {
+	f := setupInsurance(t)
+	ctx := context.Background()
+	f.fee(t, "D2391", 300)
+	for _, kind := range []string{"standard", "insurance"} {
+		s := f.preview(t, "patient-a", "D2391", kind)
+		s.Amount = 1
+		if _, err := f.repo.ConfirmCondition(ctx, treatment("edited-"+kind, s)); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Fatal(kind, "amount differing from the reviewed price accepted", err)
+		}
+		cl := &domain.Claim{ID: "claim-" + kind, PatientID: "patient-a", DateOfService: "2026-10-22", LineItems: []domain.ClaimLineItem{{ID: "line", ADACode: "D2391", Fee: 1, Pricing: s}}}
+		if err := f.repo.ConfirmClaim(ctx, cl, false); !errors.Is(err, storage.ErrInvalidInput) {
+			t.Fatal(kind, "claim line amount differing from the reviewed price accepted", err)
+		}
+	}
+}
+
+func TestInsurancePricingClinicians(t *testing.T) {
+	f := setupInsurance(t)
+	ctx := context.Background()
+	config := NewPracticeConfigRepository(f.db)
+	for _, p := range []*domain.Provider{{ID: "dentist-a", Name: "A", IsActive: true}, {ID: "dentist-b", Name: "B", IsActive: true}, {ID: "retired", Name: "C", IsActive: false}} {
+		if err := config.SaveProvider(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	price := func(clinician string) (*domain.PricingSource, error) {
+		return f.repo.Preview(ctx, &domain.PricingSource{Kind: "standard", PatientID: "patient-a", CountryCode: domain.CountryUS, Code: "D2391", ClinicianID: clinician})
+	}
+	if _, err := price("retired"); !errors.Is(err, storage.ErrInvalidInput) {
+		t.Fatal("inactive clinician accepted", err)
+	}
+	for id, clinician := range map[string]string{"priced-a": "dentist-a", "priced-none": ""} {
+		s, err := price(clinician)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.repo.ConfirmCondition(ctx, treatment(id, s)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	link := func(claimID, provider, condition string) error {
+		return f.repo.ConfirmClaim(ctx, &domain.Claim{ID: claimID, PatientID: "patient-a", ProviderID: provider, DateOfService: "2026-10-22", LineItems: []domain.ClaimLineItem{{ID: "line", ToothConditionID: condition, ADACode: "D2391", Fee: 14000}}}, false)
+	}
+	if err := link("other-clinician", "dentist-b", "priced-a"); !errors.Is(err, storage.ErrPricingClinician) {
+		t.Fatal("treatment priced for another clinician billed", err)
+	}
+	if err := link("same-clinician", "dentist-a", "priced-a"); err != nil {
+		t.Fatal(err)
+	}
+	moved, err := NewClaimRepository(f.db).GetByID(ctx, "same-clinician")
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved.ProviderID = "dentist-b"
+	if err := f.repo.ConfirmClaim(ctx, moved, true); !errors.Is(err, storage.ErrPricingClinician) {
+		t.Fatal("provider change kept a line priced for another clinician", err)
+	}
+	if err := link("practice-pricing", "dentist-b", "priced-none"); err != nil {
+		t.Fatal("practice-wide pricing should bill under any provider", err)
+	}
+}

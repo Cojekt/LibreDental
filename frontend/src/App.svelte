@@ -853,7 +853,7 @@
         ondeleteappointment={handleDeleteAppt}
       />
     {:else if activeTab === "charting"}
-      <ChartingView patients={directoryPatients} {countryMeta} />
+      <ChartingView patients={directoryPatients} {providers} {countryMeta} />
     {:else if activeTab === "billing"}
       <BillingView patients={directoryPatients} {providers} {countryMeta} />
     {:else if activeTab === "accounting"}
