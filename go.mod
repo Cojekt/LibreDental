@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.47.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.9
 	github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.42.1
-	github.com/aws/smithy-go v1.28.5
+	github.com/aws/smithy-go v1.28.7
 	github.com/google/uuid v1.6.0
 	github.com/nyaruka/phonenumbers v1.8.1
 	github.com/pressly/goose/v3 v3.29.0
