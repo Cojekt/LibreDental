@@ -36,6 +36,13 @@ jobs:
       - name: Go Unit Tests
         run: go test -v ./internal/...
 
+      # Kept out of the unit test step so a Stedi outage reads as such. Secrets aren't passed to
+      # fork or Dependabot PRs, so the test skips there.
+      - name: Stedi Live API Test (test mode)
+        env:
+          STEDI_API_KEY: ${{ secrets.STEDI_TEST_API_KEY }}
+        run: go test -v -count=1 ./internal/services/claims -run TestStediLiveTestMode
+
   frontend-checks:
     name: Frontend Quality & Type Checks
     runs-on: ubuntu-latest

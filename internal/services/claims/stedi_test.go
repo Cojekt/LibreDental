@@ -64,7 +64,7 @@ func testClaimSubmission() *domain.ClaimSubmission {
 			ClinicName:    "Test Dental Group",
 			TaxID:         "12-3456789",
 			NPI:           testBillingNPI,
-			Phone:         "(313) 123-4567",
+			Phone:         "(313) 555-0142",
 			AddressLine1:  "123 Main St",
 			AddressLine2:  "Suite 4",
 			City:          "Denver",
@@ -278,7 +278,7 @@ func TestStediRequest_Mapping(t *testing.T) {
 		t.Errorf("payer = %q/%q", req.TradingPartnerServiceID, req.Receiver.OrganizationName)
 	}
 	b := req.Billing
-	if b.NPI != testBillingNPI || b.EmployerID != "123456789" || b.Address.PostalCode != "802383000" || b.ContactInformation.PhoneNumber != "3131234567" {
+	if b.NPI != testBillingNPI || b.EmployerID != "123456789" || b.Address.PostalCode != "802383000" || b.ContactInformation.PhoneNumber != "3135550142" {
 		t.Errorf("billing provider = %+v", b)
 	}
 	if req.Rendering == nil || req.Rendering.NPI != testRenderingNPI || req.Rendering.TaxonomyCode != "1223G0001X" ||
@@ -296,6 +296,9 @@ func TestStediRequest_Mapping(t *testing.T) {
 	}
 	if ci.PatientControlNumber != testClaimSubmission().Claim.PatientControlNumber() {
 		t.Errorf("patientControlNumber = %q", ci.PatientControlNumber)
+	}
+	if ci.ClaimDateInformation.ServiceDate != "20260928" {
+		t.Errorf("claimDateInformation.serviceDate = %q, want 20260928", ci.ClaimDateInformation.ServiceDate)
 	}
 	if len(ci.ServiceLines) != 3 {
 		t.Fatalf("got %d service lines", len(ci.ServiceLines))
@@ -483,11 +486,13 @@ func TestStediSubmitClaim_NothingSentWithoutKeyOrData(t *testing.T) {
 	}
 }
 
-// TestStediLiveTestMode submits a test claim to the real Stedi API. Test claims are processed
-// by Stedi's test clearinghouse and never reach a payer. It needs a Stedi test API key, which
-// requires a Stedi production (pay-as-you-go) account; sandbox accounts can't submit claims.
+// TestStediLiveTestMode submits a test claim to the real Stedi API to confirm we reach it,
+// authenticate, and pass its claim edits. Test claims are processed by Stedi's test
+// clearinghouse and never reach a payer. Stedi runs its claim edits before checking that the
+// account can submit claims, so a sandbox account's test key, which can't submit claims,
+// still verifies everything up to submission.
 //
-//	STEDI_API_KEY=... go test ./internal/services -run TestStediLiveTestMode -v
+//	STEDI_API_KEY=... go test ./internal/services/claims -run TestStediLiveTestMode -v
 func TestStediLiveTestMode(t *testing.T) {
 	key := os.Getenv("STEDI_API_KEY")
 	if key == "" {
@@ -500,6 +505,10 @@ func TestStediLiveTestMode(t *testing.T) {
 
 	result, err := NewStediClaimProvider().SubmitClaim(ctx, sub, map[string]string{StediConfigAPIKey: key})
 	if err != nil {
+		if strings.Contains(err.Error(), "does not have a provisioned environment") {
+			t.Logf("claim passed Stedi's edits; this account can't submit claims: %v", err)
+			return
+		}
 		t.Fatalf("SubmitClaim: %v", err)
 	}
 	t.Logf("status=%s reference=%s messages=%v", result.Status, result.ExternalClaimID, result.Messages)
