@@ -198,7 +198,14 @@ type stediClaimInformation struct {
 	PlanParticipationCode                    string             `json:"planParticipationCode"`
 	ReleaseInformationCode                   string             `json:"releaseInformationCode"`
 	BenefitsAssignmentCertificationIndicator string             `json:"benefitsAssignmentCertificationIndicator"`
+	ClaimDateInformation                     stediClaimDates    `json:"claimDateInformation"`
 	ServiceLines                             []stediServiceLine `json:"serviceLines"`
+}
+
+// stediClaimDates carries the claim-level date of service, which Stedi requires on every
+// claim except a predetermination even though each service line has its own date.
+type stediClaimDates struct {
+	ServiceDate string `json:"serviceDate"`
 }
 
 type stediServiceLine struct {
@@ -391,6 +398,7 @@ func buildStediDentalClaim(sub *domain.ClaimSubmission, testMode bool) (*stediDe
 			PlanParticipationCode:                    "A",
 			ReleaseInformationCode:                   "Y",
 			BenefitsAssignmentCertificationIndicator: "Y",
+			ClaimDateInformation:                     stediClaimDates{ServiceDate: serviceDate},
 			ServiceLines:                             lines,
 		},
 	}

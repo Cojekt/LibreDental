@@ -24,6 +24,9 @@
   // match secretConfigKeys in secrets_service.go.
   const SECRET_KEYS = ["api_key", "password", "secret_access_key"];
   const REDACTED = "********";
+  // Surrounding whitespace on key-style credentials is copy-paste padding. Passwords are left
+  // alone since it can be part of them.
+  const KEY_FIELDS = ["api_key", "access_key_id", "secret_access_key"];
 
   // apiKey: whether the panel has the single API key field (claims) or only provider-specific
   // fields edited through fieldValue/setFieldValue (notifications).
@@ -103,6 +106,9 @@
       try {
         const config: { [key: string]: string | undefined } = { ...providerFullConfig };
         if (options.apiKey) config.api_key = providerApiKey;
+        for (const key of KEY_FIELDS) {
+          if (config[key]) config[key] = config[key].trim();
+        }
         // An empty secret field means "keep the saved one", so leave it out, unless staff
         // chose to remove it.
         for (const key of SECRET_KEYS) {
@@ -115,6 +121,9 @@
           // Typed secrets are now stored; don't keep them in the form as plain text.
           const cleared = { ...providerFullConfig };
           const saved = { ...savedSecrets };
+          for (const key of KEY_FIELDS) {
+            if (key in config && !SECRET_KEYS.includes(key)) cleared[key] = config[key];
+          }
           for (const key of SECRET_KEYS) {
             if (config[key]) {
               saved[key] = true;
