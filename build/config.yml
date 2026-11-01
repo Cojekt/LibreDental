@@ -12,23 +12,16 @@ info:
   copyright: "© 2026, Cojekt" # Copyright text
   comments: "https://github.com/LibreDental/libredental" # Comments
   version: "0.1.0" # The application version
-  # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
-  #                               # Should match the name of your .icon file without the extension
-  #                               # If not set and Assets.car exists, defaults to "appicon"
+  # cfBundleIconName: "appicon" # The macOS icon name in Assets.car exists, defaults to "appicon"
 
 # iOS build configuration (uncomment to customise iOS project generation)
 # Note: Keys under `ios` OVERRIDE values under `info` when set.
 # ios:
-#   # The iOS bundle identifier used in the generated Xcode project (CFBundleIdentifier)
 #   bundleID: "com.mycompany.myproduct"
-#   # The display name shown under the app icon (CFBundleDisplayName/CFBundleName)
 #   displayName: "My Product"
-#   # The app version to embed in Info.plist (CFBundleShortVersionString/CFBundleVersion)
 #   version: "0.0.1"
-#   # The company/organisation name for templates and project settings
 #   company: "My Company"
-#   # Additional comments to embed in Info.plist metadata
-#   comments: "Some Product Comments"
+#   comments: "Some Additional Comments"
 
 # Dev mode configuration
 dev_mode:
@@ -48,17 +41,17 @@ dev_mode:
       - "*_test.go"
     watched_extension:
       - "*.go"
-      - "*.js" # Watch for changes to JS/TS files included using the //wails:include directive.
-      - "*.ts" # The frontend directory will be excluded entirely by the setting above.
+      - "*.js"
+      - "*.ts"
     git_ignore: true
   executes:
-    - cmd: rm -rf build/darwin build/ios
+    - cmd: task clean:unused-platforms
       type: blocking
     - cmd: task build DEV=true
       type: blocking
     - cmd: task common:dev:frontend
       type: background
-    - cmd: sleep 3
+    - cmd: node scripts/wait-for-devserver.mjs
       type: blocking
     - cmd: task run
       type: primary
@@ -68,15 +61,15 @@ dev_mode:
 fileAssociations:
 #  - ext: wails
 #    name: Wails
-#    description: Wails Application File
+#    description: Wails File
 #    iconName: wailsFileIcon
 #    role: Editor
 #  - ext: jpg
 #    name: JPEG
-#    description: Image File
+#    description: JPEG
 #    iconName: jpegFileIcon
 #    role: Editor
-#    mimeType: image/jpeg  # (optional)
+#    mimeType: image/jpeg
 
 # Other data
 other:
