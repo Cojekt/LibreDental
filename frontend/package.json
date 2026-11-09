@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@inlang/paraglide-js": "^3.2.0",
-    "@inlang/plugin-m-function-matcher": "^2.3.4",
+    "@inlang/plugin-m-function-matcher": "^2.4.3",
     "@inlang/plugin-message-format": "^4.6.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@testing-library/dom": "^10.4.2",
