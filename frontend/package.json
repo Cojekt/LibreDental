@@ -16,7 +16,7 @@
     "pretest": "task --dir .. common:generate:bindings && npm run build:i18n"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.4",
     "@wailsio/runtime": "3.1.0",
     "tailwindcss": "^4.3.4"
   },
