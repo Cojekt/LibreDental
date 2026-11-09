@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.7
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.12
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.15
 	github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.42.6
 	github.com/aws/smithy-go v1.28.8
 	github.com/google/uuid v1.6.0
