@@ -58,7 +58,7 @@ dev_mode:
       type: blocking
     - cmd: task common:dev:frontend
       type: background
-    - cmd: node scripts/wait-for-devserver.mjs
+    - cmd: node build/wait-for-devserver.mjs
       type: blocking
     - cmd: task run
       type: primary

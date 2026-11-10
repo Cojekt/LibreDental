@@ -1,4 +1,4 @@
-# Wait for the Vite development server before starting the desktop app.
+// Replaces a fixed sleep so the desktop app doesn't load before Vite is serving.
 const url = process.env.FRONTEND_DEVSERVER_URL;
 
 if (!url) {
