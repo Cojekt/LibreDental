@@ -18,6 +18,7 @@
   import { m } from "../../paraglide/messages.js";
   import { paymentMethodLabel } from "$lib/labels.js";
   import { formatCurrency } from "$lib/currency.js";
+  import { newId } from "$lib/id.js";
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
 
   let {
@@ -154,7 +155,7 @@
     if (!payPatientId || isNaN(amount) || amount <= 0 || !payDate) return;
 
     const payload: Omit<Payment, "created_at"> = {
-      id: `pay_${Date.now()}`,
+      id: newId("pay"),
       patient_id: payPatientId,
       claim_id: payClaimId,
       amount,

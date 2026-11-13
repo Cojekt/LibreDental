@@ -15,6 +15,7 @@
   import EmptyState from "../../components/ui/EmptyState.svelte";
   import { m } from "../../paraglide/messages.js";
   import { formatCurrency } from "$lib/currency.js";
+  import { newId } from "$lib/id.js";
   import { auth } from "../../stores/auth.svelte.js";
 
   let {
@@ -85,7 +86,7 @@
     if (!editingFeeCode || editingFeeCustom < 0) return;
     const cc = (countryMeta?.code || "US") as CountryCode;
     const payload: Omit<FeeSchedule, "updated_at"> = {
-      id: `fee_${Date.now()}`,
+      id: newId("fee"),
       country_code: cc,
       code: editingFeeCode,
       provider_id: editingFeeProviderId,

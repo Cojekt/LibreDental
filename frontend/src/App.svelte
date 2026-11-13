@@ -14,6 +14,7 @@
     dateOnlyToISO,
   } from "$lib/date.js";
   import { errorCode, handleError } from "$lib/error.js";
+  import { newId } from "$lib/id.js";
   import { m } from "./paraglide/messages.js";
   import type {
     Patient,
@@ -548,7 +549,7 @@
         }
       } else {
         const newPatient: Omit<Patient, "created_at" | "updated_at"> = {
-          id: "pat_" + Date.now(),
+          id: newId("pat"),
           first_name: firstName,
           last_name: lastName,
           preferred_name: "",
@@ -699,7 +700,7 @@
         }
       } else {
         const newAppt: Omit<Appointment, "created_at" | "updated_at"> = {
-          id: "appt_" + Date.now(),
+          id: newId("appt"),
           patient_id: apptPatientId,
           provider_id: apptProviderId,
           operatory_id: apptOperatoryId,
