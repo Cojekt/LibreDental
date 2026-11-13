@@ -13,7 +13,8 @@
     "format:check": "prettier --check . ../.github",
     "format": "prettier --write . ../.github",
     "test": "vitest run --config vitest.config.ts",
-    "pretest": "task --dir .. common:generate:bindings && npm run build:i18n"
+    "pretest": "task --dir .. common:generate:bindings && npm run build:i18n",
+    "test:e2e": "playwright install chromium && playwright test"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.4",
@@ -24,6 +25,7 @@
     "@inlang/paraglide-js": "^3.2.0",
     "@inlang/plugin-m-function-matcher": "^2.4.3",
     "@inlang/plugin-message-format": "^4.6.0",
+    "@playwright/test": "1.65.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/svelte": "^5.4.2",

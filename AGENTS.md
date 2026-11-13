@@ -80,7 +80,8 @@ Wails-generated `build/**/Taskfile.yml` files (as `common:`, `linux:`, `windows:
 | --- | --- |
 | `task desktop` | Live-reload dev mode (Wails) |
 | `task server` | Build + run server binary |
-| `task test` | `go test ./...` + `npm run check` (frontend type/svelte check) |
+| `task test` | `go test ./...` + `npm run check` (frontend type/svelte check) + Vitest + `task e2e` |
+| `task e2e` | Build the server binary and run the Playwright tests in `frontend/e2e/` against it |
 | `task check` | Same quality checks as CI (`gofmt -l`, `go vet`, tests, bindings, `format:check`, svelte-check) |
 | `task format` | `gofmt -w -s .` + prettier on frontend — **use this to format, always** |
 | `task artifact` | Build desktop binary, server binary, and demo data archive |
