@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Provider } from "@bindings/domain/models.js";
-  import Modal from "./ui/Modal.svelte";
-  import { auth } from "../stores/auth.svelte.js";
-  import { m } from "../paraglide/messages.js";
+  import Modal from "../ui/Modal.svelte";
+  import { auth } from "../../stores/auth.svelte.js";
+  import { m } from "../../paraglide/messages.js";
   import { providerRoleLabel } from "$lib/labels.js";
   import { errorCode } from "$lib/error.js";
   import { PracticeConfigService, AuditService } from "@bindings/services/index.js";

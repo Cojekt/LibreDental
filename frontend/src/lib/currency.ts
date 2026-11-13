@@ -1,4 +1,4 @@
-import { currentLocale } from "./locale.svelte.js";
+import { currentLocale } from "../stores/locale.svelte.js";
 
 /**
  * Format an integer cent amount as a localized currency string.

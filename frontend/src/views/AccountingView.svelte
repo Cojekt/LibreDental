@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { CountryConfig, Provider } from "@bindings/domain/index.js";
   import TabNav from "../components/ui/TabNav.svelte";
-  import PayrollSubtab from "./accounting/PayrollSubtab.svelte";
-  import AnalyticsSubtab from "./AnalyticsSubtab.svelte";
+  import PayrollSection from "./accounting/PayrollSection.svelte";
+  import AnalyticsSection from "./accounting/AnalyticsSection.svelte";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { getLocaleVersion } from "../stores/locale.svelte.js";
 
   let {
     providers = [],
@@ -31,9 +31,9 @@
     class="flex-1 overflow-auto rounded-xl border border-slate-800/50 bg-slate-900/40 p-6 shadow-sm"
   >
     {#if activeSubtab === "payroll"}
-      <PayrollSubtab {providers} />
+      <PayrollSection {providers} />
     {:else if activeSubtab === "analysis"}
-      <AnalyticsSubtab {countryMeta} />
+      <AnalyticsSection {countryMeta} />
     {/if}
   </div>
 </div>

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { m } from "../paraglide/messages.js";
+  import { m } from "../../paraglide/messages.js";
   import { AuditService } from "@bindings/services/index.js";
   import type { Patient, AuditLogEntry } from "@bindings/domain/index.js";
-  import { auth } from "../stores/auth.svelte.js";
+  import { auth } from "../../stores/auth.svelte.js";
 
   let {
     patients = [],

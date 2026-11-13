@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Patient } from "@bindings/domain/models.js";
-  import Modal from "./ui/Modal.svelte";
-  import DocumentsSection from "../views/clinic/DocumentsSection.svelte";
-  import { m } from "../paraglide/messages.js";
+  import Modal from "../../components/ui/Modal.svelte";
+  import DocumentsSection from "../clinic/DocumentsSection.svelte";
+  import { m } from "../../paraglide/messages.js";
 
   let {
     showModal = $bindable(false),

@@ -49,8 +49,15 @@ internal/services/         Business logic, one service per domain area (+ _test.
 internal/storage/          Repository interfaces
 internal/storage/sqlite/   SQLite repo implementations + migrations/schema (main + audit)
 internal/demo/             Demo data seeder (task demo) incl. sample DICOM/PDF/image fixtures
-frontend/src/              Svelte app: components/, components/ui/ (design system), lib/
+frontend/src/views/        One <Area>View.svelte per nav tab; views/<area>/ holds parts used
+                            only by that tab (named <Thing>Section for sub-tabs)
+frontend/src/components/   Components used by more than one view; shell/ is the app frame
+                            (header, nav, onboarding, login, settings); ui/ is the design system
+frontend/src/stores/       App-wide reactive state (auth session, locale)
+frontend/src/lib/          Plain TypeScript helpers (dates, currency, error codes, labels)
 frontend/src/paraglide/    Generated i18n messages — do not hand-edit, regenerate instead
+frontend/component-tests/  Vitest component tests, backend bindings mocked
+frontend/e2e/              Playwright tests against a real server binary (task e2e)
 build/                     Wails build config, icons, platform packaging
 docs/                      LAN server setup, release checklist
 ```

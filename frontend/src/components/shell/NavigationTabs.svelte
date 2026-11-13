@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "../lib/locale.svelte.js";
-  import { auth } from "../stores/auth.svelte.js";
+  import { m } from "../../paraglide/messages.js";
+  import { getLocaleVersion } from "../../stores/locale.svelte.js";
+  import { auth } from "../../stores/auth.svelte.js";
 
   let {
     activeTab = $bindable("clinic"),

@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Provider } from "@bindings/domain/models.js";
   import { PracticeConfigService, AuditService } from "@bindings/services/index.js";
-  import { auth } from "../stores/auth.svelte.js";
-  import { m } from "../paraglide/messages.js";
-  import FormField from "./ui/FormField.svelte";
-  import Input from "./ui/Input.svelte";
+  import { auth } from "../../stores/auth.svelte.js";
+  import { m } from "../../paraglide/messages.js";
+  import FormField from "../ui/FormField.svelte";
+  import Input from "../ui/Input.svelte";
 
   let {
     onback,

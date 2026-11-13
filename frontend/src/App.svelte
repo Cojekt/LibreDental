@@ -6,7 +6,7 @@
     AppointmentService,
     SystemSettingsService,
   } from "@bindings/services/index.js";
-  import { initLocale, getLocaleVersion } from "$lib/locale.svelte.js";
+  import { initLocale, getLocaleVersion } from "./stores/locale.svelte.js";
   import {
     getTodayDateString,
     getLocalDateString,
@@ -26,12 +26,12 @@
   import { Sex, Status, AppointmentStatus } from "@bindings/domain/index.js";
   import { auth } from "./stores/auth.svelte.js";
 
-  import Header from "./components/Header.svelte";
-  import OnboardingModal from "./components/OnboardingModal.svelte";
+  import Header from "./components/shell/Header.svelte";
+  import OnboardingModal from "./components/shell/OnboardingModal.svelte";
   import PatientModal from "./components/PatientModal.svelte";
   import AppointmentModal from "./components/AppointmentModal.svelte";
-  import SettingsModal from "./components/SettingsModal.svelte";
-  import StaffLoginModal from "./components/StaffLoginModal.svelte";
+  import SettingsModal from "./components/shell/SettingsModal.svelte";
+  import StaffLoginModal from "./components/shell/StaffLoginModal.svelte";
   import ClinicView from "./views/ClinicView.svelte";
   import PatientsView from "./views/PatientsView.svelte";
   import AppointmentsView from "./views/AppointmentsView.svelte";

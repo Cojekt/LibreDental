@@ -1,9 +1,13 @@
 <script lang="ts">
   import type { CountryConfig } from "@bindings/domain/models.js";
-  import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion, getLanguageName, useLanguageState } from "$lib/locale.svelte.js";
-  import { locales } from "../paraglide/runtime.js";
-  import ModalGridSelect from "./ui/ModalGridSelect.svelte";
+  import { m } from "../../paraglide/messages.js";
+  import {
+    getLocaleVersion,
+    getLanguageName,
+    useLanguageState,
+  } from "../../stores/locale.svelte.js";
+  import { locales } from "../../paraglide/runtime.js";
+  import ModalGridSelect from "../ui/ModalGridSelect.svelte";
   import OnboardingProviderStep from "./OnboardingProviderStep.svelte";
 
   let {

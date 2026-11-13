@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import Modal from "./Modal.svelte";
   import { m } from "../../paraglide/messages.js";
-  import { getLocaleVersion } from "../../lib/locale.svelte.js";
+  import { getLocaleVersion } from "../../stores/locale.svelte.js";
 
   let {
     value = $bindable(),

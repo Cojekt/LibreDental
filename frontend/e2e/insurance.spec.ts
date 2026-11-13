@@ -1,7 +1,7 @@
 import { test, expect, onboard, createPatient, type Page } from "./fixtures";
 
 // The rest of insurance pricing is covered by internal/storage/sqlite/insurance_repo_test.go
-// and tests/insurance.test.ts. These cover what needs both a real backend and the real UI.
+// and component-tests/insurance.test.ts. These cover what needs both a real backend and the real UI.
 
 const button = (p: Page, name: string) => p.getByRole("button", { name, exact: true });
 

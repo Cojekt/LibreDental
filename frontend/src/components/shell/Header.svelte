@@ -1,7 +1,7 @@
 <script lang="ts">
   import NavigationTabs from "./NavigationTabs.svelte";
-  import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { m } from "../../paraglide/messages.js";
+  import { getLocaleVersion } from "../../stores/locale.svelte.js";
 
   let {
     activeTab = $bindable("clinic"),
@@ -17,7 +17,7 @@
     onopenstafflogin: () => void;
   } = $props();
 
-  import { auth } from "../stores/auth.svelte.js";
+  import { auth } from "../../stores/auth.svelte.js";
 
   const logoAlt = $derived.by(() => {
     getLocaleVersion();
