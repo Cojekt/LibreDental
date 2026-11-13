@@ -124,7 +124,8 @@ tasks:
     cmds:
       - cmd: rm -rf build/darwin build/ios
         platforms: [linux, darwin]
-      - cmd: powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue build/darwin, build/ios"
+      # Single quotes keep Task's shell from expanding $p; SilentlyContinue alone still exits 1 when a folder is missing.
+      - cmd: powershell -NoProfile -Command 'foreach ($p in "build/darwin", "build/ios") { if (Test-Path $p) { Remove-Item -Recurse -Force $p } }'
         platforms: [windows]
 
   mkdir:bin:
