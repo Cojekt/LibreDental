@@ -209,6 +209,9 @@ func TestDocumentService(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to save nested document: %v", err)
 		}
+		if doc.PatientID == nil || *doc.PatientID != nestedPatientID {
+			t.Errorf("Expected stored patient ID %q, got %v", nestedPatientID, doc.PatientID)
+		}
 
 		fileContent, err := os.ReadFile(filepath.Join(tempDir, "documents", doc.FilePath))
 		if err != nil {
