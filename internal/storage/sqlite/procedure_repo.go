@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
 )
@@ -83,7 +85,7 @@ func (r *ProcedureRepository) Save(ctx context.Context, schedule *domain.FeeSche
 		return fmt.Errorf("%w: custom_fee must be between 0 and 9007199254740991", storage.ErrInvalidInput)
 	}
 	if schedule.ID == "" {
-		schedule.ID = fmt.Sprintf("fee_%d", time.Now().UnixNano())
+		schedule.ID = "fee_" + uuid.NewString()
 	}
 	schedule.UpdatedAt = time.Now().UTC()
 

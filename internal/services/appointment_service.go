@@ -3,7 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
-	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
@@ -87,7 +88,7 @@ func (s *AppointmentService) CreateAppointment(token string, a *domain.Appointme
 		return nil, err
 	}
 	if a.ID == "" {
-		a.ID = fmt.Sprintf("appt_%d", time.Now().UnixNano())
+		a.ID = "appt_" + uuid.NewString()
 	}
 	err := s.repo.Create(context.Background(), a)
 	if err != nil {

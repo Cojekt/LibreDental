@@ -874,3 +874,38 @@ func TestBillingService_ProviderConfigRequiresSessionAndAudits(t *testing.T) {
 		t.Error("Expected an audit entry for the claim provider config change")
 	}
 }
+
+// Windows' clock advances in ~0.5 ms steps, so IDs must not be derived from time.Now().
+func TestBillingService_GeneratedIDsAreUniqueWhenCreatedBackToBack(t *testing.T) {
+	svc, token, claimRepo, _ := setupChartBillingTest(t, nil)
+	ctx := context.Background()
+
+	seen := map[string]bool{}
+	for i := 0; i < 20; i++ {
+		claim, err := svc.CreateClaim(token, &domain.Claim{
+			PatientID:     "pat_1",
+			ProviderID:    "prov_1",
+			DateOfService: "2026-01-01",
+			LineItems: []domain.ClaimLineItem{
+				{ADACode: "D0120", Fee: 1000},
+				{ADACode: "D0120", Fee: 1000},
+			},
+		})
+		if err != nil {
+			t.Fatalf("CreateClaim #%d failed: %v", i, err)
+		}
+		ids := []string{claim.ID}
+		for _, li := range claim.LineItems {
+			ids = append(ids, li.ID)
+		}
+		for _, id := range ids {
+			if seen[id] {
+				t.Fatalf("Duplicate generated ID %q on claim #%d", id, i)
+			}
+			seen[id] = true
+		}
+		if _, err := claimRepo.GetByID(ctx, claim.ID); err != nil {
+			t.Fatalf("Failed to fetch claim #%d: %v", i, err)
+		}
+	}
+}

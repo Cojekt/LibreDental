@@ -447,3 +447,48 @@ func TestPracticeConfigService_ValidatesTimezone(t *testing.T) {
 		t.Errorf("Timezone not stored: %q", got.Timezone)
 	}
 }
+
+// Provider saves are upserts, so a repeated generated ID would silently replace an
+// existing provider instead of failing.
+func TestPracticeConfigService_NewProvidersDoNotOverwriteEachOther(t *testing.T) {
+	tempDir := t.TempDir()
+
+	db, err := sqlite.Open(filepath.Join(tempDir, "main.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tempDir, "audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit sqlite db: %v", err)
+	}
+	defer auditDb.Close()
+
+	repo := sqlite.NewPracticeConfigRepository(db)
+	auditService := services.NewAuditService(sqlite.NewAuditRepository(auditDb), repo)
+	service := services.NewPracticeConfigService(repo, auditService)
+
+	if _, err := service.SetConfig("", "US"); err != nil {
+		t.Fatalf("SetConfig failed: %v", err)
+	}
+	token, err := service.CreateInitialProvider(domain.Provider{Name: "Dr. Owner", Pin: "1234", IsActive: true})
+	if err != nil {
+		t.Fatalf("CreateInitialProvider failed: %v", err)
+	}
+
+	const extra = 20
+	for i := 0; i < extra; i++ {
+		if _, err := service.SaveProvider(token, domain.Provider{Name: "Staff", Pin: "5678", IsActive: true}); err != nil {
+			t.Fatalf("SaveProvider #%d failed: %v", i, err)
+		}
+	}
+
+	providers, err := service.ListProviders()
+	if err != nil {
+		t.Fatalf("ListProviders failed: %v", err)
+	}
+	if len(providers) != extra+1 {
+		t.Fatalf("Expected %d providers, got %d", extra+1, len(providers))
+	}
+}

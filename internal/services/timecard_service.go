@@ -6,6 +6,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
 )
@@ -74,7 +76,7 @@ func (s *TimecardService) ClockIn(token string, providerID string) (*domain.Time
 
 	// Create new timecard
 	t := &domain.Timecard{
-		ID:         fmt.Sprintf("tc_%d", time.Now().UnixNano()),
+		ID:         "tc_" + uuid.NewString(),
 		ProviderID: providerID,
 		ClockIn:    time.Now(),
 		HourlyRate: provider.HourlyRate,
@@ -215,7 +217,7 @@ func (s *TimecardService) CreateManualTimecard(token string, providerID string, 
 	}
 
 	t := &domain.Timecard{
-		ID:           fmt.Sprintf("tc_%d", time.Now().UnixNano()),
+		ID:           "tc_" + uuid.NewString(),
 		ProviderID:   providerID,
 		ClockIn:      parsedDate,
 		ClockOut:     &parsedDate,

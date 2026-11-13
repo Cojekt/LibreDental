@@ -3,7 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
-	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
@@ -52,7 +53,7 @@ func (s *ChartService) SaveToothCondition(token string, payload *domain.SaveToot
 		return nil, fmt.Errorf("%w: stable treatment ID is required", storage.ErrInvalidInput)
 	}
 	if payload.ID == "" {
-		payload.ID = fmt.Sprintf("cond_%d", time.Now().UnixNano())
+		payload.ID = "cond_" + uuid.NewString()
 	}
 
 	c := &domain.ToothCondition{
