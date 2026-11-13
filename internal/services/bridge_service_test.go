@@ -29,11 +29,19 @@ type bridgeTestEnv struct {
 	patientID string
 }
 
+// setTestTempDir points os.TempDir at dir. Windows reads TMP/TEMP and ignores TMPDIR.
+func setTestTempDir(t *testing.T, dir string) {
+	t.Helper()
+	for _, key := range []string{"TMPDIR", "TMP", "TEMP"} {
+		t.Setenv(key, dir)
+	}
+}
+
 func newTestBridgeService(t *testing.T) *bridgeTestEnv {
 	t.Helper()
 	tmpDir := t.TempDir()
 	// Keep exported document copies inside the test's own directory.
-	t.Setenv("TMPDIR", filepath.Join(tmpDir, "tmp"))
+	setTestTempDir(t, filepath.Join(tmpDir, "tmp"))
 	if err := os.MkdirAll(filepath.Join(tmpDir, "tmp"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -347,7 +355,7 @@ func TestBridgeServiceLaunchStartFailure(t *testing.T) {
 
 func TestRemoveStaleBridgeExports(t *testing.T) {
 	tmp := t.TempDir()
-	t.Setenv("TMPDIR", tmp)
+	setTestTempDir(t, tmp)
 
 	stale := filepath.Join(tmp, bridgeExportPrefix+"stale")
 	fresh := filepath.Join(tmp, bridgeExportPrefix+"fresh")
