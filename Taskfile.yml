@@ -121,7 +121,6 @@ tasks:
 
   # wails3 tooling recreates the macOS/iOS asset folders, which this project doesn't ship.
   clean:unused-platforms:
-    internal: true
     cmds:
       - cmd: rm -rf build/darwin build/ios
         platforms: [linux, darwin]

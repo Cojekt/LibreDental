@@ -46,7 +46,7 @@ tasks:
     desc: Aligns the installed wails3 CLI and @wailsio/runtime to whatever version go.mod already pins (no dependency upgrades).
     cmds:
       - |
-        WV=$(go list -m github.com/wailsapp/wails/v3 | awk '{print $2}')
+        WV=$(go list -m -f '{{"{{"}}.Version{{"}}"}}' github.com/wailsapp/wails/v3)
         VER=${WV#v}
         echo "Syncing wails3 CLI and @wailsio/runtime to ${WV}"
         go install github.com/wailsapp/wails/v3/cmd/wails3@${WV}

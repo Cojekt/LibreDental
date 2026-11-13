@@ -52,13 +52,13 @@ dev_mode:
       - "*.ts" # The frontend directory will be excluded entirely by the setting above.
     git_ignore: true
   executes:
-    - cmd: rm -rf build/darwin build/ios
+    - cmd: task clean:unused-platforms
       type: blocking
     - cmd: task build DEV=true
       type: blocking
     - cmd: task common:dev:frontend
       type: background
-    - cmd: sleep 3
+    - cmd: node build/wait-for-devserver.mjs
       type: blocking
     - cmd: task run
       type: primary
