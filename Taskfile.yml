@@ -125,7 +125,7 @@ tasks:
       - cmd: rm -rf build/darwin build/ios
         platforms: [linux, darwin]
       # Single quotes keep Task's shell from expanding $p; SilentlyContinue alone still exits 1 when a folder is missing.
-      - cmd: powershell -NoProfile -Command 'foreach ($p in "build/darwin", "build/ios") { if (Test-Path $p) { Remove-Item -Recurse -Force $p } }'
+      - cmd: powershell -NoProfile -Command 'foreach ($p in "build/darwin", "build/ios") { if (Test-Path $p) { Remove-Item -Recurse -Force -ErrorAction Stop $p } }'
         platforms: [windows]
 
   mkdir:bin:
