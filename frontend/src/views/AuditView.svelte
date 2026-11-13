@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Patient } from "@bindings/domain/index.js";
-  import AuditingSubtab from "./AuditingSubtab.svelte";
+  import AuditingSection from "./audit/AuditingSection.svelte";
 
   let {
     patients = [],
@@ -13,6 +13,6 @@
   <div
     class="flex-1 overflow-auto rounded-xl border border-slate-800/50 bg-slate-900/40 p-6 shadow-sm"
   >
-    <AuditingSubtab {patients} />
+    <AuditingSection {patients} />
   </div>
 </div>

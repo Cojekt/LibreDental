@@ -94,6 +94,25 @@ jobs:
         working-directory: frontend
         run: npm run test
 
+      - name: Build Server Binary for End-to-End Tests
+        run: task common:build:server DEV=true EXTRA_TAGS=dev
+
+      - name: Install Playwright Browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-End Tests
+        working-directory: frontend
+        run: npx playwright test
+
+      - name: Upload End-to-End Traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-test-results
+          path: frontend/test-results/
+          if-no-files-found: ignore
+
   build:
     name: Build Application & Server
     needs: [go-checks, frontend-checks]

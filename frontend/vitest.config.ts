@@ -13,5 +13,5 @@ export default defineConfig({
       $lib: path.resolve(import.meta.dirname, "src/lib"),
     },
   },
-  test: { environment: "jsdom", include: ["tests/**/*.test.ts"], maxWorkers: 1 },
+  test: { environment: "jsdom", include: ["component-tests/**/*.test.ts"], maxWorkers: 1 },
 });

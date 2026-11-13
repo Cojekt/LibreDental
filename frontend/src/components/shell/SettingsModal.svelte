@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { registerOpenModal, isTopModal } from "./ui/Modal.svelte";
+  import { registerOpenModal, isTopModal } from "../ui/Modal.svelte";
   import { SystemSettingsService } from "@bindings/services/index.js";
-  import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion, getLanguageName, useLanguageState } from "$lib/locale.svelte.js";
-  import { locales } from "../paraglide/runtime.js";
+  import { m } from "../../paraglide/messages.js";
+  import {
+    getLocaleVersion,
+    getLanguageName,
+    useLanguageState,
+  } from "../../stores/locale.svelte.js";
+  import { locales } from "../../paraglide/runtime.js";
   import { handleError } from "$lib/error.js";
 
   export type ThemeMode = "dark" | "light" | "system";

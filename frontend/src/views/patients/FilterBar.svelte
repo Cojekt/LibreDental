@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { m } from "../../paraglide/messages.js";
+  import { getLocaleVersion } from "../../stores/locale.svelte.js";
 
   let {
     searchQuery = $bindable(),

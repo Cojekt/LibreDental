@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Appointment } from "@bindings/domain/models.js";
-  import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { m } from "../../paraglide/messages.js";
+  import { getLocaleVersion } from "../../stores/locale.svelte.js";
 
   let {
     appointments = [],

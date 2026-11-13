@@ -94,11 +94,21 @@ tasks:
       - cd frontend && {{.PACKAGE_MANAGER}} run format
 
   test:
-    desc: Runs Go tests, frontend type checks and frontend interaction tests
+    desc: Runs Go tests, frontend type checks, frontend interaction tests and end-to-end tests
     cmds:
       - go test ./...
       - cd frontend && {{.PACKAGE_MANAGER}} run check
       - cd frontend && {{.PACKAGE_MANAGER}} run test
+      - task: e2e
+
+  e2e:
+    desc: Builds the server binary and runs the Playwright end-to-end tests against it
+    cmds:
+      - task: common:build:server
+        vars:
+          DEV: "true"
+          EXTRA_TAGS: dev
+      - cd frontend && {{.PACKAGE_MANAGER}} run test:e2e
 
   # Mirrors the go-checks and frontend-checks jobs in .github/workflows/ci.yml;
   # update both together.
@@ -118,6 +128,7 @@ tasks:
       - cd frontend && {{.PACKAGE_MANAGER}} run format:check
       - cd frontend && {{.PACKAGE_MANAGER}} run check
       - cd frontend && {{.PACKAGE_MANAGER}} run test
+      - task: e2e
 
   # wails3 tooling recreates the macOS/iOS asset folders, which this project doesn't ship.
   clean:unused-platforms:

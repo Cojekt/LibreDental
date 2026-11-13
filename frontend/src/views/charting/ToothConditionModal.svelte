@@ -3,7 +3,7 @@
   import { ToothSystem, ToothSurface, ToothStatus } from "@bindings/domain/models.js";
   import { m } from "../../paraglide/messages.js";
   import Modal from "../../components/ui/Modal.svelte";
-  import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { getLocaleVersion } from "../../stores/locale.svelte.js";
 
   let {
     showConditionModal = $bindable(false),

@@ -41,10 +41,10 @@ calculations are outside this PR. Provider price selection does not change the p
 insurance text, verify coverage, or calculate insurer/patient responsibility.
 
 Run `task format` and `task test`. The Svelte interaction tests mock service bindings;
-Go integration tests exercise actual SQLite/services. The optional
-`frontend/e2e/insurance.cjs` uses a built server in `LIBREDENTAL_E2E_BINARY`, external
-Playwright/Chromium, and Node 22's SQLite module. It creates its own temporary synthetic
-patient database, including legacy claim fixtures while the server is stopped.
+Go integration tests exercise actual SQLite/services. `frontend/e2e/insurance.spec.ts`
+(run by `task test` via `task e2e`) drives a built server binary for the parts that need
+both: a fee changed by another client invalidating a pending review, and notes-only edits
+to pre-pricing legacy claims keeping their saved fees.
 
 Desktop runtime testing must use isolated synthetic configurations. Successful desktop
 cross-compilation does not establish runtime or installer verification. Per-PR build,

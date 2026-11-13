@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { m } from "../../paraglide/messages.js";
-  import { getLocaleVersion } from "../../lib/locale.svelte.js";
+  import { getLocaleVersion } from "../../stores/locale.svelte.js";
 
   let {
     title = undefined,

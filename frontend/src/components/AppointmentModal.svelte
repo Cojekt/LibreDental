@@ -4,7 +4,7 @@
   import FormField from "./ui/FormField.svelte";
   import Input from "./ui/Input.svelte";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { getLocaleVersion } from "../stores/locale.svelte.js";
   import { getLocalDateString } from "$lib/date.js";
   import { providerRoleLabel, operatoryTypeLabel } from "$lib/labels.js";
   import NotificationHistory from "./NotificationHistory.svelte";

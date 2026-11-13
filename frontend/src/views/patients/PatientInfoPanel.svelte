@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Patient, CountryConfig } from "@bindings/domain/models.js";
-  import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "../lib/locale.svelte.js";
+  import { m } from "../../paraglide/messages.js";
+  import { getLocaleVersion } from "../../stores/locale.svelte.js";
   import { calculateAge, formatDateOnly } from "$lib/date.js";
   import PatientDocumentsModal from "./PatientDocumentsModal.svelte";
-  import NotificationHistory from "./NotificationHistory.svelte";
+  import NotificationHistory from "../../components/NotificationHistory.svelte";
 
   let {
     patient = null,

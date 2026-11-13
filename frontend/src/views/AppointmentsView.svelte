@@ -7,14 +7,14 @@
     BusinessHourDay,
     TimeSlot,
   } from "@bindings/domain/models.js";
-  import AppointmentStats from "../components/AppointmentStats.svelte";
+  import AppointmentStats from "./appointments/AppointmentStats.svelte";
   import AppointmentDaySection from "./appointments/AppointmentDaySection.svelte";
   import AppointmentWeekSection from "./appointments/AppointmentWeekSection.svelte";
   import AppointmentMonthSection from "./appointments/AppointmentMonthSection.svelte";
   import AppointmentAgendaSection from "./appointments/AppointmentAgendaSection.svelte";
   import { m } from "../paraglide/messages.js";
   import { getLocalDateString, isSameDay, parseLocalDate } from "$lib/date.js";
-  import { currentLocale, getLocaleVersion } from "$lib/locale.svelte.js";
+  import { currentLocale, getLocaleVersion } from "../stores/locale.svelte.js";
   import { providerRoleLabel } from "$lib/labels.js";
 
   let {

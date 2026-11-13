@@ -105,7 +105,7 @@ the software takes on its own.
    settings is audited under the staff member who did it. Each system entry's details name the
    rule it followed (for example "48-hour SMS reminder"), so an auditor can trace a send back
    to the configuration change behind it.
-6. **Localized display.** The audit view (`frontend/src/views/AuditingSubtab.svelte`) shows
+6. **Localized display.** The audit view (`frontend/src/views/audit/AuditingSection.svelte`) shows
    `user_name` as stored. For `system:` IDs it shows a Paraglide string ("LibreDental
    (automatic)") rather than English text stored in the database. The ID next to it, such as
    `system:reminders`, says which job acted.
@@ -250,7 +250,7 @@ Audit-only. No migration, no new dependencies, no change for existing callers.
 | `internal/domain/audit.go` | Add `SystemActorPrefix = "system:"`, `SystemActorReminders = "system:reminders"`, and `IsSystemActorID(id string) bool`. |
 | `internal/services/audit_service.go` | Add an unexported `auditActor` (ID and name) and `logPatientActionAs(actor, action, patientID, resource, resourceID, details)`. `LogPatientAction` resolves the session user and delegates to it, so existing behavior is unchanged. Add unexported `logSystemPatientAction`, which only accepts `system:` IDs. Nothing new is exported, so Wails binds nothing new. |
 | `internal/services/config_service.go` | `SaveProvider` and `CreateInitialProvider` reject IDs starting with `system:` with `storage.ErrInvalidInput`. The check ignores case and surrounding spaces, so look-alikes such as `SYSTEM:reminders` are refused too. |
-| `frontend/src/views/AuditingSubtab.svelte` | For `system:` user IDs, show a localized actor name instead of the stored `user_name`. |
+| `frontend/src/views/audit/AuditingSection.svelte` | For `system:` user IDs, show a localized actor name instead of the stored `user_name`. |
 | `frontend/messages/en.json` | New key `audit_system_actor`. |
 | `docs/notification-alerts.md` | Mark PR 1 done. |
 
@@ -926,7 +926,7 @@ rows only use `sent` and `failed`, so their meaning doesn't change. Existing ins
 | `frontend/src/App.svelte` | New patients default to not opted in. |
 | `frontend/src/views/ClinicView.svelte` | Add a Reminders tab. |
 | `frontend/src/views/clinic/ClinicProfileSection.svelte` | Timezone picker: curated zones for the six countries, defaulting to the browser's zone, with a warning when it differs from this computer's. |
-| `frontend/src/components/PatientInfoPanel.svelte` | Notification history (existing `ListNotificationLog`). |
+| `frontend/src/views/patients/PatientInfoPanel.svelte` | Notification history (existing `ListNotificationLog`). |
 | `frontend/src/components/AppointmentModal.svelte` | The appointment's reminder history (existing `ListNotificationLogForAppointment`). |
 | `frontend/messages/en.json` | Screen text, statuses, reasons, and default templates. |
 | `docs/lan-server-setup.md` | Reminders run wherever LibreDental runs; the server needs keyring access; the desktop app on the server PC is safe to run alongside it. |

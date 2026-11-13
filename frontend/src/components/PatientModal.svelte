@@ -8,7 +8,7 @@
   import IdInput from "./ui/IdInput.svelte";
   import { m } from "../paraglide/messages.js";
   import { providerRoleLabel } from "$lib/labels.js";
-  import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { getLocaleVersion } from "../stores/locale.svelte.js";
 
   let {
     showPatientModal = $bindable(),

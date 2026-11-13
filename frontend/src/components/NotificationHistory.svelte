@@ -5,7 +5,7 @@
   import { m } from "../paraglide/messages.js";
   import { auth } from "../stores/auth.svelte.js";
   import { handleError } from "$lib/error.js";
-  import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { getLocaleVersion } from "../stores/locale.svelte.js";
 
   // Shows messages sent to a patient, or for one appointment. Pass exactly one of the two.
   let {

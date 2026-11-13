@@ -17,7 +17,7 @@
   import ChartSummaryTable from "./charting/ChartSummaryTable.svelte";
   import PatientXRaysModal from "./charting/PatientXRaysModal.svelte";
   import { m } from "../paraglide/messages.js";
-  import { getLocaleVersion } from "$lib/locale.svelte.js";
+  import { getLocaleVersion } from "../stores/locale.svelte.js";
   import { formatCurrency } from "$lib/currency.js";
   import { errorCode, handleError } from "$lib/error.js";
   import { calculateAge, formatDateOnly } from "$lib/date.js";
