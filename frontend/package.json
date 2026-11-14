@@ -17,7 +17,7 @@
     "test:e2e": "playwright install chromium && playwright test"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.3.4",
+    "@tailwindcss/vite": "^4.3.5",
     "@wailsio/runtime": "3.1.0",
     "tailwindcss": "^4.3.5"
   },
