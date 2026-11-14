@@ -152,7 +152,9 @@ func (s *DocumentService) saveDocumentBytes(patientID, name, description, docTyp
 			return nil, errors.New("invalid patient ID: path traversal detected")
 		}
 		relDir = cleanID
-		pID = &cleanID
+		// cleanID uses the OS separator; patient IDs use '/' on every platform.
+		storedID := filepath.ToSlash(cleanID)
+		pID = &storedID
 	} else {
 		relDir = "clinic"
 		targetDir = s.getClinicDocumentsPath()
