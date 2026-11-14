@@ -22,7 +22,7 @@
     "tailwindcss": "^4.3.4"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "^3.2.0",
+    "@inlang/paraglide-js": "^3.2.2",
     "@inlang/plugin-m-function-matcher": "^2.4.3",
     "@inlang/plugin-message-format": "^4.6.0",
     "@playwright/test": "1.65.0",
