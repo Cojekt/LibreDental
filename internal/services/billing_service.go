@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/storage"
 )
@@ -155,12 +157,12 @@ func (s *BillingService) CreateClaim(token string, c *domain.Claim) (*domain.Cla
 		return nil, fmt.Errorf("%w: stable claim ID is required", storage.ErrInvalidInput)
 	}
 	if c.ID == "" {
-		c.ID = fmt.Sprintf("claim_%d", time.Now().UnixNano())
+		c.ID = "claim_" + uuid.NewString()
 	}
 	// Assign IDs to any line items that are missing them
 	for i := range c.LineItems {
 		if c.LineItems[i].ID == "" {
-			c.LineItems[i].ID = fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i)
+			c.LineItems[i].ID = "li_" + uuid.NewString()
 		}
 	}
 	if err := s.stampInsuranceFromPatient(c); err != nil {
@@ -255,7 +257,7 @@ func (s *BillingService) UpdateClaim(token string, c *domain.Claim) (*domain.Cla
 	// Ensure all line items have IDs
 	for i := range c.LineItems {
 		if c.LineItems[i].ID == "" {
-			c.LineItems[i].ID = fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i)
+			c.LineItems[i].ID = "li_" + uuid.NewString()
 		}
 	}
 	existing, err := s.claimRepo.GetByID(context.Background(), c.ID)
@@ -430,7 +432,7 @@ func (s *BillingService) RecordPayment(token string, p *domain.Payment) (*domain
 		return nil, fmt.Errorf("%w: payment cannot be nil", storage.ErrInvalidInput)
 	}
 	if p.ID == "" {
-		p.ID = fmt.Sprintf("pay_%d", time.Now().UnixNano())
+		p.ID = "pay_" + uuid.NewString()
 	}
 	if err := s.payRepo.Create(context.Background(), p); err != nil {
 		return nil, fmt.Errorf("failed to record payment: %w", err)
@@ -580,7 +582,7 @@ func (s *BillingService) CreateBundle(token string, b *domain.TreatmentBundle) (
 		return nil, fmt.Errorf("%w: bundle cannot be nil", storage.ErrInvalidInput)
 	}
 	if b.ID == "" {
-		b.ID = fmt.Sprintf("bundle_%d", time.Now().UnixNano())
+		b.ID = "bundle_" + uuid.NewString()
 	}
 	b.Shortname = strings.ToLower(strings.TrimSpace(b.Shortname))
 	if b.Shortname == "" {
@@ -789,7 +791,7 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 
 	nowStr := time.Now().Format("2006-01-02")
 	claim := &domain.Claim{
-		ID:            fmt.Sprintf("claim_%d", time.Now().UnixNano()),
+		ID:            "claim_" + uuid.NewString(),
 		PatientID:     patientID,
 		ProviderID:    providerID,
 		DateOfService: nowStr,
@@ -805,7 +807,7 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 	}
 
 	var toComplete []domain.ToothCondition
-	for i, condID := range conditionIDs {
+	for _, condID := range conditionIDs {
 		cond, exists := condMap[condID]
 		if !exists || alreadyBilled[condID] || (cond.Status != domain.ToothStatusTreatmentPlanned && cond.Status != domain.ToothStatusCompleted) {
 			continue
@@ -817,7 +819,7 @@ func (s *BillingService) CreateClaimFromChartConditions(token string, patientID 
 		}
 
 		lineItem := domain.ClaimLineItem{
-			ID:               fmt.Sprintf("li_%d_%d", time.Now().UnixNano(), i),
+			ID:               "li_" + uuid.NewString(),
 			ToothConditionID: cond.ID,
 			ToothNumber:      cond.ToothNumber,
 			Surfaces:         cond.Surfaces,

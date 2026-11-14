@@ -15,6 +15,7 @@
   import { formatCurrency } from "$lib/currency.js";
   import { auth } from "../../stores/auth.svelte.js";
   import { handleError } from "$lib/error.js";
+  import { newId } from "$lib/id.js";
 
   let {
     countryMeta = null,
@@ -111,7 +112,7 @@
     }));
 
     const payload: Omit<TreatmentBundle, "created_at" | "updated_at"> & { created_at?: string } = {
-      id: isEditingBundle ? editingBundleId : `bundle_${Date.now()}`,
+      id: isEditingBundle ? editingBundleId : newId("bundle"),
       shortname: sn,
       name: bundleName.trim(),
       description: bundleDescription,

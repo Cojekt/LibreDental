@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/services/claims"
 	"github.com/LibreDental/libredental/internal/storage"
@@ -228,7 +230,7 @@ func (s *PracticeConfigService) CreateInitialProvider(p domain.Provider) (string
 		p.Role = domain.RoleDentist
 	}
 	if p.ID == "" {
-		p.ID = fmt.Sprintf("prov_%d", time.Now().UnixNano())
+		p.ID = "prov_" + uuid.NewString()
 	}
 	if err := normalizeProviderIdentifiers(&p); err != nil {
 		return "", err
@@ -256,7 +258,7 @@ func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*
 	}
 	isNew := p.ID == ""
 	if p.ID == "" {
-		p.ID = fmt.Sprintf("prov_%d", time.Now().UnixNano())
+		p.ID = "prov_" + uuid.NewString()
 	} else {
 		if p.Pin == "****" {
 			existingProviders, err := s.repo.ListProviders(context.Background())
@@ -364,7 +366,7 @@ func (s *PracticeConfigService) SaveOperatory(token string, op domain.Operatory)
 	}
 	isNew := op.ID == ""
 	if op.ID == "" {
-		op.ID = fmt.Sprintf("op_%d", time.Now().UnixNano())
+		op.ID = "op_" + uuid.NewString()
 	}
 	err := s.repo.SaveOperatory(context.Background(), &op)
 	if err != nil {
