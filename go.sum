@@ -1,5 +1,5 @@
-github.com/aws/aws-sdk-go-v2 v1.47.7 h1:jBmtzRtGWVAzbfc4RBWo1dTte0ZZH8p9U42YJIw2+Bw=
-github.com/aws/aws-sdk-go-v2 v1.47.7/go.mod h1:I8lFSH4MGrZiw2m7miCrRYHsgpC1+HW8uiVGOiPYPcw=
+github.com/aws/aws-sdk-go-v2 v1.48.0 h1:tFU7EJVm7MfyaXLsXdYTZ0Vd6vwt9OljCyqq0gqk0Mc=
+github.com/aws/aws-sdk-go-v2 v1.48.0/go.mod h1:oeKU5p+TQBnpeLmU42WZLWvzv+ORLn+74n4QVLnm/Z0=
 github.com/aws/aws-sdk-go-v2/credentials v1.20.15 h1:LUFG3364w8wKBhGxGQ2XUxCCs+yOUrSg0dWUtBJskp8=
 github.com/aws/aws-sdk-go-v2/credentials v1.20.15/go.mod h1:Q+tKQpy3sU1MjBqXzhZauN7ffcNRF9p7Rvw293sYwE4=
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.10 h1:DKtPO+uoekvZX1tIFGVlWypYGSYkHPb7rliUI1wZtEw=
@@ -8,8 +8,8 @@ github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.10 h1:r8p95YELmfmuV9VvAa
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.10/go.mod h1:W3M52Mqai5TjgzyL/dEG+UwE+Xz9PykyjXelvbAzWIA=
 github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.42.6 h1:cD5jBQpu4m/nKlTnIDKMoiyUNqg7mgKoUTB30D888Iw=
 github.com/aws/aws-sdk-go-v2/service/pinpointsmsvoicev2 v1.42.6/go.mod h1:O/sO8yJhrQAJo8XVOmWweREJtH0V43N9O3rcpaUXUWU=
-github.com/aws/smithy-go v1.28.8 h1:aEmdAq7gVCoGCnvf1NnELlu3I6D/nhqrC321FyFiQkQ=
-github.com/aws/smithy-go v1.28.8/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
+github.com/aws/smithy-go v1.28.9 h1:zkZ058OpNX0iGTK24b+ZUEQSMc11CBA6oO7xtKZfzkY=
+github.com/aws/smithy-go v1.28.9/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
 github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=
 github.com/coder/websocket v1.8.15/go.mod h1:NX3SzP+inril6yawo5CQXx8+fk145lPDC6pumgx0mVg=
 github.com/danieljoos/wincred v1.2.3 h1:v7dZC2x32Ut3nEfRH+vhoZGvN72+dQ/snVXo/vMFLdQ=
