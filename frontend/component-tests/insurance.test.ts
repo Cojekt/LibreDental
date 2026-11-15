@@ -703,3 +703,33 @@ it("accepts an intentionally entered zero chart fee after explicit confirmation"
     )
   );
 });
+
+// LAN clients load the app over plain http, where browsers don't expose crypto.randomUUID.
+function stubInsecureCrypto() {
+  const real = globalThis.crypto;
+  vi.stubGlobal("crypto", { getRandomValues: real.getRandomValues.bind(real) });
+}
+
+it("opens a new claim and adds a row without crypto.randomUUID", async () => {
+  stubInsecureCrypto();
+  try {
+    render(ClaimsSection, { patients: [patient], providers: [], countryMeta: meta });
+    await fireEvent.click(screen.getByRole("button", { name: "New Claim" }));
+    await fireEvent.click(screen.getByRole("button", { name: "+ Add Row" }));
+    expect(screen.getByRole("textbox", { name: "Procedure Code" })).toBeTruthy();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("opens the treatment form without crypto.randomUUID", async () => {
+  stubInsecureCrypto();
+  try {
+    const view = render(ChartingView, { patients: [patient], countryMeta: meta });
+    await fireEvent.change(screen.getByLabelText("Patient:"), { target: { value: patient.id } });
+    await fireEvent.click(await screen.findByRole("button", { name: /^3(?:\s|$)/ }));
+    expect(view.container.querySelector("#condition-description")).not.toBeNull();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

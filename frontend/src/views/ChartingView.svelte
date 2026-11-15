@@ -20,6 +20,7 @@
   import { getLocaleVersion } from "../stores/locale.svelte.js";
   import { formatCurrency } from "$lib/currency.js";
   import { errorCode, handleError } from "$lib/error.js";
+  import { newUuid } from "$lib/id.js";
   import { calculateAge, formatDateOnly } from "$lib/date.js";
   import ConfirmModal from "../components/ui/ConfirmModal.svelte";
 
@@ -324,7 +325,7 @@
     formDescription = "";
     formStatus = ToothStatus.ToothStatusTreatmentPlanned;
     formFee = 0;
-    pendingConditionId = crypto.randomUUID();
+    pendingConditionId = newUuid();
     showConditionModal = true;
   }
 
