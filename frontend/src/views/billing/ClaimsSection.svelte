@@ -24,6 +24,7 @@
   import { formatCurrency } from "$lib/currency.js";
   import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
   import { handleError } from "$lib/error.js";
+  import { newUuid } from "$lib/id.js";
 
   let {
     patients = [],
@@ -174,7 +175,7 @@
   export function openNewClaim() {
     originalClaim = null;
     bundleLineIDs = new Set();
-    pendingClaimId = crypto.randomUUID();
+    pendingClaimId = newUuid();
     isEditingClaim = false;
     editingClaimId = "";
     editingClaimCreatedAt = "";
@@ -241,7 +242,7 @@
     claimLineItems = [
       ...claimLineItems,
       {
-        id: crypto.randomUUID(),
+        id: newUuid(),
         ada_code: "",
         description: "",
         fee: 0,
@@ -266,7 +267,7 @@
         const newItems: ClaimLineItem[] = (b.items ?? []).map(
           (item, i) =>
             ({
-              id: crypto.randomUUID(),
+              id: newUuid(),
               ada_code: item.ada_code,
               description: item.description,
               fee: (item.default_fee || 0) / 100,
@@ -439,7 +440,7 @@
     const newItems: ClaimLineItem[] = toImport.map(
       (cond, i) =>
         ({
-          id: crypto.randomUUID(),
+          id: newUuid(),
           tooth_condition_id: cond.id,
           pricing: cond.pricing,
           tooth_number: cond.tooth_number ?? null,
