@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS patients (
 	insurance_subscriber_state_province TEXT DEFAULT '',
 	insurance_subscriber_postal_code TEXT DEFAULT '',
 	CHECK (date(date_of_birth) IS date_of_birth),
+	CHECK (insurance_subscriber_dob IS NULL OR insurance_subscriber_dob = '' OR date(insurance_subscriber_dob) IS insurance_subscriber_dob),
 	FOREIGN KEY (preferred_provider_id) REFERENCES providers(id) ON DELETE SET NULL
 );
 

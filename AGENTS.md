@@ -174,6 +174,7 @@ declared schema actually implies.
   scan with `scanInstant()`/`scanNullInstant()`/`scanDate()` from
   `internal/storage/sqlite/timecodec.go`. Every instant column has a `typeof(...) = 'integer'`
   CHECK, so a missed write fails loudly. To read one by hand:
-  `strftime('%Y-%m-%d %H:%M:%f', col / 1e9, 'unixepoch')`.
+  `strftime('%Y-%m-%d %H:%M:%f', col / 1e9, 'unixepoch')` (millisecond display; select
+  `col` too for the exact nanoseconds).
 - The demo seeder (`internal/demo/`) ships real sample binary fixtures (DICOM, PDF,
   images) — treat these as test fixtures, not something to regenerate casually.

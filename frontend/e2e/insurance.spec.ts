@@ -89,7 +89,7 @@ test("a notes-only edit to a pre-pricing claim keeps its saved fee", async ({ pa
   const [patient] = server.query<{ id: string }>("main", "SELECT id FROM patients");
   server.exec(
     `INSERT INTO claims (id, patient_id, date_of_service, status, notes, line_items, created_at, updated_at)
-     VALUES ('legacy-claim', ?, '2026-01-01', 'draft', '', ?, '2026-01-01', '2026-01-01')`,
+     VALUES ('legacy-claim', ?, '2026-01-01', 'draft', '', ?, 1767225600000000000, 1767225600000000000)`,
     patient.id,
     JSON.stringify([
       { id: "legacy-line", ada_code: "D0120", description: "Legacy", fee: 12345 },

@@ -16,7 +16,9 @@ import (
 // TestMigrations_UpgradePreservesPatientData upgrades a database holding patient, claim, and
 // chart data from the baseline schema to the latest one. Migrations that rebuild a table
 // referenced by foreign keys can fail or lose rows on real installs while passing on the empty
-// databases the other tests use.
+// databases the other tests use. While the baseline is the only migration, the upgrade and
+// rollback steps are no-ops and this only checks that populated rows survive Open; it guards
+// every migration added after the baseline.
 func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "upgrade.db")
 	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)", dbPath)
@@ -100,8 +102,7 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	}
 	assertMoney()
 
-	// The reminder migration adds columns to tables that already hold rows: existing
-	// notifications have no reminder key, and the practice has no timezone until one is set.
+	// Rows written without the optional reminder key and practice timezone keep them unset.
 	var kind, apptStart sql.NullString
 	var status string
 	if err := db.QueryRow(`SELECT status, reminder_kind, appointment_start FROM notification_log WHERE id = 'notif_1'`).
