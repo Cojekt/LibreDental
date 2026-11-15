@@ -95,6 +95,8 @@ func TestAppointmentRepository_CRUD(t *testing.T) {
 		ID:        "appt_001",
 		PatientID: "pat_123",
 		Version:   1,
+		StartTime: fetched.StartTime,
+		EndTime:   fetched.EndTime,
 	}
 	err = repo.Update(ctx, staleAppt)
 	if err != storage.ErrConflict {

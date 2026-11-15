@@ -96,7 +96,7 @@ func (r *ProcedureRepository) Save(ctx context.Context, schedule *domain.FeeSche
 			custom_fee = excluded.custom_fee,
 			updated_at = excluded.updated_at`,
 		schedule.ID, string(schedule.CountryCode), schedule.Code,
-		nullIfEmpty(schedule.ProviderID), schedule.CustomFee, schedule.UpdatedAt,
+		nullIfEmpty(schedule.ProviderID), schedule.CustomFee, instant(schedule.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save fee schedule: %w", err)
@@ -136,7 +136,7 @@ func (r *ProcedureRepository) ListFeeSchedules(ctx context.Context, countryCode 
 	for rows.Next() {
 		var fs domain.FeeSchedule
 		var providerID sql.NullString
-		if err := rows.Scan(&fs.ID, &fs.CountryCode, &fs.Code, &providerID, &fs.CustomFee, &fs.UpdatedAt); err != nil {
+		if err := rows.Scan(&fs.ID, &fs.CountryCode, &fs.Code, &providerID, &fs.CustomFee, scanInstant(&fs.UpdatedAt)); err != nil {
 			return nil, fmt.Errorf("failed to scan fee schedule: %w", err)
 		}
 		fs.ProviderID = providerID.String

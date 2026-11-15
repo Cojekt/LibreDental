@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS providers (
 	pin TEXT DEFAULT '',
 	is_active INTEGER NOT NULL DEFAULT 1,
 	hourly_rate INTEGER NOT NULL DEFAULT 0,
-	created_at DATETIME NOT NULL,
-	updated_at DATETIME NOT NULL,
+	created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+	updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
 	npi TEXT DEFAULT '',
 	taxonomy_code TEXT DEFAULT ''
 );
@@ -19,15 +19,15 @@ CREATE TABLE IF NOT EXISTS providers (
 CREATE TABLE IF NOT EXISTS timecards (
     id TEXT NOT NULL PRIMARY KEY,
     provider_id TEXT NOT NULL,
-    clock_in DATETIME NOT NULL,
-    clock_out DATETIME,
+    clock_in INTEGER NOT NULL CHECK (typeof(clock_in) = 'integer'),
+    clock_out INTEGER NULL CHECK (clock_out IS NULL OR typeof(clock_out) = 'integer'),
     hourly_rate INTEGER NOT NULL DEFAULT 0,
     total_minutes INTEGER,
     total_pay INTEGER GENERATED ALWAYS AS ((total_minutes * hourly_rate + 30) / 60) VIRTUAL,
-    paid_at DATETIME,
+    paid_at INTEGER NULL CHECK (paid_at IS NULL OR typeof(paid_at) = 'integer'),
     is_manual BOOLEAN NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
+    created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+    updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
     FOREIGN KEY (provider_id) REFERENCES providers (id)
 );
 

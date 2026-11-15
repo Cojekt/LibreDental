@@ -70,7 +70,7 @@ func (r *ProgramBridgeRepository) Save(ctx context.Context, cfg *domain.BridgeCo
 			path = excluded.path,
 			args = excluded.args,
 			updated_at = excluded.updated_at`,
-		cfg.Name, cfg.Enabled, cfg.Path, cfg.Args, cfg.CreatedAt, cfg.UpdatedAt,
+		cfg.Name, cfg.Enabled, cfg.Path, cfg.Args, instant(cfg.CreatedAt), instant(cfg.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save program bridge: %w", err)
@@ -80,7 +80,7 @@ func (r *ProgramBridgeRepository) Save(ctx context.Context, cfg *domain.BridgeCo
 
 func scanProgramBridge(row rowScanner) (*domain.BridgeConfig, error) {
 	var cfg domain.BridgeConfig
-	if err := row.Scan(&cfg.Name, &cfg.Enabled, &cfg.Path, &cfg.Args, &cfg.CreatedAt, &cfg.UpdatedAt); err != nil {
+	if err := row.Scan(&cfg.Name, &cfg.Enabled, &cfg.Path, &cfg.Args, scanInstant(&cfg.CreatedAt), scanInstant(&cfg.UpdatedAt)); err != nil {
 		return nil, err
 	}
 	return &cfg, nil

@@ -52,8 +52,8 @@ func (r *PracticeConfigRepository) Get(ctx context.Context) (*domain.PracticeCon
 		&toothStr,
 		&cfg.DateFormat,
 		&hoursJSON,
-		&cfg.CreatedAt,
-		&cfg.UpdatedAt,
+		scanInstant(&cfg.CreatedAt),
+		scanInstant(&cfg.UpdatedAt),
 		&cfg.NPI,
 		&cfg.Timezone,
 	)
@@ -153,7 +153,7 @@ func (r *PracticeConfigRepository) save(ctx context.Context, cfg *domain.Practic
 		cfg.ClinicName, cfg.Tagline, cfg.TaxID, cfg.LicenseNumber, cfg.Phone, cfg.Email, cfg.Website,
 		cfg.AddressLine1, cfg.AddressLine2, cfg.City, cfg.StateProvince, cfg.PostalCode,
 		cfg.CountryCode, cfg.Currency, cfg.ToothSystem, cfg.DateFormat, string(hoursJSON),
-		cfg.CreatedAt, cfg.UpdatedAt, cfg.NPI, cfg.Timezone,
+		instant(cfg.CreatedAt), instant(cfg.UpdatedAt), cfg.NPI, cfg.Timezone,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save practice config: %w", err)
@@ -187,7 +187,7 @@ func (r *PracticeConfigRepository) ListProviders(ctx context.Context) ([]*domain
 
 		err := rows.Scan(
 			&p.ID, &p.Name, &roleStr, &p.Specialty, &p.LicenseNumber,
-			&p.Email, &p.Phone, &p.Color, &p.Pin, &isActiveInt, &p.HourlyRate, &p.CreatedAt, &p.UpdatedAt,
+			&p.Email, &p.Phone, &p.Color, &p.Pin, &isActiveInt, &p.HourlyRate, scanInstant(&p.CreatedAt), scanInstant(&p.UpdatedAt),
 			&p.NPI, &p.TaxonomyCode,
 		)
 		if err != nil {
@@ -246,7 +246,7 @@ func (r *PracticeConfigRepository) SaveProvider(ctx context.Context, p *domain.P
 	res, err := r.db.ExecContext(
 		ctx, query,
 		p.ID, p.Name, p.Role, p.Specialty, p.LicenseNumber,
-		p.Email, p.Phone, p.Color, p.Pin, isActiveInt, p.HourlyRate, p.CreatedAt, p.UpdatedAt,
+		p.Email, p.Phone, p.Color, p.Pin, isActiveInt, p.HourlyRate, instant(p.CreatedAt), instant(p.UpdatedAt),
 		p.NPI, p.TaxonomyCode,
 	)
 	if err != nil {
@@ -285,7 +285,7 @@ func (r *PracticeConfigRepository) CreateInitialProvider(ctx context.Context, p 
 	res, err := r.db.ExecContext(
 		ctx, query,
 		p.ID, p.Name, p.Role, p.Specialty, p.LicenseNumber,
-		p.Email, p.Phone, p.Color, p.Pin, p.HourlyRate, p.CreatedAt, p.UpdatedAt,
+		p.Email, p.Phone, p.Color, p.Pin, p.HourlyRate, instant(p.CreatedAt), instant(p.UpdatedAt),
 		p.NPI, p.TaxonomyCode,
 	)
 	if err != nil {
@@ -322,7 +322,7 @@ func (r *PracticeConfigRepository) DeleteProvider(ctx context.Context, id string
 	SET is_active = 0, updated_at = ?
 	WHERE id = ?
 	  AND (is_active = 0 OR (SELECT COUNT(*) FROM providers WHERE is_active = 1) > 1)`
-	res, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
+	res, err := r.db.ExecContext(ctx, query, instant(time.Now()), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete provider: %w", err)
 	}
@@ -367,7 +367,7 @@ func (r *PracticeConfigRepository) ListOperatories(ctx context.Context) ([]*doma
 		var isActiveInt int
 
 		err := rows.Scan(
-			&op.ID, &op.Name, &op.RoomCode, &typeStr, &isActiveInt, &op.CreatedAt, &op.UpdatedAt,
+			&op.ID, &op.Name, &op.RoomCode, &typeStr, &isActiveInt, scanInstant(&op.CreatedAt), scanInstant(&op.UpdatedAt),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan operatory: %w", err)
@@ -410,7 +410,7 @@ func (r *PracticeConfigRepository) SaveOperatory(ctx context.Context, op *domain
 
 	_, err := r.db.ExecContext(
 		ctx, query,
-		op.ID, op.Name, op.RoomCode, op.Type, isActiveInt, op.CreatedAt, op.UpdatedAt,
+		op.ID, op.Name, op.RoomCode, op.Type, isActiveInt, instant(op.CreatedAt), instant(op.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save operatory: %w", err)
@@ -421,7 +421,7 @@ func (r *PracticeConfigRepository) SaveOperatory(ctx context.Context, op *domain
 
 func (r *PracticeConfigRepository) DeleteOperatory(ctx context.Context, id string) error {
 	query := `UPDATE operatories SET is_active = 0, updated_at = ? WHERE id = ?`
-	res, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
+	res, err := r.db.ExecContext(ctx, query, instant(time.Now()), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete operatory: %w", err)
 	}

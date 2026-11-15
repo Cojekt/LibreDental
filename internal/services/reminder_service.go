@@ -244,7 +244,7 @@ func (s *ReminderService) EnableReminders(token string, defaultRules []domain.Re
 	if err != nil {
 		return nil, err
 	}
-	now := time.Now().UTC().Truncate(time.Second)
+	now := time.Now().UTC()
 	settings.Enabled, settings.EnabledAt, settings.EnabledBy = true, &now, user.ID
 	detail := fmt.Sprintf(
 		"Turned on automatic reminders for %d opted-in patients (%d with a mobile number, %d with an email address)",

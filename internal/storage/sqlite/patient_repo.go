@@ -71,7 +71,7 @@ func (r *PatientRepository) Create(ctx context.Context, p *domain.Patient) error
 	_, err := r.db.ExecContext(
 		ctx, query,
 		p.ID, p.FirstName, p.LastName, p.PreferredName,
-		p.DateOfBirth.Format(time.RFC3339), p.Sex, p.Email, p.PhonePrimary, p.PhoneSecondary,
+		dateValue(p.DateOfBirth), p.Sex, p.Email, p.PhonePrimary, p.PhoneSecondary,
 		p.EmergencyContactName, p.EmergencyContactRel, p.EmergencyContactPhone,
 		p.GuarantorName, p.GuarantorRel, p.GuarantorPhone,
 		p.InsuranceCarrier, p.InsurancePolicyNumber, p.InsuranceGroupNumber,
@@ -84,7 +84,7 @@ func (r *PatientRepository) Create(ctx context.Context, p *domain.Patient) error
 		nullIfEmpty(p.PreferredProviderID), p.ReferralSource,
 		p.AddressLine1, p.AddressLine2, p.City, p.StateProvince, p.PostalCode, p.CountryCode,
 		p.NationalIDType, p.NationalID,
-		string(alertsJSON), string(allergiesJSON), p.Notes, p.CreatedAt, p.UpdatedAt, p.Version, p.Status,
+		string(alertsJSON), string(allergiesJSON), p.Notes, instant(p.CreatedAt), instant(p.UpdatedAt), p.Version, p.Status,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert patient: %w", err)
@@ -154,7 +154,7 @@ func (r *PatientRepository) Update(ctx context.Context, p *domain.Patient) error
 	res, err := r.db.ExecContext(
 		ctx, query,
 		p.FirstName, p.LastName, p.PreferredName,
-		p.DateOfBirth.Format(time.RFC3339), p.Sex, p.Email, p.PhonePrimary, p.PhoneSecondary,
+		dateValue(p.DateOfBirth), p.Sex, p.Email, p.PhonePrimary, p.PhoneSecondary,
 		p.EmergencyContactName, p.EmergencyContactRel, p.EmergencyContactPhone,
 		p.GuarantorName, p.GuarantorRel, p.GuarantorPhone,
 		p.InsuranceCarrier, p.InsurancePolicyNumber, p.InsuranceGroupNumber,
@@ -167,7 +167,7 @@ func (r *PatientRepository) Update(ctx context.Context, p *domain.Patient) error
 		nullIfEmpty(p.PreferredProviderID), p.ReferralSource,
 		p.AddressLine1, p.AddressLine2, p.City, p.StateProvince, p.PostalCode, p.CountryCode,
 		p.NationalIDType, p.NationalID,
-		string(alertsJSON), string(allergiesJSON), p.Notes, now, p.Status,
+		string(alertsJSON), string(allergiesJSON), p.Notes, instant(now), p.Status,
 		p.ID, p.Version,
 	)
 	if err != nil {
@@ -283,7 +283,7 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 
 func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 	var p domain.Patient
-	var dobStr, alertsJSON, allergiesJSON string
+	var alertsJSON, allergiesJSON string
 	var sexStr, statusStr, countryStr string
 	var reminderInt, isSubInt int
 	var subscriberSexStr string
@@ -291,7 +291,7 @@ func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 
 	err := scanner.Scan(
 		&p.ID, &p.FirstName, &p.LastName, &p.PreferredName,
-		&dobStr, &sexStr, &p.Email, &p.PhonePrimary, &p.PhoneSecondary,
+		scanDate(&p.DateOfBirth), &sexStr, &p.Email, &p.PhonePrimary, &p.PhoneSecondary,
 		&p.EmergencyContactName, &p.EmergencyContactRel, &p.EmergencyContactPhone,
 		&p.GuarantorName, &p.GuarantorRel, &p.GuarantorPhone,
 		&p.InsuranceCarrier, &p.InsurancePolicyNumber, &p.InsuranceGroupNumber,
@@ -304,7 +304,7 @@ func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 		&preferredProviderID, &p.ReferralSource,
 		&p.AddressLine1, &p.AddressLine2, &p.City, &p.StateProvince, &p.PostalCode, &countryStr,
 		&p.NationalIDType, &p.NationalID,
-		&alertsJSON, &allergiesJSON, &p.Notes, &p.CreatedAt, &p.UpdatedAt, &p.Version, &statusStr,
+		&alertsJSON, &allergiesJSON, &p.Notes, scanInstant(&p.CreatedAt), scanInstant(&p.UpdatedAt), &p.Version, &statusStr,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -320,7 +320,6 @@ func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 	p.ReminderOptIn = reminderInt != 0
 	p.InsuranceIsSubscriber = isSubInt != 0
 	p.InsuranceSubscriberSex = domain.Sex(subscriberSexStr)
-	p.DateOfBirth, _ = time.Parse(time.RFC3339, dobStr)
 	json.Unmarshal([]byte(alertsJSON), &p.MedicalAlerts)
 	json.Unmarshal([]byte(allergiesJSON), &p.Allergies)
 

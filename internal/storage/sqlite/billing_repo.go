@@ -55,7 +55,7 @@ func (r *ClaimRepository) Create(ctx context.Context, c *domain.Claim) error {
 		c.ID, c.PatientID, nullIfEmpty(c.ProviderID), nullIfEmpty(c.AppointmentID),
 		c.InsuranceCarrier, c.PolicyNumber, c.GroupNumber, c.PayerID,
 		c.DateOfService, string(c.Status), c.Notes, string(lineItemsJSON),
-		c.CreatedAt, c.UpdatedAt,
+		instant(c.CreatedAt), instant(c.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create claim: %w", err)
@@ -107,7 +107,7 @@ func (r *ClaimRepository) Update(ctx context.Context, c *domain.Claim) error {
 		c.PatientID, nullIfEmpty(c.ProviderID), nullIfEmpty(c.AppointmentID),
 		c.InsuranceCarrier, c.PolicyNumber, c.GroupNumber, c.PayerID,
 		c.DateOfService, string(c.Status), c.Notes, string(lineItemsJSON),
-		c.UpdatedAt, c.ID,
+		instant(c.UpdatedAt), c.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update claim: %w", err)
@@ -237,7 +237,7 @@ func scanClaim(row rowScanner) (*domain.Claim, error) {
 		&c.ID, &c.PatientID, &providerID, &appointmentID,
 		&c.InsuranceCarrier, &c.PolicyNumber, &c.GroupNumber, &c.PayerID,
 		&c.DateOfService, &statusStr, &c.Notes, &lineItemsJSON,
-		&c.CreatedAt, &c.UpdatedAt,
+		scanInstant(&c.CreatedAt), scanInstant(&c.UpdatedAt),
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

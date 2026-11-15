@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 )
@@ -128,5 +129,39 @@ func TestOpen_RejectsPreBaselineDatabase(t *testing.T) {
 	_, err = Open(dbPath)
 	if !errors.Is(err, ErrIncompatibleDatabase) {
 		t.Fatalf("expected ErrIncompatibleDatabase, got %v", err)
+	}
+}
+
+// Databases from releases that stored times as text (before the integer-instant baseline) must
+// be refused rather than mixing text and integer rows. The versions are the last migrations of
+// those releases' main and audit chains.
+func TestOpen_RejectsTextTimestampDatabases(t *testing.T) {
+	for name, tc := range map[string]struct {
+		open    func(string) (*DB, error)
+		version int64
+	}{
+		"main":  {Open, 20261023175022},
+		"audit": {OpenAudit, 20260827000808},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dbPath := filepath.Join(t.TempDir(), name+".db")
+			raw, err := sql.Open("sqlite", dbPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, stmt := range []string{
+				"CREATE TABLE goose_db_version (id INTEGER PRIMARY KEY AUTOINCREMENT, version_id INTEGER NOT NULL, is_applied INTEGER NOT NULL, tstamp TIMESTAMP DEFAULT (datetime('now')))",
+				fmt.Sprintf("INSERT INTO goose_db_version (version_id, is_applied) VALUES (0, 1), (%d, 1)", tc.version),
+			} {
+				if _, err := raw.Exec(stmt); err != nil {
+					t.Fatalf("setup %q failed: %v", stmt, err)
+				}
+			}
+			raw.Close()
+
+			if _, err := tc.open(dbPath); !errors.Is(err, ErrIncompatibleDatabase) {
+				t.Fatalf("expected ErrIncompatibleDatabase, got %v", err)
+			}
+		})
 	}
 }

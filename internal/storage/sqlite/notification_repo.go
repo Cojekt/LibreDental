@@ -39,8 +39,8 @@ func (r *NotificationRepository) Create(ctx context.Context, entry *domain.Notif
 			reminder_kind, appointment_start
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		entry.ID, entry.PatientID, nullIfEmpty(entry.AppointmentID), string(entry.Channel), entry.ProviderName,
-		entry.ExternalMessageID, entry.Recipient, entry.Subject, entry.Body, string(entry.Status), entry.ErrorMessage, entry.SentAt,
-		nullIfEmpty(entry.ReminderKind), appointmentStartValue(entry.AppointmentStart),
+		entry.ExternalMessageID, entry.Recipient, entry.Subject, entry.Body, string(entry.Status), entry.ErrorMessage, instant(entry.SentAt),
+		nullIfEmpty(entry.ReminderKind), nullInstant(entry.AppointmentStart),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create notification log entry: %w", err)
@@ -112,14 +112,13 @@ func scanNotificationLogs(rows *sql.Rows) ([]*domain.NotificationLog, error) {
 			subject           sql.NullString
 			errorMessage      sql.NullString
 			reminderKind      sql.NullString
-			appointmentStart  sql.NullString
 			channel           string
 			status            string
 		)
 		if err := rows.Scan(
 			&entry.ID, &entry.PatientID, &appointmentID, &channel, &entry.ProviderName,
-			&externalMessageID, &entry.Recipient, &subject, &entry.Body, &status, &errorMessage, &entry.SentAt,
-			&reminderKind, &appointmentStart,
+			&externalMessageID, &entry.Recipient, &subject, &entry.Body, &status, &errorMessage, scanInstant(&entry.SentAt),
+			&reminderKind, scanNullInstant(&entry.AppointmentStart),
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan notification log entry: %w", err)
 		}
@@ -128,11 +127,6 @@ func scanNotificationLogs(rows *sql.Rows) ([]*domain.NotificationLog, error) {
 		entry.Subject = subject.String
 		entry.ErrorMessage = errorMessage.String
 		entry.ReminderKind = reminderKind.String
-		if appointmentStart.Valid {
-			if t, err := time.Parse(time.RFC3339, appointmentStart.String); err == nil {
-				entry.AppointmentStart = &t
-			}
-		}
 		entry.Channel = domain.NotificationChannel(channel)
 		entry.Status = domain.NotificationStatus(status)
 		entries = append(entries, &entry)
@@ -144,15 +138,6 @@ func scanNotificationLogs(rows *sql.Rows) ([]*domain.NotificationLog, error) {
 		entries = []*domain.NotificationLog{}
 	}
 	return entries, nil
-}
-
-// appointmentStartValue stores an appointment start the same way the appointments table does
-// (RFC 3339, UTC), so the reminder key matches across reads and writes.
-func appointmentStartValue(t *time.Time) any {
-	if t == nil {
-		return nil
-	}
-	return t.UTC().Format(time.RFC3339)
 }
 
 func validateReminderEntry(entry *domain.NotificationLog) error {
@@ -179,15 +164,13 @@ func (r *NotificationRepository) ClaimReminder(ctx context.Context, entry *domai
 	entry.Status = domain.NotificationStatusPending
 	entry.ErrorMessage = ""
 
-	// The driver writes times with time.Time.String, so sent_at only sorts correctly as text
-	// when every value is UTC with no monotonic reading. UTC() guarantees both (a time.Now()
-	// passed directly would be written with a trailing "m=+..." and break the comparison).
 	checkLimit := 0
-	var dayStart, weekStart time.Time
+	// Placeholders keep the zero times out of instant() when no limit applies.
+	var dayStart, weekStart any = int64(0), int64(0)
 	var perDay, perWeek int
 	if limit != nil {
 		checkLimit = 1
-		dayStart, weekStart = limit.DayStart.UTC(), limit.WeekStart.UTC()
+		dayStart, weekStart = instant(limit.DayStart), instant(limit.WeekStart)
 		perDay, perWeek = limit.PerDay, limit.PerWeek
 	}
 
@@ -208,8 +191,8 @@ func (r *NotificationRepository) ClaimReminder(ctx context.Context, entry *domai
 		ON CONFLICT (appointment_id, appointment_start, reminder_kind, channel) WHERE reminder_kind IS NOT NULL AND status <> 'skipped'
 		DO NOTHING`,
 		entry.ID, entry.PatientID, entry.AppointmentID, string(entry.Channel), entry.ProviderName,
-		entry.Recipient, entry.Subject, entry.Body, string(entry.Status), entry.SentAt,
-		entry.ReminderKind, appointmentStartValue(entry.AppointmentStart),
+		entry.Recipient, entry.Subject, entry.Body, string(entry.Status), instant(entry.SentAt),
+		entry.ReminderKind, nullInstant(entry.AppointmentStart),
 		checkLimit,
 		entry.PatientID, string(entry.Channel), dayStart, perDay,
 		entry.PatientID, string(entry.Channel), weekStart, perWeek,
@@ -241,7 +224,7 @@ func (r *NotificationRepository) reminderExists(ctx context.Context, entry *doma
 		SELECT COUNT(*) FROM notification_log
 		WHERE appointment_id = ? AND appointment_start = ? AND reminder_kind = ? AND channel = ?
 		  AND status <> 'skipped'`,
-		entry.AppointmentID, appointmentStartValue(entry.AppointmentStart), entry.ReminderKind, string(entry.Channel),
+		entry.AppointmentID, nullInstant(entry.AppointmentStart), entry.ReminderKind, string(entry.Channel),
 	).Scan(&n)
 	if err != nil {
 		return false, fmt.Errorf("failed to check reminder: %w", err)
@@ -254,7 +237,7 @@ func (r *NotificationRepository) RecordSkipped(ctx context.Context, entry *domai
 		return false, err
 	}
 	entry.Status = domain.NotificationStatusSkipped
-	key := appointmentStartValue(entry.AppointmentStart)
+	key := nullInstant(entry.AppointmentStart)
 	res, err := r.db.ExecContext(ctx, `
 		INSERT INTO notification_log (
 			id, patient_id, appointment_id, channel, provider_name,
@@ -268,7 +251,7 @@ func (r *NotificationRepository) RecordSkipped(ctx context.Context, entry *domai
 			  AND (status <> 'skipped' OR (recipient = ? AND error_message = ?))
 		)`,
 		entry.ID, entry.PatientID, entry.AppointmentID, string(entry.Channel), entry.ProviderName,
-		entry.Recipient, entry.Subject, entry.Body, string(entry.Status), entry.ErrorMessage, entry.SentAt,
+		entry.Recipient, entry.Subject, entry.Body, string(entry.Status), entry.ErrorMessage, instant(entry.SentAt),
 		entry.ReminderKind, key,
 		entry.AppointmentID, key, entry.ReminderKind, string(entry.Channel),
 		entry.Recipient, entry.ErrorMessage,
@@ -307,7 +290,7 @@ func (r *NotificationRepository) MarkStalePending(ctx context.Context, cutoff ti
 		UPDATE notification_log
 		SET status = 'unknown', error_message = 'Sending was interrupted; the message may or may not have been delivered.'
 		WHERE status = 'pending' AND sent_at < ?`,
-		cutoff.UTC(),
+		instant(cutoff),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to mark interrupted reminders: %w", err)

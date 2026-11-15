@@ -34,7 +34,7 @@ func (r *AuditRepository) Log(ctx context.Context, entry *domain.AuditLogEntry) 
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.db.ExecContext(ctx, query,
-		entry.ID, entry.Timestamp, entry.UserID, entry.UserName, entry.PatientID,
+		entry.ID, instant(entry.Timestamp), entry.UserID, entry.UserName, entry.PatientID,
 		entry.Action, entry.Resource, entry.ResourceID, entry.Details, entry.IPAddress,
 	)
 
@@ -103,7 +103,7 @@ func (r *AuditRepository) Query(ctx context.Context, patientID string, limit int
 		var e domain.AuditLogEntry
 		var actionStr string
 		err := rows.Scan(
-			&e.ID, &e.Timestamp, &e.UserID, &e.UserName, &e.PatientID,
+			&e.ID, scanInstant(&e.Timestamp), &e.UserID, &e.UserName, &e.PatientID,
 			&actionStr, &e.Resource, &e.ResourceID, &e.Details, &e.IPAddress,
 		)
 		if err != nil {

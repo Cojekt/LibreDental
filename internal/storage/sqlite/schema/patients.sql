@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS patients (
 	medical_alerts TEXT DEFAULT '[]',
 	allergies TEXT DEFAULT '[]',
 	notes TEXT DEFAULT '',
-	created_at DATETIME NOT NULL,
-	updated_at DATETIME NOT NULL,
+	created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+	updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
 	version INTEGER NOT NULL DEFAULT 1,
 	status TEXT NOT NULL DEFAULT 'active',
 	insurance_payer_id TEXT DEFAULT '',
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS patients (
 	insurance_subscriber_city TEXT DEFAULT '',
 	insurance_subscriber_state_province TEXT DEFAULT '',
 	insurance_subscriber_postal_code TEXT DEFAULT '',
-	CHECK (date(date_of_birth) IS NOT NULL),
+	CHECK (date(date_of_birth) IS date_of_birth),
 	FOREIGN KEY (preferred_provider_id) REFERENCES providers(id) ON DELETE SET NULL
 );
 
@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS documents (
     file_path TEXT NOT NULL,
     size_bytes INTEGER NOT NULL,
     content_type TEXT NOT NULL,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
+    created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+    updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
     FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE RESTRICT
 );
 

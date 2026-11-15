@@ -33,12 +33,12 @@ func (r *TimecardRepository) ListTimecards(ctx context.Context, providerID strin
 
 	if startDate != nil {
 		query += ` AND clock_in >= ?`
-		args = append(args, startDate.UTC())
+		args = append(args, instant(*startDate))
 	}
 
 	if endDate != nil {
 		query += ` AND clock_in <= ?`
-		args = append(args, endDate.UTC())
+		args = append(args, instant(*endDate))
 	}
 
 	query += ` ORDER BY clock_in DESC`
@@ -52,31 +52,23 @@ func (r *TimecardRepository) ListTimecards(ctx context.Context, providerID strin
 	timecards := []*domain.Timecard{}
 	for rows.Next() {
 		var t domain.Timecard
-		var clockOut sql.NullTime
 		var totalMinutes sql.NullInt64
 		var totalPay sql.NullInt64
-		var paidAt sql.NullTime
 		var isManualInt int
 
 		err := rows.Scan(
-			&t.ID, &t.ProviderID, &t.ClockIn, &clockOut, &t.HourlyRate,
-			&totalMinutes, &totalPay, &paidAt, &isManualInt, &t.CreatedAt, &t.UpdatedAt,
+			&t.ID, &t.ProviderID, scanInstant(&t.ClockIn), scanNullInstant(&t.ClockOut), &t.HourlyRate,
+			&totalMinutes, &totalPay, scanNullInstant(&t.PaidAt), &isManualInt, scanInstant(&t.CreatedAt), scanInstant(&t.UpdatedAt),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan timecard: %w", err)
 		}
 
-		if clockOut.Valid {
-			t.ClockOut = &clockOut.Time
-		}
 		if totalMinutes.Valid {
 			t.TotalMinutes = totalMinutes.Int64
 		}
 		if totalPay.Valid {
 			t.TotalPay = totalPay.Int64
-		}
-		if paidAt.Valid {
-			t.PaidAt = &paidAt.Time
 		}
 		t.IsManual = isManualInt == 1
 
@@ -100,15 +92,13 @@ func (r *TimecardRepository) GetActiveTimecard(ctx context.Context, providerID s
 	row := r.db.QueryRowContext(ctx, query, providerID)
 
 	var t domain.Timecard
-	var clockOut sql.NullTime
 	var totalMinutes sql.NullInt64
 	var totalPay sql.NullInt64
-	var paidAt sql.NullTime
 	var isManualInt int
 
 	err := row.Scan(
-		&t.ID, &t.ProviderID, &t.ClockIn, &clockOut, &t.HourlyRate,
-		&totalMinutes, &totalPay, &paidAt, &isManualInt, &t.CreatedAt, &t.UpdatedAt,
+		&t.ID, &t.ProviderID, scanInstant(&t.ClockIn), scanNullInstant(&t.ClockOut), &t.HourlyRate,
+		&totalMinutes, &totalPay, scanNullInstant(&t.PaidAt), &isManualInt, scanInstant(&t.CreatedAt), scanInstant(&t.UpdatedAt),
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -117,17 +107,11 @@ func (r *TimecardRepository) GetActiveTimecard(ctx context.Context, providerID s
 		return nil, fmt.Errorf("failed to get active timecard: %w", err)
 	}
 
-	if clockOut.Valid {
-		t.ClockOut = &clockOut.Time
-	}
 	if totalMinutes.Valid {
 		t.TotalMinutes = totalMinutes.Int64
 	}
 	if totalPay.Valid {
 		t.TotalPay = totalPay.Int64
-	}
-	if paidAt.Valid {
-		t.PaidAt = &paidAt.Time
 	}
 	t.IsManual = isManualInt == 1
 
@@ -161,30 +145,16 @@ func (r *TimecardRepository) SaveTimecard(ctx context.Context, t *domain.Timecar
 		updated_at = excluded.updated_at
 	`
 
-	// Times are stored as text and compared as text in range filters and
-	// ORDER BY, so every value must be written in UTC.
-	var clockOut sql.NullTime
-	if t.ClockOut != nil {
-		clockOut.Valid = true
-		clockOut.Time = t.ClockOut.UTC()
-	}
-
 	var totalMinutes sql.NullInt64
 	if t.TotalMinutes > 0 {
 		totalMinutes.Valid = true
 		totalMinutes.Int64 = t.TotalMinutes
 	}
 
-	var paidAt sql.NullTime
-	if t.PaidAt != nil {
-		paidAt.Valid = true
-		paidAt.Time = t.PaidAt.UTC()
-	}
-
 	_, err := r.db.ExecContext(
 		ctx, query,
-		t.ID, t.ProviderID, t.ClockIn.UTC(), clockOut, t.HourlyRate,
-		totalMinutes, paidAt, isManualInt, t.CreatedAt.UTC(), t.UpdatedAt.UTC(),
+		t.ID, t.ProviderID, instant(t.ClockIn), nullInstant(t.ClockOut), t.HourlyRate,
+		totalMinutes, nullInstant(t.PaidAt), isManualInt, instant(t.CreatedAt), instant(t.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save timecard: %w", err)
@@ -216,7 +186,7 @@ func (r *TimecardRepository) MarkTimecardsPaid(ctx context.Context, providerID s
 	WHERE provider_id = ? AND paid_at IS NULL AND (clock_out IS NOT NULL OR is_manual = 1)
 	`
 	now := time.Now().UTC()
-	_, err := r.db.ExecContext(ctx, query, now, now, providerID)
+	_, err := r.db.ExecContext(ctx, query, instant(now), instant(now), providerID)
 	if err != nil {
 		return fmt.Errorf("failed to mark timecards paid: %w", err)
 	}

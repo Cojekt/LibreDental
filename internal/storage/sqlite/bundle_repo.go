@@ -46,7 +46,7 @@ func (r *BundleRepository) Create(ctx context.Context, b *domain.TreatmentBundle
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		b.ID, b.Shortname, b.Name, b.Description,
 		string(itemsJSON),
-		b.CreatedAt, b.UpdatedAt,
+		instant(b.CreatedAt), instant(b.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create treatment bundle: %w", err)
@@ -95,7 +95,7 @@ func (r *BundleRepository) Update(ctx context.Context, b *domain.TreatmentBundle
 			updated_at = ?
 		WHERE id = ?`,
 		b.Shortname, b.Name, b.Description, string(itemsJSON),
-		b.UpdatedAt, b.ID,
+		instant(b.UpdatedAt), b.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update treatment bundle: %w", err)
@@ -158,7 +158,7 @@ func scanBundle(row rowScanner) (*domain.TreatmentBundle, error) {
 	err := row.Scan(
 		&b.ID, &b.Shortname, &b.Name, &b.Description,
 		&itemsJSON,
-		&b.CreatedAt, &b.UpdatedAt,
+		scanInstant(&b.CreatedAt), scanInstant(&b.UpdatedAt),
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

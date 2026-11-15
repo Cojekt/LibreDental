@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS notification_log (
     body TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL,
     error_message TEXT DEFAULT '',
-    sent_at DATETIME NOT NULL,
+    sent_at INTEGER NOT NULL CHECK (typeof(sent_at) = 'integer'),
     reminder_kind TEXT NULL,
-    appointment_start TEXT NULL,
+    appointment_start INTEGER NULL CHECK (appointment_start IS NULL OR typeof(appointment_start) = 'integer'),
     FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
     FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL
 );
@@ -35,9 +35,9 @@ CREATE TABLE IF NOT EXISTS reminder_settings (
     enabled INTEGER NOT NULL DEFAULT 0,
     sending_hours_start TEXT NOT NULL DEFAULT '08:00',
     sending_hours_end TEXT NOT NULL DEFAULT '20:00',
-    enabled_at TEXT NULL,
+    enabled_at INTEGER NULL CHECK (enabled_at IS NULL OR typeof(enabled_at) = 'integer'),
     enabled_by TEXT NULL,
-    updated_at TEXT NOT NULL
+    updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer')
 );
 
 CREATE TABLE IF NOT EXISTS reminder_rules (
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS reminder_rules (
     subject_template TEXT NOT NULL DEFAULT '',
     body_template TEXT NOT NULL,
     enabled INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
+    created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+    updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
     UNIQUE (offset_minutes, channel)
 );

@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS audit_logs (
 	id TEXT NOT NULL PRIMARY KEY,
-	timestamp DATETIME NOT NULL,
+	timestamp INTEGER NOT NULL CHECK (typeof(timestamp) = 'integer'),
 	user_id TEXT NOT NULL,
 	user_name TEXT NOT NULL,
 	patient_id TEXT DEFAULT '',
