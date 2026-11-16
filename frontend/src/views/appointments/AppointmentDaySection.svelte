@@ -60,6 +60,8 @@
   let timer: any;
   let containerEl: HTMLDivElement;
   let expandedId = $state<string | null>(null);
+  let timelineWidth = $state(0);
+  let expandedContentHeight = $state(0);
 
   onMount(() => {
     timer = setInterval(() => {
@@ -177,6 +179,7 @@
   });
 
   function toggleExpanded(id: string) {
+    expandedContentHeight = 0;
     expandedId = expandedId === id ? null : id;
   }
 </script>
@@ -230,7 +233,7 @@
     </div>
 
     <!-- Timeline -->
-    <div class="flex-1 relative">
+    <div class="flex-1 relative" bind:clientWidth={timelineWidth}>
       {#each hours as h}
         <div
           class="absolute left-0 right-0 border-t border-slate-800 pointer-events-none"
@@ -263,9 +266,9 @@
         {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
         {@const color = getStatusColor(appt.status)}
         <div
-          class="absolute border-l-4 shadow-md transition-all bg-slate-800/95 hover:brightness-110 cursor-pointer overflow-hidden"
+          class="absolute border-l-4 shadow-md transition-[left,width,height,filter] duration-200 ease-out motion-reduce:transition-none bg-slate-800/95 hover:brightness-110 cursor-pointer overflow-hidden"
           style={isExpanded
-            ? `top: ${item.top}px; left: 4px; right: 4px; min-height: ${item.height}px; height: auto; z-index: 30; border-left-color: ${color};`
+            ? `top: ${item.top}px; left: 4px; width: calc(100% - 8px); height: ${Math.max(item.height, expandedContentHeight)}px; z-index: 30; border-left-color: ${color};`
             : `top: ${item.top}px; left: calc(${item.leftPct}% + 2px); width: calc(${item.widthPct}% - 4px); height: ${item.height}px; z-index: 10; border-left-color: ${color};`}
           onclick={() => toggleExpanded(appt.id)}
           role="button"
@@ -273,7 +276,12 @@
           onkeydown={(e) => e.key === "Enter" && toggleExpanded(appt.id)}
         >
           {#if isExpanded}
-            <div class="p-3">
+            <!-- Laid out at the final expanded width so text doesn't reflow while the box grows. -->
+            <div
+              class="p-3"
+              style="width: {Math.max(timelineWidth - 12, 0)}px;"
+              bind:clientHeight={expandedContentHeight}
+            >
               <div class="flex items-start justify-between gap-2">
                 <div>
                   <div class="text-sm font-bold text-slate-100">
