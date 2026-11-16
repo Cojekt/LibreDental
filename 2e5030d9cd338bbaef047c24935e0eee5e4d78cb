@@ -1,0 +1,14 @@
+internal/services/timecard_service.go
+  h_46a62801059d09 29-31,157-159,183-185,240-242,253-255
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2e5030d9cd338bbaef047c24935e0eee5e4d78cb",
+  "prompts": {},
+  "humans": {
+    "h_46a62801059d09": {
+      "author": "RedMarcher <weijiixu@gmail.com>"
+    }
+  }
+}
