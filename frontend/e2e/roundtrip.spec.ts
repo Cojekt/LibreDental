@@ -48,3 +48,47 @@ test("patient date of birth and payment cents survive the round trip, with audit
     ])
   );
 });
+
+test("editing appointment notes preserves the exact schedule", async ({ page, server }) => {
+  await onboard(page, server);
+  await createPatient(page, "Appointment", "Patient");
+
+  server.exec(
+    `INSERT INTO operatories (id, name, created_at, updated_at)
+     VALUES ('precision-room', 'Precision Room', 0, 0)`
+  );
+  // Tomorrow at 01:00 UTC falls in the afternoon in the browser's timezone.
+  const startSeconds = (Math.floor(Date.now() / 86_400_000) + 1) * 86_400 + 3_600;
+  server.exec(
+    `INSERT INTO appointments (
+       id, patient_id, provider_id, operatory_id, start_time, end_time, status, created_at, updated_at
+     )
+     SELECT 'precision-appointment', patients.id, providers.id, 'precision-room',
+       CAST(? AS INTEGER) * 1000000000 + 500000123,
+       (CAST(? AS INTEGER) + 3600) * 1000000000 + 750000456, 'scheduled', 0, 0
+     FROM patients CROSS JOIN providers WHERE patients.first_name = 'Appointment'`,
+    startSeconds,
+    startSeconds
+  );
+  const readAppointment = () =>
+    server.query<{ start: string; end: string; notes: string }>(
+      "main",
+      `SELECT CAST(start_time AS TEXT) AS start, CAST(end_time AS TEXT) AS end, notes
+       FROM appointments WHERE id = 'precision-appointment'`
+    )[0];
+  const original = readAppointment();
+
+  await page.reload();
+  await page.getByRole("button", { name: "Appointments", exact: true }).click();
+  await page.getByRole("button", { name: "Agenda View", exact: true }).click();
+  await page
+    .getByRole("row")
+    .filter({ hasText: "Appointment Patient" })
+    .getByRole("button", { name: "Edit", exact: true })
+    .click();
+  await page.locator("#appt-notes").fill("Updated notes");
+  await page.getByRole("button", { name: "Save Changes", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Edit Appointment" })).toBeHidden();
+
+  expect(readAppointment()).toEqual({ ...original, notes: "Updated notes" });
+});

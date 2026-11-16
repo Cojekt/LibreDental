@@ -195,6 +195,7 @@
   let apptOperatoryId = $state("");
   let apptStartDateStr = $state(getTodayDateString());
   let apptStartTimeStr = $state("09:00");
+  let originalApptSchedule: { date: string; start: string; end: string } | undefined;
   let apptEndTimeStr = $state("10:00");
   let apptStatus = $state("scheduled");
   let apptReason = $state("");
@@ -630,6 +631,7 @@
 
   // Appointment Actions
   function openAddApptModal() {
+    originalApptSchedule = undefined;
     isEditingAppt = false;
     editingApptId = "";
     // No default patient: silently preselecting the first one makes it easy to book the
@@ -662,6 +664,11 @@
       const d = new Date(appt.end_time);
       apptEndTimeStr = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     }
+    originalApptSchedule = {
+      date: apptStartDateStr,
+      start: apptStartTimeStr,
+      end: apptEndTimeStr,
+    };
     apptStatus = appt.status || "scheduled";
     apptReason = appt.reason || "";
     apptNotes = appt.notes || "";
@@ -675,7 +682,10 @@
       apptError = m.alert_appointment_validation();
       return;
     }
-    if (apptEndTimeStr <= apptStartTimeStr) {
+    const dateChanged = apptStartDateStr !== originalApptSchedule?.date;
+    const startChanged = dateChanged || apptStartTimeStr !== originalApptSchedule?.start;
+    const endChanged = dateChanged || apptEndTimeStr !== originalApptSchedule?.end;
+    if ((startChanged || endChanged) && apptEndTimeStr <= apptStartTimeStr) {
       apptError = m.appt_err_end_before_start();
       return;
     }
@@ -691,8 +701,8 @@
           existing.patient_id = apptPatientId;
           existing.provider_id = apptProviderId;
           existing.operatory_id = apptOperatoryId;
-          existing.start_time = startTimeISO;
-          existing.end_time = endTimeISO;
+          if (startChanged) existing.start_time = startTimeISO;
+          if (endChanged) existing.end_time = endTimeISO;
           existing.status = apptStatus as any;
           existing.reason = apptReason;
           existing.notes = apptNotes;
