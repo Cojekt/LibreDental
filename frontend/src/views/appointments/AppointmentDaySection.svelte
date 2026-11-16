@@ -266,7 +266,7 @@
         {@const badge = statusBadges[appt.status] || statusBadges.scheduled}
         {@const color = getStatusColor(appt.status)}
         <div
-          class="absolute border-l-4 shadow-md transition-[left,width,height,filter] duration-200 ease-out motion-reduce:transition-none bg-slate-800/95 hover:brightness-110 cursor-pointer overflow-hidden"
+          class="absolute border-l-4 shadow-md transition-[top,left,width,height,border-left-color,filter] duration-200 ease-out motion-reduce:transition-none bg-slate-800/95 hover:brightness-110 cursor-pointer overflow-hidden"
           style={isExpanded
             ? `top: ${item.top}px; left: 4px; width: calc(100% - 8px); height: ${Math.max(item.height, expandedContentHeight)}px; z-index: 30; border-left-color: ${color};`
             : `top: ${item.top}px; left: calc(${item.leftPct}% + 2px); width: calc(${item.widthPct}% - 4px); height: ${item.height}px; z-index: 10; border-left-color: ${color};`}
