@@ -1,0 +1,14 @@
+README.md
+  h_46a62801059d09 1-3,5,7,14,22,24-26,28,43-45,53-54,57-58,111,113-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b8996dc0f2ddb6fad4f966778e8ab2d023b216be",
+  "prompts": {},
+  "humans": {
+    "h_46a62801059d09": {
+      "author": "RedMarcher <weijiixu@gmail.com>"
+    }
+  }
+}
