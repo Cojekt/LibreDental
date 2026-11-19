@@ -92,7 +92,7 @@ Wails-generated `build/**/Taskfile.yml` files (as `common:`, `linux:`, `windows:
 | `task check` | Same quality checks as CI (`gofmt -l`, `go vet`, tests, bindings, `format:check`, svelte-check) |
 | `task format` | `gofmt -w -s .` + prettier on frontend — **use this to format, always** |
 | `task artifact` | Build desktop binary, server binary, and demo data archive |
-| `task demo` | Generate `dist/libredental-demo-data.zip` |
+| `task demo` | Generate `dist/libredental-demo-us-{small,large}.zip` (`SIZE=small` for one) |
 | `task build` / `task package` | Production desktop build / installers for the current OS (what CI runs) |
 
 **Before considering a change done: run `task format` then `task test`.** Both

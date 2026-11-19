@@ -108,7 +108,7 @@ All project build, development, and formatting tasks are managed through [Task](
 | `task desktop` | Starts Wails v3 live-reload mode for the desktop application. |
 | `task server` | Builds and runs the application in server mode (HTTP server at <http://localhost:4242>). |
 | `task artifact` | Builds all local artifacts (desktop binary, server binary, and demo data). |
-| `task demo` | Generates a standalone pre-populated save archive (`dist/libredental-demo-data.zip`) for testing. |
+| `task demo` | Generates the small and large demo save archives in `dist/` (`task demo SIZE=small` for just one). See [Demo Data](#demo-data). |
 | `task format` | Formats Go backend files with `gofmt -w -s` and frontend code with Prettier. **Must be run before creating PRs.** |
 | `task test` | Runs the Go tests, frontend type/Svelte check, Vitest component tests, and Playwright end-to-end tests (`task e2e`). |
 | `task e2e` | Builds the server binary and runs the Playwright end-to-end tests against it. |
@@ -116,6 +116,17 @@ All project build, development, and formatting tasks are managed through [Task](
 | `task build` / `task package` | Production desktop build / installers for the current OS (Linux or Windows). |
 | `task deps:update` | Safely updates Go modules and frontend npm packages together, keeping the `wails3` CLI and `@wailsio/runtime` pinned to the same Wails version, then regenerates bindings and verifies the repo still builds and tests pass. |
 | `task deps:sync-wails` | Aligns the installed `wails3` CLI and `@wailsio/runtime` to whatever Wails version `go.mod` already pins, without upgrading any dependencies. Useful right after cloning. |
+
+## Demo Data
+
+The demo seeder builds a fictional US practice through the same services the app uses, packaged as a drop-in save folder. It comes in two sizes, both attached to every [release](https://github.com/Cojekt/libredental/releases):
+
+| Archive | Size | Use it for |
+| :--- | :--- | :--- |
+| `libredental-demo-us-small.zip` | ~18 patients, ~65 appointments | Everyday development and quick tests. Deliberately minimal and not realistic: just enough records that every screen, status and edge case has something to show. |
+| `libredental-demo-us-large.zip` | ~500 patients, ~1,400 appointments, about two months of history | Finding slow queries and UI that doesn't hold up at volume, and seeing where the system's limits are. |
+
+Both share the same staff, rooms, insurance plans and handcrafted records; only the volume of generated history differs. The seeder test checks that each size still covers every appointment, claim and payment status. To use one, back up your own `LibreDental` folder in the OS config directory (`~/.config` on Linux, `%AppData%` on Windows) and extract the archive's `LibreDental/` folder in its place.
 
 ## License
 

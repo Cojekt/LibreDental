@@ -9,11 +9,6 @@ import (
 	"github.com/LibreDental/libredental/internal/domain"
 )
 
-const (
-	historyWeeks = 6 // completed visits leading up to the reference day
-	futureWeeks  = 2 // bookings in the "upcoming" window a year out (see seedAppointments)
-)
-
 // catalogDesc mirrors the US procedure catalog names the generated visits bill against.
 var catalogDesc = map[string]string{
 	"D0120": "Periodic Oral Evaluation",
@@ -149,6 +144,7 @@ func scheduleColumns() []column {
 // historyState carries the generator's running state across days.
 type historyState struct {
 	g        *ServiceGraph
+	profile  profile
 	token    string
 	rng      *rand.Rand
 	plans    demoPlans
@@ -157,16 +153,17 @@ type historyState struct {
 	loc      *time.Location
 	summary  *SeedSummary
 
-	byID     map[string]*domain.Patient
-	adults   queue
-	minors   queue
-	seniors  queue
-	blocked  map[string]map[int]bool // patient -> teeth missing or already crowned
-	busyDay  map[string]bool         // patient|date already booked
-	future   map[string]bool         // patients with an upcoming booking
-	nextID   int
-	payments []domain.Payment
-	claims   []*domain.Claim
+	byID      map[string]*domain.Patient
+	adults    queue
+	minors    queue
+	seniors   queue
+	blocked   map[string]map[int]bool // patient -> teeth missing or already crowned
+	busyDay   map[string]bool         // patient|date already booked
+	chairWeek map[string]bool         // provider|operatory|ISO week with at least one booking
+	future    map[string]bool         // patients with an upcoming booking
+	nextID    int
+	payments  []domain.Payment
+	claims    []*domain.Claim
 }
 
 type queue struct {
@@ -193,15 +190,15 @@ func (s *historyState) id(prefix string) string {
 // seedPracticeHistory simulates the practice's recent weeks: a full schedule across every
 // chair, the charting and claims behind each completed visit, and the payments that
 // followed, plus an upcoming schedule with its treatment-planned work.
-func seedPracticeHistory(g *ServiceGraph, token string, rng *rand.Rand, plans demoPlans, patients []*domain.Patient, today time.Time, summary *SeedSummary) (*historyState, error) {
+func seedPracticeHistory(g *ServiceGraph, p profile, token string, rng *rand.Rand, plans demoPlans, patients []*domain.Patient, today time.Time, summary *SeedSummary) (*historyState, error) {
 	loc, err := time.LoadLocation("America/Los_Angeles")
 	if err != nil {
 		loc = time.FixedZone("PDT", -7*3600)
 	}
 	s := &historyState{
-		g: g, token: token, rng: rng, plans: plans, planFees: planFeeTable(), today: today, loc: loc, summary: summary,
+		g: g, profile: p, token: token, rng: rng, plans: plans, planFees: planFeeTable(), today: today, loc: loc, summary: summary,
 		byID: map[string]*domain.Patient{}, blocked: map[string]map[int]bool{},
-		busyDay: map[string]bool{}, future: map[string]bool{}, nextID: 10000,
+		busyDay: map[string]bool{}, chairWeek: map[string]bool{}, future: map[string]bool{}, nextID: 10000,
 	}
 	for _, p := range patients {
 		s.byID[p.ID] = p
@@ -224,7 +221,7 @@ func seedPracticeHistory(g *ServiceGraph, token string, rng *rand.Rand, plans de
 		return nil, err
 	}
 
-	start := today.AddDate(0, 0, -7*historyWeeks)
+	start := today.AddDate(0, 0, -7*p.historyWeeks)
 	for d := start; d.Before(today); d = d.AddDate(0, 0, 1) {
 		if err := s.seedDay(d, false, nil); err != nil {
 			return nil, err
@@ -239,7 +236,7 @@ func seedPracticeHistory(g *ServiceGraph, token string, rng *rand.Rand, plans de
 		reserved[upcoming.AddDate(0, 0, i).Format("2006-01-02")] = true
 	}
 	futureStart := upcoming.AddDate(0, 0, -int(upcoming.Weekday()-time.Monday))
-	for d := futureStart; d.Before(futureStart.AddDate(0, 0, 7*futureWeeks)); d = d.AddDate(0, 0, 1) {
+	for d := futureStart; d.Before(futureStart.AddDate(0, 0, 7*p.futureWeeks)); d = d.AddDate(0, 0, 1) {
 		var skip []string
 		if reserved[d.Format("2006-01-02")] {
 			skip = []string{"prov_101", "prov_102", "prov_103"}
@@ -271,18 +268,21 @@ func (s *historyState) seedDay(d time.Time, upcoming bool, skip []string) error 
 		if !worksOn(col.provider, d) || slices.Contains(skip, col.provider) {
 			continue
 		}
-		fill := col.fill
+		fill := col.fill * s.profile.fillScale
 		if upcoming {
 			// Near-term days are nearly full; later weeks still have openings.
 			week := int(d.Sub(s.today.AddDate(1, 0, 0)).Hours() / 24 / 7)
 			fill *= []float64{1.0, 0.6}[max(0, min(week, 1))]
 		}
+		year, week := d.ISOWeek()
+		chairWeek := fmt.Sprintf("%s|%s|%d-%d", col.provider, col.operatory, year, week)
 		t := 8 * 60
 		for t < 17*60 {
 			if t >= 12*60 && t < 13*60 {
 				t = 13 * 60
 			}
-			if !chance(s.rng, fill) {
+			force := s.profile.weeklyVisitPerChair && !s.chairWeek[chairWeek]
+			if !force && !chance(s.rng, fill) {
 				t += 30
 				continue
 			}
@@ -303,6 +303,7 @@ func (s *historyState) seedDay(d time.Time, upcoming bool, skip []string) error 
 				return err
 			}
 			s.busyDay[pid+"|"+day] = true
+			s.chairWeek[chairWeek] = true
 			t = end
 		}
 	}

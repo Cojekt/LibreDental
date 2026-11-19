@@ -4,6 +4,7 @@ package main
 
 import (
 	"archive/zip"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -15,12 +16,19 @@ import (
 )
 
 func main() {
-	outputPath := "libredental-demo-data.zip"
-	if len(os.Args) > 1 {
-		outputPath = os.Args[1]
+	sizeName := flag.String("size", string(demo.SizeSmall), "demo data size: small or large")
+	flag.Parse()
+	size, err := demo.ParseSize(*sizeName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(2)
+	}
+	outputPath := fmt.Sprintf("libredental-demo-us-%s.zip", size)
+	if flag.NArg() > 0 {
+		outputPath = flag.Arg(0)
 	}
 
-	if err := run(outputPath); err != nil {
+	if err := run(outputPath, size); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -30,13 +38,13 @@ func main() {
 // deferred cleanup (closing the databases, removing tempDir) always runs on every
 // exit path — os.Exit skips deferred functions, which previously leaked tempDir
 // whenever an error occurred after it was created.
-func run(outputPath string) error {
+func run(outputPath string, size demo.Size) error {
 	absPath, err := filepath.Abs(outputPath)
 	if err != nil {
 		absPath = outputPath
 	}
 
-	fmt.Printf("Generating LibreDental™ demo save archive at %s...\n", absPath)
+	fmt.Printf("Generating %s LibreDental™ demo save archive at %s...\n", size, absPath)
 
 	tempDir, err := os.MkdirTemp("", "libredental_demo_*")
 	if err != nil {
@@ -62,7 +70,7 @@ func run(outputPath string) error {
 	defer auditDb.Close()
 
 	demoDataDir := filepath.Join(".", "internal", "demo", "data")
-	summary, err := demo.SeedDatabase(db, auditDb, tempDir, demoDataDir)
+	summary, err := demo.SeedDatabase(db, auditDb, tempDir, demoDataDir, size)
 	_ = db.Close()
 	_ = auditDb.Close()
 

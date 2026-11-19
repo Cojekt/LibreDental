@@ -2,6 +2,7 @@ package demo
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +12,30 @@ import (
 	"github.com/LibreDental/libredental/internal/storage/sqlite"
 )
 
+type volumeRange struct{ min, max int }
+
+// Generated volumes per size: the small set is only as big as coverage needs (see
+// testCoverage), the large one looks like a busy multi-chair practice without becoming a
+// stress test.
+var expectedVolumes = map[Size]map[string]volumeRange{
+	SizeSmall: {
+		"appointments": {30, 100}, "conditions": {30, 120}, "claims": {15, 60},
+		"payments": {10, 50}, "documents": {15, 35}, "timecards": {15, 40}, "deleted records": {8, 20},
+	},
+	SizeLarge: {
+		"appointments": {1000, 2000}, "conditions": {1500, 3500}, "claims": {700, 1400},
+		"payments": {500, 1200}, "documents": {100, 200}, "timecards": {120, 250}, "deleted records": {25, 60},
+	},
+}
+
 func TestSeedDatabase(t *testing.T) {
+	for _, size := range Sizes {
+		t.Run(string(size), func(t *testing.T) { testSeedDatabase(t, size) })
+	}
+}
+
+func testSeedDatabase(t *testing.T, size Size) {
+	prof := profiles[size]
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test_demo.db")
 
@@ -29,7 +53,7 @@ func TestSeedDatabase(t *testing.T) {
 	defer auditDb.Close()
 
 	appDir := t.TempDir()
-	summary, err := SeedDatabase(db, auditDb, appDir, "./data")
+	summary, err := SeedDatabase(db, auditDb, appDir, "./data", size)
 	if err != nil {
 		t.Fatalf("SeedDatabase failed: %v", err)
 	}
@@ -43,8 +67,8 @@ func TestSeedDatabase(t *testing.T) {
 	}{
 		{"providers", summary.ProvidersCount, 11},
 		{"operatories", summary.OperatoriesCount, 10},
-		{"patients", summary.PatientsCount, 6 + generatedPatientCount},
-		{"archived patients", summary.ArchivedPatients, archivedPatientCount},
+		{"patients", summary.PatientsCount, 6 + prof.patients},
+		{"archived patients", summary.ArchivedPatients, prof.archivedPatients},
 		{"fee schedule overrides", summary.FeeSchedulesCount, 5},
 		{"treatment bundles", summary.BundlesCount, 5},
 		{"insurance plans", summary.InsurancePlans, 8},
@@ -55,26 +79,20 @@ func TestSeedDatabase(t *testing.T) {
 			t.Errorf("Expected %d %s, got %d", c.want, c.name, c.got)
 		}
 	}
-	// Generated volumes should look like a busy multi-chair practice, not a toy or a stress test.
-	ranges := []struct {
-		name          string
-		got, min, max int
-	}{
-		{"appointments", summary.AppointmentsCount, 1000, 2000},
-		{"conditions", summary.ConditionsCount, 1500, 3500},
-		{"claims", summary.ClaimsCount, 700, 1400},
-		{"payments", summary.PaymentsCount, 500, 1200},
-		{"documents", summary.DocumentsCount, 100, 200},
-		{"timecards", summary.TimecardsCount, 120, 250},
-		{"deleted records", summary.DeletedRecords, 25, 60},
+	got := map[string]int{
+		"appointments": summary.AppointmentsCount, "conditions": summary.ConditionsCount,
+		"claims": summary.ClaimsCount, "payments": summary.PaymentsCount,
+		"documents": summary.DocumentsCount, "timecards": summary.TimecardsCount,
+		"deleted records": summary.DeletedRecords,
 	}
-	for _, c := range ranges {
-		if c.got < c.min || c.got > c.max {
-			t.Errorf("Expected %d-%d %s, got %d", c.min, c.max, c.name, c.got)
+	for name, want := range expectedVolumes[size] {
+		if got[name] < want.min || got[name] > want.max {
+			t.Errorf("Expected %d-%d %s, got %d", want.min, want.max, name, got[name])
 		}
 	}
 
 	ctx := context.Background()
+	testCoverage(t, db, ctx)
 
 	// Verify practice config
 	configRepo := sqlite.NewPracticeConfigRepository(db)
@@ -92,8 +110,8 @@ func TestSeedDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list patients: %v", err)
 	}
-	if total != archivedPatientCount || len(patients) != archivedPatientCount {
-		t.Errorf("Expected %d archived patients in list, got total %d, count %d", archivedPatientCount, total, len(patients))
+	if total != int64(prof.archivedPatients) || len(patients) != prof.archivedPatients {
+		t.Errorf("Expected %d archived patients in list, got total %d, count %d", prof.archivedPatients, total, len(patients))
 	}
 	archived := map[string]bool{}
 	for _, p := range patients {
@@ -272,4 +290,62 @@ func TestSeedDatabase(t *testing.T) {
 			t.Errorf("Operatory %s: unexpected active state %v", op.ID, op.IsActive)
 		}
 	}
+}
+
+// testCoverage checks that every status, method and scheduled provider the UI can show has at
+// least one record, so a smaller profile can't silently drop a case.
+func testCoverage(t *testing.T, db *sqlite.DB, ctx context.Context) {
+	t.Helper()
+	distinct := func(query string) map[string]bool {
+		rows, err := db.QueryContext(ctx, query)
+		if err != nil {
+			t.Fatalf("%s: %v", query, err)
+		}
+		defer rows.Close()
+		out := map[string]bool{}
+		for rows.Next() {
+			var v string
+			if err := rows.Scan(&v); err != nil {
+				t.Fatalf("%s: %v", query, err)
+			}
+			out[v] = true
+		}
+		return out
+	}
+	want := func(what, query string, values ...string) {
+		got := distinct(query)
+		for _, v := range values {
+			if !got[v] {
+				t.Errorf("Expected at least one %s %q", what, v)
+			}
+		}
+	}
+	str := func(xs ...any) []string {
+		out := make([]string, len(xs))
+		for i, x := range xs {
+			out[i] = fmt.Sprint(x)
+		}
+		return out
+	}
+
+	want("appointment status", `SELECT DISTINCT status FROM appointments`, str(
+		domain.AppointmentStatusScheduled, domain.AppointmentStatusConfirmed, domain.AppointmentStatusArrived,
+		domain.AppointmentStatusInChair, domain.AppointmentStatusComplete, domain.AppointmentStatusCancelled,
+		domain.AppointmentStatusNoShow)...)
+	want("claim status", `SELECT DISTINCT status FROM claims`, str(
+		domain.ClaimStatusDraft, domain.ClaimStatusSubmitted, domain.ClaimStatusAccepted,
+		domain.ClaimStatusRejected, domain.ClaimStatusPaid)...)
+	want("payment method", `SELECT DISTINCT method FROM payments`, str(
+		domain.PaymentMethodCash, domain.PaymentMethodCheck, domain.PaymentMethodCreditCard,
+		domain.PaymentMethodInsurance, domain.PaymentMethodWriteOff)...)
+	want("tooth condition status", `SELECT DISTINCT status FROM dental_conditions`, str(
+		domain.ToothStatusExisting, domain.ToothStatusTreatmentPlanned, domain.ToothStatusCompleted,
+		domain.ToothStatusMissing)...)
+
+	var providers []string
+	for _, col := range scheduleColumns() {
+		providers = append(providers, col.provider)
+	}
+	want("past visit for provider", `SELECT DISTINCT provider_id FROM appointments WHERE status IN ('completed', 'cancelled', 'no_show')`, providers...)
+	want("timecard payroll state", `SELECT DISTINCT CASE WHEN paid_at IS NULL THEN 'owed' ELSE 'paid' END FROM timecards`, "owed", "paid")
 }

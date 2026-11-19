@@ -3,6 +3,7 @@ package demo
 import (
 	"fmt"
 	"math/rand/v2"
+	"slices"
 	"time"
 )
 
@@ -11,8 +12,8 @@ var hourlyStaff = []string{"prov_103", "prov_106", "prov_107", "prov_108", "prov
 
 // seedTimecards records shifts over the history window. Payroll was run through the end of
 // the previous pay period, so the most recent two weeks are still owed.
-func seedTimecards(g *ServiceGraph, token string, rng *rand.Rand, today time.Time, summary *SeedSummary) error {
-	start := today.AddDate(0, 0, -7*historyWeeks)
+func seedTimecards(g *ServiceGraph, p profile, token string, rng *rand.Rand, today time.Time, summary *SeedSummary) error {
+	start := today.AddDate(0, 0, -7*p.historyWeeks)
 	payrollCutoff := today.AddDate(0, 0, -14)
 	paid := false
 	for d := start; d.Before(today); d = d.AddDate(0, 0, 1) {
@@ -25,7 +26,8 @@ func seedTimecards(g *ServiceGraph, token string, rng *rand.Rand, today time.Tim
 			paid = true
 		}
 		for _, s := range hourlyStaff {
-			if closedDays[d.Format("2006-01-02")] || !worksOn(s, d) {
+			if closedDays[d.Format("2006-01-02")] || !worksOn(s, d) ||
+				(p.timecardDays != nil && !slices.Contains(p.timecardDays, d.Weekday())) {
 				continue
 			}
 			// Occasional sick or vacation day.

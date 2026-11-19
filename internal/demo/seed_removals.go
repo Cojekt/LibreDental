@@ -9,9 +9,6 @@ import (
 	"github.com/LibreDental/libredental/internal/domain"
 )
 
-// archivedPatientCount patients have left the practice (moved, transferred care, deceased).
-const archivedPatientCount = 15
-
 // seedRemovals exercises every removal path the app offers, through the same services and
 // so with the same audit entries a real office would leave behind: mistaken records that
 // were deleted, patients archived, a departed hygienist deactivated, a room taken down.
@@ -26,11 +23,11 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 
 	// Appointments booked in error: double bookings and wrong-patient entries, created and
 	// then removed. Upcoming ones sit in the next-year window, past ones in the history.
-	for i := range 10 {
+	for i := range h.profile.removals.appointments {
 		pid := h.adults.next(h, "")
-		day := h.today.AddDate(0, 0, -3-rng.IntN(7*historyWeeks-5))
+		day := h.today.AddDate(0, 0, -3-rng.IntN(7*h.profile.historyWeeks-5))
 		if i%2 == 0 {
-			day = h.today.AddDate(1, 0, 3+rng.IntN(7*futureWeeks))
+			day = h.today.AddDate(1, 0, 3+rng.IntN(7*h.profile.futureWeeks))
 		}
 		for day.Weekday() == time.Saturday || day.Weekday() == time.Sunday {
 			day = day.AddDate(0, 0, 1)
@@ -54,14 +51,14 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 	}
 
 	// Chart entries recorded on the wrong tooth, and planned treatment the patient declined.
-	for i := range 6 {
+	for i := range h.profile.removals.conditions {
 		pid := h.adults.next(h, "")
 		p := h.filling(pid)
 		if p.tooth == 0 {
 			continue
 		}
 		status := domain.ToothStatusExisting
-		if i >= 3 {
+		if i >= h.profile.removals.conditions/2 {
 			status = domain.ToothStatusTreatmentPlanned
 		}
 		c := &domain.SaveToothConditionPayload{
@@ -84,7 +81,7 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 	}
 
 	// Duplicate claims: a second draft opened for a visit that was already billed.
-	for _, orig := range pickN(rng, h.claims, 4) {
+	for _, orig := range pickN(rng, h.claims, h.profile.removals.claims) {
 		dup := &domain.Claim{
 			ID: h.id("claim"), PatientID: orig.PatientID, ProviderID: orig.ProviderID,
 			DateOfService: orig.DateOfService, Status: domain.ClaimStatusDraft,
@@ -104,7 +101,7 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 	}
 
 	// Payments keyed in twice at checkout, caught and removed at end-of-day reconciliation.
-	for _, orig := range pickN(rng, h.payments, 5) {
+	for _, orig := range pickN(rng, h.payments, h.profile.removals.payments) {
 		dup := orig
 		dup.ID, dup.Notes = h.id("pay"), "Duplicate entry"
 		if _, err := g.Billing.RecordPayment(token, &dup); err != nil {
@@ -116,7 +113,7 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 	}
 
 	// Documents uploaded to the wrong patient's chart.
-	for _, id := range pickN(rng, docIDs, 3) {
+	for _, id := range pickN(rng, docIDs, h.profile.removals.documents) {
 		if err := deleted(g.Document.DeleteDocument(token, id), id); err != nil {
 			return err
 		}
@@ -190,7 +187,7 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 
 	// Patients who opted out of automated reminders after joining. Those who never opted in
 	// are skipped, since clearing an already-false flag records no consent change.
-	for optedOut, tries := 0, 0; optedOut < 5; tries++ {
+	for optedOut, tries := 0, 0; optedOut < h.profile.removals.optOuts; tries++ {
 		if tries == len(h.adults.ids) {
 			return fmt.Errorf("found only %d opted-in adults to opt out", optedOut)
 		}
@@ -209,20 +206,25 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 		}
 	}
 
-	// Archive patients who have no upcoming bookings.
-	archived := 0
-	for _, pid := range h.adults.ids {
-		if archived == archivedPatientCount {
-			break
+	// Archive patients who have no upcoming bookings. A small roster may need several passes.
+	archived := map[string]bool{}
+	for pass := 0; len(archived) < h.profile.archivedPatients; pass++ {
+		if pass == 50 {
+			return fmt.Errorf("found only %d patients without upcoming bookings to archive", len(archived))
 		}
-		if h.future[pid] || !chance(rng, 0.15) {
-			continue
+		for _, pid := range h.adults.ids {
+			if len(archived) == h.profile.archivedPatients {
+				break
+			}
+			if archived[pid] || h.future[pid] || !chance(rng, 0.15) {
+				continue
+			}
+			if err := g.Patient.ArchivePatient(token, pid); err != nil {
+				return fmt.Errorf("failed to archive patient %s: %w", pid, err)
+			}
+			archived[pid] = true
+			summary.ArchivedPatients++
 		}
-		if err := g.Patient.ArchivePatient(token, pid); err != nil {
-			return fmt.Errorf("failed to archive patient %s: %w", pid, err)
-		}
-		archived++
-		summary.ArchivedPatients++
 	}
 	return nil
 }

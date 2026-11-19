@@ -12,7 +12,7 @@ import (
 
 // seedDocuments uploads the fixture documents, then a realistic spread of everyday paperwork
 // across the generated roster. It returns the generated documents' IDs.
-func seedDocuments(g *ServiceGraph, token string, rng *rand.Rand, patients []*domain.Patient, demoDataDir string, summary *SeedSummary) ([]string, error) {
+func seedDocuments(g *ServiceGraph, token string, rng *rand.Rand, patients []*domain.Patient, paperworkPatients int, demoDataDir string, summary *SeedSummary) ([]string, error) {
 	type seedDef struct {
 		name      string
 		desc      string
@@ -64,7 +64,7 @@ func seedDocuments(g *ServiceGraph, token string, rng *rand.Rand, patients []*do
 		{"Intraoral Photo", "Clinical photograph for the treatment plan.", string(domain.DocumentTypeImage), "image/webp", "image-modern-format-test.webp", false, ""},
 	}
 	firstGenerated := len(seeds)
-	for _, i := range rng.Perm(len(patients))[:min(60, len(patients))] {
+	for _, i := range rng.Perm(len(patients))[:min(paperworkPatients, len(patients))] {
 		for _, j := range rng.Perm(len(paperwork))[:1+rng.IntN(3)] {
 			d := paperwork[j]
 			d.patientID = patients[i].ID

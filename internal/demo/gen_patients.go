@@ -10,10 +10,6 @@ import (
 	"github.com/LibreDental/libredental/internal/domain"
 )
 
-// generatedPatientCount is a slice of a large practice's roster: enough to fill eight weeks
-// of schedules across every chair without bloating the demo archive.
-const generatedPatientCount = 500
-
 var (
 	maleNames = []string{
 		"James", "Michael", "Daniel", "Luis", "Wei", "Arjun", "Omar", "Ethan", "Noah", "Mateo",
@@ -122,7 +118,7 @@ func birthDate(rng *rand.Rand, today time.Time, minAge, maxAge int) time.Time {
 
 // generatePatients builds households (a primary adult, sometimes a partner and children
 // sharing an address, guarantor and policy) until the roster reaches its target size.
-func generatePatients(rng *rand.Rand, today time.Time) []*domain.Patient {
+func generatePatients(rng *rand.Rand, today time.Time, count int) []*domain.Patient {
 	var out []*domain.Patient
 	next := 1001
 	newPatient := func(first, last string, sex domain.Sex, dob time.Time) *domain.Patient {
@@ -153,7 +149,7 @@ func generatePatients(rng *rand.Rand, today time.Time) []*domain.Patient {
 		return p
 	}
 
-	for len(out) < generatedPatientCount {
+	for len(out) < count {
 		last := pick(rng, lastNames)
 		city := pick(rng, cities)
 		addr1 := fmt.Sprintf("%d %s", 100+rng.IntN(4800), pick(rng, streets))
@@ -275,7 +271,7 @@ func generatePatients(rng *rand.Rand, today time.Time) []*domain.Patient {
 			primary.EmergencyContactPhone = partner.PhonePrimary
 		}
 	}
-	return out[:generatedPatientCount]
+	return out[:count]
 }
 
 func nameFor(rng *rand.Rand, sex domain.Sex) string {

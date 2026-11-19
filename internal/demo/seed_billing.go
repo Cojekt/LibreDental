@@ -314,12 +314,40 @@ func seedClaims(g *ServiceGraph, token string, now time.Time, plans demoPlans, s
 			CreatedAt: now,
 			UpdatedAt: now,
 		},
+		{
+			ID:               "claim_404",
+			PatientID:        "pat_105",
+			ProviderID:       "prov_101",
+			AppointmentID:    "",
+			InsuranceCarrier: "Humana Dental Choice",
+			PolicyNumber:     "HUM-7740291",
+			GroupNumber:      "GRP-77201",
+			DateOfService:    "2026-05-06",
+			Status:           domain.ClaimStatusRejected,
+			Notes:            "Denied: frequency limitation - prophylaxis covered twice per benefit year.",
+			LineItems: []domain.ClaimLineItem{
+				{
+					ID:               "li_6",
+					ToothConditionID: "",
+					ToothNumber:      0,
+					Surfaces:         []domain.ToothSurface{},
+					ADACode:          "D1110",
+					Description:      "Prophylaxis - Adult",
+					Fee:              9000,
+					InsuranceAllowed: 0,
+					PatientPortion:   9000,
+				},
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
 	}
 
 	// Lines linked to a charted treatment copy its saved pricing; the rest need a review.
 	direct := map[string]demoPrice{
 		"li_4": {kind: "insurance", clinician: "prov_101", plan: "Cigna Dental Health"},
 		"li_5": {kind: "insurance", clinician: "prov_101", plan: "Cigna Dental Health"},
+		"li_6": {kind: "insurance", clinician: "prov_101", plan: "Humana Dental Choice"},
 	}
 	for _, c := range claims {
 		for i := range c.LineItems {
@@ -362,6 +390,16 @@ func seedPayments(g *ServiceGraph, token string, now time.Time, summary *SeedSum
 			Method:    domain.PaymentMethodInsurance,
 			Date:      "2026-06-15",
 			Notes:     "Delta Dental insurance claim payment EOB #99482",
+			CreatedAt: now,
+		},
+		{
+			ID:        "pay_503",
+			PatientID: "pat_105",
+			ClaimID:   "claim_404",
+			Amount:    9000,
+			Method:    domain.PaymentMethodWriteOff,
+			Date:      "2026-05-20",
+			Notes:     "Denied prophylaxis written off as a courtesy",
 			CreatedAt: now,
 		},
 	}

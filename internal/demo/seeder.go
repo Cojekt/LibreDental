@@ -33,12 +33,17 @@ type SeedSummary struct {
 
 // SeedDatabase populates a fresh save folder with sample practice configuration,
 // healthcare providers, operatory treatment rooms, patient records, scheduled
-// appointments, dental charting conditions, billing records, and documents.
+// appointments, dental charting conditions, billing records, and documents. The size
+// picks how much generated practice history is layered on top (see Size).
 //
 // Every record is created by calling the same Go services the Wails frontend binds
 // to (internal/services), not by writing to the database directly, so the generated
 // demo data can never drift from real application behavior.
-func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string) (*SeedSummary, error) {
+func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string, size Size) (*SeedSummary, error) {
+	p, ok := profiles[size]
+	if !ok {
+		return nil, fmt.Errorf("unknown demo data size %q", size)
+	}
 	summary := &SeedSummary{}
 	graph := BuildServiceGraph(db, auditDb, appDir)
 
@@ -77,7 +82,7 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 	}
 
 	// 5. Patients: the handcrafted records below, then a generated roster of households
-	generated := generatePatients(rng, today)
+	generated := generatePatients(rng, today, p.patients)
 	if err := seedPatients(graph, token, now, generated, summary); err != nil {
 		return nil, err
 	}
@@ -117,19 +122,19 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 	}
 
 	// 12. Generated practice history: schedules, charting, claims and payments
-	history, err := seedPracticeHistory(graph, token, rng, plans, generated, today, summary)
+	history, err := seedPracticeHistory(graph, p, token, rng, plans, generated, today, summary)
 	if err != nil {
 		return nil, err
 	}
 
 	// 13. Documents
-	docIDs, err := seedDocuments(graph, token, rng, generated, demoDataDir, summary)
+	docIDs, err := seedDocuments(graph, token, rng, generated, p.paperworkPatients, demoDataDir, summary)
 	if err != nil {
 		return nil, err
 	}
 
 	// 14. Staff timecards
-	if err := seedTimecards(graph, token, rng, today, summary); err != nil {
+	if err := seedTimecards(graph, p, token, rng, today, summary); err != nil {
 		return nil, err
 	}
 
