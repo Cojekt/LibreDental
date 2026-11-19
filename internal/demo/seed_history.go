@@ -87,31 +87,62 @@ const (
 	colEmergency
 )
 
-// column is one provider working one operatory on given weekdays (1=Mon..5=Fri).
+// column is one provider working one operatory on the days in their staffSchedule.
 type column struct {
 	provider, operatory, color string
 	kind                       columnKind
-	days                       []time.Weekday
 	fill                       float64
-	until                      time.Time // zero = still working here
 }
 
 var weekdays = []time.Weekday{time.Monday, time.Tuesday, time.Wednesday, time.Thursday, time.Friday}
+
+// staffSchedules is shared by bookings and timecards so the two can't disagree about who
+// was in the office on a given day.
+var staffSchedules = map[string]struct {
+	days  []time.Weekday
+	until time.Time // zero = still working here
+}{
+	"prov_101": {weekdays, time.Time{}},
+	"prov_102": {weekdays[:4], time.Time{}},
+	"prov_103": {weekdays, time.Time{}},
+	"prov_104": {[]time.Weekday{time.Monday, time.Wednesday, time.Thursday, time.Friday}, time.Time{}},
+	"prov_105": {weekdays[1:], time.Time{}},
+	"prov_106": {weekdays, time.Time{}},
+	"prov_107": {weekdays[:4], time.Time{}},
+	"prov_108": {weekdays, time.Time{}},
+	"prov_109": {weekdays, time.Time{}},
+	"prov_110": {weekdays, time.Date(2026, 5, 22, 23, 0, 0, 0, time.UTC)},
+	"prov_111": {weekdays[1:], time.Time{}},
+}
+
+func worksOn(provider string, d time.Time) bool {
+	sch := staffSchedules[provider]
+	return slices.Contains(sch.days, d.Weekday()) && (sch.until.IsZero() || !d.After(sch.until))
+}
+
+// ageOn is the patient's age in whole years on the given day.
+func ageOn(dob, day time.Time) int {
+	age := day.Year() - dob.Year()
+	if dob.AddDate(age, 0, 0).After(day) {
+		age--
+	}
+	return age
+}
 
 // closedDays are weekday holidays inside the generated windows (Memorial Day).
 var closedDays = map[string]bool{"2026-05-25": true}
 
 func scheduleColumns() []column {
 	return []column{
-		{"prov_101", "op_1", "#3b82f6", colGeneral, weekdays, 0.6, time.Time{}},
-		{"prov_101", "op_5", "#3b82f6", colEmergency, weekdays, 0.2, time.Time{}},
-		{"prov_102", "op_3", "#10b981", colEndo, weekdays[:4], 0.55, time.Time{}},
-		{"prov_103", "op_2", "#f59e0b", colHygiene, weekdays, 0.65, time.Time{}},
-		{"prov_104", "op_8", "#ec4899", colPediatric, []time.Weekday{time.Monday, time.Wednesday, time.Thursday, time.Friday}, 0.5, time.Time{}},
-		{"prov_105", "op_4", "#8b5cf6", colProstho, weekdays[1:], 0.5, time.Time{}},
-		{"prov_106", "op_6", "#14b8a6", colHygiene, weekdays, 0.65, time.Time{}},
-		{"prov_107", "op_7", "#f97316", colHygiene, weekdays[:4], 0.6, time.Time{}},
-		{"prov_110", "op_9", "#a3a3a3", colHygiene, weekdays, 0.6, time.Date(2026, 5, 22, 23, 0, 0, 0, time.UTC)},
+		{"prov_101", "op_1", "#3b82f6", colGeneral, 0.6},
+		{"prov_101", "op_5", "#3b82f6", colEmergency, 0.2},
+		{"prov_102", "op_3", "#10b981", colEndo, 0.55},
+		{"prov_103", "op_2", "#f59e0b", colHygiene, 0.65},
+		{"prov_104", "op_8", "#ec4899", colPediatric, 0.5},
+		{"prov_105", "op_4", "#8b5cf6", colProstho, 0.5},
+		{"prov_106", "op_6", "#14b8a6", colHygiene, 0.65},
+		{"prov_107", "op_7", "#f97316", colHygiene, 0.6},
+		{"prov_110", "op_9", "#a3a3a3", colHygiene, 0.6},
 	}
 }
 
@@ -175,7 +206,7 @@ func seedPracticeHistory(g *ServiceGraph, token string, rng *rand.Rand, plans de
 	for _, p := range patients {
 		s.byID[p.ID] = p
 		s.blocked[p.ID] = map[int]bool{}
-		switch age := today.Year() - p.DateOfBirth.Year(); {
+		switch age := ageOn(p.DateOfBirth, today); {
 		case age < 18:
 			s.minors.ids = append(s.minors.ids, p.ID)
 		default:
@@ -237,10 +268,7 @@ func (s *historyState) seedDay(d time.Time, upcoming bool, skip []string) error 
 		return nil
 	}
 	for _, col := range scheduleColumns() {
-		if !slices.Contains(col.days, d.Weekday()) || slices.Contains(skip, col.provider) {
-			continue
-		}
-		if !col.until.IsZero() && d.After(col.until) {
+		if !worksOn(col.provider, d) || slices.Contains(skip, col.provider) {
 			continue
 		}
 		fill := col.fill
@@ -298,7 +326,7 @@ func (s *historyState) pickPatient(kind columnKind, day string) string {
 }
 
 func (s *historyState) isMinor(pid string) bool {
-	return s.byID[pid].DateOfBirth.After(s.today.AddDate(-18, 0, 0))
+	return ageOn(s.byID[pid].DateOfBirth, s.today) < 18
 }
 
 // tooth picks an unblocked tooth from the candidates, or 0 if none is left.
@@ -396,7 +424,7 @@ func (s *historyState) planVisit(kind columnKind, pid string) visit {
 		}
 		return visit{"Pediatric Restorative", 45, []proc{f}, nil}
 	case colProstho:
-		age := s.today.Year() - s.byID[pid].DateOfBirth.Year()
+		age := ageOn(s.byID[pid].DateOfBirth, s.today)
 		if age >= 60 && chance(rng, 0.25) {
 			code := pick(rng, []string{"D5110", "D5120"})
 			return visit{"Complete Denture - Final Impressions & Delivery", 60, []proc{{code: code}}, nil}

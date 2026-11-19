@@ -3,6 +3,7 @@ package demo
 import (
 	"fmt"
 	"math/rand/v2"
+	"slices"
 	"strings"
 	"time"
 
@@ -186,13 +187,16 @@ func generatePatients(rng *rand.Rand, today time.Time) []*domain.Patient {
 			partner = newPatient(nameFor(rng, psex), last, psex, birthDate(rng, today, 22, 80))
 			household = append(household, partner)
 		}
+		// birthDate can back-date up to a year past the whole-year age, so capping the child at
+		// the primary's age minus 19 keeps the primary at least 18 when each child was born.
+		maxKidAge := min(17, ageOn(primary.DateOfBirth, today)-19)
 		kids := 0
-		if primary.DateOfBirth.After(today.AddDate(-55, 0, 0)) && chance(rng, 0.35) {
+		if maxKidAge >= 4 && primary.DateOfBirth.After(today.AddDate(-55, 0, 0)) && chance(rng, 0.35) {
 			kids = 1 + rng.IntN(3)
 		}
 		for range kids {
 			ksex := pick(rng, []domain.Sex{domain.SexMale, domain.SexFemale})
-			household = append(household, newPatient(nameFor(rng, ksex), last, ksex, birthDate(rng, today, 4, 17)))
+			household = append(household, newPatient(nameFor(rng, ksex), last, ksex, birthDate(rng, today, 4, maxKidAge)))
 		}
 
 		primaryName := primary.FirstName + " " + primary.LastName
@@ -226,7 +230,11 @@ func generatePatients(rng *rand.Rand, today time.Time) []*domain.Patient {
 					rng.IntN(100), pick(rng, []string{"example.com", "example.org", "example.net"}))
 				p.GuarantorName, p.GuarantorRel, p.GuarantorPhone = "Self", "Self", p.PhonePrimary
 				if p.DateOfBirth.Before(today.AddDate(-40, 0, 0)) {
-					p.MedicalAlerts = sample(rng, medicalAlertPool, 2)
+					pool := medicalAlertPool
+					if p.Sex != domain.SexFemale || p.DateOfBirth.Before(today.AddDate(-50, 0, 0)) {
+						pool = slices.DeleteFunc(slices.Clone(pool), func(a string) bool { return a == "Pregnancy" })
+					}
+					p.MedicalAlerts = sample(rng, pool, 2)
 				}
 				p.Allergies = sample(rng, allergyPool, 1)
 				p.Notes = pick(rng, adultNotes)
@@ -240,7 +248,8 @@ func generatePatients(rng *rand.Rand, today time.Time) []*domain.Patient {
 			case p == partner:
 				p.EmergencyContactName, p.EmergencyContactRel, p.EmergencyContactPhone = primaryName, "Spouse", primary.PhonePrimary
 			case p == primary && partner != nil:
-				p.EmergencyContactName, p.EmergencyContactRel, p.EmergencyContactPhone = partner.FirstName+" "+partner.LastName, "Spouse", partner.PhonePrimary
+				// The phone is filled in after the loop, once the partner's has been generated.
+				p.EmergencyContactName, p.EmergencyContactRel = partner.FirstName+" "+partner.LastName, "Spouse"
 			case p == primary:
 				p.EmergencyContactName = nameFor(rng, pick(rng, []domain.Sex{domain.SexMale, domain.SexFemale})) + " " + pick(rng, lastNames)
 				p.EmergencyContactRel = pick(rng, []string{"Sibling", "Friend", "Parent", "Adult Child"})
@@ -261,6 +270,9 @@ func generatePatients(rng *rand.Rand, today time.Time) []*domain.Patient {
 				p.InsuranceSubscriberCity, p.InsuranceSubscriberState, p.InsuranceSubscriberPostalCode = city.name, "CA", city.zip
 			}
 			out = append(out, p)
+		}
+		if partner != nil {
+			primary.EmergencyContactPhone = partner.PhonePrimary
 		}
 	}
 	return out[:generatedPatientCount]

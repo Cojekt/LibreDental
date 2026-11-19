@@ -177,20 +177,31 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 			return fmt.Errorf("failed to seed timecard for %s: %w", id, err)
 		}
 		cards, err := g.Timecard.ListTimecards(id, stamp.Format(time.RFC3339), stamp.Format(time.RFC3339))
-		if err != nil || len(cards) != 1 {
-			return fmt.Errorf("failed to find mistaken timecard for %s: %v", id, err)
+		if err != nil {
+			return fmt.Errorf("failed to find mistaken timecard for %s: %w", id, err)
+		}
+		if len(cards) != 1 {
+			return fmt.Errorf("expected 1 mistaken timecard for %s, found %d", id, len(cards))
 		}
 		if err := deleted(g.Timecard.DeleteTimecard(token, cards[0].ID), cards[0].ID); err != nil {
 			return err
 		}
 	}
 
-	// Patients who opted out of automated reminders after joining.
-	for range 5 {
+	// Patients who opted out of automated reminders after joining. Those who never opted in
+	// are skipped, since clearing an already-false flag records no consent change.
+	for optedOut, tries := 0, 0; optedOut < 5; tries++ {
+		if tries == len(h.adults.ids) {
+			return fmt.Errorf("found only %d opted-in adults to opt out", optedOut)
+		}
 		p, err := g.Patient.GetPatient(token, h.adults.next(h, ""))
 		if err != nil {
 			return err
 		}
+		if !p.ReminderOptIn {
+			continue
+		}
+		optedOut++
 		p.ReminderOptIn = false
 		p.UpdatedAt = now
 		if _, err := g.Patient.UpdatePatient(token, p); err != nil {

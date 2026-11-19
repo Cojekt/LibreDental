@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -179,6 +180,29 @@ func TestDocumentService(t *testing.T) {
 		}
 	})
 
+	t.Run("DeleteDocumentReportsAuditFailure", func(t *testing.T) {
+		failingAudit := services.NewAuditService(docFailingAuditRepo{}, configRepo)
+		failToken, err := failingAudit.CreateSession("prov_1", "1234")
+		if err != nil {
+			t.Fatalf("Failed to create session: %v", err)
+		}
+		failService := services.NewDocumentService(repo, tempDir, failingAudit)
+		b64Content := base64.StdEncoding.EncodeToString([]byte("unaudited"))
+		for _, patientID := range []string{patient.ID, ""} {
+			doc, err := service.SaveDocumentBase64(token, patientID, "Unaudited delete", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
+			if err != nil {
+				t.Fatalf("Failed to setup document: %v", err)
+			}
+			err = failService.DeleteDocument(failToken, doc.ID)
+			if err == nil || !strings.Contains(err.Error(), "document deleted but failed to log audit: audit database unavailable") {
+				t.Errorf("Expected the audit failure to be reported for patient %q, got %v", patientID, err)
+			}
+			if _, err := os.Stat(filepath.Join(tempDir, "documents", doc.FilePath)); !os.IsNotExist(err) {
+				t.Errorf("Expected the file to be removed despite the audit failure, got %v", err)
+			}
+		}
+	})
+
 	t.Run("DeleteDocumentWhenDBRowAlreadyDeleted", func(t *testing.T) {
 		b64Content := base64.StdEncoding.EncodeToString([]byte("delete me too"))
 		doc, err := service.SaveDocumentBase64(token, patient.ID, "Doc concurrent delete", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
@@ -323,4 +347,14 @@ func (m *notFoundOnDeleteRepo) GetByID(id string) (*domain.Document, error) {
 func (m *notFoundOnDeleteRepo) Delete(id string) error {
 	_ = m.realRepo.Delete(id)
 	return storage.ErrNotFound
+}
+
+type docFailingAuditRepo struct{}
+
+func (docFailingAuditRepo) Query(context.Context, string, int, string) ([]*domain.AuditLogEntry, error) {
+	return nil, nil
+}
+
+func (docFailingAuditRepo) Log(context.Context, *domain.AuditLogEntry) error {
+	return errors.New("audit database unavailable")
 }
