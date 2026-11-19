@@ -1,6 +1,7 @@
 package demo
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math/rand/v2"
 	"time"
@@ -120,6 +121,15 @@ func seedRemovals(g *ServiceGraph, token string, rng *rand.Rand, h *historyState
 			return err
 		}
 		summary.DocumentsCount--
+	}
+	// A clinic-wide policy draft replaced by the published version.
+	draft := base64.StdEncoding.EncodeToString([]byte("Financial policy draft, superseded."))
+	doc, err := g.Document.SaveDocumentBase64(token, "", "Financial Policy (Draft)", "Superseded draft.", string(domain.DocumentTypeOther), "text/plain", draft)
+	if err != nil {
+		return fmt.Errorf("failed to seed clinic document: %w", err)
+	}
+	if err := deleted(g.Document.DeleteDocument(token, doc.ID), doc.ID); err != nil {
+		return err
 	}
 
 	// Billing setup that was tried and withdrawn.

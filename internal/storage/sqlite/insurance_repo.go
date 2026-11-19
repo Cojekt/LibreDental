@@ -398,8 +398,11 @@ func (r *InsuranceRepository) ConfirmClaim(ctx context.Context, c *domain.Claim,
 				return storage.ErrConflict
 			}
 			linked[li.ToothConditionID] = true
+			// A treatment can only be linked from its own patient's claims (checked below, and
+			// re-checked when a claim is reassigned), so only those can already bill it. Scoping
+			// to them uses idx_claims_patient instead of parsing every claim in the practice.
 			var billed bool
-			if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM claims c,json_each(c.line_items) j WHERE json_extract(j.value,'$.tooth_condition_id')=? AND (c.id!=? OR COALESCE(json_extract(j.value,'$.id'),'')!=?))`, li.ToothConditionID, c.ID, li.ID).Scan(&billed); err != nil {
+			if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM claims c,json_each(c.line_items) j WHERE c.patient_id=(SELECT patient_id FROM dental_conditions WHERE id=?) AND json_extract(j.value,'$.tooth_condition_id')=? AND (c.id!=? OR COALESCE(json_extract(j.value,'$.id'),'')!=?))`, li.ToothConditionID, li.ToothConditionID, c.ID, li.ID).Scan(&billed); err != nil {
 				return err
 			}
 			if billed {

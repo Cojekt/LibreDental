@@ -439,13 +439,17 @@ func (s *DocumentService) DeleteDocument(token string, id string) error {
 		return err
 	}
 
+	// The record is gone at this point, so the deletion is audited even if the file
+	// cleanup below fails.
+	if doc.PatientID != nil {
+		_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, *doc.PatientID, "document", "Deleted document")
+	} else {
+		_ = s.auditService.LogAction(token, domain.AuditActionDelete, "document", fmt.Sprintf("Deleted clinic document %s (%s)", doc.ID, doc.Name))
+	}
+
 	fullPath := filepath.Join(s.getDocumentsBasePath(), doc.FilePath)
 	if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove document file: %w", err)
-	}
-
-	if doc.PatientID != nil {
-		_ = s.auditService.LogPatientAction(token, domain.AuditActionDelete, *doc.PatientID, "document", "Deleted document")
 	}
 	return nil
 }

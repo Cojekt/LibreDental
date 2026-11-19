@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/LibreDental/libredental/internal/domain"
@@ -26,7 +27,12 @@ func TestDocumentService(t *testing.T) {
 
 	repo := sqlite.NewDocumentRepository(db)
 
-	auditRepo := sqlite.NewAuditRepository(db)
+	auditDb, err := sqlite.OpenAudit(filepath.Join(tempDir, "test_documents_audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open audit db: %v", err)
+	}
+	defer auditDb.Close()
+	auditRepo := sqlite.NewAuditRepository(auditDb)
 	configRepo := sqlite.NewPracticeConfigRepository(db)
 	if err := configRepo.SaveProvider(context.Background(), &domain.Provider{ID: "prov_1", Name: "Test Prov", Pin: "1234", IsActive: true}); err != nil {
 		t.Fatalf("Failed to save provider: %v", err)
@@ -124,6 +130,52 @@ func TestDocumentService(t *testing.T) {
 		_, err = repo.GetByID(doc.ID)
 		if err == nil {
 			t.Errorf("Expected DB record to be deleted, but it exists")
+		}
+	})
+
+	t.Run("DeleteDocumentIsAudited", func(t *testing.T) {
+		b64Content := base64.StdEncoding.EncodeToString([]byte("audit me"))
+		for _, patientID := range []string{patient.ID, ""} {
+			doc, err := service.SaveDocumentBase64(token, patientID, "Audited delete", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
+			if err != nil {
+				t.Fatalf("Failed to setup document: %v", err)
+			}
+			if err := service.DeleteDocument(token, doc.ID); err != nil {
+				t.Fatalf("Failed to delete document: %v", err)
+			}
+			entries, err := auditRepo.Query(context.Background(), patientID, 1, "")
+			if err != nil {
+				t.Fatalf("Failed to query audit log: %v", err)
+			}
+			if len(entries) != 1 || entries[0].Action != domain.AuditActionDelete || entries[0].Resource != "document" {
+				t.Errorf("Expected a document deletion audit entry for patient %q, got %+v", patientID, entries)
+			}
+		}
+	})
+
+	t.Run("DeleteDocumentAuditedWhenFileRemovalFails", func(t *testing.T) {
+		b64Content := base64.StdEncoding.EncodeToString([]byte("stuck file"))
+		doc, err := service.SaveDocumentBase64(token, "", "Undeletable file", "", string(domain.DocumentTypePDF), "application/pdf", b64Content)
+		if err != nil {
+			t.Fatalf("Failed to setup document: %v", err)
+		}
+		// A non-empty directory in place of the file makes os.Remove fail.
+		fullPath := filepath.Join(tempDir, "documents", doc.FilePath)
+		if err := os.Remove(fullPath); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(filepath.Join(fullPath, "child"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := service.DeleteDocument(token, doc.ID); err == nil {
+			t.Fatal("Expected file removal to fail")
+		}
+		entries, err := auditRepo.Query(context.Background(), "", 1, "")
+		if err != nil {
+			t.Fatalf("Failed to query audit log: %v", err)
+		}
+		if len(entries) != 1 || entries[0].Action != domain.AuditActionDelete || !strings.Contains(entries[0].Details, doc.ID) {
+			t.Errorf("Expected the deletion to be audited despite the file error, got %+v", entries)
 		}
 	})
 
