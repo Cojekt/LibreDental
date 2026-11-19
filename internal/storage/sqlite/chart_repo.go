@@ -34,7 +34,7 @@ func scanToothCondition(scanner rowScanner) (*domain.ToothCondition, error) {
 	if err := scanner.Scan(
 		&c.ID, &c.PatientID, &c.ToothNumber, &surfacesJSON,
 		&adaCode, &description, &statusStr, &fee,
-		&c.CreatedAt, &c.UpdatedAt, &pricing,
+		scanInstant(&c.CreatedAt), scanInstant(&c.UpdatedAt), &pricing,
 	); err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func saveConditionOn(ctx context.Context, q queryExecutor, c *domain.ToothCondit
 	if c.Status == "" {
 		c.Status = domain.ToothStatusExisting
 	}
-	_, err = q.ExecContext(ctx, `INSERT INTO dental_conditions(id,patient_id,tooth_number,surfaces,ada_code,description,status,fee,created_at,updated_at,insurance_provider_id,pricing_source) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET tooth_number=excluded.tooth_number,surfaces=excluded.surfaces,ada_code=excluded.ada_code,description=excluded.description,status=excluded.status,fee=excluded.fee,updated_at=excluded.updated_at,insurance_provider_id=excluded.insurance_provider_id,pricing_source=excluded.pricing_source`, c.ID, c.PatientID, c.ToothNumber, string(surfaces), c.ADACode, c.Description, c.Status, c.Fee, c.CreatedAt, c.UpdatedAt, plan, pricing)
+	_, err = q.ExecContext(ctx, `INSERT INTO dental_conditions(id,patient_id,tooth_number,surfaces,ada_code,description,status,fee,created_at,updated_at,insurance_provider_id,pricing_source) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET tooth_number=excluded.tooth_number,surfaces=excluded.surfaces,ada_code=excluded.ada_code,description=excluded.description,status=excluded.status,fee=excluded.fee,updated_at=excluded.updated_at,insurance_provider_id=excluded.insurance_provider_id,pricing_source=excluded.pricing_source`, c.ID, c.PatientID, c.ToothNumber, string(surfaces), c.ADACode, c.Description, c.Status, c.Fee, instant(c.CreatedAt), instant(c.UpdatedAt), plan, pricing)
 	return !exists, err
 }
 

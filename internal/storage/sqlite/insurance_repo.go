@@ -62,10 +62,10 @@ func (r *InsuranceRepository) SaveProvider(ctx context.Context, p *domain.Insura
 	now := time.Now().UTC()
 	if p.ID == "" {
 		p.ID = uuid.NewString()
-		_, err = r.db.ExecContext(ctx, `INSERT INTO insurance_providers(id,name,normalized_name,archived,created_at,updated_at) VALUES(?,?,?,?,?,?)`, p.ID, name, normalized, p.Archived, now, now)
+		_, err = r.db.ExecContext(ctx, `INSERT INTO insurance_providers(id,name,normalized_name,archived,created_at,updated_at) VALUES(?,?,?,?,?,?)`, p.ID, name, normalized, p.Archived, instant(now), instant(now))
 	} else {
 		var res sql.Result
-		res, err = r.db.ExecContext(ctx, `UPDATE insurance_providers SET name=?,normalized_name=?,archived=?,updated_at=? WHERE id=?`, name, normalized, p.Archived, now, p.ID)
+		res, err = r.db.ExecContext(ctx, `UPDATE insurance_providers SET name=?,normalized_name=?,archived=?,updated_at=? WHERE id=?`, name, normalized, p.Archived, instant(now), p.ID)
 		if err == nil {
 			n, _ := res.RowsAffected()
 			if n == 0 {
@@ -101,7 +101,7 @@ func (r *InsuranceRepository) SaveFee(ctx context.Context, f *domain.InsuranceFe
 	if f == nil || f.ProviderID == "" || f.Code == "" || f.CountryCode == "" || !validFee(f.Fee) {
 		return storage.ErrInvalidInput
 	}
-	res, err := r.db.ExecContext(ctx, `INSERT INTO insurance_fee_overrides(provider_id,country_code,code,fee,updated_at) SELECT i.id,?,?,?,? FROM insurance_providers i WHERE i.id=? AND i.archived=0 ON CONFLICT(provider_id,country_code,code) DO UPDATE SET fee=excluded.fee,updated_at=excluded.updated_at`, f.CountryCode, f.Code, f.Fee, time.Now().UTC(), f.ProviderID)
+	res, err := r.db.ExecContext(ctx, `INSERT INTO insurance_fee_overrides(provider_id,country_code,code,fee,updated_at) SELECT i.id,?,?,?,? FROM insurance_providers i WHERE i.id=? AND i.archived=0 ON CONFLICT(provider_id,country_code,code) DO UPDATE SET fee=excluded.fee,updated_at=excluded.updated_at`, f.CountryCode, f.Code, f.Fee, instant(time.Now()), f.ProviderID)
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func (r *InsuranceRepository) ConfirmCondition(ctx context.Context, c *domain.To
 	var created time.Time
 	var tooth int
 	billable := c.Status == domain.ToothStatusTreatmentPlanned || c.Status == domain.ToothStatusCompleted
-	err = tx.QueryRowContext(ctx, `SELECT patient_id,COALESCE(ada_code,''),fee,pricing_source,updated_at,created_at,tooth_number,COALESCE(description,''),status,COALESCE(surfaces,'[]') FROM dental_conditions WHERE id=?`, c.ID).Scan(&patient, &code, &fee, &raw, &updated, &created, &tooth, &description, &status, &surfaces)
+	err = tx.QueryRowContext(ctx, `SELECT patient_id,COALESCE(ada_code,''),fee,pricing_source,updated_at,created_at,tooth_number,COALESCE(description,''),status,COALESCE(surfaces,'[]') FROM dental_conditions WHERE id=?`, c.ID).Scan(&patient, &code, &fee, &raw, scanInstant(&updated), scanInstant(&created), &tooth, &description, &status, &surfaces)
 	if err == nil {
 		if patient != c.PatientID {
 			return false, storage.ErrConflict

@@ -37,7 +37,7 @@ func (r *PaymentRepository) Create(ctx context.Context, p *domain.Payment) error
 		INSERT INTO payments (id, patient_id, claim_id, amount, method, date, notes, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		p.ID, p.PatientID, nullIfEmpty(p.ClaimID), p.Amount,
-		string(p.Method), p.Date, p.Notes, p.CreatedAt,
+		string(p.Method), p.Date, p.Notes, instant(p.CreatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create payment: %w", err)
@@ -57,7 +57,7 @@ func (r *PaymentRepository) GetByID(ctx context.Context, id string) (*domain.Pay
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, patient_id, claim_id, amount, method, date, notes, created_at
 		FROM payments WHERE id = ?`, id,
-	).Scan(&p.ID, &p.PatientID, &claimID, &p.Amount, &methodStr, &p.Date, &p.Notes, &p.CreatedAt)
+	).Scan(&p.ID, &p.PatientID, &claimID, &p.Amount, &methodStr, &p.Date, &p.Notes, scanInstant(&p.CreatedAt))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrNotFound
@@ -110,7 +110,7 @@ func (r *PaymentRepository) List(ctx context.Context, patientID string) ([]*doma
 		var claimID sql.NullString
 		if err := rows.Scan(
 			&p.ID, &p.PatientID, &claimID, &p.Amount,
-			&methodStr, &p.Date, &p.Notes, &p.CreatedAt,
+			&methodStr, &p.Date, &p.Notes, scanInstant(&p.CreatedAt),
 		); err != nil {
 			return nil, err
 		}
@@ -182,7 +182,7 @@ func (r *PaymentRepository) ListByDateRange(ctx context.Context, startDate, endD
 		var claimID sql.NullString
 		if err := rows.Scan(
 			&p.ID, &p.PatientID, &claimID, &p.Amount,
-			&methodStr, &p.Date, &p.Notes, &p.CreatedAt,
+			&methodStr, &p.Date, &p.Notes, scanInstant(&p.CreatedAt),
 		); err != nil {
 			return nil, err
 		}

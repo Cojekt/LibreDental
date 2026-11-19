@@ -3,16 +3,22 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"math"
 	"path/filepath"
 	"testing"
 
 	"github.com/pressly/goose/v3"
 )
 
+// Fixture instants are stored Unix nanoseconds: 1767225600000000000 is 2026-01-01T00:00:00Z and
+// 1769904000000000000 is 2026-02-01T00:00:00Z.
+
 // TestMigrations_UpgradePreservesPatientData upgrades a database holding patient, claim, and
-// chart data from the initial schema to the latest one. Migrations that rebuild a table
+// chart data from the baseline schema to the latest one. Migrations that rebuild a table
 // referenced by foreign keys can fail or lose rows on real installs while passing on the empty
-// databases the other tests use.
+// databases the other tests use. While the baseline is the only migration, the upgrade and
+// rollback steps are no-ops and this only checks that populated rows survive Open; it guards
+// every migration added after the baseline.
 func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "upgrade.db")
 	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)", dbPath)
@@ -27,29 +33,35 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 		gooseMu.Unlock()
 		t.Fatal(err)
 	}
-	err = goose.UpTo(old, "migrations", 20261002224920)
+	migrations, err := goose.CollectMigrations("migrations", 0, math.MaxInt64)
+	if err != nil || len(migrations) == 0 {
+		gooseMu.Unlock()
+		t.Fatalf("collect migrations: %v", err)
+	}
+	baseline := migrations[0].Version
+	err = goose.UpTo(old, "migrations", baseline)
 	gooseMu.Unlock()
 	if err != nil {
-		t.Fatalf("migrate to initial schema: %v", err)
+		t.Fatalf("migrate to baseline schema: %v", err)
 	}
 
 	for _, stmt := range []string{
 		`INSERT INTO patients (id, first_name, last_name, date_of_birth, sex, insurance_carrier,
 			insurance_policy_number, insurance_is_subscriber, created_at, updated_at)
-		 VALUES ('pat_1', 'Jane', 'Doe', '1985-06-15T00:00:00Z', 'female', 'Delta Dental',
-			'POL-1', 1, '2026-01-01', '2026-01-01')`,
+		 VALUES ('pat_1', 'Jane', 'Doe', '1985-06-15', 'female', 'Delta Dental',
+			'POL-1', 1, 1767225600000000000, 1767225600000000000)`,
 		`INSERT INTO procedure_codes(country_code,code,category,description,default_fee) VALUES ('US','D2391','Restorative','Original procedure',14000)`,
-		`INSERT INTO providers(id,name,role,is_active,created_at,updated_at) VALUES ('legacy-clinician','Legacy dentist','dentist',1,'2026-01-01','2026-01-01')`,
-		`INSERT INTO fee_schedules(id,country_code,code,provider_id,custom_fee,updated_at) VALUES ('practice-fee','US','D2391',NULL,10000,'2026-01-01'),('clinician-fee','US','D2391','legacy-clinician',12000,'2026-01-01')`,
-		`INSERT INTO payments(id,patient_id,amount,method,date,created_at) VALUES ('legacy-payment','pat_1',2222,'cash','2026-02-01','2026-02-01')`,
+		`INSERT INTO providers(id,name,role,is_active,created_at,updated_at) VALUES ('legacy-clinician','Legacy dentist','dentist',1,1767225600000000000,1767225600000000000)`,
+		`INSERT INTO fee_schedules(id,country_code,code,provider_id,custom_fee,updated_at) VALUES ('practice-fee','US','D2391',NULL,10000,1767225600000000000),('clinician-fee','US','D2391','legacy-clinician',12000,1767225600000000000)`,
+		`INSERT INTO payments(id,patient_id,amount,method,date,created_at) VALUES ('legacy-payment','pat_1',2222,'cash','2026-02-01',1769904000000000000)`,
 		`INSERT INTO claims (id, patient_id, date_of_service, status, line_items, created_at, updated_at)
-		 VALUES ('claim_1', 'pat_1', '2026-02-01', 'submitted', '[{"id":"legacy-line","ada_code":"D2391","fee":12345}]', '2026-02-01', '2026-02-01')`,
+		 VALUES ('claim_1', 'pat_1', '2026-02-01', 'submitted', '[{"id":"legacy-line","ada_code":"D2391","fee":12345}]', 1769904000000000000, 1769904000000000000)`,
 		`INSERT INTO dental_conditions (id, patient_id, tooth_number, ada_code, status, fee, created_at, updated_at)
-		 VALUES ('cond_1', 'pat_1', 3, 'D2392', 'treatment_planned',4567, '2026-02-01', '2026-02-01')`,
+		 VALUES ('cond_1', 'pat_1', 3, 'D2392', 'treatment_planned',4567, 1769904000000000000, 1769904000000000000)`,
 		`INSERT INTO practice_config (id, clinic_name, country_code, currency, created_at, updated_at)
-		 VALUES (1, 'Smile Dental', 'US', 'USD', '2026-01-01', '2026-01-01')`,
+		 VALUES (1, 'Smile Dental', 'US', 'USD', 1767225600000000000, 1767225600000000000)`,
 		`INSERT INTO notification_log (id, patient_id, channel, provider_name, recipient, body, status, sent_at)
-		 VALUES ('notif_1', 'pat_1', 'sms', 'aws_sms', '+12025550123', 'Reminder', 'sent', '2026-02-01')`,
+		 VALUES ('notif_1', 'pat_1', 'sms', 'aws_sms', '+12025550123', 'Reminder', 'sent', 1769904000000000000)`,
 	} {
 		if _, err := old.Exec(stmt); err != nil {
 			t.Fatalf("seed old schema: %v\n%s", err, stmt)
@@ -90,8 +102,7 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	}
 	assertMoney()
 
-	// The reminder migration adds columns to tables that already hold rows: existing
-	// notifications have no reminder key, and the practice has no timezone until one is set.
+	// Rows written without the optional reminder key and practice timezone keep them unset.
 	var kind, apptStart sql.NullString
 	var status string
 	if err := db.QueryRow(`SELECT status, reminder_kind, appointment_start FROM notification_log WHERE id = 'notif_1'`).
@@ -113,8 +124,8 @@ func TestMigrations_UpgradePreservesPatientData(t *testing.T) {
 	gooseMu.Lock()
 	defer gooseMu.Unlock()
 	goose.SetBaseFS(embedMigrations)
-	if err := goose.DownTo(db.DB, "migrations", 20261002224920); err != nil {
-		t.Fatalf("roll back to initial schema: %v", err)
+	if err := goose.DownTo(db.DB, "migrations", baseline); err != nil {
+		t.Fatalf("roll back to baseline schema: %v", err)
 	}
 	if err := goose.Up(db.DB, "migrations"); err != nil {
 		t.Fatalf("re-apply after rollback: %v", err)

@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS claims (
     status TEXT NOT NULL DEFAULT 'draft',
     notes TEXT DEFAULT '',
     line_items TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(line_items)),
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
+    created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+    updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
     payer_id TEXT DEFAULT '',
     FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
     FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE RESTRICT,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS payments (
     method TEXT NOT NULL DEFAULT 'cash',
     date TEXT NOT NULL CHECK (date(date) IS date),
     notes TEXT DEFAULT '',
-    created_at DATETIME NOT NULL,
+    created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
     FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
     FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE SET NULL
 );
@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS treatment_bundles (
     name TEXT NOT NULL,
     description TEXT DEFAULT '',
     items TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(items)),
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
+    created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+    updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer')
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bundles_shortname ON treatment_bundles(shortname);
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS fee_schedules (
 	code TEXT NOT NULL,
 	provider_id TEXT,
 	custom_fee INTEGER NOT NULL,
-	updated_at DATETIME NOT NULL,
+	updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
 	FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE,
 	FOREIGN KEY (country_code, code) REFERENCES procedure_codes(country_code, code) ON DELETE CASCADE
 );
@@ -190,15 +190,15 @@ CREATE TABLE insurance_providers (
  name TEXT NOT NULL,
  normalized_name TEXT NOT NULL UNIQUE CHECK(length(normalized_name) > 0),
  archived INTEGER NOT NULL DEFAULT 0 CHECK(archived IN (0, 1)),
- created_at DATETIME NOT NULL,
- updated_at DATETIME NOT NULL
+ created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+ updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer')
 );
 CREATE TABLE insurance_fee_overrides (
  provider_id TEXT NOT NULL REFERENCES insurance_providers(id) ON DELETE RESTRICT,
  country_code TEXT NOT NULL,
  code TEXT NOT NULL,
  fee INTEGER NOT NULL CHECK(fee >= 0 AND fee <= 9007199254740991),
- updated_at DATETIME NOT NULL,
+ updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
  PRIMARY KEY(provider_id, country_code, code),
  FOREIGN KEY(country_code, code) REFERENCES procedure_codes(country_code, code) ON DELETE RESTRICT
 );

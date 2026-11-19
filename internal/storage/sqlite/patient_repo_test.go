@@ -167,3 +167,40 @@ func TestPatientRepository_ListReturnsAllWithoutLimit(t *testing.T) {
 		t.Errorf("Expected explicit limit/offset to still apply (5 results), got %d", len(page))
 	}
 }
+
+// Dates are stored as YYYY-MM-DD; the subscriber DOB is optional, so it may also be blank.
+func TestPatientRepository_RejectsNonCanonicalSubscriberDOB(t *testing.T) {
+	db, err := sqlite.Open(filepath.Join(t.TempDir(), "test_libredental.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	repo := sqlite.NewPatientRepository(db)
+	ctx := context.Background()
+	for i, tc := range []struct {
+		dob string
+		ok  bool
+	}{
+		{"", true},
+		{"1983-02-01", true},
+		{"02/01/1983", false},
+		{"1983-02-01T00:00:00Z", false},
+		{"1983-02-30", false},
+	} {
+		err := repo.Create(ctx, &domain.Patient{
+			ID:                     fmt.Sprintf("pat_sub_%d", i),
+			FirstName:              "Ann",
+			LastName:               "Lee",
+			DateOfBirth:            time.Date(2010, 3, 4, 0, 0, 0, 0, time.UTC),
+			Sex:                    domain.SexFemale,
+			InsuranceSubscriberDOB: tc.dob,
+		})
+		if tc.ok && err != nil {
+			t.Errorf("subscriber DOB %q rejected: %v", tc.dob, err)
+		}
+		if !tc.ok && err == nil {
+			t.Errorf("subscriber DOB %q accepted", tc.dob)
+		}
+	}
+}

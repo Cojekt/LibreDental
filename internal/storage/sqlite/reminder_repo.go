@@ -11,8 +11,7 @@ import (
 	"github.com/LibreDental/libredental/internal/storage"
 )
 
-// ReminderRepository implements storage.ReminderRepository for SQLite. Timestamps are stored
-// as RFC 3339 UTC text, like appointment times.
+// ReminderRepository implements storage.ReminderRepository for SQLite.
 type ReminderRepository struct {
 	db *DB
 }
@@ -25,14 +24,12 @@ func (r *ReminderRepository) GetSettings(ctx context.Context) (*domain.ReminderS
 	var (
 		settings  domain.ReminderSettings
 		enabled   int
-		enabledAt sql.NullString
 		enabledBy sql.NullString
-		updatedAt string
 	)
 	err := r.db.QueryRowContext(ctx, `
 		SELECT enabled, sending_hours_start, sending_hours_end, enabled_at, enabled_by, updated_at
 		FROM reminder_settings WHERE id = 1`,
-	).Scan(&enabled, &settings.SendingHoursStart, &settings.SendingHoursEnd, &enabledAt, &enabledBy, &updatedAt)
+	).Scan(&enabled, &settings.SendingHoursStart, &settings.SendingHoursEnd, scanNullInstant(&settings.EnabledAt), &enabledBy, scanInstant(&settings.UpdatedAt))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, storage.ErrNotFound
 	}
@@ -41,21 +38,11 @@ func (r *ReminderRepository) GetSettings(ctx context.Context) (*domain.ReminderS
 	}
 	settings.Enabled = enabled != 0
 	settings.EnabledBy = enabledBy.String
-	if enabledAt.Valid {
-		if t, err := time.Parse(time.RFC3339, enabledAt.String); err == nil {
-			settings.EnabledAt = &t
-		}
-	}
-	settings.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
 	return &settings, nil
 }
 
 func (r *ReminderRepository) SaveSettings(ctx context.Context, settings *domain.ReminderSettings) error {
-	settings.UpdatedAt = time.Now().UTC().Truncate(time.Second)
-	var enabledAt any
-	if settings.EnabledAt != nil {
-		enabledAt = settings.EnabledAt.UTC().Format(time.RFC3339)
-	}
+	settings.UpdatedAt = time.Now().UTC()
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO reminder_settings (id, enabled, sending_hours_start, sending_hours_end, enabled_at, enabled_by, updated_at)
 		VALUES (1, ?, ?, ?, ?, ?, ?)
@@ -67,7 +54,7 @@ func (r *ReminderRepository) SaveSettings(ctx context.Context, settings *domain.
 			enabled_by = excluded.enabled_by,
 			updated_at = excluded.updated_at`,
 		boolToInt(settings.Enabled), settings.SendingHoursStart, settings.SendingHoursEnd,
-		enabledAt, nullIfEmpty(settings.EnabledBy), settings.UpdatedAt.Format(time.RFC3339),
+		nullInstant(settings.EnabledAt), nullIfEmpty(settings.EnabledBy), instant(settings.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save reminder settings: %w", err)
@@ -87,19 +74,16 @@ func (r *ReminderRepository) ListRules(ctx context.Context) ([]*domain.ReminderR
 	rules := []*domain.ReminderRule{}
 	for rows.Next() {
 		var (
-			rule                 domain.ReminderRule
-			channel              string
-			enabled              int
-			createdAt, updatedAt string
+			rule    domain.ReminderRule
+			channel string
+			enabled int
 		)
 		if err := rows.Scan(&rule.ID, &rule.OffsetMinutes, &channel, &rule.ProviderName,
-			&rule.SubjectTemplate, &rule.BodyTemplate, &enabled, &createdAt, &updatedAt); err != nil {
+			&rule.SubjectTemplate, &rule.BodyTemplate, &enabled, scanInstant(&rule.CreatedAt), scanInstant(&rule.UpdatedAt)); err != nil {
 			return nil, fmt.Errorf("failed to scan reminder rule: %w", err)
 		}
 		rule.Channel = domain.NotificationChannel(channel)
 		rule.Enabled = enabled != 0
-		rule.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
-		rule.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
 		rules = append(rules, &rule)
 	}
 	return rules, rows.Err()
@@ -136,7 +120,7 @@ func saveRule(ctx context.Context, db execer, rule *domain.ReminderRule) error {
 	if rule.ID == "" || rule.OffsetMinutes <= 0 || rule.Channel == "" || rule.ProviderName == "" || rule.BodyTemplate == "" {
 		return fmt.Errorf("%w: reminder rule needs an ID, a positive offset, a channel, a provider, and a body", storage.ErrInvalidInput)
 	}
-	now := time.Now().UTC().Truncate(time.Second)
+	now := time.Now().UTC()
 	if rule.CreatedAt.IsZero() {
 		rule.CreatedAt = now
 	}
@@ -152,7 +136,7 @@ func saveRule(ctx context.Context, db execer, rule *domain.ReminderRule) error {
 			updated_at = excluded.updated_at`,
 		rule.ID, rule.OffsetMinutes, string(rule.Channel), rule.ProviderName,
 		rule.SubjectTemplate, rule.BodyTemplate, boolToInt(rule.Enabled),
-		rule.CreatedAt.UTC().Format(time.RFC3339), rule.UpdatedAt.Format(time.RFC3339),
+		instant(rule.CreatedAt), instant(rule.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to save reminder rule: %w", err)

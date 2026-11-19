@@ -78,7 +78,7 @@ func TestNotificationRepository(t *testing.T) {
 		}
 	}
 
-	now := time.Now().UTC().Truncate(time.Second)
+	now := time.Now().UTC()
 
 	entry1 := &domain.NotificationLog{
 		ID:                "notif_1",
@@ -143,7 +143,7 @@ func TestNotificationRepository(t *testing.T) {
 		INSERT INTO notification_log (id, patient_id, channel, provider_name, external_message_id,
 			recipient, subject, body, status, error_message, sent_at)
 		VALUES ('notif_null', 'pat_notif_1', 'sms', 'mock_sms', NULL, '+15555550123', NULL, 'Hi', 'sent', NULL, ?)`,
-		now.Add(-time.Hour)); err != nil {
+		now.Add(-time.Hour).UnixNano()); err != nil {
 		t.Fatalf("Failed to insert notification log entry with NULL columns: %v", err)
 	}
 	withNulls, err := repo.List(ctx, "pat_notif_1", 0, 0)

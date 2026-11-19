@@ -97,6 +97,54 @@ func TestAuditRepository_QueryOrdersSameTimestampByInsertion(t *testing.T) {
 	}
 }
 
+// Timestamps that differ only past a trailing zero sorted wrong when stored as trimmed text
+// ("...00.06Z" after "...00.0601Z"). Entries are logged newest first so insertion order
+// cannot mask the comparison.
+func TestAuditRepository_QueryOrdersSubMillisecondTimestamps(t *testing.T) {
+	db, err := sqlite.OpenAudit(filepath.Join(t.TempDir(), "test_audit.db"))
+	if err != nil {
+		t.Fatalf("Failed to open sqlite audit db: %v", err)
+	}
+	defer db.Close()
+
+	repo := sqlite.NewAuditRepository(db)
+	ctx := context.Background()
+
+	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	for _, e := range []struct {
+		id string
+		at time.Time
+	}{
+		{"audit_60_1ms", base.Add(60100 * time.Microsecond)},
+		{"audit_60ms", base.Add(60 * time.Millisecond)},
+		{"audit_6ms", base.Add(6 * time.Millisecond)},
+	} {
+		err := repo.Log(ctx, &domain.AuditLogEntry{
+			ID:        e.id,
+			Timestamp: e.at,
+			UserID:    "usr_dr_smith",
+			UserName:  "Dr. Jane Smith",
+			Action:    domain.AuditActionRead,
+			Resource:  "patient_demographics",
+		})
+		if err != nil {
+			t.Fatalf("Failed to log audit entry %s: %v", e.id, err)
+		}
+	}
+
+	want := []string{"audit_60_1ms", "audit_60ms", "audit_6ms"}
+	if got := pageAllAuditIDs(t, repo, "", nil); !slices.Equal(got, want) {
+		t.Errorf("paged order = %v, want %v", got, want)
+	}
+	entries, err := repo.Query(ctx, "", 10, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !entries[0].Timestamp.Equal(base.Add(60100 * time.Microsecond)) {
+		t.Errorf("timestamp did not round-trip: %v", entries[0].Timestamp)
+	}
+}
+
 // Entries logged while someone is paging must not shift later pages; with
 // OFFSET paging each new entry repeated the last row of the previous page.
 func TestAuditRepository_QueryCursorIsStableUnderNewEntries(t *testing.T) {

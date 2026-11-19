@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS practice_config (
 	tooth_system TEXT NOT NULL DEFAULT 'universal',
 	date_format TEXT NOT NULL DEFAULT 'YYYY-MM-DD',
 	business_hours TEXT DEFAULT '[]',
-	created_at DATETIME NOT NULL,
-	updated_at DATETIME NOT NULL,
+	created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+	updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer'),
 	npi TEXT DEFAULT '',
 	timezone TEXT DEFAULT ''
 );
@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS operatories (
 	room_code TEXT DEFAULT '',
 	type TEXT NOT NULL DEFAULT 'general',
 	is_active INTEGER NOT NULL DEFAULT 1,
-	created_at DATETIME NOT NULL,
-	updated_at DATETIME NOT NULL
+	created_at INTEGER NOT NULL CHECK (typeof(created_at) = 'integer'),
+	updated_at INTEGER NOT NULL CHECK (typeof(updated_at) = 'integer')
 );
 
 CREATE TABLE IF NOT EXISTS country_configs (

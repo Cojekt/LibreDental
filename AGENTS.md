@@ -168,5 +168,13 @@ declared schema actually implies.
 - Server mode and desktop mode share the same Go backend but differ via build tags
   (`server`, `dev`) — check `internal/app/build_dev.go` / `build_server.go` /
   `build_mode.go` before assuming code paths are shared.
+- Instants are stored as `INTEGER` Unix nanoseconds (UTC) and calendar dates as `TEXT`
+  `YYYY-MM-DD`. Never pass a `time.Time` to SQL directly (the driver would write
+  `Time.String()` text): wrap arguments with `instant()`/`nullInstant()`/`dateValue()` and
+  scan with `scanInstant()`/`scanNullInstant()`/`scanDate()` from
+  `internal/storage/sqlite/timecodec.go`. Every instant column has a `typeof(...) = 'integer'`
+  CHECK, so a missed write fails loudly. To read one by hand:
+  `strftime('%Y-%m-%d %H:%M:%f', col / 1e9, 'unixepoch')` (millisecond display; select
+  `col` too for the exact nanoseconds).
 - The demo seeder (`internal/demo/`) ships real sample binary fixtures (DICOM, PDF,
   images) — treat these as test fixtures, not something to regenerate casually.

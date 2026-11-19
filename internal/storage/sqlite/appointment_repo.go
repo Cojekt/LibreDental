@@ -48,9 +48,9 @@ func (r *AppointmentRepository) Create(ctx context.Context, a *domain.Appointmen
 
 	_, err := r.db.ExecContext(ctx, query,
 		a.ID, a.PatientID, a.ProviderID, a.OperatoryID,
-		a.StartTime.UTC().Format(time.RFC3339), a.EndTime.UTC().Format(time.RFC3339),
+		instant(a.StartTime), instant(a.EndTime),
 		string(a.Status), a.Reason, a.Color, a.Notes,
-		a.CreatedAt, a.UpdatedAt, a.Version,
+		instant(a.CreatedAt), instant(a.UpdatedAt), a.Version,
 	)
 
 	if err != nil {
@@ -82,8 +82,8 @@ func (r *AppointmentRepository) Update(ctx context.Context, a *domain.Appointmen
 
 	res, err := r.db.ExecContext(ctx, query,
 		a.PatientID, a.ProviderID, a.OperatoryID,
-		a.StartTime.UTC().Format(time.RFC3339), a.EndTime.UTC().Format(time.RFC3339), string(a.Status),
-		a.Reason, a.Color, a.Notes, now,
+		instant(a.StartTime), instant(a.EndTime), string(a.Status),
+		a.Reason, a.Color, a.Notes, instant(now),
 		a.ID, a.Version,
 	)
 
@@ -137,11 +137,11 @@ func (r *AppointmentRepository) List(ctx context.Context, filter domain.Appointm
 	}
 	if !filter.StartDate.IsZero() {
 		conditions = append(conditions, "end_time >= ?")
-		args = append(args, filter.StartDate.UTC().Format(time.RFC3339))
+		args = append(args, instant(filter.StartDate))
 	}
 	if !filter.EndDate.IsZero() {
 		conditions = append(conditions, "start_time <= ?")
-		args = append(args, filter.EndDate.UTC().Format(time.RFC3339))
+		args = append(args, instant(filter.EndDate))
 	}
 
 	whereClause := ""
@@ -179,12 +179,12 @@ func (r *AppointmentRepository) List(ctx context.Context, filter domain.Appointm
 
 func scanAppointment(scanner rowScanner) (*domain.Appointment, error) {
 	var a domain.Appointment
-	var startTimeStr, endTimeStr, statusStr string
+	var statusStr string
 
 	err := scanner.Scan(
 		&a.ID, &a.PatientID, &a.ProviderID, &a.OperatoryID,
-		&startTimeStr, &endTimeStr, &statusStr, &a.Reason, &a.Color, &a.Notes,
-		&a.CreatedAt, &a.UpdatedAt, &a.Version,
+		scanInstant(&a.StartTime), scanInstant(&a.EndTime), &statusStr, &a.Reason, &a.Color, &a.Notes,
+		scanInstant(&a.CreatedAt), scanInstant(&a.UpdatedAt), &a.Version,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -194,8 +194,5 @@ func scanAppointment(scanner rowScanner) (*domain.Appointment, error) {
 	}
 
 	a.Status = domain.AppointmentStatus(statusStr)
-	a.StartTime, _ = time.Parse(time.RFC3339, startTimeStr)
-	a.EndTime, _ = time.Parse(time.RFC3339, endTimeStr)
-
 	return &a, nil
 }
