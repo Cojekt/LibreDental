@@ -18,6 +18,7 @@ type ServiceGraph struct {
 	Insurance   *services.InsuranceService
 	Document    *services.DocumentService
 	Audit       *services.AuditService
+	Timecard    *services.TimecardService
 }
 
 // BuildServiceGraph constructs the full service graph against the given main and
@@ -50,6 +51,9 @@ func BuildServiceGraph(db *sqlite.DB, auditDb *sqlite.DB, appDir string) *Servic
 	services.AttachInsurancePricing(chartService, billingService, insuranceRepo)
 	insuranceService := services.NewInsuranceService(insuranceRepo, auditService)
 
+	timecardRepo := sqlite.NewTimecardRepository(db)
+	timecardService := services.NewTimecardService(timecardRepo, practiceConfigRepo, auditService)
+
 	documentRepo := sqlite.NewDocumentRepository(db)
 	documentService := services.NewDocumentService(documentRepo, appDir, auditService)
 
@@ -62,5 +66,6 @@ func BuildServiceGraph(db *sqlite.DB, auditDb *sqlite.DB, appDir string) *Servic
 		Insurance:   insuranceService,
 		Document:    documentService,
 		Audit:       auditService,
+		Timecard:    timecardService,
 	}
 }

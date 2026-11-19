@@ -7,7 +7,7 @@ import (
 	"github.com/LibreDental/libredental/internal/domain"
 )
 
-func seedPatients(g *ServiceGraph, token string, now time.Time, summary *SeedSummary) error {
+func seedPatients(g *ServiceGraph, token string, now time.Time, generated []*domain.Patient, summary *SeedSummary) error {
 	patients := []*domain.Patient{
 		{
 			ID:                     "pat_101",
@@ -223,7 +223,7 @@ func seedPatients(g *ServiceGraph, token string, now time.Time, summary *SeedSum
 		},
 	}
 
-	for _, p := range patients {
+	for _, p := range append(patients, generated...) {
 		if _, err := g.Patient.CreatePatient(token, p); err != nil {
 			return fmt.Errorf("failed to seed patient %s: %w", p.FirstName, err)
 		}

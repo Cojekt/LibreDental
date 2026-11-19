@@ -37,35 +37,41 @@ func TestSeedDatabase(t *testing.T) {
 	if !summary.PracticeConfigured {
 		t.Errorf("Expected PracticeConfigured to be true")
 	}
-	if summary.ProvidersCount != 3 {
-		t.Errorf("Expected 3 providers, got %d", summary.ProvidersCount)
+	exact := []struct {
+		name      string
+		got, want int
+	}{
+		{"providers", summary.ProvidersCount, 11},
+		{"operatories", summary.OperatoriesCount, 10},
+		{"patients", summary.PatientsCount, 6 + generatedPatientCount},
+		{"archived patients", summary.ArchivedPatients, archivedPatientCount},
+		{"fee schedule overrides", summary.FeeSchedulesCount, 5},
+		{"treatment bundles", summary.BundlesCount, 5},
+		{"insurance plans", summary.InsurancePlans, 8},
+		{"insurance plan fees", summary.InsuranceFees, 44},
 	}
-	if summary.OperatoriesCount != 3 {
-		t.Errorf("Expected 3 operatories, got %d", summary.OperatoriesCount)
+	for _, c := range exact {
+		if c.got != c.want {
+			t.Errorf("Expected %d %s, got %d", c.want, c.name, c.got)
+		}
 	}
-	if summary.PatientsCount != 6 {
-		t.Errorf("Expected 6 patients, got %d", summary.PatientsCount)
+	// Generated volumes should look like a busy multi-chair practice, not a toy or a stress test.
+	ranges := []struct {
+		name          string
+		got, min, max int
+	}{
+		{"appointments", summary.AppointmentsCount, 1000, 2000},
+		{"conditions", summary.ConditionsCount, 1500, 3500},
+		{"claims", summary.ClaimsCount, 700, 1400},
+		{"payments", summary.PaymentsCount, 500, 1200},
+		{"documents", summary.DocumentsCount, 100, 200},
+		{"timecards", summary.TimecardsCount, 120, 250},
+		{"deleted records", summary.DeletedRecords, 25, 60},
 	}
-	if summary.AppointmentsCount != 24 {
-		t.Errorf("Expected 24 appointments, got %d", summary.AppointmentsCount)
-	}
-	if summary.ConditionsCount != 12 {
-		t.Errorf("Expected 12 conditions, got %d", summary.ConditionsCount)
-	}
-	if summary.FeeSchedulesCount != 2 {
-		t.Errorf("Expected 2 fee schedule overrides, got %d", summary.FeeSchedulesCount)
-	}
-	if summary.BundlesCount != 2 {
-		t.Errorf("Expected 2 treatment bundles, got %d", summary.BundlesCount)
-	}
-	if summary.ClaimsCount != 3 {
-		t.Errorf("Expected 3 claims, got %d", summary.ClaimsCount)
-	}
-	if summary.PaymentsCount != 2 {
-		t.Errorf("Expected 2 payments, got %d", summary.PaymentsCount)
-	}
-	if summary.DocumentsCount != 19 {
-		t.Errorf("Expected 19 documents, got %d", summary.DocumentsCount)
+	for _, c := range ranges {
+		if c.got < c.min || c.got > c.max {
+			t.Errorf("Expected %d-%d %s, got %d", c.min, c.max, c.name, c.got)
+		}
 	}
 
 	ctx := context.Background()
@@ -82,12 +88,16 @@ func TestSeedDatabase(t *testing.T) {
 
 	// Verify patients
 	patientRepo := sqlite.NewPatientRepository(db)
-	patients, total, err := patientRepo.List(ctx, domain.PatientFilter{})
+	patients, total, err := patientRepo.List(ctx, domain.PatientFilter{Status: string(domain.StatusArchived)})
 	if err != nil {
 		t.Fatalf("Failed to list patients: %v", err)
 	}
-	if total != 6 || len(patients) != 6 {
-		t.Errorf("Expected 6 patients in list, got total %d, count %d", total, len(patients))
+	if total != archivedPatientCount || len(patients) != archivedPatientCount {
+		t.Errorf("Expected %d archived patients in list, got total %d, count %d", archivedPatientCount, total, len(patients))
+	}
+	archived := map[string]bool{}
+	for _, p := range patients {
+		archived[p.ID] = true
 	}
 
 	// Verify appointments
@@ -96,8 +106,8 @@ func TestSeedDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list appointments: %v", err)
 	}
-	if len(appts) != 24 {
-		t.Errorf("Expected 24 appointments in list, got %d", len(appts))
+	if len(appts) != summary.AppointmentsCount {
+		t.Errorf("Expected %d appointments in list, got %d", summary.AppointmentsCount, len(appts))
 	}
 
 	laLoc, err := time.LoadLocation("America/Los_Angeles")
@@ -109,6 +119,9 @@ func TestSeedDatabase(t *testing.T) {
 	afterHoursCount := 0
 
 	for _, a := range appts {
+		if archived[a.PatientID] && (a.Status == domain.AppointmentStatusScheduled || a.Status == domain.AppointmentStatusConfirmed) {
+			t.Errorf("Archived patient %s still has upcoming appointment %s", a.PatientID, a.ID)
+		}
 		st := a.StartTime.In(laLoc)
 		et := a.EndTime.In(laLoc)
 
@@ -144,10 +157,6 @@ func TestSeedDatabase(t *testing.T) {
 		t.Errorf("Expected 2 conditions for pat_101, got %d", len(chart.Conditions))
 	}
 
-	if summary.InsurancePlans != 4 || summary.InsuranceFees != 8 {
-		t.Errorf("Expected 4 insurance plans with 8 fees, got %d plans, %d fees", summary.InsurancePlans, summary.InsuranceFees)
-	}
-
 	// Every billable treatment carries a confirmed pricing stamp matching its saved fee.
 	wantPricing := map[string]struct {
 		kind, clinician string
@@ -178,14 +187,17 @@ func TestSeedDatabase(t *testing.T) {
 	}
 
 	claimRepo := sqlite.NewClaimRepository(db)
-	for _, id := range []string{"claim_401", "claim_402", "claim_403"} {
-		claim, err := claimRepo.GetByID(ctx, id)
-		if err != nil {
-			t.Fatalf("Failed to get claim %s: %v", id, err)
-		}
+	claims, err := claimRepo.List(ctx, "")
+	if err != nil {
+		t.Fatalf("Failed to list claims: %v", err)
+	}
+	if len(claims) != summary.ClaimsCount {
+		t.Errorf("Expected %d claims in list, got %d", summary.ClaimsCount, len(claims))
+	}
+	for _, claim := range claims {
 		for _, li := range claim.LineItems {
 			if li.Pricing == nil || li.Pricing.Amount != li.Fee || li.Pricing.ClinicianID != claim.ProviderID {
-				t.Errorf("Claim %s line %s: fee %d, pricing %+v", id, li.ID, li.Fee, li.Pricing)
+				t.Errorf("Claim %s line %s: fee %d, pricing %+v", claim.ID, li.ID, li.Fee, li.Pricing)
 			}
 		}
 	}
@@ -196,8 +208,8 @@ func TestSeedDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to list clinic documents: %v", err)
 	}
-	if len(clinicDocs) != 1 {
-		t.Errorf("Expected 1 clinic document, got %d", len(clinicDocs))
+	if len(clinicDocs) != 4 {
+		t.Errorf("Expected 4 clinic documents, got %d", len(clinicDocs))
 	}
 
 	pat101ID := "pat_101"
@@ -232,5 +244,32 @@ func TestSeedDatabase(t *testing.T) {
 	}
 	if len(auditEntries) == 0 {
 		t.Errorf("Expected at least one audit log entry from seeding through services")
+	}
+
+	// Removed records are gone from the main database but stay in the audit trail.
+	var deletes int
+	if err := auditDb.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_logs WHERE action = 'DELETE'`).Scan(&deletes); err != nil {
+		t.Fatalf("Failed to count audited deletions: %v", err)
+	}
+	if deletes < summary.DeletedRecords {
+		t.Errorf("Expected at least %d audited deletions, got %d", summary.DeletedRecords, deletes)
+	}
+	providers, err := configRepo.ListProviders(ctx)
+	if err != nil {
+		t.Fatalf("Failed to list providers: %v", err)
+	}
+	for _, p := range providers {
+		if p.IsActive == (p.ID == "prov_110") {
+			t.Errorf("Provider %s: unexpected active state %v", p.ID, p.IsActive)
+		}
+	}
+	ops, err := configRepo.ListOperatories(ctx)
+	if err != nil {
+		t.Fatalf("Failed to list operatories: %v", err)
+	}
+	for _, op := range ops {
+		if op.IsActive == (op.ID == "op_9" || op.ID == "op_10") {
+			t.Errorf("Operatory %s: unexpected active state %v", op.ID, op.IsActive)
+		}
 	}
 }

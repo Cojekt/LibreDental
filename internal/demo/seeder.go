@@ -2,6 +2,7 @@ package demo
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"time"
 
 	"github.com/LibreDental/libredental/internal/services"
@@ -23,6 +24,11 @@ type SeedSummary struct {
 	ClaimsCount        int
 	PaymentsCount      int
 	DocumentsCount     int
+	TimecardsCount     int
+	ArchivedPatients   int
+	// DeletedRecords counts records created and then removed again through the services'
+	// delete paths; they are absent from the counts above but remain in the audit log.
+	DeletedRecords int
 }
 
 // SeedDatabase populates a fresh save folder with sample practice configuration,
@@ -39,6 +45,8 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 	// Fixed reference time to ensure deterministic demo database generation.
 	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	today := time.Date(2026, 6, 15, 0, 0, 0, 0, time.UTC)
+	// Fixed seed, so generated records are the same on every run.
+	rng := rand.New(rand.NewPCG(20260615, 1))
 
 	// 1. Onboarding: set the practice country, then create the very first provider
 	// (both unauthenticated, exactly as a fresh install's onboarding flow would),
@@ -68,8 +76,9 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 		return nil, err
 	}
 
-	// 5. Patients
-	if err := seedPatients(graph, token, now, summary); err != nil {
+	// 5. Patients: the handcrafted records below, then a generated roster of households
+	generated := generatePatients(rng, today)
+	if err := seedPatients(graph, token, now, generated, summary); err != nil {
 		return nil, err
 	}
 
@@ -107,12 +116,29 @@ func SeedDatabase(db *sqlite.DB, auditDb *sqlite.DB, appDir, demoDataDir string)
 		return nil, err
 	}
 
-	// 12. Documents
-	if err := seedDocuments(graph, token, demoDataDir, summary); err != nil {
+	// 12. Generated practice history: schedules, charting, claims and payments
+	history, err := seedPracticeHistory(graph, token, rng, plans, generated, today, summary)
+	if err != nil {
 		return nil, err
 	}
 
-	// 13. Local app settings (config.json), so the save folder is a complete,
+	// 13. Documents
+	docIDs, err := seedDocuments(graph, token, rng, generated, demoDataDir, summary)
+	if err != nil {
+		return nil, err
+	}
+
+	// 14. Staff timecards
+	if err := seedTimecards(graph, token, rng, today, summary); err != nil {
+		return nil, err
+	}
+
+	// 15. Deleted, archived and deactivated records
+	if err := seedRemovals(graph, token, rng, history, docIDs, now, summary); err != nil {
+		return nil, err
+	}
+
+	// 16. Local app settings (config.json), so the save folder is a complete,
 	// ready-to-use drop-in replacement for a real appDir, not just its databases.
 	if err := seedSystemSettings(appDir); err != nil {
 		return nil, err

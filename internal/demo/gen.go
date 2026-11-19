@@ -91,6 +91,9 @@ func run(outputPath string) error {
 	fmt.Printf("   • Insurance Claims    : %d\n", summary.ClaimsCount)
 	fmt.Printf("   • Patient Payments    : %d\n", summary.PaymentsCount)
 	fmt.Printf("   • Documents Saved     : %d\n", summary.DocumentsCount)
+	fmt.Printf("   • Staff Timecards     : %d\n", summary.TimecardsCount)
+	fmt.Printf("   • Archived Patients   : %d\n", summary.ArchivedPatients)
+	fmt.Printf("   • Deleted Records     : %d\n", summary.DeletedRecords)
 	fmt.Printf("File: %s\n", absPath)
 	return nil
 }
