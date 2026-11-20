@@ -265,10 +265,11 @@ cd frontend && npm run format:check
 
 Unit tests don't catch a broken bundle or a view that throws on real data.
 
-1. `task artifact` builds the desktop binary, server binary and demo archive.
-2. Unzip `dist/libredental-demo-data.zip` into a scratch config dir and run the server
+1. `task artifact` builds the desktop binary, server binary and both demo archives.
+2. Unzip `dist/libredental-demo-us-small.zip` into a scratch config dir and run the server
    against it (`XDG_CONFIG_HOME=/tmp/ld/.config dist/libredental-server`, using an absolute
-   path), then open `http://localhost:4242`.
+   path), then open `http://localhost:4242`. If the release touched list views or queries,
+   repeat with `libredental-demo-us-large.zip` and check nothing crawls.
 3. Log in (demo PINs: Dr. Sarah Jenkins `1111`, Dr. Marcus Vance `2222`, Elena Rostova
    `3333`) and click through every top-level tab and sub-tab in **both dark and light
    themes**, with the browser console open. There should be no console errors and no

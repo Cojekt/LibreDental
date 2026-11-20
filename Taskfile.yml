@@ -42,10 +42,13 @@ tasks:
       - '"./{{.BIN_DIR}}/{{.APP_NAME}}-server{{exeExt}}"'
 
   demo:
-    desc: Generates a standalone pre-populated save archive (libredental-demo-data.zip)
+    desc: Generates the small and large demo save archives (SIZE=small or SIZE=large for just one)
+    vars:
+      SIZES: '{{.SIZE | default "small large"}}'
     cmds:
       - task: mkdir:bin
-      - go run ./internal/demo/gen.go {{.BIN_DIR}}/libredental-demo-data.zip
+      - for: { var: SIZES }
+        cmd: go run ./internal/demo/gen.go -size {{.ITEM}} {{.BIN_DIR}}/libredental-demo-us-{{.ITEM}}.zip
 
   artifact:
     desc: Builds all local artifacts (desktop binary, server binary, and demo data)

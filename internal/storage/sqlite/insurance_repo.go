@@ -398,6 +398,8 @@ func (r *InsuranceRepository) ConfirmClaim(ctx context.Context, c *domain.Claim,
 				return storage.ErrConflict
 			}
 			linked[li.ToothConditionID] = true
+			// Not scoped to the condition's patient: releases before v0.1.4 saved claim links
+			// unvalidated, so upgraded databases can hold cross-patient links.
 			var billed bool
 			if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM claims c,json_each(c.line_items) j WHERE json_extract(j.value,'$.tooth_condition_id')=? AND (c.id!=? OR COALESCE(json_extract(j.value,'$.id'),'')!=?))`, li.ToothConditionID, c.ID, li.ID).Scan(&billed); err != nil {
 				return err

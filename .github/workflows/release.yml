@@ -31,14 +31,15 @@ jobs:
           setup-node: "false"
           cache-node: "false"
 
-      - name: Generate Demo Database
+      - name: Generate Demo Databases
         run: task demo
 
-      - name: Upload Demo Database Artifact
+      - name: Upload Demo Database Artifacts
         uses: actions/upload-artifact@v7
         with:
           name: build-assets-demo
-          path: dist/libredental-demo-data.zip
+          path: dist/libredental-demo-*.zip
+          if-no-files-found: error
 
   release:
     name: Publish GitHub Release
@@ -101,10 +102,40 @@ jobs:
           require_row "Linux (x64, portable)" "libredental-linux-amd64.AppImage"
           require_row "Linux (ARM64, portable)" "libredental-linux-arm64.AppImage"
 
+          # $1 = country, $2 = size, $3 = filename, $4 = what it's for. Every
+          # archive here is produced by `task demo`, so a miss is an artifact
+          # problem - fail like require_row().
+          demo_row() {
+            if [ ! -f "$3" ]; then
+              echo "::error::Expected demo data '$3' not found in release_download/ - artifact upload/download must have failed silently."
+              exit 1
+            fi
+            echo "| $1 | $2 | [$3](${BASE}/$3) | $4 |" >> ../notes.md
+          }
+
+          {
+            echo
+            echo "## Demo data"
+            echo
+            echo 'Fictional sample practices for trying LibreDental out or testing against it. Each'
+            echo 'archive is a complete save folder: back up your own `LibreDental` config folder first,'
+            echo 'then extract the archive'"'"'s `LibreDental/` folder in its place. Every size has the same'
+            echo 'staff, rooms, insurance plans and logins (PINs `1111`, `2222`, `3333`); only the amount'
+            echo 'of generated practice history differs.'
+            echo
+            echo "| Country | Size | Download | Best for |"
+            echo "| --- | --- | --- | --- |"
+          } >> ../notes.md
+
+          demo_row "United States" "Small" "libredental-demo-us-small.zip" \
+            "Quick testing and exploring. Minimal, not realistic: about 18 patients, with just enough records that every screen and status has something to show."
+          demo_row "United States" "Large" "libredental-demo-us-large.zip" \
+            "Performance and scale testing. About 500 patients and two months of busy schedules (1,000+ appointments, 700+ claims)."
+
           {
             echo
             echo "<details>"
-            echo "<summary>Other downloads (Linux package formats, headless server binaries, demo data, checksums)</summary>"
+            echo "<summary>Other downloads (Linux package formats, headless server binaries, checksums)</summary>"
             echo
             echo "| File | Download |"
             echo "| --- | --- |"
@@ -119,13 +150,13 @@ jobs:
             row "$f" "$f"
           done
 
-          # Server binaries, demo data, and checksums are all guaranteed by a
-          # successful build/generate-demo job, so a miss here is an artifact
-          # problem, not an expected gap - require them.
+          # Server binaries and checksums are guaranteed by a successful build
+          # job, so a miss here is an artifact problem, not an expected gap -
+          # require them.
           for f in \
             libredental-server-linux-amd64 libredental-server-linux-arm64 \
             libredental-server-windows-amd64.exe libredental-server-windows-arm64.exe \
-            libredental-demo-data.zip checksums.txt; do
+            checksums.txt; do
             require_row "$f" "$f"
           done
 

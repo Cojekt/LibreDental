@@ -26,6 +26,9 @@ func seedFeeSchedules(g *ServiceGraph, token string, now time.Time, summary *See
 			CustomFee:   130000,
 			UpdatedAt:   now,
 		},
+		{ID: "fee_sched_3", CountryCode: domain.CountryUS, Code: "D2750", ProviderID: "prov_105", CustomFee: 105000, UpdatedAt: now},
+		{ID: "fee_sched_4", CountryCode: domain.CountryUS, Code: "D1351", ProviderID: "prov_104", CustomFee: 6000, UpdatedAt: now},
+		{ID: "fee_sched_5", CountryCode: domain.CountryUS, Code: "D0210", ProviderID: "", CustomFee: 15000, UpdatedAt: now},
 	}
 
 	for _, fs := range feeSchedules {
@@ -40,17 +43,36 @@ func seedFeeSchedules(g *ServiceGraph, token string, now time.Time, summary *See
 // demoPlans maps insurance plan names to their generated IDs.
 type demoPlans map[string]string
 
+// insurancePlans are the payer contracts on file. Generated patients carry these carrier
+// names, so the history generator prices their treatment off the matching plan fees.
+var insurancePlans = []struct {
+	name     string
+	archived bool
+	fees     map[string]int64
+}{
+	{"Delta Dental PPO", false, map[string]int64{
+		"D0120": 5200, "D0140": 7000, "D0274": 6000, "D1110": 9800, "D1120": 6500, "D1206": 3800,
+		"D1351": 4800, "D2391": 12000, "D2392": 24000, "D2393": 19500, "D2740": 98000, "D3330": 82000,
+		"D4341": 22000, "D7140": 14500,
+	}},
+	{"MetLife Dental", false, map[string]int64{
+		"D0120": 5600, "D0274": 6200, "D1110": 9400, "D2391": 12500, "D2392": 16000, "D2740": 102000,
+		"D3330": 88000, "D7140": 15000,
+	}},
+	{"Cigna Dental Health", false, map[string]int64{
+		"D0120": 5500, "D0274": 5800, "D1110": 9500, "D1120": 6800, "D1206": 4000, "D1351": 5000, "D2391": 12200,
+	}},
+	{"Aetna Dental", false, map[string]int64{
+		"D0120": 5400, "D0274": 6100, "D1110": 9600, "D2392": 16500, "D2750": 85000, "D4341": 23000,
+	}},
+	{"Guardian Dental", false, map[string]int64{"D0120": 5800, "D1110": 10000, "D2391": 12800}},
+	{"Humana Dental Choice", false, map[string]int64{"D0120": 5000, "D1110": 9000}},
+	{"United Concordia", false, map[string]int64{"D0120": 5300, "D0210": 12000, "D1110": 9300}},
+	{"Legacy Dental Network", true, map[string]int64{"D0120": 4800}},
+}
+
 func seedInsurancePlans(g *ServiceGraph, token string, summary *SeedSummary) (demoPlans, error) {
-	plans := []struct {
-		name     string
-		archived bool
-		fees     map[string]int64
-	}{
-		{"Delta Dental PPO", false, map[string]int64{"D0120": 5200, "D1110": 9800, "D2392": 24000}},
-		{"MetLife Dental", false, map[string]int64{"D3330": 88000, "D2740": 102000}},
-		{"Cigna Dental Health", false, map[string]int64{"D0120": 5500, "D1110": 9500}},
-		{"Legacy Dental Network", true, map[string]int64{"D0120": 4800}},
-	}
+	plans := insurancePlans
 	ids := demoPlans{}
 	for _, plan := range plans {
 		p, err := g.Insurance.SaveProvider(token, &domain.InsuranceProvider{Name: plan.name})
@@ -131,6 +153,48 @@ func seedBundles(g *ServiceGraph, token string, now time.Time, summary *SeedSumm
 				{ADACode: "D2740", Description: "Porcelain/Ceramic Crown", DefaultFee: 135000},
 			},
 			TotalFee:  255000,
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
+			ID:          "bundle_3",
+			Shortname:   "child-recall",
+			Name:        "Child Recall Visit",
+			Description: "Periodic evaluation, child prophylaxis and fluoride varnish",
+			Items: []domain.BundleItemTemplate{
+				{ADACode: "D0120", Description: "Periodic Oral Evaluation", DefaultFee: 6500},
+				{ADACode: "D1120", Description: "Prophylaxis - Child", DefaultFee: 7500},
+				{ADACode: "D1206", Description: "Topical Application of Fluoride Varnish", DefaultFee: 4500},
+			},
+			TotalFee:  18500,
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
+			ID:          "bundle_4",
+			Shortname:   "srp-full",
+			Name:        "Full Mouth Scaling & Root Planing",
+			Description: "Four-quadrant periodontal scaling and root planing over two visits",
+			Items: []domain.BundleItemTemplate{
+				{ADACode: "D4341", Description: "Periodontal Scaling and Root Planing - Upper Right", DefaultFee: 26000},
+				{ADACode: "D4341", Description: "Periodontal Scaling and Root Planing - Upper Left", DefaultFee: 26000},
+				{ADACode: "D4341", Description: "Periodontal Scaling and Root Planing - Lower Right", DefaultFee: 26000},
+				{ADACode: "D4341", Description: "Periodontal Scaling and Root Planing - Lower Left", DefaultFee: 26000},
+			},
+			TotalFee:  104000,
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+		{
+			ID:          "bundle_5",
+			Shortname:   "full-dentures",
+			Name:        "Complete Upper & Lower Dentures",
+			Description: "Maxillary and mandibular complete dentures",
+			Items: []domain.BundleItemTemplate{
+				{ADACode: "D5110", Description: "Complete Denture - Maxillary", DefaultFee: 140000},
+				{ADACode: "D5120", Description: "Complete Denture - Mandibular", DefaultFee: 140000},
+			},
+			TotalFee:  280000,
 			CreatedAt: now,
 			UpdatedAt: now,
 		},
@@ -250,12 +314,40 @@ func seedClaims(g *ServiceGraph, token string, now time.Time, plans demoPlans, s
 			CreatedAt: now,
 			UpdatedAt: now,
 		},
+		{
+			ID:               "claim_404",
+			PatientID:        "pat_105",
+			ProviderID:       "prov_101",
+			AppointmentID:    "",
+			InsuranceCarrier: "Humana Dental Choice",
+			PolicyNumber:     "HUM-7740291",
+			GroupNumber:      "GRP-77201",
+			DateOfService:    "2026-05-06",
+			Status:           domain.ClaimStatusRejected,
+			Notes:            "Denied: frequency limitation - prophylaxis covered twice per benefit year.",
+			LineItems: []domain.ClaimLineItem{
+				{
+					ID:               "li_6",
+					ToothConditionID: "",
+					ToothNumber:      0,
+					Surfaces:         []domain.ToothSurface{},
+					ADACode:          "D1110",
+					Description:      "Prophylaxis - Adult",
+					Fee:              9000,
+					InsuranceAllowed: 0,
+					PatientPortion:   9000,
+				},
+			},
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
 	}
 
 	// Lines linked to a charted treatment copy its saved pricing; the rest need a review.
 	direct := map[string]demoPrice{
 		"li_4": {kind: "insurance", clinician: "prov_101", plan: "Cigna Dental Health"},
 		"li_5": {kind: "insurance", clinician: "prov_101", plan: "Cigna Dental Health"},
+		"li_6": {kind: "insurance", clinician: "prov_101", plan: "Humana Dental Choice"},
 	}
 	for _, c := range claims {
 		for i := range c.LineItems {
@@ -298,6 +390,16 @@ func seedPayments(g *ServiceGraph, token string, now time.Time, summary *SeedSum
 			Method:    domain.PaymentMethodInsurance,
 			Date:      "2026-06-15",
 			Notes:     "Delta Dental insurance claim payment EOB #99482",
+			CreatedAt: now,
+		},
+		{
+			ID:        "pay_503",
+			PatientID: "pat_105",
+			ClaimID:   "claim_404",
+			Amount:    9000,
+			Method:    domain.PaymentMethodWriteOff,
+			Date:      "2026-05-20",
+			Notes:     "Denied prophylaxis written off as a courtesy",
 			CreatedAt: now,
 		},
 	}
