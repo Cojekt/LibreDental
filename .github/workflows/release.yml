@@ -130,7 +130,7 @@ jobs:
           demo_row "United States" "Small" "libredental-demo-us-small.zip" \
             "Quick testing and exploring. Minimal, not realistic: about 18 patients, with just enough records that every screen and status has something to show."
           demo_row "United States" "Large" "libredental-demo-us-large.zip" \
-            "Performance and scale testing. About 500 patients and two months of busy schedules (1,400+ appointments, 1,000+ claims)."
+            "Performance and scale testing. About 500 patients and two months of busy schedules (1,000+ appointments, 700+ claims)."
 
           {
             echo

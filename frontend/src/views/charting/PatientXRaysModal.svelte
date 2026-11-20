@@ -141,17 +141,18 @@
     if (!id) return;
     try {
       await DocumentService.DeleteDocument(auth.token, id);
-      loadXRays();
-      if (viewingDocId === id) {
-        viewingImages = [];
-        viewingSkippedCount = 0;
-        viewingDocId = null;
-      }
     } catch (err) {
       console.error("Failed to delete X-Ray:", err);
       viewerError = handleError(err, m.doc_err_delete());
     } finally {
       xrayToDelete = "";
+    }
+    // Some errors (audit or file cleanup) arrive after the record is already gone.
+    await loadXRays();
+    if (viewingDocId === id && !documents.some((d) => d.id === id)) {
+      viewingImages = [];
+      viewingSkippedCount = 0;
+      viewingDocId = null;
     }
   }
 

@@ -126,7 +126,7 @@ The demo seeder builds a fictional US practice through the same services the app
 | `libredental-demo-us-small.zip` | ~18 patients, ~65 appointments | Everyday development and quick tests. Deliberately minimal and not realistic: just enough records that every screen, status and edge case has something to show. |
 | `libredental-demo-us-large.zip` | ~500 patients, ~1,400 appointments, about two months of history | Finding slow queries and UI that doesn't hold up at volume, and seeing where the system's limits are. |
 
-Both share the same staff, rooms, insurance plans and handcrafted records; only the volume of generated history differs. The seeder test checks that each size still covers every appointment, claim and payment status. To use one, back up your own `LibreDental` folder in the OS config directory (`~/.config` on Linux, `%AppData%` on Windows) and extract the archive's `LibreDental/` folder in its place.
+Both share the same staff, rooms, insurance plans and handcrafted records; only the volume of generated history differs. The seeder test checks that each size still covers every appointment and claim status and every payment method. To use one, back up your own `LibreDental` folder in the OS config directory (`~/.config` on Linux, `%AppData%` on Windows) and extract the archive's `LibreDental/` folder in its place.
 
 ## License
 

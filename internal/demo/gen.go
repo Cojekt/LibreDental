@@ -23,6 +23,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(2)
 	}
+	// Go's flag package stops at the first positional argument, so a flag after the
+	// output path would otherwise be silently ignored.
+	if flag.NArg() > 1 {
+		fmt.Fprintf(os.Stderr, "Error: unexpected arguments after output path: %s (flags must come first)\n", strings.Join(flag.Args()[1:], " "))
+		os.Exit(2)
+	}
 	outputPath := fmt.Sprintf("libredental-demo-us-%s.zip", size)
 	if flag.NArg() > 0 {
 		outputPath = flag.Arg(0)

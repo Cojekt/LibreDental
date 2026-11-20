@@ -167,13 +167,14 @@
     if (!docToDelete) return;
     try {
       await DocumentService.DeleteDocument(auth.token, docToDelete);
-      loadDocuments();
     } catch (err) {
       console.error("Failed to delete document:", err);
       actionError = handleError(err, m.doc_err_delete());
     } finally {
       docToDelete = "";
     }
+    // Some errors (audit or file cleanup) arrive after the record is already gone.
+    loadDocuments();
   }
 
   async function downloadAndCreateObjectURL(doc: Document): Promise<string> {

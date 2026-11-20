@@ -13,6 +13,11 @@ var hourlyStaff = []string{"prov_103", "prov_106", "prov_107", "prov_108", "prov
 // seedTimecards records shifts over the history window. Payroll was run through the end of
 // the previous pay period, so the most recent two weeks are still owed.
 func seedTimecards(g *ServiceGraph, p profile, token string, rng *rand.Rand, today time.Time, summary *SeedSummary) error {
+	for _, s := range hourlyStaff {
+		if _, ok := staffSchedules[s]; !ok {
+			return fmt.Errorf("hourly staff %s has no schedule", s)
+		}
+	}
 	start := today.AddDate(0, 0, -7*p.historyWeeks)
 	payrollCutoff := today.AddDate(0, 0, -14)
 	paid := false
