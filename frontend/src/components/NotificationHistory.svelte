@@ -106,8 +106,10 @@
         type="button"
         class="text-[11px] text-slate-400 underline cursor-pointer disabled:opacity-50"
         disabled={loading}
-        onclick={() => load(patientId, appointmentId, true)}>{m.notif_history_refresh()}</button
+        onclick={() => load(patientId, appointmentId, true)}
       >
+        {m.notif_history_refresh()}
+      </button>
     </div>
     <!-- During a refresh the current entries stay listed; the disabled button shows it's loading. -->
     {#if loading && entries.length === 0}
@@ -130,8 +132,10 @@
               <span
                 class="rounded border px-1.5 py-0.5 text-[11px] font-medium {statusClass(
                   entry.status
-                )}">{statusLabel(entry.status)}</span
+                )}"
               >
+                {statusLabel(entry.status)}
+              </span>
             </div>
             <div class="text-slate-500">
               {new Date(entry.sent_at).toLocaleString()} · {entry.recipient}

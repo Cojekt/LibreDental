@@ -70,9 +70,9 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label for="clinic-name" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_name_label()}</label
-          >
+          <label for="clinic-name" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_name_label()}
+          </label>
           <input
             id="clinic-name"
             type="text"
@@ -83,9 +83,9 @@
           />
         </div>
         <div>
-          <label for="clinic-tagline" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_tagline_label()}</label
-          >
+          <label for="clinic-tagline" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_tagline_label()}
+          </label>
           <input
             id="clinic-tagline"
             type="text"
@@ -115,9 +115,9 @@
         </div>
 
         <div>
-          <label for="clinic-license" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_license_label()}</label
-          >
+          <label for="clinic-license" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_license_label()}
+          </label>
           <input
             id="clinic-license"
             type="text"
@@ -129,9 +129,9 @@
         </div>
 
         <div>
-          <label for="clinic-npi" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_npi_label()}</label
-          >
+          <label for="clinic-npi" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_npi_label()}
+          </label>
           <input
             id="clinic-npi"
             type="text"
@@ -145,9 +145,9 @@
         </div>
 
         <div>
-          <label for="clinic-phone" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_phone_label()}</label
-          >
+          <label for="clinic-phone" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_phone_label()}
+          </label>
           <PhoneInput
             id="clinic-phone"
             bind:value={phone}
@@ -157,9 +157,9 @@
         </div>
 
         <div>
-          <label for="clinic-email" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_email_label()}</label
-          >
+          <label for="clinic-email" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_email_label()}
+          </label>
           <EmailInput
             id="clinic-email"
             bind:value={email}
@@ -169,9 +169,9 @@
         </div>
 
         <div class="sm:col-span-2">
-          <label for="clinic-website" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_website_label()}</label
-          >
+          <label for="clinic-website" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_website_label()}
+          </label>
           <input
             id="clinic-website"
             type="url"
@@ -194,9 +194,9 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="sm:col-span-2">
-          <label for="addr-1" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_addr1_label()}</label
-          >
+          <label for="addr-1" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_addr1_label()}
+          </label>
           <input
             id="addr-1"
             type="text"
@@ -208,9 +208,9 @@
         </div>
 
         <div>
-          <label for="addr-city" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_city_label()}</label
-          >
+          <label for="addr-city" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_city_label()}
+          </label>
           <input
             id="addr-city"
             type="text"
@@ -221,9 +221,9 @@
         </div>
 
         <div>
-          <label for="addr-state" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_state_label()}</label
-          >
+          <label for="addr-state" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_state_label()}
+          </label>
           <input
             id="addr-state"
             type="text"
@@ -234,9 +234,9 @@
         </div>
 
         <div>
-          <label for="addr-zip" class="block text-xs font-semibold text-slate-400 mb-1"
-            >{m.clinic_profile_zip_label()}</label
-          >
+          <label for="addr-zip" class="block text-xs font-semibold text-slate-400 mb-1">
+            {m.clinic_profile_zip_label()}
+          </label>
           <input
             id="addr-zip"
             type="text"
@@ -260,18 +260,18 @@
 
       <div class="space-y-3">
         <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-            >{m.clinic_profile_country_label()}</span
-          >
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            {m.clinic_profile_country_label()}
+          </span>
           <span class="text-sm font-medium text-slate-200 mt-0.5 flex items-center gap-2">
             <span>{countryMeta?.name || countryCode} ({countryCode})</span>
           </span>
         </div>
 
         <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-            >{m.clinic_profile_tooth_label()}</span
-          >
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            {m.clinic_profile_tooth_label()}
+          </span>
           <span class="text-sm font-medium text-slate-200 mt-0.5 capitalize">
             {toothSystem === "fdi"
               ? m.clinic_profile_tooth_fdi()
@@ -282,18 +282,18 @@
         </div>
 
         <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-            >{m.clinic_profile_currency_label()}</span
-          >
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            {m.clinic_profile_currency_label()}
+          </span>
           <span class="text-sm font-medium text-slate-200 mt-0.5 font-mono">
             {currency || "USD"}
           </span>
         </div>
 
         <div class="rounded-lg border border-slate-800/80 bg-slate-950/60 p-3">
-          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-            >{m.clinic_profile_date_fmt_label()}</span
-          >
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            {m.clinic_profile_date_fmt_label()}
+          </span>
           <span class="text-sm font-medium text-slate-200 mt-0.5 font-mono">
             {dateFormat || "YYYY-MM-DD"}
           </span>
@@ -303,8 +303,9 @@
         <label
           for="clinic-timezone"
           class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-          >{m.clinic_profile_timezone_label()}</label
         >
+          {m.clinic_profile_timezone_label()}
+        </label>
         {#if isEditingProfile}
           <select
             id="clinic-timezone"
@@ -321,8 +322,9 @@
               type="button"
               class="text-xs text-sky-400 underline cursor-pointer"
               onclick={() => (timezone = computerTimezone)}
-              >{m.clinic_profile_timezone_use_computer({ zone: computerTimezone })}</button
             >
+              {m.clinic_profile_timezone_use_computer({ zone: computerTimezone })}
+            </button>
           {/if}
         {:else}
           <span class="block text-sm font-medium text-slate-200 font-mono">

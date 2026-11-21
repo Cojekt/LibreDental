@@ -216,8 +216,9 @@
           <label
             for="xray-file"
             class="text-[10px] uppercase tracking-wider font-bold text-slate-400"
-            >{m.doc_label_file()}</label
           >
+            {m.doc_label_file()}
+          </label>
           <input
             bind:this={fileInput}
             id="xray-file"
@@ -233,8 +234,9 @@
           <label
             for="xray-name"
             class="text-[10px] uppercase tracking-wider font-bold text-slate-400"
-            >{m.doc_label_name()}</label
           >
+            {m.doc_label_name()}
+          </label>
           <input
             id="xray-name"
             type="text"
@@ -368,12 +370,12 @@
               <div
                 class="flex justify-between items-center text-xs text-slate-400 font-medium px-1"
               >
-                <span
-                  >{m.xray_frame_info({
+                <span>
+                  {m.xray_frame_info({
                     current: currentFrameIndex + 1,
                     total: viewingImages.length,
-                  })}</span
-                >
+                  })}
+                </span>
               </div>
               <input
                 type="range"

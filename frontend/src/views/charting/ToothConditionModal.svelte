@@ -76,8 +76,9 @@
     <div class="flex flex-col gap-5">
       <!-- Surface Selection Grid -->
       <div class="flex flex-col gap-2">
-        <span class="text-xs font-semibold text-slate-300">{m.charting_modal_surfaces_label()}</span
-        >
+        <span class="text-xs font-semibold text-slate-300">
+          {m.charting_modal_surfaces_label()}
+        </span>
         <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {#each surfaceOptions as s}
             <button
@@ -133,11 +134,11 @@
               }}
               class="bg-slate-950 border border-sky-500/40 text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value=""
-                >{m.charting_modal_catalog_prompt({
+              <option value="">
+                {m.charting_modal_catalog_prompt({
                   name: countryMeta?.name || m.charting_catalog_country(),
-                })}</option
-              >
+                })}
+              </option>
               {#each procedureCodes as p}
                 <option value={p.code}>
                   [{p.category}] {p.code} - {p.description} ({formatCurrency(
@@ -151,9 +152,9 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
-            <label for="condition-ada-code" class="text-xs font-medium text-slate-400"
-              >{m.charting_modal_code_label()}</label
-            >
+            <label for="condition-ada-code" class="text-xs font-medium text-slate-400">
+              {m.charting_modal_code_label()}
+            </label>
             <input
               id="condition-ada-code"
               type="text"
@@ -163,10 +164,10 @@
             />
           </div>
           <div class="flex flex-col gap-1">
-            <label for="condition-fee" class="text-xs font-medium text-slate-400"
-              >{m.charting_modal_fee_label()}
-              {countryMeta?.default_currency ? `(${countryMeta.default_currency})` : ""}</label
-            >
+            <label for="condition-fee" class="text-xs font-medium text-slate-400">
+              {m.charting_modal_fee_label()}
+              {countryMeta?.default_currency ? `(${countryMeta.default_currency})` : ""}
+            </label>
             <input
               id="condition-fee"
               type="number"
@@ -178,9 +179,9 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <label for="condition-description" class="text-xs font-medium text-slate-400"
-            >{m.charting_modal_desc_label()}</label
-          >
+          <label for="condition-description" class="text-xs font-medium text-slate-400">
+            {m.charting_modal_desc_label()}
+          </label>
           <input
             id="condition-description"
             type="text"
@@ -192,9 +193,9 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <label for="condition-status" class="text-xs font-medium text-slate-400"
-            >{m.charting_modal_status_label()}</label
-          >
+          <label for="condition-status" class="text-xs font-medium text-slate-400">
+            {m.charting_modal_status_label()}
+          </label>
           <select
             id="condition-status"
             bind:value={formStatus}

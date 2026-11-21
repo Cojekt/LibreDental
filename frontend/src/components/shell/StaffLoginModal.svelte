@@ -172,9 +172,9 @@
       </div>
 
       <div>
-        <label for="pin-input" class="block text-sm font-semibold text-slate-300 mb-2"
-          >{m.staff_login_enter_pin()}</label
-        >
+        <label for="pin-input" class="block text-sm font-semibold text-slate-300 mb-2">
+          {m.staff_login_enter_pin()}
+        </label>
         <input
           id="pin-input"
           type="password"

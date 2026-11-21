@@ -163,9 +163,9 @@
               <td class="px-4 py-3 font-mono font-bold text-sky-400">{p.code}</td>
               <td class="px-4 py-3"><StatusBadge variant="draft" label={p.category} /></td>
               <td class="px-4 py-3 text-slate-200 font-medium">{p.description}</td>
-              <td class="px-4 py-3 text-slate-400 font-mono"
-                >{formatCurrency(p.default_fee, countryMeta?.default_currency || "USD")}</td
-              >
+              <td class="px-4 py-3 text-slate-400 font-mono">
+                {formatCurrency(p.default_fee, countryMeta?.default_currency || "USD")}
+              </td>
               <td class="px-4 py-3 font-bold text-slate-100 font-mono">
                 {formatCurrency(
                   p.effective_fee ?? p.default_fee,
@@ -174,7 +174,8 @@
                 {#if hasCustom}
                   <span
                     class="ml-2 text-[10px] text-amber-400 font-semibold px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-800"
-                    >{m.billing_custom_tag()}
+                  >
+                    {m.billing_custom_tag()}
                   </span>
                 {/if}
               </td>

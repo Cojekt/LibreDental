@@ -460,9 +460,9 @@
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <!-- Patient Select Dropdown -->
       <div class="flex items-center gap-2">
-        <label for="chart-patient-select" class="text-xs font-medium text-slate-400"
-          >{m.charting_patient_label()}</label
-        >
+        <label for="chart-patient-select" class="text-xs font-medium text-slate-400">
+          {m.charting_patient_label()}
+        </label>
         <select
           id="chart-patient-select"
           bind:value={selectedPatientId}

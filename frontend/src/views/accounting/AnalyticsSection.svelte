@@ -70,9 +70,9 @@
 
     <div class="flex items-center gap-4">
       <div class="flex flex-col">
-        <label for="start-date" class="text-xs font-medium text-slate-400 mb-1"
-          >{m.revenue_start_date()}</label
-        >
+        <label for="start-date" class="text-xs font-medium text-slate-400 mb-1">
+          {m.revenue_start_date()}
+        </label>
         <input
           id="start-date"
           type="date"
@@ -81,9 +81,9 @@
         />
       </div>
       <div class="flex flex-col">
-        <label for="end-date" class="text-xs font-medium text-slate-400 mb-1"
-          >{m.revenue_end_date()}</label
-        >
+        <label for="end-date" class="text-xs font-medium text-slate-400 mb-1">
+          {m.revenue_end_date()}
+        </label>
         <input
           id="end-date"
           type="date"
@@ -92,9 +92,9 @@
         />
       </div>
       <div class="flex flex-col justify-end h-full pt-4">
-        <button type="button" class="btn btn-primary btn-sm" onclick={fetchRevenue}
-          >{m.revenue_refresh()}</button
-        >
+        <button type="button" class="btn btn-primary btn-sm" onclick={fetchRevenue}>
+          {m.revenue_refresh()}
+        </button>
       </div>
     </div>
   </div>
@@ -143,9 +143,9 @@
             <tr class="hover:bg-slate-800/40">
               <td class="whitespace-nowrap px-4 py-3">{payment.date}</td>
               <td class="px-4 py-3">{paymentMethodLabel(payment.method)}</td>
-              <td class="px-4 py-3 text-right font-medium text-slate-200"
-                >{formatCurrency(payment.amount, countryMeta?.default_currency)}</td
-              >
+              <td class="px-4 py-3 text-right font-medium text-slate-200">
+                {formatCurrency(payment.amount, countryMeta?.default_currency)}
+              </td>
             </tr>
           {/each}
         {/if}

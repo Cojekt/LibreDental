@@ -554,15 +554,15 @@
                     </span>
                   {/each}
                   {#if (c.line_items ?? []).length > 2}
-                    <span class="text-slate-500 text-xs font-medium"
-                      >+{(c.line_items ?? []).length - 2}</span
-                    >
+                    <span class="text-slate-500 text-xs font-medium">
+                      +{(c.line_items ?? []).length - 2}
+                    </span>
                   {/if}
                 </div>
               </td>
-              <td class="px-4 py-3 font-bold text-slate-100 font-mono"
-                >{formatCurrency(claimTotal(c), countryMeta?.default_currency)}</td
-              >
+              <td class="px-4 py-3 font-bold text-slate-100 font-mono">
+                {formatCurrency(claimTotal(c), countryMeta?.default_currency)}
+              </td>
               <td class="px-4 py-3">
                 <StatusBadge variant={c.status} label={claimStatusLabel(c.status)} />
               </td>
@@ -751,7 +751,8 @@
             type="button"
             class="btn btn-secondary btn-sm flex items-center gap-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60"
             onclick={openChartImportModal}
-            >{m.billing_btn_import_chart()}
+          >
+            {m.billing_btn_import_chart()}
           </button>
           <div class="flex items-center gap-1.5">
             <input
@@ -834,15 +835,17 @@
                     pricingLine = i;
                     resumeSave = false;
                     showPricing = true;
-                  }}>{m.insurance_pricing()}</button
+                  }}
                 >
-                {#if li.pricing}<span class="text-xs"
-                    >{li.pricing.kind === "insurance"
+                  {m.insurance_pricing()}
+                </button>
+                {#if li.pricing}<span class="text-xs">
+                    {li.pricing.kind === "insurance"
                       ? li.pricing.provider_name
                       : li.pricing.kind === "standard"
                         ? m.insurance_standard()
-                        : m.insurance_manual()}</span
-                  >{/if}
+                        : m.insurance_manual()}
+                  </span>{/if}
                 <Input
                   type="number"
                   bind:value={li.fee}
@@ -871,19 +874,21 @@
                   class="p-1 text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
                   onclick={() => removeLineItem(i)}
                   title={m.billing_claim_remove_row()}
-                  aria-label={m.billing_claim_remove_row()}>✕</button
+                  aria-label={m.billing_claim_remove_row()}
                 >
+                  ✕
+                </button>
               </div>
             </div>
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             {m.billing_claim_total()}
-            <strong class="text-slate-100 text-sm font-mono"
-              >{formatCurrency(
+            <strong class="text-slate-100 text-sm font-mono">
+              {formatCurrency(
                 claimLineItems.reduce((s, li) => s + Math.round((li.fee || 0) * 100), 0),
                 countryMeta?.default_currency
-              )}</strong
-            >
+              )}
+            </strong>
           </div>
         </div>
       {:else}
@@ -1000,9 +1005,9 @@
   onConfirm={executeSubmitClaim}
 >
   {#if integrationProviders.length > 1}
-    <label for="cl-submit-provider" class="mb-1 block text-xs font-semibold text-slate-400"
-      >{m.billing_claim_submit_provider_label()}</label
-    >
+    <label for="cl-submit-provider" class="mb-1 block text-xs font-semibold text-slate-400">
+      {m.billing_claim_submit_provider_label()}
+    </label>
     <select
       id="cl-submit-provider"
       bind:value={submitProvider}

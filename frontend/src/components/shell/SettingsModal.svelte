@@ -214,7 +214,8 @@
         <div>
           <span
             class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2.5"
-            >{m.settings_section_appearance()}
+          >
+            {m.settings_section_appearance()}
           </span>
           <div class="grid grid-cols-3 gap-2.5">
             <!-- System Theme -->
@@ -263,7 +264,8 @@
           <div>
             <span
               class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-              >{m.settings_section_display()}
+            >
+              {m.settings_section_display()}
             </span>
             <div
               class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-3"
@@ -299,8 +301,10 @@
 
         <!-- Language Section -->
         <div>
-          <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-            >{m.settings_section_language()}
+          <span
+            class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
+          >
+            {m.settings_section_language()}
           </span>
           <select
             id="language-select"
@@ -320,7 +324,8 @@
           <div>
             <span
               class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-              >{m.settings_section_storage()}
+            >
+              {m.settings_section_storage()}
             </span>
 
             <div
@@ -332,13 +337,14 @@
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  ><path
+                >
+                  <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
                     d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                  ></path></svg
-                >
+                  ></path>
+                </svg>
                 <span class="font-mono text-xs text-slate-300 truncate select-all">
                   {#if dataDirError}
                     {m.settings_storage_error()}
@@ -368,11 +374,9 @@
                   <polyline points="15 3 21 3 21 9"></polyline>
                   <line x1="10" y1="14" x2="21" y2="3"></line>
                 </svg>
-                <span
-                  >{isOpeningFolder
-                    ? m.settings_storage_opening()
-                    : m.settings_storage_open()}</span
-                >
+                <span>
+                  {isOpeningFolder ? m.settings_storage_opening() : m.settings_storage_open()}
+                </span>
               </button>
             </div>
 
@@ -385,13 +389,14 @@
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  ><path
+                >
+                  <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  ></path></svg
-                >
+                  ></path>
+                </svg>
                 <span>{openError}</span>
               </div>
             {/if}

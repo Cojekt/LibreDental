@@ -106,9 +106,9 @@
     <!-- Maxillary Arch (Upper Teeth) -->
     <div>
       <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
-        <span class="text-xs font-bold uppercase tracking-wider text-sky-400"
-          >{m.charting_upper_arch()}</span
-        >
+        <span class="text-xs font-bold uppercase tracking-wider text-sky-400">
+          {m.charting_upper_arch()}
+        </span>
         <span class="text-[11px] text-slate-500 font-mono">{m.charting_arch_direction()}</span>
       </div>
 
@@ -143,9 +143,9 @@
     <!-- Mandibular Arch (Lower Teeth) -->
     <div>
       <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
-        <span class="text-xs font-bold uppercase tracking-wider text-sky-400"
-          >{m.charting_lower_arch()}</span
-        >
+        <span class="text-xs font-bold uppercase tracking-wider text-sky-400">
+          {m.charting_lower_arch()}
+        </span>
         <span class="text-[11px] text-slate-500 font-mono">{m.charting_arch_direction()}</span>
       </div>
 

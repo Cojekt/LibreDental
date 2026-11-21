@@ -39,9 +39,9 @@
       </p>
       <p class="mb-4 text-sm">{m.patients_no_found_desc()}</p>
       {#if statusFilter === "active"}
-        <button class="btn btn-secondary cursor-pointer" onclick={onaddpatient}
-          >{m.patients_add_first()}</button
-        >
+        <button class="btn btn-secondary cursor-pointer" onclick={onaddpatient}>
+          {m.patients_add_first()}
+        </button>
       {/if}
     </div>
   {:else}
@@ -51,28 +51,33 @@
           <th
             scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
-            >{m.patients_th_name()}</th
           >
+            {m.patients_th_name()}
+          </th>
           <th
             scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
-            >{m.patients_th_contact()}</th
           >
+            {m.patients_th_contact()}
+          </th>
           <th
             scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
-            >{m.patients_th_dob()}</th
           >
+            {m.patients_th_dob()}
+          </th>
           <th
             scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
-            >{m.patients_th_alerts()}</th
           >
+            {m.patients_th_alerts()}
+          </th>
           <th
             scope="col"
             class="border-b border-slate-700 bg-slate-900 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
-            >{m.patients_th_actions()}</th
           >
+            {m.patients_th_actions()}
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -99,24 +104,26 @@
                 {p.email || m.patients_no_email()}
               </div>
             </td>
-            <td class="border-b border-slate-700 px-5 py-4 text-sm"
-              >{formatDateOnly(p.date_of_birth) || m.common_not_available()}</td
-            >
+            <td class="border-b border-slate-700 px-5 py-4 text-sm">
+              {formatDateOnly(p.date_of_birth) || m.common_not_available()}
+            </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
               {#if p.medical_alerts && p.medical_alerts.length > 0}
                 <div class="flex flex-wrap gap-1.5">
                   {#each p.medical_alerts as alert}
                     <span
                       class="rounded-md border border-amber-400/30 bg-amber-500/15 px-2 py-1 text-xs font-medium text-amber-400"
-                      >{alert}</span
                     >
+                      {alert}
+                    </span>
                   {/each}
                 </div>
               {:else}
                 <span
                   class="rounded-md bg-emerald-500/15 px-2 py-1 text-xs font-medium text-emerald-400"
-                  >{m.patients_clean_record()}</span
                 >
+                  {m.patients_clean_record()}
+                </span>
               {/if}
             </td>
             <td class="border-b border-slate-700 px-5 py-4 text-sm">
@@ -126,16 +133,20 @@
                   onclick={(e) => {
                     e.stopPropagation();
                     oneditpatient(p);
-                  }}>{m.patients_btn_edit()}</button
+                  }}
                 >
+                  {m.patients_btn_edit()}
+                </button>
                 {#if p.status !== "archived"}
                   <button
                     class="btn btn-ghost btn-danger btn-sm cursor-pointer"
                     onclick={(e) => {
                       e.stopPropagation();
                       onarchivepatient(p);
-                    }}>{m.patients_btn_archive()}</button
+                    }}
                   >
+                    {m.patients_btn_archive()}
+                  </button>
                 {/if}
               </div>
             </td>

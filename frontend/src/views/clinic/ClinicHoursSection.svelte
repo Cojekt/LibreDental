@@ -53,7 +53,8 @@
           {#if hour.is_closed}
             <span
               class="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full"
-              >{m.clinic_hours_status_closed()}
+            >
+              {m.clinic_hours_status_closed()}
             </span>
           {:else if !isEditingProfile}
             <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-300">
@@ -62,7 +63,8 @@
                   {#each hour.slots as slot, sIdx}
                     <span
                       class="bg-sky-500/10 border border-sky-500/20 text-sky-300 px-2.5 py-1 rounded-lg"
-                      >{m.clinic_hours_shift_label()}
+                    >
+                      {m.clinic_hours_shift_label()}
                       {sIdx + 1}: {formatTime12(slot.open_time)} – {formatTime12(slot.close_time)}
                     </span>
                   {/each}
@@ -83,9 +85,9 @@
                       class="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1"
                     >
                       <span>{brk.name || m.clinic_hours_break_default()}:</span>
-                      <span class="font-semibold"
-                        >{formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}</span
-                      >
+                      <span class="font-semibold">
+                        {formatTime12(brk.start_time)} – {formatTime12(brk.end_time)}
+                      </span>
                     </span>
                   {/each}
                 </div>
@@ -98,9 +100,9 @@
           <div class="pl-4 border-l-2 border-sky-500/30 space-y-3 pt-2">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-400"
-                  >{m.clinic_hours_working_shifts_title()}</span
-                >
+                <span class="text-xs font-semibold text-slate-400">
+                  {m.clinic_hours_working_shifts_title()}
+                </span>
                 <button
                   type="button"
                   onclick={() => addSlot(hour)}
@@ -116,9 +118,10 @@
                     class="flex flex-wrap items-center gap-3 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800"
                   >
                     {#if (hour.slots || []).length > 1}
-                      <span class="font-semibold text-slate-400 text-[11px]"
-                        >{m.clinic_hours_shift_label()} {sIdx + 1}:</span
-                      >
+                      <span class="font-semibold text-slate-400 text-[11px]">
+                        {m.clinic_hours_shift_label()}
+                        {sIdx + 1}:
+                      </span>
                     {/if}
 
                     <div class="flex items-center gap-2">
@@ -189,9 +192,9 @@
                       class="flex flex-wrap items-center gap-3 text-xs bg-amber-500/5 p-2.5 rounded-lg border border-amber-500/20"
                     >
                       <div class="flex items-center gap-2 flex-1 min-w-[160px]">
-                        <span class="text-amber-400 font-semibold text-[11px]"
-                          >{m.clinic_hours_label_prompt()}</span
-                        >
+                        <span class="text-amber-400 font-semibold text-[11px]">
+                          {m.clinic_hours_label_prompt()}
+                        </span>
                         <input
                           type="text"
                           bind:value={brk.name}
@@ -205,9 +208,9 @@
                       </div>
 
                       <div class="flex items-center gap-2">
-                        <span class="text-amber-400 text-[11px]"
-                          >{m.clinic_hours_start_prompt()}</span
-                        >
+                        <span class="text-amber-400 text-[11px]">
+                          {m.clinic_hours_start_prompt()}
+                        </span>
                         <input
                           type="time"
                           bind:value={brk.start_time}
@@ -220,8 +223,9 @@
                       </div>
 
                       <div class="flex items-center gap-2">
-                        <span class="text-amber-400 text-[11px]">{m.clinic_hours_end_prompt()}</span
-                        >
+                        <span class="text-amber-400 text-[11px]">
+                          {m.clinic_hours_end_prompt()}
+                        </span>
                         <input
                           type="time"
                           bind:value={brk.end_time}

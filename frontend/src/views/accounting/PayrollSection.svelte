@@ -102,9 +102,9 @@
                 {#if totalOwed[p.id] === undefined}
                   <span class="text-slate-500 text-sm ml-1">...</span>
                 {:else}
-                  <span class="text-emerald-400 text-sm ml-1"
-                    >${((totalOwed[p.id] || 0) / 100).toFixed(2)}</span
-                  >
+                  <span class="text-emerald-400 text-sm ml-1">
+                    ${((totalOwed[p.id] || 0) / 100).toFixed(2)}
+                  </span>
                 {/if}
               </div>
               <button
