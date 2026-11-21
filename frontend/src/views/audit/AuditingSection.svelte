@@ -108,15 +108,17 @@
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l5.67-5.67" />
         </svg>
       </button>
-      <button class="btn btn-secondary btn-sm" onclick={handlePrev} disabled={page === 0}
-        >{m.audit_prev()}</button
-      >
+      <button class="btn btn-secondary btn-sm" onclick={handlePrev} disabled={page === 0}>
+        {m.audit_prev()}
+      </button>
       <span class="text-sm text-slate-400">{m.audit_page({ page: page + 1 })}</span>
       <button
         class="btn btn-secondary btn-sm"
         onclick={handleNext}
-        disabled={loading || logs.length < limit}>{m.audit_next()}</button
+        disabled={loading || logs.length < limit}
       >
+        {m.audit_next()}
+      </button>
     </div>
   </div>
 
@@ -145,12 +147,12 @@
         {:else}
           {#each logs as log}
             <tr class="hover:bg-slate-800/40">
-              <td class="whitespace-nowrap px-4 py-3 font-mono text-xs"
-                >{new Date(log.timestamp).toLocaleString()}</td
-              >
-              <td class="px-4 py-3"
-                >{getActorName(log)} <span class="text-xs text-slate-500">({log.user_id})</span></td
-              >
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">
+                {new Date(log.timestamp).toLocaleString()}
+              </td>
+              <td class="px-4 py-3">
+                {getActorName(log)} <span class="text-xs text-slate-500">({log.user_id})</span>
+              </td>
               <td class="px-4 py-3">{log.patient_id ? getPatientName(log.patient_id) : "-"}</td>
               <td class="px-4 py-3">
                 <span

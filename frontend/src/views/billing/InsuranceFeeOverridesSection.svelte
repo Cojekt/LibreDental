@@ -204,9 +204,9 @@
           maxlength={160}
         />
       </div>
-      <button class="btn btn-primary shrink-0 whitespace-nowrap" disabled={busy}
-        >{editingProvider ? m.common_save() : m.insurance_add_provider()}</button
-      >
+      <button class="btn btn-primary shrink-0 whitespace-nowrap" disabled={busy}>
+        {editingProvider ? m.common_save() : m.insurance_add_provider()}
+      </button>
       {#if editingProvider}
         <button
           type="button"
@@ -215,8 +215,10 @@
           onclick={() => {
             editingProvider = false;
             providerName = "";
-          }}>{m.common_cancel()}</button
+          }}
         >
+          {m.common_cancel()}
+        </button>
       {/if}
     </form>
 
@@ -230,8 +232,10 @@
           onclick={() => {
             editingProvider = true;
             providerName = provider.name;
-          }}>{m.insurance_rename()}</button
+          }}
         >
+          {m.insurance_rename()}
+        </button>
         <button
           type="button"
           class="btn btn-secondary btn-sm"
@@ -242,8 +246,10 @@
                 ...provider,
                 archived: !provider.archived,
               })
-            )}>{provider.archived ? m.insurance_restore() : m.insurance_archive()}</button
+            )}
         >
+          {provider.archived ? m.insurance_restore() : m.insurance_archive()}
+        </button>
       </div>
       {#if provider.archived}
         <p role="status" class="text-sm text-amber-400">{m.insurance_unavailable()}</p>
@@ -268,9 +274,9 @@
                   <span class="font-mono font-bold text-sky-400">{p.code}</span>
                   <span class="text-slate-200">{p.description}</span>
                 </td>
-                <td class="px-4 py-3 font-mono text-slate-400"
-                  >{formatCurrency(p.default_fee, countryMeta?.default_currency)}</td
-                >
+                <td class="px-4 py-3 font-mono text-slate-400">
+                  {formatCurrency(p.default_fee, countryMeta?.default_currency)}
+                </td>
                 <td class="px-4 py-3">
                   <Input
                     class="min-w-28"
@@ -306,8 +312,10 @@
                             fee: Math.round(amounts[p.code] * 100),
                           } as InsuranceFee);
                           await reloadFees();
-                        })}>{m.common_save()}</button
+                        })}
                     >
+                      {m.common_save()}
+                    </button>
                     {#if fee}<button
                         type="button"
                         class="btn btn-secondary btn-sm"
@@ -317,8 +325,10 @@
                             await InsuranceService.DeleteFee(auth.token, providerID, cc, p.code);
                             delete amounts[p.code];
                             await reloadFees();
-                          })}>{m.insurance_remove_fee()}</button
-                      >{/if}
+                          })}
+                      >
+                        {m.insurance_remove_fee()}
+                      </button>{/if}
                   </div>
                 </td>
               </tr>

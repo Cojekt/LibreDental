@@ -208,8 +208,9 @@
         >
           <span
             class="absolute right-2 -translate-y-1/2 text-[10px] text-slate-600 bg-slate-900/60 px-1"
-            >:15</span
           >
+            :15
+          </span>
         </div>
         <div
           class="absolute left-0 right-0 border-t border-dashed border-slate-700/70 pointer-events-none"
@@ -217,8 +218,9 @@
         >
           <span
             class="absolute right-2 -translate-y-1/2 text-[10px] text-slate-600 bg-slate-900/60 px-1"
-            >:30</span
           >
+            :30
+          </span>
         </div>
         <div
           class="absolute left-0 right-0 border-t border-dashed border-slate-700/70 pointer-events-none"
@@ -226,8 +228,9 @@
         >
           <span
             class="absolute right-2 -translate-y-1/2 text-[10px] text-slate-600 bg-slate-900/60 px-1"
-            >:45</span
           >
+            :45
+          </span>
         </div>
       {/each}
     </div>

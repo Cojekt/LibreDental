@@ -194,9 +194,9 @@
         <h4 class="text-sm font-semibold text-slate-200">{m.timecard_add_manual()}</h4>
         <div class="flex items-center gap-3">
           <div>
-            <label for="manual-date" class="block text-xs text-slate-400 mb-1"
-              >{m.timecard_label_date()}</label
-            >
+            <label for="manual-date" class="block text-xs text-slate-400 mb-1">
+              {m.timecard_label_date()}
+            </label>
             <input
               id="manual-date"
               type="date"
@@ -205,9 +205,9 @@
             />
           </div>
           <div>
-            <label for="manual-hours" class="block text-xs text-slate-400 mb-1"
-              >{m.timecard_label_hours()}</label
-            >
+            <label for="manual-hours" class="block text-xs text-slate-400 mb-1">
+              {m.timecard_label_hours()}
+            </label>
             <input
               id="manual-hours"
               type="number"

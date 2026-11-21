@@ -273,9 +273,9 @@
         })}
       {/if}
       {#if onopenprofile}
-        <button type="button" class="ml-1 underline cursor-pointer" onclick={onopenprofile}
-          >{m.reminders_open_profile()}</button
-        >
+        <button type="button" class="ml-1 underline cursor-pointer" onclick={onopenprofile}>
+          {m.reminders_open_profile()}
+        </button>
       {/if}
     </div>
   {/if}
@@ -288,12 +288,15 @@
         {#if settings?.enabled}
           <span
             class="ml-2 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20"
-            >{m.reminders_status_on()}</span
           >
+            {m.reminders_status_on()}
+          </span>
         {:else}
-          <span class="ml-2 text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded"
-            >{m.reminders_status_off()}</span
+          <span
+            class="ml-2 text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded"
           >
+            {m.reminders_status_off()}
+          </span>
         {/if}
       </div>
       {#if settings?.enabled}
@@ -301,15 +304,19 @@
           type="button"
           class="btn btn-secondary btn-sm cursor-pointer"
           disabled={!canEdit || busy}
-          onclick={disable}>{m.reminders_btn_disable()}</button
+          onclick={disable}
         >
+          {m.reminders_btn_disable()}
+        </button>
       {:else}
         <button
           type="button"
           class="btn btn-secondary btn-sm cursor-pointer"
           disabled={!canEdit || busy || !canTurnOn}
-          onclick={requestEnable}>{m.reminders_btn_enable()}</button
+          onclick={requestEnable}
         >
+          {m.reminders_btn_enable()}
+        </button>
       {/if}
     </div>
     <p class="text-xs text-slate-500">{m.reminders_opt_in_note()}</p>
@@ -343,8 +350,10 @@
         type="button"
         class="btn btn-secondary btn-sm cursor-pointer"
         disabled={!canEdit || busy}
-        onclick={saveHours}>{m.reminders_btn_save()}</button
+        onclick={saveHours}
       >
+        {m.reminders_btn_save()}
+      </button>
     </div>
   </div>
 
@@ -415,9 +424,9 @@
             <p class="text-xs text-rose-400" role="alert">{previewErrors[rule.id]}</p>
           {:else if preview}
             <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3 space-y-1">
-              <span class="block text-[11px] uppercase tracking-wider text-slate-500"
-                >{m.reminders_preview_title()}</span
-              >
+              <span class="block text-[11px] uppercase tracking-wider text-slate-500">
+                {m.reminders_preview_title()}
+              </span>
               {#if isEmail}
                 <p class="text-xs font-semibold text-slate-300">{preview.subject}</p>
               {/if}
@@ -438,8 +447,10 @@
               type="button"
               class="btn btn-secondary btn-sm cursor-pointer"
               disabled={!canEdit || busy}
-              onclick={() => saveRule(rule)}>{m.reminders_btn_save()}</button
+              onclick={() => saveRule(rule)}
             >
+              {m.reminders_btn_save()}
+            </button>
           </div>
         </div>
       {/each}
@@ -471,9 +482,9 @@
         {m.reminders_job_error({ error: jobStatus.last_error })}
       </p>
     {/if}
-    <button type="button" class="underline cursor-pointer" onclick={load}
-      >{m.reminders_job_refresh()}</button
-    >
+    <button type="button" class="underline cursor-pointer" onclick={load}>
+      {m.reminders_job_refresh()}
+    </button>
   </div>
 </div>
 

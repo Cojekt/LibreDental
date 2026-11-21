@@ -94,8 +94,10 @@
         type="button"
         onclick={() => (claimNoticeMsg = "")}
         class="text-emerald-400 hover:text-white"
-        aria-label={m.common_dismiss()}>✕</button
+        aria-label={m.common_dismiss()}
       >
+        ✕
+      </button>
     </div>
   {/if}
 
@@ -109,8 +111,10 @@
         type="button"
         onclick={() => (claimErrorMsg = "")}
         class="text-rose-400 hover:text-white"
-        aria-label={m.common_dismiss()}>✕</button
+        aria-label={m.common_dismiss()}
       >
+        ✕
+      </button>
     </div>
   {/if}
 
@@ -126,11 +130,11 @@
           <tr
             class="border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px] bg-slate-950/60"
           >
-            <th scope="col" class="py-3 px-4"
-              >{m.charting_th_tooth({
+            <th scope="col" class="py-3 px-4">
+              {m.charting_th_tooth({
                 code: countryMeta?.code || m.charting_tooth_code_fallback(),
-              })}</th
-            >
+              })}
+            </th>
             <th scope="col" class="py-3 px-4">{m.charting_th_surfaces()}</th>
             <th scope="col" class="py-3 px-4">{m.charting_th_code()}</th>
             <th scope="col" class="py-3 px-4">{m.charting_th_desc()}</th>
@@ -144,9 +148,9 @@
             <tr class="hover:bg-slate-800/40 transition-colors">
               <td class="py-3 px-4 font-bold text-sky-400">
                 Tooth {getToothLabel(cond.tooth_number, currentToothSystem)}
-                <span class="text-[10px] text-slate-500 font-normal"
-                  >{m.charting_th_internal_no()}{cond.tooth_number})</span
-                >
+                <span class="text-[10px] text-slate-500 font-normal">
+                  {m.charting_th_internal_no()}{cond.tooth_number})
+                </span>
               </td>
               <td class="py-3 px-4 font-mono font-medium text-slate-300">
                 {cond.surfaces && cond.surfaces.length > 0

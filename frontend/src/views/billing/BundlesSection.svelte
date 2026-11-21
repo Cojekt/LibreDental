@@ -217,9 +217,9 @@
                   </span>
                   <span class="text-slate-300 truncate">{item.description}</span>
                 </div>
-                <span class="font-mono font-semibold text-slate-100 shrink-0"
-                  >{formatCurrency(item.default_fee, countryMeta?.default_currency)}</span
-                >
+                <span class="font-mono font-semibold text-slate-100 shrink-0">
+                  {formatCurrency(item.default_fee, countryMeta?.default_currency)}
+                </span>
               </div>
             {/each}
           </div>
@@ -227,12 +227,12 @@
           <div
             class="flex items-center justify-between px-4 py-3 bg-slate-950/60 border-t border-slate-800 text-xs"
           >
-            <span class="text-slate-400"
-              >{m.billing_bundle_total()}
-              <strong class="text-slate-100 font-mono text-sm"
-                >{formatCurrency(b.total_fee, countryMeta?.default_currency)}</strong
-              ></span
-            >
+            <span class="text-slate-400">
+              {m.billing_bundle_total()}
+              <strong class="text-slate-100 font-mono text-sm">
+                {formatCurrency(b.total_fee, countryMeta?.default_currency)}
+              </strong>
+            </span>
             <div class="flex items-center gap-1">
               <button
                 class="p-1.5 text-slate-400 hover:text-sky-300 rounded-lg hover:bg-slate-800 transition-colors"
@@ -376,19 +376,18 @@
                   class="p-1 text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
                   onclick={() => removeBundleItem(i)}
                   title={m.billing_bundle_remove_item()}
-                  aria-label={m.billing_bundle_remove_item()}>✕</button
+                  aria-label={m.billing_bundle_remove_item()}
                 >
+                  ✕
+                </button>
               </div>
             </div>
           {/each}
           <div class="text-right text-xs text-slate-400 pt-2 border-t border-slate-800">
             {m.billing_bundle_total_fee()}
-            <strong class="text-slate-100 text-sm font-mono"
-              >{formatCurrency(
-                Math.round(bundleTotalFee() * 100),
-                countryMeta?.default_currency
-              )}</strong
-            >
+            <strong class="text-slate-100 text-sm font-mono">
+              {formatCurrency(Math.round(bundleTotalFee() * 100), countryMeta?.default_currency)}
+            </strong>
           </div>
         </div>
       {:else}

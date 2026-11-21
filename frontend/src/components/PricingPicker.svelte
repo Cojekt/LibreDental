@@ -153,9 +153,9 @@
   {#if !authorized}
     <p class="text-sm text-amber-400" role="status">{m.clinic_signin_to_edit()}</p>
     <div class="flex justify-end mt-4">
-      <button type="button" class="btn btn-secondary" onclick={() => (showModal = false)}
-        >{m.common_cancel()}</button
-      >
+      <button type="button" class="btn btn-secondary" onclick={() => (showModal = false)}>
+        {m.common_cancel()}
+      </button>
     </div>
   {:else}
     <div class="space-y-4">
@@ -177,13 +177,13 @@
       {/if}
       <p>
         {m.billing_th_base_fee()}:
-        <strong
-          >{reference
+        <strong>
+          {reference
             ? reference.has_base
               ? formatCurrency(reference.base_fee, currency)
               : m.insurance_no_base()
-            : m.common_loading()}</strong
-        >
+            : m.common_loading()}
+        </strong>
       </p>
       {#if reference && reference.standard_fee !== reference.base_fee}<p>
           {m.insurance_standard()}: {formatCurrency(reference.standard_fee, currency)}
@@ -194,22 +194,27 @@
             type="button"
             class="btn btn-secondary"
             disabled={busy}
-            onclick={() => review("standard")}>{m.insurance_standard()}</button
-          ><button
+            onclick={() => review("standard")}
+          >
+            {m.insurance_standard()}
+          </button><button
             type="button"
             class="btn btn-secondary"
             disabled={busy}
             onclick={() => review("manual")}
-            >{m.insurance_manual()} ({formatCurrency(manualFee, currency)})</button
           >
+            {m.insurance_manual()} ({formatCurrency(manualFee, currency)})
+          </button>
         </div>
         <InsuranceFeeOverridesSection {countryMeta} {code} bind:providerID={selectedProvider} />
         <button
           type="button"
           class="btn btn-secondary"
           disabled={busy || !selectedProvider}
-          onclick={() => review("insurance", selectedProvider)}>{m.insurance_review_plan()}</button
+          onclick={() => review("insurance", selectedProvider)}
         >
+          {m.insurance_review_plan()}
+        </button>
       {/if}
       {#if error}<p role="alert" class="text-rose-400">{error}</p>{/if}
       {#if source}
@@ -229,10 +234,17 @@
           type="button"
           class="btn btn-secondary"
           disabled={busy}
-          onclick={() => (showModal = false)}>{m.common_cancel()}</button
-        ><button type="button" class="btn btn-primary" disabled={busy || !source} onclick={confirm}
-          >{busy ? m.common_loading() : m.common_confirm()}</button
+          onclick={() => (showModal = false)}
         >
+          {m.common_cancel()}
+        </button><button
+          type="button"
+          class="btn btn-primary"
+          disabled={busy || !source}
+          onclick={confirm}
+        >
+          {busy ? m.common_loading() : m.common_confirm()}
+        </button>
       </div>
     </div>
   {/if}

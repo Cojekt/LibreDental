@@ -216,10 +216,9 @@
           >
             <option value="">{m.patient_provider_unassigned()}</option>
             {#each configuredProviders as prov}
-              <option value={prov.id}
-                >{prov.name} ({prov.specialty ||
-                  (getLocaleVersion(), providerRoleLabel(prov.role))})</option
-              >
+              <option value={prov.id}>
+                {prov.name} ({prov.specialty || (getLocaleVersion(), providerRoleLabel(prov.role))})
+              </option>
             {/each}
           </select>
         </FormField>

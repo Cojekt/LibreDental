@@ -65,7 +65,8 @@
         {#if day.isToday}
           <span
             class="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30"
-            >{m.appts_today_badge()}
+          >
+            {m.appts_today_badge()}
           </span>
         {/if}
       </button>
@@ -103,9 +104,9 @@
                 </div>
               {/if}
               <div class="mt-2 flex items-center justify-between text-[10px]">
-                <span class="text-slate-400 truncate max-w-[90px]"
-                  >{getProviderName(appt.provider_id)}</span
-                >
+                <span class="text-slate-400 truncate max-w-[90px]">
+                  {getProviderName(appt.provider_id)}
+                </span>
                 <StatusBadge variant={appt.status} label={badge.label} size="sm" />
               </div>
             </div>

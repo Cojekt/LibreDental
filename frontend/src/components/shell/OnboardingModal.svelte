@@ -144,9 +144,9 @@
                   <div class="flex flex-col items-center gap-2">
                     <span class="text-4xl leading-none">{getFlagEmoji(selected.code)}</span>
                     <span class="font-bold text-lg">{selected.label}</span>
-                    <span class="text-xs text-blue-400 font-semibold uppercase tracking-wider"
-                      >{m.onboarding_change_region()}</span
-                    >
+                    <span class="text-xs text-blue-400 font-semibold uppercase tracking-wider">
+                      {m.onboarding_change_region()}
+                    </span>
                   </div>
                 {/snippet}
 
@@ -173,17 +173,19 @@
                     <div class="flex flex-col border-b border-slate-800/80 pb-3">
                       <span
                         class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-1"
-                        >{m.onboarding_field_national_id()}</span
                       >
-                      <span class="text-blue-400 font-medium text-base"
-                        >{meta.national_id_name}</span
-                      >
+                        {m.onboarding_field_national_id()}
+                      </span>
+                      <span class="text-blue-400 font-medium text-base">
+                        {meta.national_id_name}
+                      </span>
                     </div>
                     <div class="flex flex-col border-b border-slate-800/80 pb-3">
                       <span
                         class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-1"
-                        >{m.onboarding_field_tooth_system()}</span
                       >
+                        {m.onboarding_field_tooth_system()}
+                      </span>
                       <span class="text-blue-400 font-medium text-base">
                         {meta.default_tooth_system === "universal"
                           ? m.onboarding_tooth_universal()
@@ -193,17 +195,19 @@
                     <div class="flex flex-col border-b border-slate-800/80 pb-3">
                       <span
                         class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-1"
-                        >{m.onboarding_field_address()}</span
                       >
-                      <span class="text-slate-300 text-base"
-                        >{meta.state_province_label} & {meta.postal_code_label}</span
-                      >
+                        {m.onboarding_field_address()}
+                      </span>
+                      <span class="text-slate-300 text-base">
+                        {meta.state_province_label} & {meta.postal_code_label}
+                      </span>
                     </div>
                     <div class="flex flex-col">
                       <span
                         class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-1"
-                        >{m.onboarding_field_currency()}</span
                       >
+                        {m.onboarding_field_currency()}
+                      </span>
                       <span class="text-slate-300 text-base">{meta.default_currency}</span>
                     </div>
                   </div>

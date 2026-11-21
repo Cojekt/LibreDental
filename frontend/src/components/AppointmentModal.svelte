@@ -161,9 +161,9 @@
 
     <!-- Quick Duration Presets -->
     <div class="flex items-center gap-2 pt-1">
-      <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
-        >{m.appt_label_quick_duration()}</span
-      >
+      <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        {m.appt_label_quick_duration()}
+      </span>
       <button
         type="button"
         onclick={() => setDuration(30)}

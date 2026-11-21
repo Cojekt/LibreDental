@@ -279,9 +279,9 @@
                   d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
                 ></path>
               </svg>
-              <span class="font-mono text-slate-100"
-                >{patient.phone_primary || m.patients_no_phone()}</span
-              >
+              <span class="font-mono text-slate-100">
+                {patient.phone_primary || m.patients_no_phone()}
+              </span>
             </div>
             {#if patient.phone_secondary}
               <div class="flex items-center gap-2 text-slate-300 pl-5 text-[11px]">
@@ -348,9 +348,9 @@
               <div class="font-semibold text-amber-300 flex items-center justify-between">
                 <span>{patient.emergency_contact_name}</span>
                 {#if patient.emergency_contact_rel}
-                  <span class="text-[11px] font-normal text-amber-400/80"
-                    >({patient.emergency_contact_rel})</span
-                  >
+                  <span class="text-[11px] font-normal text-amber-400/80">
+                    ({patient.emergency_contact_rel})
+                  </span>
                 {/if}
               </div>
               {#if patient.emergency_contact_phone}
@@ -401,9 +401,9 @@
               <div class="flex justify-between font-semibold text-slate-100">
                 <span>{patient.guarantor_name}</span>
                 {#if patient.guarantor_rel}
-                  <span class="text-[11px] font-normal text-slate-400"
-                    >({patient.guarantor_rel})</span
-                  >
+                  <span class="text-[11px] font-normal text-slate-400">
+                    ({patient.guarantor_rel})
+                  </span>
                 {/if}
               </div>
               {#if patient.guarantor_phone}
@@ -423,29 +423,31 @@
           >
             <div class="flex justify-between items-center">
               <span class="text-slate-400">{m.patient_info_contact_pref()}</span>
-              <span class="font-semibold text-sky-400 capitalize"
-                >{patient.preferred_contact_method || "phone"}</span
-              >
+              <span class="font-semibold text-sky-400 capitalize">
+                {patient.preferred_contact_method || "phone"}
+              </span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-slate-400">{m.patient_info_reminders_label()}</span>
               {#if patient.reminder_opt_in !== false}
                 <span
                   class="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20"
-                  >{m.patient_info_reminders_enabled()}
+                >
+                  {m.patient_info_reminders_enabled()}
                 </span>
               {:else}
                 <span
                   class="text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded"
-                  >{m.patient_info_reminders_disabled()}
+                >
+                  {m.patient_info_reminders_disabled()}
                 </span>
               {/if}
             </div>
             {#if patient.referral_source}
               <div class="flex justify-between items-center text-[11px]">
-                <span class="text-slate-400"
-                  >{(getLocaleVersion(), m.patient_info_referral_label())}</span
-                >
+                <span class="text-slate-400">
+                  {(getLocaleVersion(), m.patient_info_referral_label())}
+                </span>
                 <span class="text-slate-200">{patient.referral_source}</span>
               </div>
             {/if}
@@ -464,14 +466,16 @@
               {#each patient.medical_alerts as alert}
                 <span
                   class="rounded-md border border-amber-400/30 bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-400 flex items-center gap-1"
-                  >{alert}
+                >
+                  {alert}
                 </span>
               {/each}
             </div>
           {:else}
             <span
               class="inline-block rounded-md bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-400"
-              >{m.patients_clean_record()}
+            >
+              {m.patients_clean_record()}
             </span>
           {/if}
         </div>

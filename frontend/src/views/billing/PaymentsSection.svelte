@@ -278,11 +278,12 @@
                 onclick={() => (balancePatientId = bal.patient_id)}
                 class="w-full flex items-center justify-between p-3 rounded-xl border border-amber-500/40 bg-amber-500/15 hover:border-amber-500/60 transition-colors text-left cursor-pointer"
               >
-                <span class="text-sm font-medium text-amber-400">{patientName(bal.patient_id)}</span
-                >
-                <span class="text-sm font-bold font-mono text-amber-400"
-                  >{formatCurrency(bal.outstanding, countryMeta?.default_currency)}</span
-                >
+                <span class="text-sm font-medium text-amber-400">
+                  {patientName(bal.patient_id)}
+                </span>
+                <span class="text-sm font-bold font-mono text-amber-400">
+                  {formatCurrency(bal.outstanding, countryMeta?.default_currency)}
+                </span>
               </button>
             {/each}
           </div>
@@ -308,15 +309,16 @@
             class="flex items-center justify-between p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:border-slate-700 transition-colors"
           >
             <div class="flex items-center gap-3">
-              <span class="text-base font-bold text-slate-100 font-mono"
-                >{formatCurrency(pay.amount, countryMeta?.default_currency)}</span
-              >
+              <span class="text-base font-bold text-slate-100 font-mono">
+                {formatCurrency(pay.amount, countryMeta?.default_currency)}
+              </span>
               <StatusBadge variant={pay.method} label={paymentMethodLabel(pay.method)} />
               {#if pay.claim_id}
                 <span
                   class="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded border border-slate-700"
-                  >{m.billing_claims_th_claim_no()} #{pay.claim_id.slice(-6)}</span
                 >
+                  {m.billing_claims_th_claim_no()} #{pay.claim_id.slice(-6)}
+                </span>
               {/if}
             </div>
             <div class="flex items-center gap-4 text-xs">

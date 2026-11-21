@@ -84,20 +84,23 @@
         type="button"
         onclick={() => (statusFilter = "all")}
         class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "all" ? "bg-slate-700 text-slate-200" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
-        >{m.common_all()}</button
       >
+        {m.common_all()}
+      </button>
       <button
         type="button"
         onclick={() => (statusFilter = "active")}
         class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "active" ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
-        >{m.common_active()}</button
       >
+        {m.common_active()}
+      </button>
       <button
         type="button"
         onclick={() => (statusFilter = "inactive")}
         class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "inactive" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
-        >{m.common_disabled()}</button
       >
+        {m.common_disabled()}
+      </button>
     </div>
   </div>
 
@@ -197,9 +200,9 @@
 
     <div class="flex items-center gap-2 pt-2">
       <input type="checkbox" id="op-active" bind:checked={opIsActive} />
-      <label for="op-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
-        >{m.clinic_op_active_label()}</label
-      >
+      <label for="op-active" class="text-xs font-semibold text-slate-300 cursor-pointer">
+        {m.clinic_op_active_label()}
+      </label>
     </div>
 
     <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">

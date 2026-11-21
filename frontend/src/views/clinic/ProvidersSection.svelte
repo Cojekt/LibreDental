@@ -222,20 +222,23 @@
         type="button"
         onclick={() => (statusFilter = "all")}
         class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "all" ? "bg-slate-700 text-slate-200" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
-        >{m.common_all()}</button
       >
+        {m.common_all()}
+      </button>
       <button
         type="button"
         onclick={() => (statusFilter = "active")}
         class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "active" ? "bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
-        >{m.common_active()}</button
       >
+        {m.common_active()}
+      </button>
       <button
         type="button"
         onclick={() => (statusFilter = "inactive")}
         class={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${statusFilter === "inactive" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"}`}
-        >{m.common_disabled()}</button
       >
+        {m.common_disabled()}
+      </button>
     </div>
   </div>
 
@@ -267,7 +270,8 @@
             </div>
             <span
               class={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${p.is_active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-slate-800 text-slate-500"}`}
-              >{p.is_active ? m.common_active() : m.common_inactive()}
+            >
+              {p.is_active ? m.common_active() : m.common_inactive()}
             </span>
           </div>
 
@@ -293,9 +297,9 @@
               {#if p.pin}
                 <div class="flex items-center gap-2">
                   <span>{m.prov_pin_display_label()}</span>
-                  <span class="text-slate-500 font-mono tracking-widest"
-                    >{revealedPins[p.id] ?? "****"}</span
-                  >
+                  <span class="text-slate-500 font-mono tracking-widest">
+                    {revealedPins[p.id] ?? "****"}
+                  </span>
                   {#if canEdit}
                     {@render pinToggle(revealedPins[p.id] !== undefined, () => toggleCardPin(p.id))}
                   {/if}
@@ -519,9 +523,9 @@
 
     <div class="flex items-center justify-between pt-2">
       <div>
-        <label for="prov-color" class="block text-xs font-semibold text-slate-300 mb-1"
-          >{m.prov_color_badge_label()}</label
-        >
+        <label for="prov-color" class="block text-xs font-semibold text-slate-300 mb-1">
+          {m.prov_color_badge_label()}
+        </label>
         <input
           id="prov-color"
           type="color"
@@ -532,9 +536,9 @@
 
       <div class="flex items-center gap-2 pt-4">
         <input type="checkbox" id="prov-active" bind:checked={provIsActive} />
-        <label for="prov-active" class="text-xs font-semibold text-slate-300 cursor-pointer"
-          >{m.prov_active_label()}</label
-        >
+        <label for="prov-active" class="text-xs font-semibold text-slate-300 cursor-pointer">
+          {m.prov_active_label()}
+        </label>
       </div>
     </div>
 

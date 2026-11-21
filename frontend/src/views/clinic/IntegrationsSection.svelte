@@ -364,8 +364,8 @@
     <div class="space-y-6">
       <!-- Claims Integrations (US) Section -->
       <div>
-        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-          >{m.integrations_section_claims_us()}
+        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          {m.integrations_section_claims_us()}
         </span>
 
         <div class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
@@ -379,9 +379,9 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="claims-provider-select" class="block text-xs text-slate-400 mb-1"
-                >{m.integrations_label_provider()}</label
-              >
+              <label for="claims-provider-select" class="block text-xs text-slate-400 mb-1">
+                {m.integrations_label_provider()}
+              </label>
               <select
                 id="claims-provider-select"
                 bind:value={claimsPanel.selectedProvider}
@@ -397,9 +397,9 @@
             </div>
 
             <div>
-              <label for="claims-provider-api-key" class="block text-xs text-slate-400 mb-1"
-                >{m.integrations_label_api_key()}</label
-              >
+              <label for="claims-provider-api-key" class="block text-xs text-slate-400 mb-1">
+                {m.integrations_label_api_key()}
+              </label>
               <input
                 type="password"
                 id="claims-provider-api-key"
@@ -419,8 +419,9 @@
                   class="mt-1 text-xs text-slate-400 underline cursor-pointer disabled:opacity-50"
                   disabled={!canEdit || claimsPanel.isLoadingConfig || claimsPanel.isSavingConfig}
                   onclick={() => claimsPanel.removeSecret("api_key")}
-                  >{m.integrations_secret_remove()}</button
                 >
+                  {m.integrations_secret_remove()}
+                </button>
               {:else if claimsPanel.secretRemoved("api_key")}
                 <p class="mt-1 text-xs text-amber-400">{m.integrations_secret_will_remove()}</p>
               {/if}
@@ -440,9 +441,9 @@
             />
             <span>
               {m.integrations_claims_test_mode()}
-              <span class="block text-xs text-slate-500"
-                >{m.integrations_claims_test_mode_hint()}</span
-              >
+              <span class="block text-xs text-slate-500">
+                {m.integrations_claims_test_mode_hint()}
+              </span>
             </span>
           </label>
 
@@ -453,8 +454,9 @@
                   ? 'text-emerald-400'
                   : 'text-rose-400'}"
                 role={claimsPanel.saveStatus.ok ? "status" : "alert"}
-                >{claimsPanel.saveStatus.msg}</span
               >
+                {claimsPanel.saveStatus.msg}
+              </span>
             {/if}
             <button
               type="button"
@@ -474,8 +476,8 @@
 
       <!-- Patient Notifications (Email/SMS/Voice) Section -->
       <div>
-        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-          >{m.integrations_section_notifications()}
+        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          {m.integrations_section_notifications()}
         </span>
 
         <div class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
@@ -487,9 +489,9 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="notification-provider-select" class="block text-xs text-slate-400 mb-1"
-                >{m.integrations_label_provider()}</label
-              >
+              <label for="notification-provider-select" class="block text-xs text-slate-400 mb-1">
+                {m.integrations_label_provider()}
+              </label>
               <select
                 id="notification-provider-select"
                 bind:value={notificationsPanel.selectedProvider}
@@ -514,8 +516,10 @@
                 <div>
                   <label
                     for="notification-field-{field.key}"
-                    class="block text-xs text-slate-400 mb-1">{field.label()}</label
+                    class="block text-xs text-slate-400 mb-1"
                   >
+                    {field.label()}
+                  </label>
                   {#if field.options}
                     <select
                       id="notification-field-{field.key}"
@@ -555,8 +559,9 @@
                           notificationsPanel.isLoadingConfig ||
                           notificationsPanel.isSavingConfig}
                         onclick={() => notificationsPanel.removeSecret(field.key)}
-                        >{m.integrations_secret_remove()}</button
                       >
+                        {m.integrations_secret_remove()}
+                      </button>
                     {:else if notificationsPanel.secretRemoved(field.key)}
                       <p class="mt-1 text-xs text-amber-400">
                         {m.integrations_secret_will_remove()}
@@ -575,8 +580,9 @@
                   ? 'text-emerald-400'
                   : 'text-rose-400'}"
                 role={notificationsPanel.saveStatus.ok ? "status" : "alert"}
-                >{notificationsPanel.saveStatus.msg}</span
               >
+                {notificationsPanel.saveStatus.msg}
+              </span>
             {/if}
             <button
               type="button"
@@ -596,9 +602,9 @@
 
           {#if notificationsPanel.selectedProvider}
             <div class="space-y-2 border-t border-slate-800 pt-3">
-              <label for="notification-test-recipient" class="block text-xs text-slate-400"
-                >{m.integrations_test_recipient()}</label
-              >
+              <label for="notification-test-recipient" class="block text-xs text-slate-400">
+                {m.integrations_test_recipient()}
+              </label>
               <p class="text-xs text-slate-500">{m.integrations_test_hint()}</p>
               <div class="flex flex-col gap-2 md:flex-row md:items-center">
                 <input
@@ -635,8 +641,8 @@
 
       <!-- Local Programs (program bridges) Section -->
       <div>
-        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2"
-          >{m.integrations_section_bridges()}
+        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          {m.integrations_section_bridges()}
         </span>
         <ProgramBridgesPanel {canEdit} />
       </div>

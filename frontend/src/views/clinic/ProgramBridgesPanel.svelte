@@ -119,9 +119,9 @@
   {#if available}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label for="bridge-select" class="block text-xs text-slate-400 mb-1"
-          >{m.integrations_bridge_label_program()}</label
-        >
+        <label for="bridge-select" class="block text-xs text-slate-400 mb-1">
+          {m.integrations_bridge_label_program()}
+        </label>
         <select
           id="bridge-select"
           bind:value={selectedName}
@@ -138,15 +138,16 @@
 
       {#if selected}
         <div>
-          <span class="block text-xs text-slate-400 mb-1"
-            >{m.integrations_bridge_label_capabilities()}</span
-          >
+          <span class="block text-xs text-slate-400 mb-1">
+            {m.integrations_bridge_label_capabilities()}
+          </span>
           <div class="flex flex-wrap gap-1.5 pt-1.5">
             {#each selected.capabilities as cap}
               <span
                 class="rounded-md border border-slate-700 bg-slate-900 px-2 py-0.5 text-xs text-slate-300"
-                >{capabilityLabels[cap]?.() ?? cap}</span
               >
+                {capabilityLabels[cap]?.() ?? cap}
+              </span>
             {/each}
           </div>
         </div>
@@ -172,9 +173,9 @@
       </label>
 
       <div>
-        <label for="bridge-path" class="block text-xs text-slate-400 mb-1"
-          >{m.integrations_bridge_label_path()}</label
-        >
+        <label for="bridge-path" class="block text-xs text-slate-400 mb-1">
+          {m.integrations_bridge_label_path()}
+        </label>
         <div class="flex items-center gap-2">
           <input
             type="text"
@@ -190,15 +191,17 @@
             type="button"
             class="btn btn-secondary btn-sm shrink-0 bg-slate-800 text-white border-slate-700 hover:bg-slate-700 px-4 py-1 rounded-md text-xs cursor-pointer"
             disabled={fieldsDisabled}
-            onclick={browseForProgram}>{m.integrations_bridge_browse()}</button
+            onclick={browseForProgram}
           >
+            {m.integrations_bridge_browse()}
+          </button>
         </div>
       </div>
 
       <div>
-        <label for="bridge-args" class="block text-xs text-slate-400 mb-1"
-          >{m.integrations_bridge_label_args()}</label
-        >
+        <label for="bridge-args" class="block text-xs text-slate-400 mb-1">
+          {m.integrations_bridge_label_args()}
+        </label>
         <input
           type="text"
           id="bridge-args"
@@ -210,9 +213,9 @@
         />
         <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
           {#if tokens.length > 0}
-            <span class="text-xs text-slate-500"
-              >{m.integrations_bridge_tokens_hint({ tokens: tokens.join(" ") })}</span
-            >
+            <span class="text-xs text-slate-500">
+              {m.integrations_bridge_tokens_hint({ tokens: tokens.join(" ") })}
+            </span>
           {/if}
           {#if selected.default_args && args !== selected.default_args}
             <button
@@ -220,8 +223,9 @@
               class="text-xs text-slate-400 underline cursor-pointer disabled:opacity-50"
               disabled={fieldsDisabled}
               onclick={() => (args = selected.default_args)}
-              >{m.integrations_bridge_restore_default()}</button
             >
+              {m.integrations_bridge_restore_default()}
+            </button>
           {/if}
         </div>
       </div>
@@ -231,8 +235,10 @@
       {#if saveStatus}
         <span
           class="text-xs font-semibold {saveStatus.ok ? 'text-emerald-400' : 'text-rose-400'}"
-          role={saveStatus.ok ? "status" : "alert"}>{saveStatus.msg}</span
+          role={saveStatus.ok ? "status" : "alert"}
         >
+          {saveStatus.msg}
+        </span>
       {/if}
       <button
         type="button"
