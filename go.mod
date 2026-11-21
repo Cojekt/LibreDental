@@ -9,7 +9,7 @@ require (
 	github.com/aws/smithy-go v1.28.9
 	github.com/google/uuid v1.6.0
 	github.com/nyaruka/phonenumbers v1.8.1
-	github.com/pressly/goose/v3 v3.30.0
+	github.com/pressly/goose/v3 v3.30.1
 	github.com/suyashkumar/dicom v1.1.0
 	github.com/wailsapp/wails/v3 v3.2.0-nightly.20261103
 	github.com/zalando/go-keyring v0.2.8
@@ -26,7 +26,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
-	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/mfridman/interpolate v0.2.0 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/sethvargo/go-retry v0.5.0 // indirect
