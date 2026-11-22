@@ -270,6 +270,9 @@
     }
     loadingChart = true;
     chartError = "";
+    // Drop the previous patient's chart before awaiting, so it can't be shown
+    // under the newly selected patient's name while this request is in flight.
+    currentChart = null;
     try {
       const chart = await ChartService.GetPatientChart(auth.token, patientId);
       if (gen === requestGenChart) {
