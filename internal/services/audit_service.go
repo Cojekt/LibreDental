@@ -64,6 +64,24 @@ func (s *AuditService) DestroySession(token string) {
 	delete(s.sessions, token)
 }
 
+// destroySessionsForUser revokes every active session belonging to a provider.
+// It is called when a provider is deactivated so a removed staff member can't
+// keep acting (and keep being attributed in the audit trail) on an already-open
+// session, especially in LAN server mode where the session token is all that
+// gates the bound service methods.
+func (s *AuditService) destroySessionsForUser(userID string) {
+	if userID == "" {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for token, provider := range s.sessions {
+		if provider != nil && provider.ID == userID {
+			delete(s.sessions, token)
+		}
+	}
+}
+
 func (s *AuditService) GetSessionUser(token string) *domain.Provider {
 	if token == "" {
 		return nil
