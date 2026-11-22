@@ -218,6 +218,9 @@ func TestPatientRepository_Search(t *testing.T) {
 		{"p1", "Ágnes", "Őri", "agnes@example.com"},
 		{"p2", "John", "Smith", "john.smith@example.com"},
 		{"p3", "Zoé", "Müller", "zoe@example.com"},
+		// Names containing literal LIKE metacharacters, to exercise escaping.
+		{"p4", "Jo_n", "Doe", "jo_n@example.com"},
+		{"p5", `Back\slash`, "Jones", "bs@example.com"},
 	}
 	for _, s := range seed {
 		if err := repo.Create(ctx, &domain.Patient{
@@ -249,14 +252,34 @@ func TestPatientRepository_Search(t *testing.T) {
 	only(t, "ŐRI", "p1")
 	only(t, "müller", "p3")
 
+	none := func(t *testing.T, query string) {
+		t.Helper()
+		got, _, err := repo.List(ctx, domain.PatientFilter{Query: query})
+		if err != nil {
+			t.Fatalf("list %q: %v", query, err)
+		}
+		if len(got) != 0 {
+			ids := make([]string, len(got))
+			for i, p := range got {
+				ids[i] = p.ID
+			}
+			t.Errorf("search %q = %v, want no matches", query, ids)
+		}
+	}
+
 	// Multi-word queries should match across first and last name in either order.
 	only(t, "John Smith", "p2")
 	only(t, "Smith John", "p2")
+	// Every token must match (AND), not just one: an OR implementation would
+	// return p2 here because "John" alone matches it.
+	none(t, "John Unknown")
 
-	// LIKE wildcards typed by the user are data, not patterns: "%" must not list everyone.
-	if got, _, err := repo.List(ctx, domain.PatientFilter{Query: "%"}); err != nil {
-		t.Fatalf("wildcard list: %v", err)
-	} else if len(got) != 0 {
-		t.Errorf("search %q returned %d patients, want 0 (literal match)", "%", len(got))
-	}
+	// LIKE metacharacters typed by the user are data, not patterns.
+	// "%" must not list everyone:
+	none(t, "%")
+	// "_" must not act as "any character": "joh_" would match "John" if it did.
+	none(t, "joh_")
+	only(t, "jo_n", "p4") // but the literal underscore in the stored name matches
+	// "\" (the escape character itself) is matched literally and doesn't error:
+	only(t, `back\slash`, "p5")
 }
