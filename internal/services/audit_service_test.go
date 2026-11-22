@@ -327,3 +327,91 @@ func TestAuditService_DeactivatingProviderRevokesSessions(t *testing.T) {
 		t.Error("unrelated provider's session was revoked")
 	}
 }
+
+func TestAuditService_SaveProviderInactiveRevokesSessions(t *testing.T) {
+	dir := t.TempDir()
+	db, err := sqlite.Open(filepath.Join(dir, "m.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+	adb, err := sqlite.OpenAudit(filepath.Join(dir, "a.db"))
+	if err != nil {
+		t.Fatalf("open audit db: %v", err)
+	}
+	defer adb.Close()
+
+	cfgRepo := sqlite.NewPracticeConfigRepository(db)
+	ctx := context.Background()
+	for _, id := range []string{"keep", "edit"} {
+		if err := cfgRepo.SaveProvider(ctx, &domain.Provider{ID: id, Name: id, Pin: "4729", IsActive: true}); err != nil {
+			t.Fatalf("save provider %s: %v", id, err)
+		}
+	}
+	audit := services.NewAuditService(sqlite.NewAuditRepository(adb), cfgRepo)
+	cfg := services.NewPracticeConfigService(cfgRepo, audit)
+
+	adminTok, err := audit.CreateSession("keep", "4729")
+	if err != nil {
+		t.Fatalf("admin session: %v", err)
+	}
+	victimTok, err := audit.CreateSession("edit", "4729")
+	if err != nil {
+		t.Fatalf("victim session: %v", err)
+	}
+
+	// Edit the provider to inactive (the separate SaveProvider deactivation path).
+	if _, err := cfg.SaveProvider(adminTok, domain.Provider{ID: "edit", Name: "edit", Pin: "****", IsActive: false}); err != nil {
+		t.Fatalf("deactivate via SaveProvider: %v", err)
+	}
+	if audit.GetSessionUser(victimTok) != nil {
+		t.Error("session of a provider edited inactive is still valid; it must be revoked")
+	}
+}
+
+func TestAuditService_SelfDeleteIsAudited(t *testing.T) {
+	dir := t.TempDir()
+	db, err := sqlite.Open(filepath.Join(dir, "m.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+	adb, err := sqlite.OpenAudit(filepath.Join(dir, "a.db"))
+	if err != nil {
+		t.Fatalf("open audit db: %v", err)
+	}
+	defer adb.Close()
+
+	cfgRepo := sqlite.NewPracticeConfigRepository(db)
+	ctx := context.Background()
+	for _, id := range []string{"keep", "self"} {
+		if err := cfgRepo.SaveProvider(ctx, &domain.Provider{ID: id, Name: id, Pin: "4729", IsActive: true}); err != nil {
+			t.Fatalf("save provider %s: %v", id, err)
+		}
+	}
+	audit := services.NewAuditService(sqlite.NewAuditRepository(adb), cfgRepo)
+	cfg := services.NewPracticeConfigService(cfgRepo, audit)
+
+	selfTok, err := audit.CreateSession("self", "4729")
+	if err != nil {
+		t.Fatalf("self session: %v", err)
+	}
+
+	// A provider deactivates themselves: the deletion must still be audited
+	// (revocation must not drop the token before the action is logged).
+	if err := cfg.DeleteProvider(selfTok, "self"); err != nil {
+		t.Fatalf("self delete: %v", err)
+	}
+	if audit.GetSessionUser(selfTok) != nil {
+		t.Error("self-deleted provider's session should be revoked")
+	}
+	var count int
+	if err := adb.QueryRow(
+		"SELECT COUNT(*) FROM audit_logs WHERE user_id = 'self' AND resource = 'provider' AND action = 'DELETE'",
+	).Scan(&count); err != nil {
+		t.Fatalf("query audit logs: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("self-deletion audit entries = %d, want 1 (the successful deletion must be logged)", count)
+	}
+}

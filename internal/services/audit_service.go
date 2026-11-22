@@ -50,6 +50,15 @@ func (s *AuditService) CreateSession(id string, pin string) (string, error) {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Re-check the provider under the session lock before inserting. A
+	// deactivation that lands between the verification above and here calls
+	// destroySessionsForUser, which also takes this lock, so re-verifying here
+	// serializes the two: either we still see the provider active and insert
+	// before revocation runs (and it then removes this token), or the
+	// deactivation's row update is already visible and we refuse.
+	if _, err := configService.VerifyProviderPin(id, pin); err != nil {
+		return "", err
+	}
 	token := uuid.NewString()
 	s.sessions[token] = provider
 	return token, nil
