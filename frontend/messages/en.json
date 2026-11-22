@@ -480,6 +480,7 @@
   "appts_today_badge": "Today",
   "charting_billing_no_conditions": "No treatment-planned or completed conditions found for billing.",
   "charting_billing_err_claim": "Failed to generate claim from chart.",
+  "charting_err_load": "Could not load this patient's dental chart.",
   "billing_claim_err_patient": "Please select a patient first.",
   "billing_claim_err_load_chart": "Failed to load patient chart conditions.",
   "billing_bundle_delete_title": "Delete Bundle",
