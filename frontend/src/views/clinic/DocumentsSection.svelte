@@ -177,9 +177,11 @@
     loadDocuments();
   }
 
-  // Content types safe to render in a same-origin blob: tab because they can't
-  // execute script. Anything else (notably text/html and image/svg+xml) is
-  // downloaded instead, so a stored document can't run with the app's session.
+  // Content types we render in a same-origin blob: tab. Images and plain text
+  // can't execute script; PDFs can embed JavaScript but run inside the browser's
+  // sandboxed PDF viewer. Anything else (notably text/html and image/svg+xml,
+  // which run script directly in this origin) is downloaded instead, so a
+  // stored document can't act with the app's session.
   const INLINE_VIEWABLE_TYPES = new Set([
     "image/png",
     "image/jpeg",
@@ -195,7 +197,10 @@
     return INLINE_VIEWABLE_TYPES.has(ct);
   }
 
-  async function downloadAndCreateObjectURL(doc: Document): Promise<string> {
+  // overrideType forces the blob's MIME type; callers that only download a
+  // document pass "application/octet-stream" so it can never render as active
+  // content even if the browser navigates to the URL instead of downloading it.
+  async function downloadAndCreateObjectURL(doc: Document, overrideType?: string): Promise<string> {
     const base64 = await DocumentService.GetDocumentBase64(auth.token, doc.id);
     if (!base64) {
       throw new Error("Empty document");
@@ -206,7 +211,9 @@
     for (let i = 0; i < len; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    const blob = new Blob([bytes], { type: doc.content_type || "application/octet-stream" });
+    const blob = new Blob([bytes], {
+      type: overrideType || doc.content_type || "application/octet-stream",
+    });
     return URL.createObjectURL(blob);
   }
 
@@ -221,13 +228,19 @@
         }
         await DocumentService.OpenDocument(auth.token, doc.id);
       } else {
-        const url = await downloadAndCreateObjectURL(doc);
         // A blob: URL opened in a tab here shares this app's origin, so an HTML
         // or SVG document would run its scripts with access to the logged-in
         // session (token, bound methods). Only navigate to types that can't
-        // execute; download everything else instead of rendering it inline.
-        if (win && !win.closed && canViewInline(doc.content_type)) {
-          win.location.href = url;
+        // execute; download everything else instead of rendering it inline, and
+        // give the downloaded blob a neutral type so it can't render even if the
+        // browser navigates to it rather than downloading.
+        const inline = !!win && !win.closed && canViewInline(doc.content_type);
+        const url = await downloadAndCreateObjectURL(
+          doc,
+          inline ? undefined : "application/octet-stream"
+        );
+        if (inline) {
+          win!.location.href = url;
           setTimeout(() => URL.revokeObjectURL(url), 60000);
         } else {
           if (win && !win.closed) {
@@ -271,7 +284,7 @@
           }, 5000);
         }
       } else {
-        const url = await downloadAndCreateObjectURL(doc);
+        const url = await downloadAndCreateObjectURL(doc, "application/octet-stream");
 
         const a = document.createElement("a");
         a.href = url;
