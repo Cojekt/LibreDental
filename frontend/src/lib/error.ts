@@ -16,6 +16,7 @@ const errorMessages: Record<string, () => string> = {
   provider_inactive: m.error_provider_inactive,
   incorrect_pin: m.staff_login_incorrect_pin,
   bridges_unavailable: m.integrations_bridges_unavailable,
+  document_desktop_only: m.error_document_desktop_only,
   bridge_path_required: m.error_bridge_path_required,
   bridge_path_not_absolute: m.error_bridge_path_not_absolute,
   bridge_batch_file: m.error_bridge_batch_file,
