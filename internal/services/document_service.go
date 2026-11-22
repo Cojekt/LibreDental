@@ -14,11 +14,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/LibreDental/libredental/internal/app"
 	"github.com/LibreDental/libredental/internal/domain"
 	"github.com/LibreDental/libredental/internal/services/dicom"
 	"github.com/LibreDental/libredental/internal/storage"
 	"github.com/google/uuid"
 )
+
+// ErrDocumentActionDesktopOnly is returned for document actions that act on the
+// machine running the backend: opening a document in the OS's default app, and
+// exporting it to a local path. In LAN server mode that machine is the server,
+// not the workstation the user is at, so a bound client must not be able to
+// launch processes or write arbitrary files there. Mirrors ErrBridgesUnavailable.
+var ErrDocumentActionDesktopOnly = errors.New("opening and exporting documents to a local path is only available in the desktop app")
 
 // DocumentRepository defines the data access interface for documents.
 type DocumentRepository interface {
@@ -34,6 +42,7 @@ type DocumentService struct {
 	repo         DocumentRepository
 	appDir       string // Base application data directory
 	auditService *AuditService
+	serverMode   bool
 }
 
 // NewDocumentService creates a new DocumentService.
@@ -42,6 +51,7 @@ func NewDocumentService(repo DocumentRepository, appDir string, auditService *Au
 		repo:         repo,
 		appDir:       appDir,
 		auditService: auditService,
+		serverMode:   app.IsServerBuild(),
 	}
 }
 
@@ -295,6 +305,9 @@ func (s *DocumentService) OpenDocument(token string, id string) error {
 	if s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
 	}
+	if s.serverMode {
+		return ErrDocumentActionDesktopOnly
+	}
 
 	doc, err := s.repo.GetByID(id)
 	if err != nil {
@@ -371,6 +384,9 @@ func (s *DocumentService) OpenDocument(token string, id string) error {
 func (s *DocumentService) ExportDocumentToPath(token string, id string, destPath string) error {
 	if s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
+	}
+	if s.serverMode {
+		return ErrDocumentActionDesktopOnly
 	}
 
 	doc, err := s.repo.GetByID(id)
