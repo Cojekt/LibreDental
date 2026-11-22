@@ -31,6 +31,9 @@ test("a concurrent patient edit is rejected instead of losing data", async ({
   await createPatient(page, "Concurrent", "Patient");
 
   const second = await (await browser.newContext()).newPage();
+  // The page fixture only guards the first page's console; watch the second too.
+  const secondErrors: string[] = [];
+  second.on("pageerror", (e) => secondErrors.push(e.message));
   await signInSecond(second, server.url);
 
   // Both open the edit form at the same version.
@@ -59,4 +62,5 @@ test("a concurrent patient edit is rejected instead of losing data", async ({
   );
   expect(row.alerts).toContain("Penicillin allergy");
   expect(row.city).not.toBe("Szeged");
+  expect(secondErrors, "uncaught errors on the second editor's page").toEqual([]);
 });
