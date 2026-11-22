@@ -177,6 +177,24 @@
     loadDocuments();
   }
 
+  // Content types safe to render in a same-origin blob: tab because they can't
+  // execute script. Anything else (notably text/html and image/svg+xml) is
+  // downloaded instead, so a stored document can't run with the app's session.
+  const INLINE_VIEWABLE_TYPES = new Set([
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/webp",
+    "image/bmp",
+    "application/pdf",
+    "text/plain",
+  ]);
+
+  function canViewInline(contentType?: string): boolean {
+    const ct = (contentType || "").split(";")[0].trim().toLowerCase();
+    return INLINE_VIEWABLE_TYPES.has(ct);
+  }
+
   async function downloadAndCreateObjectURL(doc: Document): Promise<string> {
     const base64 = await DocumentService.GetDocumentBase64(auth.token, doc.id);
     if (!base64) {
@@ -204,10 +222,17 @@
         await DocumentService.OpenDocument(auth.token, doc.id);
       } else {
         const url = await downloadAndCreateObjectURL(doc);
-        if (win && !win.closed) {
+        // A blob: URL opened in a tab here shares this app's origin, so an HTML
+        // or SVG document would run its scripts with access to the logged-in
+        // session (token, bound methods). Only navigate to types that can't
+        // execute; download everything else instead of rendering it inline.
+        if (win && !win.closed && canViewInline(doc.content_type)) {
           win.location.href = url;
           setTimeout(() => URL.revokeObjectURL(url), 60000);
         } else {
+          if (win && !win.closed) {
+            win.close();
+          }
           const suggestedName = doc.name || m.doc_default_export_name();
           const a = document.createElement("a");
           a.href = url;
