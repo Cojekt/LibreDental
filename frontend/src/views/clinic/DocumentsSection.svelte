@@ -234,13 +234,16 @@
         // execute; download everything else instead of rendering it inline, and
         // give the downloaded blob a neutral type so it can't render even if the
         // browser navigates to it rather than downloading.
-        const inline = !!win && !win.closed && canViewInline(doc.content_type);
+        // Decide inline purely from the document's type, not the popup's state:
+        // if the user closes the popup while the document loads, a safe document
+        // still falls through to a clean download instead of failing.
+        const inline = canViewInline(doc.content_type);
         const url = await downloadAndCreateObjectURL(
           doc,
           inline ? undefined : "application/octet-stream"
         );
-        if (inline) {
-          win!.location.href = url;
+        if (inline && win && !win.closed) {
+          win.location.href = url;
           setTimeout(() => URL.revokeObjectURL(url), 60000);
         } else {
           if (win && !win.closed) {
