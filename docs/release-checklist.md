@@ -198,6 +198,12 @@ enforced in Go, not in the UI.
   settings, provider-name lists, and the procedure-code/bundle/fee catalogs. `SecretsService` is not bound (check
   `main.go`), so its methods don't need a token. Known open item: `TimecardService`
   reads (staff payroll) are still ungated.
+- Server builds refuse the Wails runtime `Application` object (`Quit`, `Hide`, `Show`) on
+  `/wails/runtime` before the transport runs (`internal/app/runtime_guard.go`). These are
+  not bound methods, so the scan above does not see them.
+- When bumping Wails, re-check `pkg/application/transport_http.go` (path, body/query
+  parsing, chunk headers and limits) and the `applicationRequest` id in
+  `messageprocessor.go` against the constants in `internal/app/runtime_guard.go`.
 - Anything that writes to the audit log must take its user from the session, never from
   the caller. A bound method that accepts a caller-built `AuditLogEntry` lets anyone forge
   the audit trail.

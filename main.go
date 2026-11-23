@@ -99,6 +99,13 @@ func main() {
 
 	serverCfg := app.LoadServerConfig()
 
+	assetOpts := application.AssetOptions{
+		Handler: application.AssetFileServerFS(assets),
+	}
+	if app.IsServerBuild() {
+		assetOpts.Middleware = app.RejectApplicationRuntime(log.Default())
+	}
+
 	wailsApp := application.New(application.Options{
 		Name:        "LibreDental",
 		Description: "Open-Source Dental Practice Management System",
@@ -125,9 +132,7 @@ func main() {
 			// Last, so the reminder job starts after every other service and stops first.
 			newService(newReminderJobLifecycle(reminderService)),
 		},
-		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(assets),
-		},
+		Assets: assetOpts,
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
