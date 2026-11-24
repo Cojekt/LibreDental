@@ -99,11 +99,16 @@ func main() {
 
 	serverCfg := app.LoadServerConfig()
 
+	serverOpts := application.ServerOptions{
+		Host: serverCfg.Host,
+		Port: serverCfg.Port,
+	}
+
 	assetOpts := application.AssetOptions{
 		Handler: application.AssetFileServerFS(assets),
 	}
 	if app.IsServerBuild() {
-		assetOpts.Middleware = app.RejectApplicationRuntime(log.Default())
+		assetOpts.Middleware = app.RejectApplicationRuntime(log.Default(), serverOpts)
 	}
 
 	wailsApp := application.New(application.Options{
@@ -111,10 +116,7 @@ func main() {
 		Description: "Open-Source Dental Practice Management System",
 		// Server field is only active when built with -tags server.
 		// In desktop mode this field is ignored by Wails.
-		Server: application.ServerOptions{
-			Host: serverCfg.Host,
-			Port: serverCfg.Port,
-		},
+		Server: serverOpts,
 		Services: []application.Service{
 			newService(patientService),
 			newService(appointmentService),

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type nextRecorder struct {
@@ -31,8 +33,12 @@ type clock struct{ t time.Time }
 func (c *clock) now() time.Time { return c.t }
 
 func newTestGuard() (*runtimeGuard, http.Handler, *nextRecorder, *clock) {
+	return newTestGuardWith(application.ServerOptions{})
+}
+
+func newTestGuardWith(server application.ServerOptions) (*runtimeGuard, http.Handler, *nextRecorder, *clock) {
 	c := &clock{t: time.Unix(1_700_000_000, 0)}
-	g := newRuntimeGuard(log.New(io.Discard, "", 0), c.now)
+	g := newRuntimeGuard(log.New(io.Discard, "", 0), server, c.now)
 	next := &nextRecorder{}
 	return g, g.middleware(next), next, c
 }
@@ -70,7 +76,6 @@ func TestRuntimeGuard_RefusesApplicationObject(t *testing.T) {
 		{"query", http.MethodPost, runtimePath + "?object=2&method=2", ``, false},
 		{"query with plus", http.MethodPost, runtimePath + "?object=%2B2&method=2", ``, false},
 		{"query with leading zero", http.MethodPost, runtimePath + "?object=02&method=2", ``, false},
-		{"non-POST", http.MethodGet, runtimePath + "?object=2&method=2", ``, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -207,8 +212,101 @@ func TestRuntimeGuard_MismatchedTotalDropsSet(t *testing.T) {
 	if _, ok := g.pending["a"]; ok || g.pendingBytes != 0 {
 		t.Error("set survived a mismatched total")
 	}
+	if rec := sendChunk(h, "a", 1, 2, `"method":0}`); rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("chunk after a dropped set status = %d, want 503", rec.Code)
+	}
 	if next.calls != 0 {
 		t.Errorf("next called %d times", next.calls)
+	}
+}
+
+func TestRuntimeGuard_NonPOSTRefused(t *testing.T) {
+	cases := []struct {
+		name   string
+		target string
+		header map[string]string
+	}{
+		{"application object", runtimePath + "?object=2&method=2", nil},
+		{"service call", runtimePath + "?object=0&method=0", nil},
+		{"chunk", runtimePath, map[string]string{chunkIDHeader: "a", chunkIndexHeader: "0", chunkTotalHeader: "2"}},
+	}
+	for _, tc := range cases {
+		for _, method := range []string{http.MethodGet, http.MethodPut} {
+			t.Run(tc.name+" "+method, func(t *testing.T) {
+				g, h, next, _ := newTestGuard()
+				rec := send(h, method, tc.target, []byte(`{"object":0}`), tc.header)
+				if rec.Code != http.StatusMethodNotAllowed {
+					t.Errorf("status = %d, want 405", rec.Code)
+				}
+				if next.calls != 0 || len(g.pending) != 0 {
+					t.Errorf("next calls = %d, pending sets = %d", next.calls, len(g.pending))
+				}
+			})
+		}
+	}
+}
+
+type readFlag struct {
+	io.Reader
+	read bool
+}
+
+func (r *readFlag) Read(p []byte) (int, error) {
+	r.read = true
+	return r.Reader.Read(p)
+}
+
+func TestRuntimeGuard_OriginCheckedBeforeBuffering(t *testing.T) {
+	cases := []struct {
+		name   string
+		header map[string]string
+	}{
+		{"cross-origin", map[string]string{"Origin": "http://evil.test"}},
+		{"invalid origin", map[string]string{"Origin": "null"}},
+		{"cross-site fetch", map[string]string{"Sec-Fetch-Site": "cross-site"}},
+		{"cross-origin chunk", map[string]string{
+			"Origin": "http://evil.test", chunkIDHeader: "a", chunkIndexHeader: "0", chunkTotalHeader: "2",
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			g, h, next, _ := newTestGuard()
+			body := &readFlag{Reader: strings.NewReader(`{"object":0}`)}
+			req := httptest.NewRequest(http.MethodPost, runtimePath, body)
+			for k, v := range tc.header {
+				req.Header.Set(k, v)
+			}
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if rec.Code != http.StatusForbidden {
+				t.Errorf("status = %d, want 403", rec.Code)
+			}
+			if body.read || next.calls != 0 || len(g.pending) != 0 {
+				t.Errorf("body read = %v, next calls = %d, pending sets = %d", body.read, next.calls, len(g.pending))
+			}
+		})
+	}
+}
+
+func TestRuntimeGuard_OriginPolicyMatchesServerOptions(t *testing.T) {
+	cases := []struct {
+		name   string
+		server application.ServerOptions
+		origin string
+	}{
+		{"same host", application.ServerOptions{}, "http://example.com"},
+		{"host pattern", application.ServerOptions{WebSocketOriginPatterns: []string{"*.lan.test"}}, "http://desk.lan.test"},
+		{"scheme pattern", application.ServerOptions{WebSocketOriginPatterns: []string{"https://lan.test"}}, "https://lan.test"},
+		{"allow all", application.ServerOptions{WebSocketAllowAllOrigins: true}, "http://evil.test"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, h, next, _ := newTestGuardWith(tc.server)
+			send(h, http.MethodPost, runtimePath, []byte(`{"object":0}`), map[string]string{"Origin": tc.origin})
+			if next.calls != 1 {
+				t.Errorf("next called %d times, want 1", next.calls)
+			}
+		})
 	}
 }
 
@@ -241,44 +339,99 @@ func TestRuntimeGuard_EvictionCannotCompleteRefusedCall(t *testing.T) {
 	if len(g.pending) > maxPendingSets {
 		t.Errorf("%d pending sets, limit %d", len(g.pending), maxPendingSets)
 	}
-	sendChunk(h, "quit", 1, 2, `"method":2}`)
+	if rec := sendChunk(h, "quit", 1, 2, `"method":2}`); rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("final chunk status = %d, want 503", rec.Code)
+	}
 	if next.calls != 0 {
 		t.Errorf("next called %d times", next.calls)
 	}
 }
 
-func TestRuntimeGuard_ExpiredSetIsNotCompleted(t *testing.T) {
-	g, h, next, c := newTestGuard()
-	sendChunk(h, "a", 0, 2, `{"object":0,`)
-	c.t = c.t.Add(chunkTTL + time.Second)
-	if rec := sendChunk(h, "a", 1, 2, `"method":0}`); rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200 (stored as a new set)", rec.Code)
-	}
-	if next.calls != 0 {
-		t.Errorf("next called %d times", next.calls)
-	}
-	if g.pendingBytes != len(`"method":0}`) {
-		t.Errorf("pendingBytes = %d, expired chunk not released", g.pendingBytes)
-	}
+// The browser runtime treats an empty 200 on the final chunk as a successful call, so an
+// upload that lost its earlier chunks must fail instead of starting a new set.
+func TestRuntimeGuard_InterruptedUploadFails(t *testing.T) {
+	t.Run("expired", func(t *testing.T) {
+		g, h, next, c := newTestGuard()
+		sendChunk(h, "a", 0, 3, `{"object":0,`)
+		c.t = c.t.Add(chunkTTL + time.Second)
+		for i := 1; i < 3; i++ {
+			rec := sendChunk(h, "a", i, 3, `"method":0}`)
+			if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") == "" {
+				t.Errorf("chunk %d status = %d, want retryable 503", i, rec.Code)
+			}
+		}
+		if next.calls != 0 || len(g.pending) != 0 || g.pendingBytes != 0 {
+			t.Errorf("next calls = %d, pending = %d sets, %d bytes", next.calls, len(g.pending), g.pendingBytes)
+		}
+	})
+	t.Run("evicted", func(t *testing.T) {
+		_, h, next, c := newTestGuard()
+		sendChunk(h, "a", 0, 2, `{"object":0,`)
+		for i := range maxPendingSets {
+			c.t = c.t.Add(time.Millisecond)
+			sendChunk(h, fmt.Sprintf("other-%d", i), 0, 2, `x`)
+		}
+		if rec := sendChunk(h, "a", 1, 2, `"method":0}`); rec.Code != http.StatusServiceUnavailable {
+			t.Errorf("final chunk status = %d, want 503", rec.Code)
+		}
+		if next.calls != 0 {
+			t.Errorf("next called %d times", next.calls)
+		}
+	})
+	t.Run("lost ids expire", func(t *testing.T) {
+		g, h, _, c := newTestGuard()
+		sendChunk(h, "a", 0, 2, `{"object":0,`)
+		c.t = c.t.Add(chunkTTL + time.Second)
+		sendChunk(h, "b", 0, 2, `x`)
+		c.t = c.t.Add(chunkTTL + time.Second)
+		sendChunk(h, "c", 0, 2, `x`)
+		if _, ok := g.lost["a"]; ok {
+			t.Error("lost id kept past its TTL")
+		}
+	})
 }
 
-func TestRuntimeGuard_GlobalByteBudget(t *testing.T) {
-	g, h, _, c := newTestGuard()
+func TestRuntimeGuard_ByteBudgetEvictsOldestFirst(t *testing.T) {
 	chunk := strings.Repeat("x", maxChunkBodyBytes)
-	for i := range 40 {
-		sendChunk(h, "a", i, 64, chunk)
-	}
-	c.t = c.t.Add(time.Millisecond)
-	for i := range 30 {
-		sendChunk(h, "b", i, 64, chunk)
-	}
-	if g.pendingBytes > maxPendingBytes {
-		t.Errorf("pendingBytes = %d, budget %d", g.pendingBytes, maxPendingBytes)
-	}
-	if _, ok := g.pending["a"]; ok {
-		t.Error("older set kept past the byte budget")
-	}
-	if set := g.pending["b"]; set == nil || len(set.chunks) != 30 {
-		t.Error("newer set lost chunks")
-	}
+
+	t.Run("new set over budget", func(t *testing.T) {
+		g, h, _, _ := newTestGuard()
+		for i := range 40 {
+			sendChunk(h, "a", i, 64, chunk)
+		}
+		for i := range 30 {
+			if rec := sendChunk(h, "b", i, 64, chunk); rec.Code != http.StatusOK {
+				t.Fatalf("chunk %d of newer set status = %d", i, rec.Code)
+			}
+		}
+		if g.pendingBytes > maxPendingBytes {
+			t.Errorf("pendingBytes = %d, budget %d", g.pendingBytes, maxPendingBytes)
+		}
+		if _, ok := g.pending["a"]; ok {
+			t.Error("older set kept past the byte budget")
+		}
+		if set := g.pending["b"]; set == nil || len(set.chunks) != 30 {
+			t.Error("newer set lost chunks")
+		}
+	})
+
+	t.Run("oldest set grows over budget", func(t *testing.T) {
+		g, h, _, _ := newTestGuard()
+		sendChunk(h, "a", 0, 64, chunk)
+		for i := range 63 {
+			sendChunk(h, "b", i, 64, chunk)
+		}
+		if rec := sendChunk(h, "a", 1, 64, chunk); rec.Code != http.StatusServiceUnavailable {
+			t.Errorf("status = %d, want 503 for the evicted oldest set", rec.Code)
+		}
+		if _, ok := g.pending["a"]; ok {
+			t.Error("oldest set kept past the byte budget")
+		}
+		if set := g.pending["b"]; set == nil || len(set.chunks) != 63 {
+			t.Error("newer set was evicted instead of the oldest")
+		}
+		if g.pendingBytes > maxPendingBytes {
+			t.Errorf("pendingBytes = %d, budget %d", g.pendingBytes, maxPendingBytes)
+		}
+	})
 }
