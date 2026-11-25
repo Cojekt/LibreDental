@@ -45,7 +45,7 @@ runs:
       if: inputs.setup-go == 'true'
       uses: actions/setup-go@v7
       with:
-        go-version: "1.26.5"
+        go-version: "1.26.11"
         cache: ${{ inputs.cache-go == 'true' }}
         cache-dependency-path: go.sum
 

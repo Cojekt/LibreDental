@@ -1,6 +1,6 @@
 module github.com/LibreDental/libredental
 
-go 1.26.5
+go 1.26.11
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.48.0
