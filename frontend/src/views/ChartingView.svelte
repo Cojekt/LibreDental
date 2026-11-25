@@ -55,6 +55,7 @@
   // Dental Chart state
   let currentChart = $state<DentalChart | null>(null);
   let loadingChart = $state<boolean>(false);
+  let chartError = $state<string>("");
 
   // View state: "adult" or "primary"
   let dentitionType = $state<"adult" | "primary">("adult");
@@ -263,10 +264,15 @@
     const gen = ++requestGenChart;
     if (!patientId) {
       currentChart = null;
+      chartError = "";
       loadingChart = false;
       return;
     }
     loadingChart = true;
+    chartError = "";
+    // Drop the previous patient's chart before awaiting, so it can't be shown
+    // under the newly selected patient's name while this request is in flight.
+    currentChart = null;
     try {
       const chart = await ChartService.GetPatientChart(auth.token, patientId);
       if (gen === requestGenChart) {
@@ -279,11 +285,12 @@
     } catch (e: any) {
       if (gen === requestGenChart) {
         console.error("Failed to load patient chart:", e);
-        if (errorCode(e) === "unauthorized") {
-          // Do not treat unauthorized as empty chart
-        } else {
-          currentChart = { patient_id: patientId, conditions: [], updated_at: "" };
-        }
+        // Clear the chart on any failure: keeping the previously selected
+        // patient's conditions on screen would show them under the newly
+        // selected patient's name. Surface the error instead of silently
+        // rendering an empty-looking (or stale) chart.
+        currentChart = null;
+        chartError = handleError(e, m.charting_err_load());
       }
     } finally {
       if (gen === requestGenChart) {
@@ -554,6 +561,13 @@
       <p class="text-slate-400 text-sm m-0 font-medium">
         {m.charting_select_patient_desc()}
       </p>
+    </div>
+  {:else if chartError}
+    <div
+      role="alert"
+      class="rounded-xl border border-rose-500/30 bg-rose-950/30 p-4 text-sm text-rose-300"
+    >
+      {chartError}
     </div>
   {:else}
     <OdontogramChart
