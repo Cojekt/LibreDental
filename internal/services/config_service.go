@@ -295,6 +295,14 @@ func (s *PracticeConfigService) SaveProvider(token string, p domain.Provider) (*
 	}
 	s.logAction(token, action, "provider", fmt.Sprintf("Saved provider %s", p.ID))
 
+	// Deactivating a provider through an edit must also drop their open sessions,
+	// the same as deleting them does. Audited first (above), since the provider
+	// may be deactivating themselves and would otherwise revoke their own token
+	// before the change is logged.
+	if !p.IsActive && s.auditService != nil {
+		s.auditService.destroySessionsForUser(p.ID)
+	}
+
 	p.Pin = "****"
 	return &p, nil
 }
@@ -350,7 +358,13 @@ func (s *PracticeConfigService) DeleteProvider(token string, id string) error {
 	if err := s.repo.DeleteProvider(context.Background(), id); err != nil {
 		return err
 	}
+	// Audit the deletion while the acting session is still valid — a provider
+	// can deactivate themselves — then revoke the deactivated provider's
+	// sessions so they lose access immediately.
 	s.logAction(token, domain.AuditActionDelete, "provider", fmt.Sprintf("Deleted provider %s", id))
+	if s.auditService != nil {
+		s.auditService.destroySessionsForUser(id)
+	}
 	return nil
 }
 

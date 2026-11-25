@@ -50,6 +50,15 @@ func (s *AuditService) CreateSession(id string, pin string) (string, error) {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Re-check the provider under the session lock before inserting. A
+	// deactivation that lands between the verification above and here calls
+	// destroySessionsForUser, which also takes this lock, so re-verifying here
+	// serializes the two: either we still see the provider active and insert
+	// before revocation runs (and it then removes this token), or the
+	// deactivation's row update is already visible and we refuse.
+	if _, err := configService.VerifyProviderPin(id, pin); err != nil {
+		return "", err
+	}
 	token := uuid.NewString()
 	s.sessions[token] = provider
 	return token, nil
@@ -62,6 +71,24 @@ func (s *AuditService) DestroySession(token string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.sessions, token)
+}
+
+// destroySessionsForUser revokes every active session belonging to a provider.
+// It is called when a provider is deactivated so a removed staff member can't
+// keep acting (and keep being attributed in the audit trail) on an already-open
+// session, especially in LAN server mode where the session token is all that
+// gates the bound service methods.
+func (s *AuditService) destroySessionsForUser(userID string) {
+	if userID == "" {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for token, provider := range s.sessions {
+		if provider != nil && provider.ID == userID {
+			delete(s.sessions, token)
+		}
+	}
 }
 
 func (s *AuditService) GetSessionUser(token string) *domain.Provider {
