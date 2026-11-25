@@ -206,10 +206,20 @@ func (r *PatientRepository) List(ctx context.Context, filter domain.PatientFilte
 	var conditions []string
 	var args []interface{}
 
-	if filter.Query != "" {
-		q := "%" + strings.ToLower(filter.Query) + "%"
-		conditions = append(conditions, "(LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ? OR phone_primary LIKE ? OR national_id LIKE ?)")
-		args = append(args, q, q, q, q, q)
+	// Match each whitespace-separated token against any searchable column and
+	// require every token to match, so "John Smith" (and "Smith John") find a
+	// patient by first and last name together. unicode_lower folds accented
+	// letters that SQLite's built-in lower() leaves untouched, and LIKE
+	// metacharacters in the query are escaped so a stray "%" or "_" is matched
+	// literally instead of listing unrelated patients.
+	for _, token := range strings.Fields(filter.Query) {
+		like := "%" + escapeLike(strings.ToLower(token)) + "%"
+		conditions = append(conditions, `(unicode_lower(first_name) LIKE ? ESCAPE '\'
+			OR unicode_lower(last_name) LIKE ? ESCAPE '\'
+			OR unicode_lower(email) LIKE ? ESCAPE '\'
+			OR phone_primary LIKE ? ESCAPE '\'
+			OR national_id LIKE ? ESCAPE '\')`)
+		args = append(args, like, like, like, like, like)
 	}
 
 	status := filter.Status
@@ -325,3 +335,10 @@ func scanPatient(scanner rowScanner) (*domain.Patient, error) {
 
 	return &p, nil
 }
+
+// likeEscaper escapes the LIKE metacharacters so user-typed text is matched
+// literally under `ESCAPE '\'`. Backslash is escaped first so it doesn't double-
+// escape the sequences introduced for % and _.
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
+func escapeLike(s string) string { return likeEscaper.Replace(s) }

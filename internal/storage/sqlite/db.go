@@ -2,16 +2,35 @@ package sqlite
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"embed"
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 
 	"github.com/LibreDental/libredental/internal/storage/seed"
 	"github.com/pressly/goose/v3"
-	_ "modernc.org/sqlite"
+	sqlitedriver "modernc.org/sqlite"
 )
+
+// SQLite's built-in lower() only folds ASCII A–Z, so a search for a lowercase
+// accented name (e.g. "ágnes") never matched a stored capitalised one ("Ágnes").
+// unicode_lower() exposes Go's Unicode-aware case folding to SQL for the patient
+// search; it is deterministic, so SQLite may use it in indexes and caching.
+func init() {
+	sqlitedriver.MustRegisterDeterministicScalarFunction("unicode_lower", 1, func(_ *sqlitedriver.FunctionContext, args []driver.Value) (driver.Value, error) {
+		switch v := args[0].(type) {
+		case string:
+			return strings.ToLower(v), nil
+		case []byte:
+			return strings.ToLower(string(v)), nil
+		default:
+			return v, nil
+		}
+	})
+}
 
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
