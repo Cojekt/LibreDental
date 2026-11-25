@@ -133,6 +133,9 @@
   let patientError = $state("");
   let isEditingPatient = $state(false);
   let editingPatientId = $state("");
+  // Version the patient was at when the edit modal opened, carried into the save
+  // so the backend's optimistic-lock check can detect a concurrent change.
+  let editingPatientVersion = $state(0);
 
   // Patient form fields
   let firstName = $state("");
@@ -438,6 +441,7 @@
   function openEditPatientModal(p: Patient) {
     isEditingPatient = true;
     editingPatientId = p.id;
+    editingPatientVersion = p.version;
     firstName = p.first_name;
     lastName = p.last_name;
     sex = p.sex || Sex.SexMale;
@@ -546,6 +550,11 @@
           p.preferred_provider_id = preferredProviderId;
           p.referral_source = referralSource;
           p.medical_alerts = parseMedicalAlerts(medicalAlerts);
+          // Re-fetching above refreshed the row (and its version) to preserve
+          // fields the form doesn't edit; restore the version the user was
+          // actually editing so a concurrent change is caught as a conflict
+          // instead of being silently overwritten.
+          p.version = editingPatientVersion;
           await PatientService.UpdatePatient(auth.token, p);
         }
       } else {
