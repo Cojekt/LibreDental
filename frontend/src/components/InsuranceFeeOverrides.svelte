@@ -6,12 +6,12 @@
     InsuranceFee,
     ProcedureCode,
   } from "@bindings/domain/index.js";
-  import { auth } from "../../stores/auth.svelte.js";
-  import { m } from "../../paraglide/messages.js";
+  import { auth } from "../stores/auth.svelte.js";
+  import { m } from "../paraglide/messages.js";
   import { handleError, errorCode } from "$lib/error.js";
   import { formatCurrency } from "$lib/currency.js";
-  import Input from "../../components/ui/Input.svelte";
-  import EmptyState from "../../components/ui/EmptyState.svelte";
+  import Input from "./ui/Input.svelte";
+  import EmptyState from "./ui/EmptyState.svelte";
   let {
     countryMeta = null,
     providerID = $bindable(""),

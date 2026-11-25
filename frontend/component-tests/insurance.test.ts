@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/svelte";
-import InsuranceSection from "../src/views/billing/InsuranceFeeOverridesSection.svelte";
+import InsuranceSection from "../src/components/InsuranceFeeOverrides.svelte";
 import PricingPicker from "../src/components/PricingPicker.svelte";
 import ChartingView from "../src/views/ChartingView.svelte";
 import ClaimsSection from "../src/views/billing/ClaimsSection.svelte";

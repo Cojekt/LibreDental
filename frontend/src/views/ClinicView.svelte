@@ -14,7 +14,7 @@
   import ClinicHoursSection from "./clinic/ClinicHoursSection.svelte";
   import ProvidersSection from "./clinic/ProvidersSection.svelte";
   import OperatoriesSection from "./clinic/OperatoriesSection.svelte";
-  import DocumentsSection from "./clinic/DocumentsSection.svelte";
+  import DocumentManager from "../components/DocumentManager.svelte";
   import IntegrationsSection from "./clinic/IntegrationsSection.svelte";
   import RemindersSection from "./clinic/RemindersSection.svelte";
   import { m } from "../paraglide/messages.js";
@@ -765,7 +765,7 @@
         bind:opIsActive
       />
     {:else if activeSubTab === "documents"}
-      <DocumentsSection bind:openUploadModal={triggerUploadDocument} />
+      <DocumentManager bind:openUploadModal={triggerUploadDocument} />
     {:else if activeSubTab === "integrations"}
       <IntegrationsSection {canEdit} />
     {:else if activeSubTab === "reminders"}

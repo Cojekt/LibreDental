@@ -5,7 +5,7 @@
   import ClaimsSection from "./billing/ClaimsSection.svelte";
   import PaymentsSection from "./billing/PaymentsSection.svelte";
   import BundlesSection from "./billing/BundlesSection.svelte";
-  import InsuranceFeeOverridesSection from "./billing/InsuranceFeeOverridesSection.svelte";
+  import InsuranceFeeOverrides from "../components/InsuranceFeeOverrides.svelte";
   import FeeSchedulesSection from "./billing/FeeSchedulesSection.svelte";
   import { m } from "../paraglide/messages.js";
 
@@ -65,7 +65,7 @@
     {:else if billingTab === "fees"}
       <FeeSchedulesSection {providers} {countryMeta} />
     {:else if billingTab === "insurance"}
-      <InsuranceFeeOverridesSection {countryMeta} />
+      <InsuranceFeeOverrides {countryMeta} />
     {/if}
   </div>
 </div>

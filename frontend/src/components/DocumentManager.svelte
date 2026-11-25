@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { auth } from "../../stores/auth.svelte.js";
+  import { auth } from "../stores/auth.svelte.js";
   import { DocumentService, SystemSettingsService } from "@bindings/services/index.js";
   import { DocumentType, type Document } from "@bindings/domain/models.js";
   import { Dialogs } from "@wailsio/runtime";
-  import Modal from "../../components/ui/Modal.svelte";
-  import FormField from "../../components/ui/FormField.svelte";
-  import Input from "../../components/ui/Input.svelte";
-  import EmptyState from "../../components/ui/EmptyState.svelte";
-  import ConfirmModal from "../../components/ui/ConfirmModal.svelte";
-  import * as m from "../../paraglide/messages.js";
-  import { handleError } from "../../lib/error.js";
+  import Modal from "./ui/Modal.svelte";
+  import FormField from "./ui/FormField.svelte";
+  import Input from "./ui/Input.svelte";
+  import EmptyState from "./ui/EmptyState.svelte";
+  import ConfirmModal from "./ui/ConfirmModal.svelte";
+  import * as m from "../paraglide/messages.js";
+  import { handleError } from "../lib/error.js";
 
   // With a patientId this lists and uploads that patient's documents; without one it manages
   // clinic-wide documents.
