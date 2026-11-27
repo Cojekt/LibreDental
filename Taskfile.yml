@@ -48,7 +48,7 @@ tasks:
     cmds:
       - task: mkdir:bin
       - for: { var: SIZES }
-        cmd: go run ./internal/demo/gen.go -size {{.ITEM}} {{.BIN_DIR}}/libredental-demo-us-{{.ITEM}}.zip
+        cmd: go run ./cmd/demo-gen -size {{.ITEM}} {{.BIN_DIR}}/libredental-demo-us-{{.ITEM}}.zip
 
   artifact:
     desc: Builds all local artifacts (desktop binary, server binary, and demo data)

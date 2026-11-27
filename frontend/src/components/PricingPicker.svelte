@@ -6,7 +6,7 @@
   import { formatCurrency } from "$lib/currency.js";
   import { handleError, errorCode } from "$lib/error.js";
   import Modal from "./ui/Modal.svelte";
-  import InsuranceFeeOverridesSection from "../views/billing/InsuranceFeeOverridesSection.svelte";
+  import InsuranceFeeOverrides from "./InsuranceFeeOverrides.svelte";
   let {
     showModal = $bindable(false),
     contextID = "",
@@ -206,7 +206,7 @@
             {m.insurance_manual()} ({formatCurrency(manualFee, currency)})
           </button>
         </div>
-        <InsuranceFeeOverridesSection {countryMeta} {code} bind:providerID={selectedProvider} />
+        <InsuranceFeeOverrides {countryMeta} {code} bind:providerID={selectedProvider} />
         <button
           type="button"
           class="btn btn-secondary"

@@ -135,7 +135,7 @@ optional links). `CASCADE` is only acceptable for configuration (currently
    (columns added by `ALTER TABLE` move to where the schema file declares them), which is
    harmless as long as no SQL uses `SELECT *` or positional `INSERT ... VALUES`.
 
-5. Seed data lives in `internal/storage/seed/seed.go`, not in migrations. The `INSERT`s in
+5. Seed data lives in `internal/storage/sqlite/seed.go`, not in migrations. The `INSERT`s in
    `schema/billing.sql` are ignored by Atlas, so the squash cannot lose them.
 6. `task test`, then `task demo` (the demo generator applies the new baseline from scratch).
 

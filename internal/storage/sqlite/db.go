@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/LibreDental/libredental/internal/storage/seed"
 	"github.com/pressly/goose/v3"
 	sqlitedriver "modernc.org/sqlite"
 )
@@ -94,7 +93,7 @@ func (db *DB) migrate() error {
 		return fmt.Errorf("failed to apply migrations: %w", err)
 	}
 
-	if err := seed.Run(db.DB); err != nil {
+	if err := runSeed(db.DB); err != nil {
 		return fmt.Errorf("failed to run seeds: %w", err)
 	}
 

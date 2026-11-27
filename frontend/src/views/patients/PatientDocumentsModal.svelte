@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Patient } from "@bindings/domain/models.js";
   import Modal from "../../components/ui/Modal.svelte";
-  import DocumentsSection from "../clinic/DocumentsSection.svelte";
+  import DocumentManager from "../../components/DocumentManager.svelte";
   import { m } from "../../paraglide/messages.js";
 
   let {
@@ -34,5 +34,5 @@
       {m.doc_btn_upload()}
     </button>
   </div>
-  <DocumentsSection bind:openUploadModal={triggerUpload} patientId={patient.id} />
+  <DocumentManager bind:openUploadModal={triggerUpload} patientId={patient.id} />
 </Modal>

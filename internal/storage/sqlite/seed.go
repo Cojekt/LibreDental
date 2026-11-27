@@ -1,4 +1,4 @@
-package seed
+package sqlite
 
 import (
 	"database/sql"
@@ -114,8 +114,8 @@ INSERT OR IGNORE INTO procedure_codes (country_code, code, category, description
 ('FR', 'HBGD036', 'Oral Surgery', 'Extraction d une dent permanente sur arcade', 8000);
 `
 
-// Run executes the default seed data for the application.
-func Run(db *sql.DB) error {
+// runSeed inserts the default country configs and procedure codes into a new database.
+func runSeed(db *sql.DB) error {
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM country_configs").Scan(&count)
 	if err == nil && count > 0 {

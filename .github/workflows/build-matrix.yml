@@ -28,7 +28,11 @@ jobs:
           # Docker/Zig cross-compile path (build/docker/Dockerfile.cross) -
           # it's a real arm64 host, so build:native and nfpm's arch
           # auto-detection both just work, same as the amd64 leg.
-          - os: ubuntu-latest
+          # Pinned, not ubuntu-latest: every Linux package built here links
+          # against the runner's glibc (the AppImage also bundles GTK4/WebKit),
+          # so it only runs on systems at least as new as the build host.
+          # 24.04 is the oldest Ubuntu that ships WebKit for GTK4.
+          - os: ubuntu-24.04
             platform: linux-amd64
             arch: amd64
           - os: ubuntu-24.04-arm

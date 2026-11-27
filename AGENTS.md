@@ -49,6 +49,7 @@ internal/services/         Business logic, one service per domain area (+ _test.
 internal/storage/          Repository interfaces
 internal/storage/sqlite/   SQLite repo implementations + migrations/schema (main + audit)
 internal/demo/             Demo data seeder (task demo) incl. sample DICOM/PDF/image fixtures
+cmd/demo-gen/              CLI that runs the demo seeder and zips the save folder (task demo)
 frontend/src/views/        One <Area>View.svelte per nav tab; views/<area>/ holds parts used
                             only by that tab (named <Thing>Section for sub-tabs)
 frontend/src/components/   Components used by more than one view; shell/ is the app frame
