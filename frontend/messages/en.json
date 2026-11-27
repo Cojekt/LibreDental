@@ -856,6 +856,7 @@
   "integrations_section_bridges": "Local Programs",
   "integrations_bridges_hint": "Open a patient or their images in another program installed on this computer, such as an imaging viewer. Settings apply to this workstation.",
   "integrations_bridges_unavailable": "Local programs can only be set up in the desktop app, since they run on the computer you are using.",
+  "error_document_desktop_only": "Opening and exporting documents to a file is only available in the desktop app.",
   "integrations_bridges_none": "No local program links are available in this installation.",
   "integrations_bridge_label_program": "Program",
   "integrations_bridge_placeholder_program": "-- Select Program --",
