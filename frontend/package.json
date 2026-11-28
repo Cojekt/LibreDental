@@ -26,7 +26,7 @@
     "@inlang/plugin-m-function-matcher": "^2.4.3",
     "@inlang/plugin-message-format": "^4.6.0",
     "@playwright/test": "1.65.1",
-    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@sveltejs/vite-plugin-svelte": "^7.3.2",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/svelte": "^5.4.2",
     "@tsconfig/svelte": "^5.0.9",
