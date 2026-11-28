@@ -11,7 +11,7 @@ require (
 	github.com/nyaruka/phonenumbers v1.8.1
 	github.com/pressly/goose/v3 v3.30.1
 	github.com/suyashkumar/dicom v1.1.0
-	github.com/wailsapp/wails/v3 v3.2.0-nightly.20261103
+	github.com/wailsapp/wails/v3 v3.2.0-nightly.20261123
 	github.com/zalando/go-keyring v0.2.8
 	modernc.org/sqlite v1.62.0
 )
