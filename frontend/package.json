@@ -30,7 +30,7 @@
     "@testing-library/dom": "^10.4.2",
     "@testing-library/svelte": "^5.4.2",
     "@tsconfig/svelte": "^5.0.9",
-    "@types/node": "^26.6.6",
+    "@types/node": "^26.6.10",
     "@typescript/native": "npm:typescript@^7.0.2",
     "jsdom": "^31.0.1",
     "prettier": "^3.10.1",
