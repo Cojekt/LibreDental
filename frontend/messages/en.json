@@ -888,6 +888,7 @@
   "error_bridge_batch_file": "Batch files (.bat, .cmd) cannot be used. Choose the program itself.",
   "error_bridge_not_configured": "This program is not set up yet. Enable it under Integrations.",
   "error_bridge_invalid_args": "The command-line arguments are not valid. Check the quotes and placeholders.",
+  "error_document_type_not_openable": "This file type cannot be opened from LibreDental. Export it instead.",
   "patient_subscriber_sex": "Policyholder Sex",
   "patient_subscriber_sex_placeholder": "Select sex",
   "patient_subscriber_address_line1": "Policyholder Address",

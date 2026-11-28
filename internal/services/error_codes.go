@@ -29,6 +29,7 @@ var errorCodes = []struct {
 	{storage.ErrLastActiveProvider, "last_active_provider"},
 	{storage.ErrAlreadyInitialized, "already_initialized"},
 	{ErrBridgesUnavailable, "bridges_unavailable"},
+	{ErrDocumentTypeNotOpenable, "document_type_not_openable"},
 	{bridges.ErrBridgePathRequired, "bridge_path_required"},
 	{bridges.ErrBridgePathNotAbsolute, "bridge_path_not_absolute"},
 	{bridges.ErrBridgeBatchFile, "bridge_batch_file"},

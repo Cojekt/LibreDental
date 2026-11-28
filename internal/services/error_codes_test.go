@@ -26,6 +26,7 @@ func TestErrorCode(t *testing.T) {
 		{bridges.ValidateBridgeExecutable(batchPath), "bridge_batch_file"},
 		{fmt.Errorf("%w: weasis is not enabled", bridges.ErrBridgeNotConfigured), "bridge_not_configured"},
 		{bridges.ValidateBridgeArgs("{chart_number}"), "bridge_invalid_args"},
+		{ErrDocumentTypeNotOpenable, "document_type_not_openable"},
 		{errors.New("something else"), ""},
 		{nil, ""},
 	}

@@ -8,9 +8,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -290,7 +288,8 @@ func (s *DocumentService) GetDocumentImagesBase64(token string, id string) (*dic
 	return &dicom.DicomParseResult{ImageURLs: []string{dataURL}, TotalFrames: 1}, nil
 }
 
-// OpenDocument opens the document in the OS default application.
+// OpenDocument opens the document in the OS default application. Only file types that are
+// displayed rather than run can be opened.
 func (s *DocumentService) OpenDocument(token string, id string) error {
 	if s.auditService.GetSessionUser(token) == nil {
 		return ErrUnauthorized
@@ -303,25 +302,14 @@ func (s *DocumentService) OpenDocument(token string, id string) error {
 
 	fullPath := filepath.Join(s.getDocumentsBasePath(), doc.FilePath)
 
-	// Since the internal file might not have an extension, we copy it to a temp file with its original name
-	// to ensure the OS opens it with the correct application.
-	tempDir := os.TempDir()
-
-	// Clean the file name to prevent traversal issues
-	safeName := filepath.Base(doc.Name)
-	if safeName == "." || safeName == "/" || safeName == "\\" {
-		safeName = "document_" + id
+	// Since the internal file might not have an extension, we copy it to a temp file named after
+	// the document to ensure the OS opens it with the correct application.
+	safeName, err := openableFileName(doc)
+	if err != nil {
+		return err
 	}
 
-	// Ensure the file has a proper extension so the OS knows how to open it
-	ext := filepath.Ext(safeName)
-	if ext == "" && doc.ContentType != "" {
-		if exts, err := mime.ExtensionsByType(doc.ContentType); err == nil && len(exts) > 0 {
-			safeName += exts[0]
-		}
-	}
-
-	tempFilePath := filepath.Join(tempDir, "libredental_temp_"+id+"_"+safeName)
+	tempFilePath := filepath.Join(os.TempDir(), "libredental_temp_"+doc.ID+"_"+safeName)
 
 	input, err := os.Open(fullPath)
 	if err != nil {
@@ -341,23 +329,7 @@ func (s *DocumentService) OpenDocument(token string, id string) error {
 
 	output.Close() // Ensure file is closed before opening
 
-	// Open the file with the default OS application
-	var cmd string
-	var args []string
-
-	switch runtime.GOOS {
-	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start"}
-	case "darwin":
-		cmd = "open"
-	default:
-		cmd = "xdg-open"
-	}
-	args = append(args, tempFilePath)
-
-	// #nosec G204 - cmd and args are controlled and safe
-	if err := exec.Command(cmd, args...).Start(); err != nil {
+	if err := openWithDefaultApp(tempFilePath); err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
 	}
 

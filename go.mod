@@ -13,6 +13,7 @@ require (
 	github.com/suyashkumar/dicom v1.1.0
 	github.com/wailsapp/wails/v3 v3.2.0-nightly.20261103
 	github.com/zalando/go-keyring v0.2.8
+	golang.org/x/sys v0.50.0
 	modernc.org/sqlite v1.62.0
 )
 
@@ -33,7 +34,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20261109185158-a52e3aef5920 // indirect
 	golang.org/x/sync v0.25.0 // indirect
-	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect

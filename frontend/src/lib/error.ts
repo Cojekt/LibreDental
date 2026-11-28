@@ -21,6 +21,7 @@ const errorMessages: Record<string, () => string> = {
   bridge_batch_file: m.error_bridge_batch_file,
   bridge_not_configured: m.error_bridge_not_configured,
   bridge_invalid_args: m.error_bridge_invalid_args,
+  document_type_not_openable: m.error_document_type_not_openable,
 };
 
 // errorCode returns the backend's code for a failed call, if the error has one.
