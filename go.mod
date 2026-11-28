@@ -13,7 +13,7 @@ require (
 	github.com/suyashkumar/dicom v1.1.0
 	github.com/wailsapp/wails/v3 v3.2.0-nightly.20261103
 	github.com/zalando/go-keyring v0.2.8
-	modernc.org/sqlite v1.62.0
+	modernc.org/sqlite v1.63.0
 )
 
 require (
